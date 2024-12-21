@@ -167,6 +167,398 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/05/10/DLS-note-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/05/10/DLS-note-2/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记+代码实战（二）：简单的神经网络——逻辑回归</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-10 17:16:34" itemprop="dateCreated datePublished" datetime="2022-05-10T17:16:34+08:00">2022-05-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>这堂课要学习的是逻辑回归——一种求解二分类任务的算法。同时，这堂课会补充实现逻辑回归必备的数学知识、编程知识。学完这堂课后，同学们应该能够用Python实现一个简单的小猫辨别器。</p>
+<h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p><img src="/2022/05/10/DLS-note-2/preface.png" alt></p>
+<p>如上图所示，深度学习和编程，本来就是相对独立的两块知识。</p>
+<p>深度学习本身的知识包括数学原理和实验经验这两部分。深度学习最早来自于数学中的优化问题。随着其结构的复杂化，很多时候我们解释不清为什么某个模型性能更高，只能通过重复实验来验证模型的有效性。因此，深度学习很多情况下变成了一门“实验科学”。</p>
+<p>深度学习中，只有少量和编程有关系的知识，比如向量化计算、自动求导器等。得益于活跃的开源社区，只要熟悉了这些少量的编程技巧，人人都可以完成简单的深度学习项目。但是，真正想要搭建一个实用的深度学习项目，需要完成大量“底层”的编程工作，要求开发者有着广泛的编程经验。</p>
+<p>通过上吴恩达老师的课，我们应该能比较好地掌握深度学习的数学原理，并且了解深度学习中少量的编程知识。而广泛的编程经验、修改模型的经验，这些都是只上这门课学不到的。</p>
+<p>获取修改模型的经验这项任务过于复杂，不太可能短期学会，几乎可以作为研究生的课题了。而相对而言，编程的经验就很好获得了。</p>
+<p>我的系列笔记会补充很多编程实战项目，希望读者能够通过完成类似的编程项目，在学习课内知识之余，提升广义上的编程能力。比如在这周的课程里，我们会用课堂里学到的逻辑回归从头搭建一个分类器。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="本节课的目标"><a href="#本节课的目标" class="headerlink" title="本节课的目标"></a>本节课的目标</h2><p>在这节课里，我们要完成一个二分类任务。所谓二分类任务，就是给一个问题，然后给出一个“是”或“否”的回答。比如给出一张照片，问照片里是否有一只猫。</p>
+<p>这节课中，我们用到的方法是逻辑回归。逻辑回归可以看成是一个非常简单的神经网络。</p>
+<h3 id="符号标记"><a href="#符号标记" class="headerlink" title="符号标记"></a>符号标记</h3><p>从这节课开始，我们会用到一套统一的符号标记：</p>
+<p>$(x, y)$ 是一个训练样本。其中，$x$ 是一个长度为 $n_x$ 的一维向量，即 $x \in \mathcal{R}^{n_x}$。$y$ 是一个实数，取0或1，即$y \in \{0, 1\}$。取0表示问题的的答案为“否”，取1表示问题的答案为“是”。</p>
+<blockquote>
+<p>这套课默认读者对统计机器学习有基本的认识，似乎没有过多介绍训练集是什么。在有监督统计机器学习中，会给出<strong>训练数据</strong>。训练数据中的每一条<strong>训练样本</strong>包含一个“问题”和“问题的答案”。神经网络根据输入的问题给出一个自己的解答，再和正确的答案对比，通过这样一个“学习”的过程来优化解答能力。</p>
+<p>对计算机知识有所了解的人会知道，在计算机中，颜色主要是通过RGB（红绿蓝）三种颜色通道表示。每一种通道一般用长度8位的整数表示，即用一个0~255的数表示某颜色在红、绿、蓝上的深浅程度。这样，一个颜色就可以用一个长度为3的向量表示。一幅图像，其实就是许多颜色的集合，即许多长度为3的向量的集合。颜色通道，再算上某颜色所在像素的位置$(x, y)$，图像就可以看成一个3维张量$I \in \mathcal{R}^{H \times W \times 3}$，其中$H$是图像高度，$W$是图像宽度，$3$是图像的通道数。在把图像输入逻辑回归时，我们会把图像“拉直”成一个一维向量。这个向量就是前面提到的网络输入$x$，其中$x$的长度$n_x$满足$n_x = H \times W \times 3$。这里的“拉直”操作就是把张量里的数据按照顺序一个一个填入新的一维向量中。</p>
+<p>其实向量就是一维的，但我还是很喜欢强调它是“一维”的。这是因为在计算机中所有数据都可以看成是数组（甚至C++的数组就叫<code>vector</code>)。二维数组不过是一维数组的数组，三位数组不过是二维数组的数组。在数学中，为了方便称呼，把一维数组叫“向量”，二维数组叫“矩阵”，三维及以上数组叫“张量”。其实在我看来它们之间只是一个维度的差别而已，叫“三维向量”、“一维张量”这种不是那么严谨的称呼也没什么问题。</p>
+</blockquote>
+<p>实际上，我们有很多个训练样本。样本总数记为$m$。第$i$个训练样本叫做$(x^{(i)}, y^{(i)})$。在后面使用其他标记时，也会使用上标$(i)$表示第$i$个训练样本得到的计算结果。</p>
+<p>所有输入数据的集合构成一个矩阵（其中每个输入样本用<strong>列向量</strong>的形式表示，这是为了方便计算机的计算）：</p>
+<script type="math/tex; mode=display">
+X=\left[
+  \begin{matrix}
+  | & | & & | \\
+  x^{(1)} & x^{(2)} & ... & x^{(m)} \\
+  | & | & & |
+  \end{matrix}
+\right]
+,X \in \mathcal{R}^{n_x \times m}</script><p>同理，所有真值也构成集合 $Y$:</p>
+<script type="math/tex; mode=display">
+Y=\left[
+  \begin{matrix}
+  y^{(1)} & y^{(2)} & ... & y^{(m)} 
+  \end{matrix}
+\right]
+,Y \in \mathcal{R}^{m}</script><p>由于每个样本$y^{(i)}$是一个实数，所以集合$Y$是一个向量。</p>
+<h2 id="逻辑回归的公式描述"><a href="#逻辑回归的公式描述" class="headerlink" title="逻辑回归的公式描述"></a>逻辑回归的公式描述</h2><p>逻辑回归是一个学习算法，用于对真值只有0或1的“逻辑”问题进行建模。给定输入$x$,逻辑回归输出一个$\hat{y}$。这个$\hat{y}$是对真值$y$的一个估计，准确来说，它描述的是$y=1$的概率，即$\hat{y}=P(y=1  |  x)$</p>
+<p>逻辑回归会使用一个带参数的函数计算$\hat{y}$。这里的参数包括$w \in \mathcal{R}^{n_x}, b \in \mathcal{R}$。</p>
+<p>说起用于拟合的函数，最容易想到的是线性函数$w^Tx+b$（即做点乘再加$b$： $w^Tx+b = (\Sigma_{i=1}^{n_x}w_ix_i)+b$ ）。但线性函数的值域是$(- \infty,+\infty)$（即全体实数$\mathcal{R}$），概率的取值是$[0, 1]$。我们还需要一个定义域为$\mathcal{R}$，值域为$[0, 1]$，把线性函数映射到$[0, 1]$上的一个函数。</p>
+<p>逻辑回归中，使用的映射函数是sigmoid函数$\sigma$,它的定义为：</p>
+<script type="math/tex; mode=display">\sigma(z)=\frac{1}{1 + e^{-z}}</script><p>这个函数可以有效地完成映射，它的函数图像长这个样子：</p>
+<p><img src="/2022/05/10/DLS-note-2/0.png" alt></p>
+<blockquote>
+<p>这里不用计较为什么使用这个函数，只需要知道这个函数的趋势：$x$越小，$\sigma (x)$越靠近0；$x$越大，$\sigma (x)$越靠近1。</p>
+</blockquote>
+<p>也就是说，最终的逻辑回归公式长这个样子：$\hat{y} = \sigma(w^Tx+b)$。</p>
+<h2 id="逻辑回归的损失函数（Cost-Function）"><a href="#逻辑回归的损失函数（Cost-Function）" class="headerlink" title="逻辑回归的损失函数（Cost Function）"></a>逻辑回归的损失函数（Cost Function）</h2><p>所有的机器学习问题本质上是一个优化问题，一般我们会定义一个<strong>损失函数（Cost Function）</strong>，再通过优化参数来最小化这个损失函数。</p>
+<p>回顾一下我们的任务目标：我们定义了逻辑回归公式$\hat{y} = \sigma(w^Tx+b)$，我们希望$\hat{y}$尽可能和$y$相近。这里的“相近”，就是我们的优化目标。损失函数，可以看成是$y, \hat{y}$间的“距离”。</p>
+<p>逻辑回归中，定义了每个输出和真值的<strong>误差函数（Loss Function）</strong>，这个误差函数叫<strong>交叉熵</strong></p>
+<script type="math/tex; mode=display">L(\hat{y}, y)=-(y \ log\hat{y} + (1-y) \ log(1-\hat{y}))</script><p>不使用另一种常见的误差函数<strong>均方误差</strong>的原因是，交叉熵较均方误差梯度更加平滑，更容易在之后的优化中找到全局最优解。</p>
+<p><strong>误差函数</strong>是定义在每个样本上的，而<strong>损失函数</strong>是定义在整个样本上的，表示所有样本误差的“总和”。这个“总和”其实就是平均值，即损失函数$J(w, b)$为:</p>
+<script type="math/tex; mode=display">J(w, b)=\frac{1}{m}\Sigma_{i=1}^{m}-(y^{(i)} \ log\hat{y}^{(i)} + (1-y^{(i)}) \ log(1-\hat{y}^{(i)}))</script><h2 id="优化算法——梯度下降"><a href="#优化算法——梯度下降" class="headerlink" title="优化算法——梯度下降"></a>优化算法——梯度下降</h2><p>有了优化目标，接下来的问题就是如何用优化算法求出最优值。这里使用的是<strong>梯度下降（Gradient Descent）</strong> 法。梯度下降的思想很符合直觉：如果要让函数值更小，就应该让函数的输入沿着函数值下降最快的方向（梯度的方向）移动。</p>
+<p>以课件中的一元函数为例：</p>
+<p><img src="/2022/05/10/DLS-note-2/1.png" alt></p>
+<p>一元函数的梯度值就是导数值，方向只有正和负两个方向。我们要根据每个点的导数，让每个点向左或向右“运动”，以使函数值更小。</p>
+<p>从图像里可以看出，如果是参数最开始在A点，则往右走函数值才会变少；反之，对于B点，则应该往左移动。</p>
+<p>每个点都应该向最小值“一小步一小步”地移动，直至抵达最低点。为什么要“一小步”移动呢？可以想象，如果一次移动的“步伐”过大，改变参数不仅不会让优化函数变小，甚至会让待优化函数变大。比如从A点开始，同样是往右移动，如果“步伐”过大，A点就会迈过最低点的红点，甚至跑到B点的上面。那么这样下去，待优化函数会越来越大，优化就失败了。</p>
+<p>为了让优化能顺利进行，梯度下降法使用<strong>学习率（Learning Rate)</strong> 来控制参数优化的“步伐”，即用如下方法更新损失函数$J(w)$的参数：</p>
+<script type="math/tex; mode=display">
+Repeat: \\
+w \gets w - \alpha \frac{dJ}{dw}</script><p>这里的 $\alpha$ 就是学习率，它控制了每次梯度更新的幅度。</p>
+<p>其实这里还有两个问题：参数$w$该如何初始化；该执行梯度下降多少次。在这个问题中初始化对结果影响不大，可以简单地令$w=0$。而优化的次数没有硬性的需求，先执行若干次，根据误差是否收敛再决定是否继续优化即可。</p>
+<h2 id="前置知识补充"><a href="#前置知识补充" class="headerlink" title="前置知识补充"></a>前置知识补充</h2><p>到这里，逻辑回归的知识已经讲完了。让我们梳理一下：</p>
+<p>在逻辑回归问题中，我们有输入样本集$X$和其对应的期望输出$Y$，我们希望找到拟合函数$\hat{Y}=w^TX+b$，使得$\hat{Y}$和$Y$尽可能接近，即让损失函数$J(w, b)=mean(-(Ylog\hat{Y}+(1-Y)log(1-\hat{Y})))$尽可能小。</p>
+<blockquote>
+<p>这里的$X,Y,\hat{Y}$表示的是全体样本。稍后我们会讨论如何用公式表示全体样本的计算。</p>
+</blockquote>
+<p>我们可以用$0$来初始化所有待优化参数$w, b$，并执行梯度下降</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+w & \gets w - \alpha \frac{dJ}{dw} \\ 
+b & \gets b - \alpha \frac{dJ}{db}
+\end{align*}</script><p>若干次后得到一个较优的拟合函数。</p>
+<p>为了让大家成功用代码实现逻辑回归，这门课贴心地给大家补充了数学知识和编程知识。</p>
+<blockquote>
+<p>在我的笔记中，补充编程知识的记录会潦草一些。</p>
+</blockquote>
+<h3 id="求导"><a href="#求导" class="headerlink" title="求导"></a>求导</h3><blockquote>
+<p>这部分对中国学生来说十分简单，因为求导公式是高中教材的内容。</p>
+</blockquote>
+<p>导数即函数每时每刻的变化率，比如位移对时间的导数就是速度。以常见函数为例，对于直线$y=kx$，函数的变化率时时刻刻都是$k$；对于二次函数$y=x^2$，$x$处的导数是$2x$。</p>
+<h3 id="计算图"><a href="#计算图" class="headerlink" title="计算图"></a>计算图</h3><p>其实，所有复杂的数学运算都可以拆成计算图表示法。</p>
+<p><img src="/2022/05/10/DLS-note-2/2.png" alt></p>
+<blockquote>
+<p>计算<strong>图</strong>中的”图”其实是一个计算机概念，表示由节点和边组成的集合。不熟悉的话，当成日常用语里的图来理解也无妨。</p>
+</blockquote>
+<p>比如上图中，哪怕是简单的运算$2a+b$，也可以拆成两步：先算$2 \times a$，再算$(2a) + b$。</p>
+<p>这里的“步”指原子运算，即最简单的运算。原子运算可以是加减乘除，也可以是求指数、求对数。复杂的运算，只是对简单运算的组合、嵌套。</p>
+<p>明明简简单单可以用一行公式表示的事，要费很大的功夫画一张计算图呢？这是因为，对函数求导满足“链式法则”，借助计算图，可以更方便地用链式法则算出所有参数的导数。比如在上图中要求$f$对$a$的导数，使用链式法则的话，可以通过先求$f$对$c$的导数，再求$c$对$a$的导数得到。</p>
+<h3 id="利用计算图对逻辑回归求导"><a href="#利用计算图对逻辑回归求导" class="headerlink" title="利用计算图对逻辑回归求导"></a>利用计算图对逻辑回归求导</h3><p>逻辑回归有计算图：<br><img src="/2022/05/10/DLS-note-2/3.png" alt></p>
+<p>现在利用链式法则从右向左求导：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+z & =  w_1x_1 + w_2x_2 +b \\
+a & =  \frac{1}{1+e^{-z}} \\
+L & = -(yloga+(1-y)log(1-a)) \\
+
+\frac{dL}{da} & =  -(\frac{y}{a}-\frac{1-y}{1-a}) \\
+\frac{da}{dz} & =  \frac{e^{-z}}{(1+e^{-z})^2} = a(1-a)\\
+\frac{dL}{dz} & = \frac{dL}{da} \frac{da}{dz} \\
+&= -(\frac{y}{a}-\frac{1-y}{1-a}) \times a(1-a) \\
+&= -(y(1-a)-(1-y)a) \\
+&= -(y-ya-a+ya) \\
+&= a-y \\
+\frac{dL}{dw_i} &= \frac{dL}{dz}\frac{dz}{dw_i}=(a-y)x_i \\
+\frac{dL}{db} &= \frac{dL}{dz}\frac{dz}{db}=(a-y)
+\end{align*}</script><blockquote>
+<p>这些运算里最难“注意到”的是$\frac{e^{-z}}{(1+e^{-z})^2} = a(1-a)$。</p>
+<p>在学计算机科学的知识时，可以适当忽略一些数学证明，把算好的公式直接拿来用，比如这里的$\frac{dL}{dz}=a-y$。</p>
+</blockquote>
+<p>$\frac{dL}{dw_i}, \frac{dL}{db}$就是我们要的梯度了，用它们去更新原来的参数即可。值得一提的是，这里的梯度是对一个样本而言。对于全部$m$个样本来说，本轮的梯度应该是所有样本的梯度的平均值。后面我们会学习如何对所有样本求导。</p>
+<h3 id="Python-向量化计算"><a href="#Python-向量化计算" class="headerlink" title="Python 向量化计算"></a>Python 向量化计算</h3><p>在刚刚的一轮迭代中，我们要用到两次循环：</p>
+<ol>
+<li>对$m$个样本循环处理</li>
+<li>对$n_x$个权重$w_i$与对应的$x_i$相乘</li>
+</ol>
+<p>直接拿 Python 写这些 for 循环，程序会跑得很慢的，这里最好使用向量化计算。在这一节里我们补充一下 Python 基础知识，下一节介绍怎么用它们实现逻辑回归的向量化实现。</p>
+<blockquote>
+<p>课程中提到向量化的好处是可以用<strong>SIMD</strong>（单指令多数据流）优化，这个概念可以理解成计算机会同时对16个或32个数做计算。如果输入的数据是向量的话，相比一个一个做for循环，一次算16,32个数的计算速度会更快。</p>
+<p>但实际上，除了无法使用SIMD以外，Python的低效也是拖慢速度的原因之一。哪怕是不用SIMD，单纯地用C++的for循环实现向量化计算，都能比用Python的循环快上很多。</p>
+</blockquote>
+<p>Python 的 numpy 库提供了向量化计算的接口。比如以下是向量化的例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line">a = np.zeros((<span class="number">10</span>)) <span class="comment"># 新建长度为10的向量，值为0</span></span><br><span class="line">b = np.ones((<span class="number">10</span>)) <span class="comment"># 新建长度为10的向量，值为1</span></span><br><span class="line">a = a + b <span class="comment"># 10个数同时做加法</span></span><br><span class="line">a = np.exp(a) <span class="comment"># 对10个数都做指数运算</span></span><br></pre></td></tr></table></figure>
+<p>numpy 允许一种叫做“广播”的操作，这种操作能够完成不同形状数据间的运算。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">a = np.ones(<span class="number">10</span>) <span class="comment"># a的形状:[10]</span></span><br><span class="line">k = np.array([<span class="number">3</span>]) <span class="comment"># 用列表[3]新建张量，k的形状:[1]</span></span><br><span class="line">a = k * a <span class="comment"># 广播</span></span><br></pre></td></tr></table></figure>
+<p>这里k的shape为<code>[1]</code>，a的shape为<code>[10]</code>。用k乘a，实际上就是令<code>a[i] = k[0] * a[i]</code>。也就是说，<code>k[0]</code>“广播”到了<code>a</code>的每一个元素上。</p>
+<p>有一种快速理解广播的方法：可以认为k的形状从<code>[1]</code>变成了<code>[10]</code>，再让k和a逐个元素做乘法。</p>
+<p>同理，如果用一个<code>a[x, y]</code>的矩阵加一个<code>b[x, 1]</code>的矩阵，实际上是做了下面的运算：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(x):</span><br><span class="line">  <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(y):</span><br><span class="line">    a[i, j] = a[i, j] + b[i, <span class="number">0</span>] </span><br></pre></td></tr></table></figure></p>
+<p>用刚刚介绍的方法来理解，可以认为<code>b</code>从<code>[x, 1]</code>扩充成了<code>[x, y]</code>，再和<code>a</code>做逐个元素的加法运算。</p>
+<h2 id="向量化计算前向和反向传播"><a href="#向量化计算前向和反向传播" class="headerlink" title="向量化计算前向和反向传播"></a>向量化计算前向和反向传播</h2><p>现在，有了求导的基础知识和向量化计算的基础知识，让我们来写一下如何用矩阵表示逻辑回归中的运算，并用Python代码描述这些计算过程。</p>
+<p>单样本的正向传播：</p>
+<script type="math/tex; mode=display">
+\hat{y} = a=\sigma(w^Tx+b)</script><p>推广到多样本：</p>
+<script type="math/tex; mode=display">
+\hat{Y} = A=\sigma(w^TX+b)</script><p>这里的$X, A, \hat{Y}$是把原来单样本的列向量$x_i, \hat{y}_i$横向堆叠起来形成的矩阵，即:</p>
+<script type="math/tex; mode=display">
+[\hat{y_1}, ..., \hat{y_m}] = \sigma([w^Tx_1+b, ..., w^Tx_m+b])</script><p>单样本反向传播：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+dz &= a-y \\
+dw_i &= dz \cdot x_i \\
+dw &= \left[
+  \begin{matrix}
+  dw_1 \\
+  ... \\
+  dw_{n_x} 
+  \end{matrix}
+\right] =
+\left[
+  \begin{matrix}
+  dz \cdot x_1\\
+  ... \\
+  dz \cdot x_{n_x}
+  \end{matrix}
+\right]=dz \ast x\\
+db &= dz 
+\end{align*}</script><blockquote>
+<p>$dz$ 是 $\frac{dJ}{dz}$的简写，其他变量同理。编程时也按同样的方式命名。</p>
+<p>所有的$\ast$都表示逐元素乘法。比如$[1, 2, 3] \ast [1, 2, 3]=[1, 4, 9]$。$\ast$满足前面提到的广播，比如$[2] \ast [1, 2, 3]=[2, 4, 6]$。 </p>
+</blockquote>
+<p>多样本反向传播：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+dZ &= A-Y \\
+dw_i &=  X_i dZ^T = dz^{(1)}x_i^{(1)} +  ... +  dz^{(m)}x_i^{(m)} \\
+dw &=  \frac{1}{m} \left[
+  \begin{matrix}
+  dw_1 \\
+  ... \\
+  dw_{n_x} 
+  \end{matrix}
+\right]=\frac{1}{m}\left[
+  \begin{matrix}
+  dz^{(1)}x_1^{(1)} + &...& + dz^{(m)}x_1^{(m)}\\
+  ... &...& ...\\
+  dz^{(1)}x_{n_x}^{(1)} + &...& +dz^{(m)}x_{n_x}^{(m)} 
+  \end{matrix}
+\right]\\
+&= \frac{1}{m}XdZ^T\\
+db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)} 
+\end{align*}</script><p>用代码描述多样本前向传播和反向传播就是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Z = np.dot(w.T, x)+b</span><br><span class="line">A = sigmoid(Z)</span><br><span class="line">dZ = A-Y</span><br><span class="line">dw = np.dot(X, dZ.T) / m</span><br><span class="line">db = np.mean(dZ)</span><br><span class="line"><span class="comment"># db=np.sum(dZ) / m</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>np.dot</code>实现了求向量内积或矩阵乘法，<code>np.sum</code>实现了求和，<code>np.mean</code>实现了求均值。</p>
+</blockquote>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这堂课的主要知识点有：</p>
+<ul>
+<li>什么是二分类问题。</li>
+<li>如何对建立逻辑回归模型。<ul>
+<li>Sigmoid 函数 $\sigma(z)=\frac{1}{1 + e^{-z}}$</li>
+</ul>
+</li>
+<li>误差函数与损失函数<ul>
+<li>逻辑回归的误差函数：$L(\hat{y}, y)=-(y  log\hat{y} + (1-y)  log(1-\hat{y}))$</li>
+</ul>
+</li>
+<li>用梯度下降算法优化损失函数</li>
+<li>计算图的概念及如何利用计算图算梯度</li>
+</ul>
+<p>学完这堂课后，应该掌握的编程技能有：</p>
+<ul>
+<li>了解numpy基本知识<ul>
+<li>resize</li>
+<li>.T</li>
+<li>exp</li>
+<li>dot</li>
+<li>mean, sum</li>
+</ul>
+</li>
+<li>用numpy做向量化计算</li>
+<li>实现逻辑回归<ul>
+<li>对输入数据做reshape的预处理</li>
+<li>用向量化计算算$\hat{y}$及参数的梯度</li>
+<li>迭代优化损失函数</li>
+</ul>
+</li>
+</ul>
+<h1 id="代码实战"><a href="#代码实战" class="headerlink" title="代码实战"></a>代码实战</h1><p>这节课有两个编程作业:第一个作业要求使用numpy实现对张量的一些操作，第二个作业要求用逻辑回归实现一个分类器。这些编程作业是在python的notebook上编写的。每道题给出了代码框架，只要写关键的几行代码就行。对我来说，编程体验极差。作为编程最强王者，怎能受此“嗟来之码”的屈辱？我决定从零开始，自己收集数据，并用numpy实现逻辑回归。</p>
+<blockquote>
+<p>其实我不分享作业代码的真正原因是：Coursera不允许公开展示作业代码。在之后的笔记中，我也会分享如何用自己的代码实现每堂课的编程目标。</p>
+</blockquote>
+<p>这篇笔记用到的代码已在GitHub上开源：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/LogisticRegression">https://github.com/SingleZombie/DL-Demos/tree/master/LogisticRegression</a> 。下文展示的代码和原本的代码有略微的出入，建议大家对着源代码阅读后文。</p>
+<h2 id="程序设计"><a href="#程序设计" class="headerlink" title="程序设计"></a>程序设计</h2><p>不管写什么程序，都要先想好整体的架构，再开始动手写代码。</p>
+<p>深度学习项目的架构比较固定。一般一个深度学习项目由以下几部分组成：</p>
+<ul>
+<li>数据预处理</li>
+<li>定义网络结构</li>
+<li>定义损失函数</li>
+<li>定义优化策略</li>
+<li>用训练pipeline串联起网络、损失函数、优化策略</li>
+<li>测试模型精度</li>
+</ul>
+<p>当然，实现深度学习项目比一般的编程项目多一个步骤：除了写代码外，完成深度学习项目还需要收集数据。</p>
+<p>接下来，我将按照<strong>数据收集</strong>、<strong>数据处理</strong>、<strong>网络结构</strong>、<strong>损失函数</strong>、<strong>训练</strong>、<strong>测试</strong>这几部分介绍这个项目。之后的笔记也会以这个形式介绍编程项目。</p>
+<h2 id="数据收集"><a href="#数据收集" class="headerlink" title="数据收集"></a>数据收集</h2><p>说起最经典的二分类任务，大家都会想起小猫分类（或许跟吴恩达老师的课比较流行有关）。在这个项目中，我也顺应潮流，选择了一个猫狗数据集（<a target="_blank" rel="noopener" href="https://www.kaggle.com/datasets/fusicfenta/cat-and-dog?resource=download）。">https://www.kaggle.com/datasets/fusicfenta/cat-and-dog?resource=download）。</a></p>
+<p>在此数据集中，数据是按以下结构存储的：</p>
+<p><img src="/2022/05/10/DLS-note-2/4.png" alt></p>
+<p>在二分类任务中，数据的标签为0或1（表示是否是小猫）。而此数据集只是把猫、狗的图片分别放到了不同的文件夹里，这意味着我们待会儿要手动给这些数据打上0或1的标签。</p>
+<h2 id="数据预处理"><a href="#数据预处理" class="headerlink" title="数据预处理"></a>数据预处理</h2><p>由于训练集和测试集的目录结构相同，我们先写一个读数据集的函数：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">input_shape=(<span class="number">224</span>, <span class="number">224</span>)</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load_dataset</span>(<span class="params"><span class="built_in">dir</span>, data_num</span>):</span></span><br><span class="line">    cat_images = glob(osp.join(<span class="built_in">dir</span>, <span class="string">&#x27;cats&#x27;</span>, <span class="string">&#x27;*.jpg&#x27;</span>))</span><br><span class="line">    dog_images = glob(osp.join(<span class="built_in">dir</span>, <span class="string">&#x27;dogs&#x27;</span>, <span class="string">&#x27;*.jpg&#x27;</span>))</span><br><span class="line">    cat_tensor = []</span><br><span class="line">    dog_tensor = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> idx, image <span class="keyword">in</span> <span class="built_in">enumerate</span>(cat_images):</span><br><span class="line">        <span class="keyword">if</span> idx &gt;= data_num:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        i = cv2.imread(image) / <span class="number">255</span></span><br><span class="line">        i = cv2.resize(i, input_shape)</span><br><span class="line">        cat_tensor.append(i)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> idx, image <span class="keyword">in</span> <span class="built_in">enumerate</span>(dog_images):</span><br><span class="line">        <span class="keyword">if</span> idx &gt;= data_num:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        i = cv2.imread(image) / <span class="number">255</span></span><br><span class="line">        i = cv2.resize(i, input_shape)</span><br><span class="line">        dog_tensor.append(i)</span><br><span class="line"></span><br><span class="line">    X = cat_tensor + dog_tensor</span><br><span class="line">    Y = [<span class="number">1</span>] * <span class="built_in">len</span>(cat_tensor) + [<span class="number">0</span>] * <span class="built_in">len</span>(dog_tensor)</span><br><span class="line">    X_Y = <span class="built_in">list</span>(<span class="built_in">zip</span>(X, Y))</span><br><span class="line">    shuffle(X_Y)</span><br><span class="line">    X, Y = <span class="built_in">zip</span>(*X_Y)</span><br><span class="line">    <span class="keyword">return</span> X, Y</span><br></pre></td></tr></table></figure><br>函数先是用<code>glob</code>读出文件夹下所有猫狗的图片路径，再按文件路径依次把文件读入。接着，函数为数据生成了0或1的标签。最后，函数把数据打乱，并返回数据。让我们来看看这段代码里有哪些要注意的地方。</p>
+<p>在具体介绍代码之前，要说明一下我在这个数据集上做的两个特殊处理：</p>
+<ol>
+<li>这个函数有一个参数<code>data_num</code>，表示我们要读取<code>data_num</code>张猫+<code>data_num</code>张狗的数据。原数据集有上千张图片，直接读进内存肯定会把内存塞爆。为了实现上的方便，我加了一个控制数据数量的参数。在这个项目中，我只用了800张图片做训练集。</li>
+<li>原图片是很大的，为了节约内存，我把所有图片都变成了input_shape=(224, 224)的大小。</li>
+</ol>
+<p>接下来，我们再了解一下数据处理中的一些知识。在读数据的时候，把数据<strong>归一化</strong>（令数据分布在(-1, 1)这个区间内）十分关键。如果不这样做的话，loss里的$loge^{z}$会趋近$log0$，梯度的收敛速度会极慢，训练会难以进行。这是这节课上没有讲的内容，但是它在实战中非常关键。</p>
+<blockquote>
+<p>这个时候输出loss的话，会得到一个Python无法表示的数字：<code>nan</code>。在训练中如果看到loss是<code>nan</code>，多半就是数据没有归一化的原因。这个是一个非常常见的bug，一定要记得做数据归一化！</p>
+<p>第三节课里讲了激活函数的收敛速度问题。</p>
+</blockquote>
+<p>现在来详细看代码。</p>
+<p>下面的代码用于从文件系统中读取所有图片文件，并把文件的绝对路径保存进一个list。如果大家有疑问，可以自行搜索<code>glob</code>函数的用法。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cat_images = glob(osp.join(<span class="built_in">dir</span>, <span class="string">&#x27;cats&#x27;</span>, <span class="string">&#x27;*.jpg&#x27;</span>))</span><br><span class="line">dog_images = glob(osp.join(<span class="built_in">dir</span>, <span class="string">&#x27;dogs&#x27;</span>, <span class="string">&#x27;*.jpg&#x27;</span>))</span><br></pre></td></tr></table></figure></p>
+<p>在之后的两段for循环中，我们通过设定循环次数来控制读取的图片数。在循环里，我们先读入文件，再归一化文件，最后把图片resize到(224, 224)。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> idx, image <span class="keyword">in</span> <span class="built_in">enumerate</span>(cat_images):</span><br><span class="line">    <span class="keyword">if</span> idx &gt;= data_num:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">    i = cv2.imread(image) / <span class="number">255</span></span><br><span class="line">    i = cv2.resize(i, input_shape)</span><br><span class="line">    cat_tensor.append(i)</span><br></pre></td></tr></table></figure><br>在这段代码里，归一化是靠</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">i = cv2.imread(image) / <span class="number">255</span></span><br></pre></td></tr></table></figure>
+<p>实现的。</p>
+<blockquote>
+<p>这里我们知道输入是图像，颜色通道最大值是255，所以才这样归一化。在很多问题中，我们并不知道数据的边界是多少，这个时候只能用普通的归一化方法了。一种简单的归一化方法是把每个输入向量的模设为1。后面的课程里会详细介绍归一化方法。</p>
+</blockquote>
+<p>读完数据后，我们用以下代码生成了训练输入和对应的标签：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X = cat_tensor + dog_tensor</span><br><span class="line">Y = [<span class="number">1</span>] * <span class="built_in">len</span>(cat_tensor) + [<span class="number">0</span>] * <span class="built_in">len</span>(dog_tensor)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>Python里，<code>[1] * 10</code>可以把列表<code>[1]</code>复制10次。</p>
+</blockquote>
+<p>现在，我们的数据是“[猫，猫，猫……狗，狗，狗]”这样整整齐齐地排列着，没有打乱。由于我们是一次性拿整个训练集去训练，训练数据不打乱倒也没事。但为了兼容之后其他训练策略，这里我还是习惯性地把数据打乱了：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">X_Y = <span class="built_in">list</span>(<span class="built_in">zip</span>(X, Y))</span><br><span class="line">shuffle(X_Y)</span><br><span class="line">X, Y = <span class="built_in">zip</span>(*X_Y)</span><br></pre></td></tr></table></figure><br>使用这三行“魔法Python”可以打乱<code>list</code>对中的数据。</p>
+<p>有了读一个文件夹的函数<code>load_dataset</code>，用下面的代码就可以读训练集和测试集：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate_data</span>(<span class="params"><span class="built_in">dir</span>=<span class="string">&#x27;data/archive/dataset&#x27;</span>, input_shape=(<span class="params"><span class="number">224</span>, <span class="number">224</span></span>)</span>):</span></span><br><span class="line">    train_X, train_Y = load_dataset(osp.join(<span class="built_in">dir</span>, <span class="string">&#x27;training_set&#x27;</span>), <span class="number">400</span>)</span><br><span class="line">    test_X, test_Y = load_dataset(osp.join(<span class="built_in">dir</span>, <span class="string">&#x27;test_set&#x27;</span>), <span class="number">100</span>)</span><br><span class="line">    <span class="keyword">return</span> train_X, train_Y, test_X, test_Y</span><br></pre></td></tr></table></figure><br>这里训练集有400+400=800张图片，测试集有100+100=200张图片。如果大家发现内存还是占用太多的话，可以改小这两个数字。</p>
+<h2 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h2><p>在这个项目中，我们使用的是逻辑回归算法。它可以看成是只有一个神经元的神经网络。如之前的课堂笔记所述，我们网络的公式是：</p>
+<script type="math/tex; mode=display">
+\hat{y} = \sigma(w^Tx+b)</script><p>这里我们要实现两个函数：</p>
+<ol>
+<li>resize_input：由于图片张量的形状是[h, w, c]（高、宽、颜色通道），而网络的输入是一个列向量，我们要把图片张量resize一下。</li>
+<li>sigmoid: 我们要用<code>numpy</code>函数组合出一个<code>sigmoid</code>函数。</li>
+</ol>
+<p>熟悉了<code>numpy</code>的API后，实现这两个函数还是很容易的：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">resize_input</span>(<span class="params">a: np.ndarray</span>):</span></span><br><span class="line">    h, w, c = a.shape</span><br><span class="line">    a.resize((h * w * c))</span><br><span class="line">    <span class="keyword">return</span> a</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sigmoid</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> / (<span class="number">1</span> + np.exp(-x))</span><br></pre></td></tr></table></figure></p>
+<p>这里我代码实现上写得有点“脏”，调用<code>resize_input</code>做数据预处理是放在<code>main</code>函数里的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">train_X, train_Y, test_X, test_Y = generate_data()</span><br><span class="line"></span><br><span class="line">train_X = [resize_input(x) <span class="keyword">for</span> x <span class="keyword">in</span> train_X]</span><br><span class="line">test_X = [resize_input(x) <span class="keyword">for</span> x <span class="keyword">in</span> test_X]</span><br><span class="line">train_X = np.array(train_X).T</span><br><span class="line">train_Y = np.array(train_Y)</span><br><span class="line">train_Y = train_Y.reshape((<span class="number">1</span>, -<span class="number">1</span>))</span><br><span class="line">test_X = np.array(test_X).T</span><br><span class="line">test_Y = np.array(test_Y)</span><br><span class="line">test_Y = test_Y.reshape((<span class="number">1</span>, -<span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>array = array.reshape(a, b)</code> 等价于 <code>array.resize(a, b)</code>。但是，<code>reshape</code>的某一维可以写成<code>-1</code>，表示这一维的大小让程序自己用除法算出来。比如总共有<code>a * b</code>个元素，调用<code>reshape(-1, a)</code>，<code>-1</code>的那一维会变成<code>b</code>。</p>
+</blockquote>
+<p>经过这些预处理代码，X的shape会变成[$n_x$, $m$]，Y的shape会变成[$1$, $m$]，和课堂里讲的内容一致。</p>
+<p>有了sigmoid函数和正确shape的输入，我们可以写出网络的推理函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">predict</span>(<span class="params">w, b, X</span>):</span></span><br><span class="line">    <span class="keyword">return</span> sigmoid(np.dot(w.T, X) + b)</span><br></pre></td></tr></table></figure>
+<h2 id="损失函数与梯度下降"><a href="#损失函数与梯度下降" class="headerlink" title="损失函数与梯度下降"></a>损失函数与梯度下降</h2><p>如前面的笔记所述，损失函数可以用下面的方法计算：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">y_hat, y</span>):</span></span><br><span class="line">    <span class="keyword">return</span> np.mean(-(y * np.log(y_hat) + (<span class="number">1</span> - y) * np.log(<span class="number">1</span> - y_hat)))</span><br></pre></td></tr></table></figure>
+<p>我们定义损失函数，实际上为了求得每个参数的梯度。在求梯度时，其实用不到损失函数本身，只需要知道每个参数对于损失函数的导数。在这个项目中，损失函数只用于输出，以监控当前的训练进度。</p>
+<p>而在梯度下降中，我们不需要用到损失函数，只需要算出每个参数的梯度并执行梯度下降：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train_step</span>(<span class="params">w, b, X, Y, lr</span>):</span></span><br><span class="line">    m = X.shape[<span class="number">1</span>]</span><br><span class="line">    Z = np.dot(w.T, X) + b</span><br><span class="line">    A = sigmoid(Z)</span><br><span class="line">    d_Z = A - Y</span><br><span class="line">    d_w = np.dot(X, d_Z.T) / m</span><br><span class="line">    d_b = np.mean(d_Z)</span><br><span class="line">    <span class="keyword">return</span> w - lr * d_w, b - lr * d_b</span><br></pre></td></tr></table></figure>
+<p>在这段代码中，我们根据前面算好的公式，算出了<code>w, b</code>的梯度并对<code>w, b</code>进行更新。</p>
+<h2 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init_weights</span>(<span class="params">n_x=<span class="number">224</span> * <span class="number">224</span> * <span class="number">3</span></span>):</span></span><br><span class="line">    w = np.zeros((n_x, <span class="number">1</span>))</span><br><span class="line">    b = <span class="number">0.0</span></span><br><span class="line">    <span class="keyword">return</span> w, b</span><br><span class="line">    </span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train</span>(<span class="params">train_X, train_Y, step=<span class="number">1000</span>, learning_rate=<span class="number">0.00001</span></span>):</span></span><br><span class="line">    w, b = init_weights()</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;learning rate: <span class="subst">&#123;learning_rate&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(step):</span><br><span class="line">        w, b = train_step(w, b, train_X, train_Y, learning_rate)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 输出当前训练进度</span></span><br><span class="line">        <span class="keyword">if</span> i % <span class="number">10</span> == <span class="number">0</span>:</span><br><span class="line">            y_hat = predict(w, b, train_X)</span><br><span class="line">            ls = loss(y_hat, train_Y)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&#x27;step <span class="subst">&#123;i&#125;</span> loss: <span class="subst">&#123;ls&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="keyword">return</span> w, b</span><br></pre></td></tr></table></figure>
+<p>有了刚刚的梯度下降函数<code>train_step</code>，训练实现起来就很方便了。我们只需要设置一个训练总次数<code>step</code>，再调用<code>train_step</code>更新参数即可。</p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>在深度学习中，我们要用一个网络从来没有见过的数据集做测试，以验证网络能否泛化到一般的数据上。这里我们直接使用数据集中的<code>test_set</code>，用下面的代码计算分类任务的准确率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test</span>(<span class="params">w, b, test_X, test_Y</span>):</span></span><br><span class="line">    y_hat = predict(w, b, test_X)</span><br><span class="line">    predicts = np.where(y_hat &gt; <span class="number">0.5</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">    score = np.mean(np.where(predicts == test_Y, <span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;Accuracy: <span class="subst">&#123;score&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>这里的<code>np.where</code>没有在课堂里讲过，这里补充介绍一下。<code>predicts=np.where(y_hat &gt; 0.5, 1, 0)</code>这一行，等价于下面的循环：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 新建一个和y_hat一样形状的ndarray</span></span><br><span class="line">predicts = np.zeros(y_hat.shape)</span><br><span class="line"><span class="keyword">for</span> i, v <span class="keyword">in</span> <span class="built_in">enumerate</span>(y_hat):</span><br><span class="line">  <span class="keyword">if</span> v &gt; <span class="number">0.5</span>:</span><br><span class="line">    predicts[i] = <span class="number">1</span></span><br><span class="line">  <span class="keyword">else</span>:</span><br><span class="line">    predicts[i] = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>也就是说，我们对<code>y_hat</code>做了逐元素的判断<code>v &gt; 0.5?</code>，如果判断成立，则赋值<code>1</code>，否则赋值<code>0</code>。这就好像是一个老师在批改学生的作业，如果对了，就给1分，否则给0分。</p>
+<p><code>y_hat &gt; 0.5</code>是有实际意义的：在二分类问题中，如果网络输出图片是小猫的概率大于0.5，我们就认为图片就是小猫的图片；否则，我们认为不是。</p>
+<p>之后，我们用另一个<code>(np.where(predicts == test_Y, 1, 0)</code>来“批改作业”：如果预测值和真值一样，则打1分，否则打0分。</p>
+<p>最后，我们用<code>score = np.mean(...)</code>算出每道题分数的平均值，来给整个网络的表现打一个总分。</p>
+<p>这里要注意一下，整个项目中我们用了两个方式来评价网络：我们监控了<code>loss</code>,因为<code>loss</code>反映了网络在<strong>训练集</strong>上的表现；我们计算了网络在测试集上的准确度，因为准确度反映了网络在<strong>一般数据</strong>上的表现。之后的课堂里应该也会讲到如何使用这些指标来进一步优化网络，这里会算它们就行了。</p>
+<h2 id="调参"><a href="#调参" class="headerlink" title="调参"></a>调参</h2><p>嘿嘿，想不到吧，除了之前计划的章节外，这里还多了一个趣味性比较强的调参章节。</p>
+<h3 id="使用错误代码得到的结果，千万不要学我"><a href="#使用错误代码得到的结果，千万不要学我" class="headerlink" title="使用错误代码得到的结果，千万不要学我"></a>使用错误代码得到的结果，千万不要学我</h3><p>搞深度学习，最好玩的地方就是调参数了。通过优化网络的超参数，我们能看到网络的性能在不断变好，准确率在不断变高。这个感觉就和考试分数越来越高，玩游戏刷的伤害越来越高给人带来的成就感一样。</p>
+<p>在这个网络中，可以调的参数只有一个学习率。通过玩这个参数，我们能够更直观地认识学习率对梯度下降的影响。</p>
+<p>这里我分享一下我的调参结果：</p>
+<p>如果学习率&gt;=0.0003，网络更新的步伐过大，从而导致梯度不收敛，训练失败。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">learning rate: 0.0003</span><br><span class="line">step 0 loss: 0.6918513655136874</span><br><span class="line">step 10 loss: 0.9047000002073068</span><br><span class="line">step 20 loss: 0.9751763789675365</span><br></pre></td></tr></table></figure>
+<p>学习率==0.0002的话，网络差不多能以最快的速度收敛。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">learning rate: 0.0002</span><br><span class="line">step 0 loss: 0.692168431534233</span><br><span class="line">step 10 loss: 0.684254876013497</span><br><span class="line">step 20 loss: 0.6780829877162996</span><br></pre></td></tr></table></figure>
+<p>学习率==0.0001,甚至==0.00003也能训练，但是训练速度会变慢。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">learning rate: 0.0001</span><br><span class="line">step 0 loss: 0.6926003513589579</span><br><span class="line">step 10 loss: 0.6883167092427446</span><br><span class="line">step 20 loss: 0.684621635180076</span><br></pre></td></tr></table></figure>
+<p>这里判断网络的收敛速度时，要用到的指标是<strong>损失函数</strong>。我的代码里默认每10次训练输出一次损失函数的值。</p>
+<blockquote>
+<p>一般大家不会区别误差和损失函数，会把损失函数叫成 loss。</p>
+</blockquote>
+<p>为了节约时间，一开始我只训练了1000步，最后准确率只有0.57左右。哪怕我令输出全部为1，从期望上都能得到0.5的准确率。这个结果确实不尽如人意。</p>
+<p>我自己亲手设计的模型，结果怎么能这么差呢？肯定是训练得不够。我一怒之下，加了个零，让程序跑10000步训练。看着loss不断降低，从0.69，到0.4，再到0.3，最后在0.24的小数点第3位之后变动，我的心情也越来越激动：能不能再低点，能不能再创新低？那感觉就像股市开盘看到自己买的股票高开，不断祈祷庄家快点买入一样。</p>
+<p>在电脑前，盯着不断更新的控制台快一小时后，loss定格在了0.2385，我总算等到了10000步训练结束的那一刻。模型即将完成测试，准确率即将揭晓。<br>我定睛一看——准确率居然还只有0.575!</p>
+<p>这肯定不是我代码的问题，一定是逻辑回归这个模型太烂了！希望在之后的课程中，我们能够用更复杂的模型跑出更好的结果。</p>
+<p>欢迎大家也去下载这个demo(<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/LogisticRegression)，一起调一调参数~">https://github.com/SingleZombie/DL-Demos/tree/master/LogisticRegression)，一起调一调参数~</a></p>
+<h3 id="修好bug后的结果"><a href="#修好bug后的结果" class="headerlink" title="修好bug后的结果"></a>修好bug后的结果</h3><p>第一次写的代码竟然把梯度全部算错了，这太离谱了，我也不知道当时写代码的时候脑子里进了多少水。修好bug后，我又跑了一次训练。</p>
+<p>首先，按照上次的经验，学习率0.0002，跑1000步，就得到了0.59的准确率。这效果差的也太多吧！</p>
+<p>接下来训练10000步，我又满怀期待地盯着控制台，看着梯度降到了0.2395。</p>
+<p>精度测出来了——好家伙，又是0.575。</p>
+<p>行吧，起码文章的内容不用大改了。逻辑回归太菜了，和代码确实没什么关系。</p>
+<p>其实，这段写bug经历对我来说是很赚的。我学到了：在梯度算得有问题的情况下，网络可以正常训练，甚至loss还会正常降低。但是，网络的正确率肯定会更低。一定要尊重数学规律，老老实实地按照数学推导的结果写公式。如果没有写bug，我反而学不到这么多东西，反而很亏。</p>
+<h1 id="吐槽"><a href="#吐槽" class="headerlink" title="吐槽"></a>吐槽</h1><p>把这篇文章刚发到博客上的时候，这篇文章有一堆错误：$W,w$不分，损失函数乱写……。写这种教学文章一定要严谨，尤其是涉及了数学运算的。很多时候程序有bug，根本看不出来。希望我能引以为戒，学踏实了，把文章检查了几遍了，再把文章发出来。</p>
+<p>突然又发现一个bug：reshape不是inplace运算。我写得也太潦草了吧！</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/04/23/DLS-note-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1405,121 +1797,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2021/12/01/20211115-Can-t-hold-on-or-life-won-t-change/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/12/01/20211115-Can-t-hold-on-or-life-won-t-change/" class="post-title-link" itemprop="url">Can't hold on or life won't change ~ 脚步若停，人生亦止</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-12-01 01:29:03" itemprop="dateCreated datePublished" datetime="2021-12-01T01:29:03+08:00">2021-12-01</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/%E9%9A%8F%E7%AC%94/" itemprop="url" rel="index"><span itemprop="name">随笔</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>猛然从梦中惊醒后，我第一眼看到的是从窗外射入的阳光。“完了，不会睡过了吧？”我心里一惊，赶忙翻身拿起床头的手机。还好，离闹钟响起还有十分钟。</p>
-<p>随便吃了点早饭，我就连忙骑自行车前往公司。虽然离约定的上班时间还早，但毕竟这是第一天，迟到了可不太好。</p>
-<p>办完各种手续后，已经快到中午了。我认识了组里带我的前辈后，便和同事们一起去楼下食堂就餐。</p>
-<p>傍晚，去对面的商业街就餐归来，已经到了理论上的下班时间了，可同事们大多没有要离开的意思。第一天刚来，我也没有要紧的活，和前辈打了声招呼后，我小心地离开了公司。</p>
-<hr>
-<p>猛然从梦中惊醒后，我连忙翻身拿起手机，发现闹钟已经响过几次了。我来不及吃饭，立马骑车赶向公司。</p>
-<p>我以最快速度骑行着，好不容易在绿灯结束前过了一个路口，却在下一个路口被红灯拦了下来。“真不走运。”我懊恼地想着。</p>
-<p>到公司时，离约定的上班时间已经过去半个多小时了，而办公室里还空着不少位置。虽然已经来工作了一段时间，但我还是不太敢去适应这种松散的氛围。</p>
-<p>中午午休时间宝贵，我和同事们还是不得不去拥挤的食堂就餐。</p>
-<p>傍晚，我们按照惯例去外面的商业街吃饭。吃饭时，同事们谈论着陌生的话题，我只能在一旁听着。很快，一天结束了。</p>
-<hr>
-<p>从梦中醒来后，我又贪心地闭眼休息了片刻。很快，闹钟响起，我熟练地关掉闹钟。我已经习惯这个点起床了。</p>
-<p>上海的红绿灯是有规律的。大路口红绿灯的一个周期，等于小路口红绿灯的两个周期。通过了第一个大路口的绿灯后，我时而加速，时而慢悠悠地骑行，精准地在绿灯刚亮的时候通过每一个路口。</p>
-<p>到公司时，大部分同事都到了。我已经充分适应了所谓的”弹性工作制“。</p>
-<p>十一点半，我准时停下手里的工作，和旁边的同事说道：”去吃饭吧，去晚了就要排队了。“</p>
-<p>傍晚，大家犹豫不知道今天该去哪边吃饭。”去地下的商业街吧。“我提议道。</p>
-<p>晚上，关上灯，躺在床上，我渐渐入睡，等待着明天的到来。</p>
-<hr>
-<p>从梦中醒来后，我翻身拿起手机，关掉了一分钟后即将响起的闹钟。</p>
-<p>吃过早饭，我骑车去上班……</p>
-<p>晚上，关上灯，躺在床上，我以习惯的姿势入睡，等待着同一天的到来。</p>
-<hr>
-<p>从梦中醒来后，我翻身拿起手机，意外地发现今天没有闹钟。</p>
-<p>原来是自由的周末到了。</p>
-<p>我随心所欲地玩了两天。</p>
-<hr>
-<p>又到了工作日。从梦中醒来后，我关掉了手机的闹钟。手机上的日期确实在不断地变化，但我似乎又回到了同一天。</p>
-<p>我逐渐克服了种种的违和，适应了打工的生活。一切都是那么规律，时间如下坠一般越过越快，我几乎不再对生活产生任何新的感想。</p>
-<hr>
-<p>可我的心中始终有一股难以名状的危机感。一天，和我年纪相仿的实习生和我聊道：“我们组里那个三十出头的前辈，居然已经结婚生孩子了！”我忽然联想起了一连串事情：我出生时，我的父亲也才三十岁左右；前段时间我和朋友以及他相处多年的女友吃饭，那场景就和我父亲和他的朋友夫妇吃饭一样……各种回忆在我脑中不断交织，最后连成了一条清晰的直线：或许我们的未来，已经被过去决定了。倘若一切都正常地进行下去，大家的人生轨迹都是一样的：结婚、生子，看着孩子重走一遍我们的十年苦读路；而我们自己，会成为父辈，再慢慢变成祖辈，一点一点老去。</p>
-<p>我终于反应过来，自己一直以来在担心什么事情了。我认为有一件死亡更可怕的事情：如果人失去了活力，把一切都交给命运，任由时间推动自己的行为，那么这个人的未来已经毫无趣味了。就像我每天上班路上的红绿灯，见过第一盏灯后，就能够准确地说出之后每盏绿灯的出现时间。把注定发生的事情再确认一遍，不是很无聊吗？</p>
-<p>人离开这个世界，是在心脏停止跳动之后；而人失去活力，却早在失去了「自我改变」的能力之后。人们总在不经意间，无法改变自己了。</p>
-<p>我喜欢暗自观察、分析、嘲笑他人。</p>
-<p>有的人被幼时的记忆所束缚，无法挣脱已经保持了一辈子的思维。几年前是什么样，不出意料地，几年后仍是什么样。</p>
-<p>有的人惧怕落下，不断奔跑着。可是，在他人设下的路牌前，他们只能闷头前进，最终回到环形跑道的起点。</p>
-<p>我就是这样傲慢地总结着他人的行为。但可笑的是，我自己也是一样的。一年前，我为驻足不前而焦虑；一年后的现在，我把工作上的劳累，当成自己努力生活的证据。从满是“成绩”、“排名”、”科研“的令人窒息的学校，到工作内容充实得令人空虚的公司，我欺骗自己说自己一直有所改变。可我内心也知道，并不是我自己在改变，我只是随着外界环境的变化，被推着移动而已。我担心的事情可能要发生了，我要失去活力，失去改变自我的能力了。</p>
-<p>不，我决不会允许这样的事情发生！我生来喜欢玩乐，决不希望自己失去追求更多乐趣的活力！倘若人是一颗能运动的墨点，那我的人生轨迹一定不是一条笔直的直线。我的留下的轨迹，必然是一条曲折蜿蜒，难以捉摸的曲线。无论线条多短多长、多曲多折，多浅多深，我都会用我的活力，留下独一无二的轨迹。</p>
-<p>人人都知道改变就是好事，都会在年轻时追求改变。可是，人们难以分清移动与改变。移动，可以是低头前进，可以是被拉着、被拖着，还可以是站着不动看着环境的变化。最终，人或许不是止于不愿改变，而是彻彻底底地失去了改变自我的能力了。</p>
-<p>真正的自我改变，是在心中设好了去处后，不断看清变幻莫测的环境，不断挣脱四面八方的引力，不断驱动麻木的四肢，不断抬起头，不断在停下来后前进。改变必然是累人的、痛苦的——不仅仅是身体上的筋疲力尽，更多的是焦虑与失落，是面对不断扩大的黑暗又无法喊出声的绝望。</p>
-<p>我知道自我改变的艰辛，但我更害怕接受就此失去活力的人生，我愿意接受接下来将面对的挑战。我很幸运，现在的打工只是一次实习，未来还有再次掌控大量时间的机会。我所处的环境还会改变，我可以借着这股力前进。我不缺用嘴就能喊出的斗志，甚至早已有了规划，我只需要鼓起勇气，迈开脚步，重启我向前奔跑的人生。</p>
-<p>我相信，很快，就会有很多人见证我的改变。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/8/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><span class="page-number current">9</span><a class="page-number" href="/page/10/">10</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/10/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/8/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><span class="page-number current">9</span><a class="page-number" href="/page/10/">10</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/10/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1585,14 +1866,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">140</span>
+          <span class="site-state-item-count">141</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-count">24</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

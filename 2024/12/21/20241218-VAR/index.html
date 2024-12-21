@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="今年四月，北大和字节跳动在 Arxiv 上发表了论文 Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction，介绍了一种叫做 Visual Autoregressive Modeling （视觉自回归建模，VAR）的全新图像生成范式。这种自回归生成方法将高清图像用多尺度词元图像表示，并用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？">
+<meta property="og:url" content="https://zhouyifan.net/2024/12/21/20241218-VAR/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="今年四月，北大和字节跳动在 Arxiv 上发表了论文 Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction，介绍了一种叫做 Visual Autoregressive Modeling （视觉自回归建模，VAR）的全新图像生成范式。这种自回归生成方法将高清图像用多尺度词元图像表示，并用">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/13.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/14.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/15.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/16.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/17.jpg">
+<meta property="og:image" content="https://pic2.zhimg.com/v2-18d914281847cb0f25d44d4054beda93_b.webp">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/14.jpg">
+<meta property="og:image" content="https://pic1.zhimg.com/v2-0202cac9b2f4cdb9f149a4557f2f02d6_b.webp">
+<meta property="article:published_time" content="2024-12-21T03:32:50.000Z">
+<meta property="article:modified_time" content="2024-12-21T03:32:50.957Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="学习">
+<meta property="article:tag" content="知识记录">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/12/21/20241218-VAR/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？ | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/21/20241218-VAR/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-21 11:32:50" itemprop="dateCreated datePublished" datetime="2024-12-21T11:32:50+08:00">2024-12-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">深度学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/%E8%87%AA%E5%9B%9E%E5%BD%92/" itemprop="url" rel="index"><span itemprop="name">自回归</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/%E8%87%AA%E5%9B%9E%E5%BD%92/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/" itemprop="url" rel="index"><span itemprop="name">多尺度生成</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>今年四月，北大和字节跳动在 Arxiv 上发表了论文 <em>Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction</em>，介绍了一种叫做 Visual Autoregressive Modeling （视觉自回归建模，VAR）的全新图像生成范式。这种自回归生成方法将高清图像用多尺度词元图像表示，并用下一尺度预测代替了此前常用的下一词元预测。在 ImageNet $256 \times 256$ 图像生成任务上，VAR 的表现超越了 DiT。我们组的同学第一时间看了这篇论文，大家都觉得这篇论文有不小的创新，但其方法能否完全代替扩散模型还有待验证。通常来说，这篇论文的关注度会逐渐降下去，但近期发生的两件大事将 VAR 论文的热度推向了空前的高度：论文一作的严重违纪行为招致字节跳动对其索赔 800 万元、论文被评选为 Neurips 2024 会议的最佳论文。借此机会，我决定认真研究一下这篇论文并把我的学习结果分享给大家。</p>
+<p>在这篇博文中，我会先回顾与 VAR 密切相关的早期工作 VQVAE 和 VQGAN，再介绍论文的方法细节与实验结果，最后分享我对该工作的测试结果与原理探究。在读 VAR 论文时，我发现有个地方的设计存在缺陷。相关实验结果表明， VAR 论文并没有完整地分析出这套方法有效的原因。欢迎大家仔细阅读这一部分并提出自己的思考与见解。</p>
+<p>论文链接：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2404.02905">https://arxiv.org/abs/2404.02905</a></p>
+<h2 id="VQGAN-原理回顾"><a href="#VQGAN-原理回顾" class="headerlink" title="VQGAN 原理回顾"></a>VQGAN 原理回顾</h2><p>VAR 算是 VQGAN 工作的改进版，而 VQGAN 又是 VQVAE 工作的改进版。要了解 VAR 的背景知识，最直接的方法就是回顾 VQVAE 与 VQGAN 这两个经典工作。我们先从自回归这种生成范式开始聊起，再将目光移向图像自回归生成，最后复习 VQVAE, VQGAN, Transformer 的实现细节。</p>
+<p>推荐大家阅读我之前写的相关博文：</p>
+<p><a href="https://zhouyifan.net/2023/06/06/20230527-VQVAE/">轻松理解 VQ-VAE：首个提出 codebook 机制的生成模型</a></p>
+<p><a href="https://zhouyifan.net/2023/06/19/20230605-VQGAN/">VQGAN 论文与源码解读：前Diffusion时代的高清图像生成模型</a></p>
+<p><a href="https://zhouyifan.net/2022/11/12/20220925-Transformer/">Attention Is All You Need (Transformer) 论文精读</a></p>
+<h3 id="图像自回归生成"><a href="#图像自回归生成" class="headerlink" title="图像自回归生成"></a>图像自回归生成</h3><p>自回归（Autoregressive）是一种直观易懂的序列生成范式：给定序列前 $n$ 个元素，模型输出第 $n+1$ 个元素；把新元素添加进输入序列，再次输出第 $n+2$ 个元素……。以下是文本自回归生成的一个示例：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">（空）  -&gt; 今</span><br><span class="line">今      -&gt; 天</span><br><span class="line">今天    -&gt; 早</span><br><span class="line">今天早  -&gt; 上</span><br></pre></td></tr></table></figure></p>
+<p>具体来说，模型的输出并不是下一个元素<strong>应该</strong>是什么，而是下一个元素<strong>可能</strong>是什么。也就是说，模型的输出是下一个元素的概率分布。通过不断对下一个元素采样，我们就能随机生成出丰富多样的句子。</p>
+<p><img src="/2024/12/21/20241218-VAR/1.jpg" alt></p>
+<p>自回归生成仅适用于有顺序的序列数据。为了用自回归生成图像，我们需要做两件事：1）把图像拆分成一个个元素；2）给各个元素标上先后顺序。为此，最简单的做法是将图像拆成像素，并从左到右，从上到下地给图像生成像素。比如下图是经典自回归图像生成模型 PixelCNN 的示意图。假设图像有 $3 \times 3$ 个像素，并按顺序从左上到右下标号。在生成第 $5$ 个像素时，模型只能利用已经生成好的前 $4$ 个像素的信息。模型的输出是一个概率分布，表示灰度值大小分别取 <code>0, 1, ..., 255</code> 的概率。</p>
+<p><img src="/2024/12/21/20241218-VAR/2.jpg" alt></p>
+<p>顺带一提，建模概率分布的方法有很多种，这里我们使用的分布被称为类别分布（categorical distribution）。这种方法的好处是形式简洁，可以用简单的算法采样，缺点是元素的取值必须是离散的。比如虽然图像的灰度值理论上可以取 <code>0~1</code> 中间的任何实数（假设灰度值被归一化了），但我们用上图所示的 PixelCNN 时，只能表示 <code>0, 1/255, 2/255, ..., 1</code> 这 256 种灰度值，而不能表示更加精确的值。</p>
+<h3 id="VQVAE"><a href="#VQVAE" class="headerlink" title="VQVAE"></a>VQVAE</h3><p>PixelCNN 虽然能做图像生成，但它的效率太慢了：由于像素是逐个生成的，要生成几个像素，就要运行几次神经网络。能不能加速生成过程呢？如果要生成的图像更小一点就好了。</p>
+<p>为了加速 PixelCNN，借助图像压缩网络，VQVAE 工作提出了一种两阶段的图像生成方法：先生成压缩图像，再用图像压缩网络将其复原成真实图像。由于压缩图像的像素数较少，而复原压缩图像的速度又很快，整套生成方法的速度快了很多。</p>
+<p>以下是一个 VQVAE 的生成示例。根据 PixelCNN 输出的类别分布，我们可以采样出一些由离散值构成的压缩图像。这些离散值就和 NLP 里的文字一样，每一种值都有一种特殊的含义。我们可以认为离散值表示原始图像中一大块像素的颜色。借助图像压缩网络的解码器，我们可以把压缩图像复原成清晰的原始图像。</p>
+<p><img src="/2024/12/21/20241218-VAR/3.jpg" alt></p>
+<p>VQVAE 的训练顺序和生成顺序相反。我们先训练一个图像压缩网络。这种由编码器和解码器组成的图像压缩网络被称为自编码器，压缩出来的图像被称为隐图像（latent image）。训练好了自编码器后，我们再把训练集的所有图像都转成隐图像，让 PixelCNN 学习生成隐图像。比较有趣的是，训练 PixelCNN 时，只会用到编码器；而生成时，只会用到解码器。</p>
+<p><img src="/2024/12/21/20241218-VAR/4.jpg" alt></p>
+<p>在上述讨论中，我们略过了一个实现细节：该怎么让网络以离散值为输入或输出呢？输入离散值倒还好办，在 NLP 中，我们用嵌入层把离散的词语变成连续向量，这里的做法同理。可怎么让网络输出离散值呢？这里就要用到向量离散化（vector quantization, VQ）操作了。</p>
+<p>离散化操作我们都很熟悉，将小数四舍五入至整数就是一种最常见的离散化。四舍五入，本质上是让一个小数变成最近的整数。同理，对于向量而言，假设我们已经准备好了一些向量（对应前面的「整数」），那么向量离散化就表示把输入的任意向量变成最近的已知向量。这里的「最近」指的是欧几里得距离。</p>
+<p>具体示例如下所示。编码器可以输出一个由任意向量构成的二维特征。通过查找嵌入层里的最近邻，这些任意的向量会被转换成整数，表示最近邻的索引。索引可以被认为是 NLP 里的词元 (token)，这样编码器输出特征就被转换成了词元构成的隐图像。而在将隐图像输入进解码器时，我们把嵌入层当成一张表格，利用隐图像里的索引，以查表的形式将隐图像转换成由嵌入构成的特征。准确来说，这个把图像压缩成离散隐图像的自编码器才被叫做 “VQVAE”，但有时我们也会用 VQVAE 代表整套两阶段生成方法。</p>
+<p><img src="/2024/12/21/20241218-VAR/5.jpg" alt></p>
+<blockquote>
+<p>上图中的「编码器输出特征」、「词元」、「嵌入」在不同论文里有不同的叫法，且一般作者都只会用数学符号来称呼它们。这里我们用了 VAR 论文的叫法。</p>
+</blockquote>
+<p>嵌入层的具体学习过程我们不在此展开，对这块知识不熟悉的读者可以去仔细学习 VQVAE 论文。</p>
+<h3 id="VQGAN"><a href="#VQGAN" class="headerlink" title="VQGAN"></a>VQGAN</h3><p>VQVAE 的效果并不理想，这是因为它的压缩网络和生成网络都不够强大。为此，VQGAN 工作同时改进了 VQVAE 的两个网络。</p>
+<ul>
+<li>VQGAN 工作将离散自编码器 VQVAE 换成了 VQGAN。在 VQVAE 的基础上，VQGAN 在训练时添加了感知误差和 GAN 误差，极大提升了自编码器的重建效果。</li>
+<li>VQGAN 工作还把生成模型从 PixelCNN 换成了 Transformer。</li>
+</ul>
+<h3 id="Transformer"><a href="#Transformer" class="headerlink" title="Transformer"></a>Transformer</h3><p>Transformer 是目前最主流的主干网络。相比其他网络架构，Transformer 的最大特点是序列里的元素仅通过注意力操作进行信息交互。因此，为了兼容文本自回归生成任务，最早的 Transformer 使用了两个特殊设计：</p>
+<ul>
+<li>由于注意力操作不能反映输入元素的顺序，词元嵌入在输入进网络之前，会和蕴含了位置信息的位置编码相加。</li>
+<li>自回归生成要求之前的词元不能看到之后的词元的信息。为了控制词元间的信息传播，Transformer 给自注意力操作加上了掩码。</li>
+</ul>
+<p>VQGAN 用了完全相同的设计，把图像词元当成文本词元用 Transformer 来生成。</p>
+<h2 id="从词元预测到尺度预测"><a href="#从词元预测到尺度预测" class="headerlink" title="从词元预测到尺度预测"></a>从词元预测到尺度预测</h2><p>上述的传统图像自回归生成都是采用下一个词元预测策略：</p>
+<ul>
+<li>将图像用自编码器拆成离散词元。</li>
+<li>从左到右、从上到下按顺序逐个生成词元。</li>
+</ul>
+<p>尽管通过自编码器的压缩，要生成的词元数已经大大减少，但一个个去生成词元还是太慢了。为了改进这一点，VAR 提出了一种更快且更符合直觉的自回归生成策略：</p>
+<ul>
+<li>将图像用自编码器拆成多尺度的离散词元。比如，原来一张隐图像的大小是 $16 \times 16$，现在我们用一系列尺度为 $1 \times 1, 2 \times 2, …, 16 \times 16$ 的由词元构成的图像来表示一张隐图像。</li>
+<li>从最小的词元图像开始，从小到大按尺度生成词元图像。</li>
+</ul>
+<p>在这种策略下，我们要同时修改自编码器和生成模型。我们来看一下 VAR 是怎么做的。</p>
+<h2 id="多尺度残差离散自编码器"><a href="#多尺度残差离散自编码器" class="headerlink" title="多尺度残差离散自编码器"></a>多尺度残差离散自编码器</h2><p>先来看自编码的修改。现在词元图像不是一张图像，而是多张不同尺度的图像。由于词元图像的定义发生了改变，编码器特征和嵌入的定义也要发生改变，如下图所示。</p>
+<p><img src="/2024/12/21/20241218-VAR/6.jpg" alt></p>
+<p>向量离散化部分我们可以沿用 VQVAE 的做法。现在新的问题来了：编码器的输出和解码器的输入都只是一张图像。该怎么把多尺度的图像组合成一张图像呢？</p>
+<p>最简单的做法是完全不修改编码器和解码器，还是让它们输入输出最大尺度的图片。只有在中间的向量离散化/查表部分，我们才把这些图片下采样。</p>
+<p><img src="/2024/12/21/20241218-VAR/7.jpg" alt></p>
+<p>VAR 用了一种更加高级的做法：用残差金字塔来表示这些隐空间特征。我们先来回顾一下拉普拉斯金字塔这一经典图像处理算法。我们知道，图像每次下采样的时候，都会损失一些信息。既然如此，我们可以将一张高分辨率的图像表示为一张低分辨率的图像及其在各个分辨率下采样后的信息损失。如下图所示，最右侧的一列表示拉普拉斯金字塔的输出。</p>
+<p><img src="/2024/12/21/20241218-VAR/8.jpg" alt></p>
+<p>在计算拉普拉斯金字塔时，我们不断下采样图像，并计算当前尺度的图像和下一尺度的复原图像（通过上采样复原）的残差。这样，通过不断上采样最低尺度的图像并加上每一层的残差，我们最终就能精准复原出高分辨率的原图像。</p>
+<p>现在，我们想把类似的金字塔算法应用到编码器特征上。该怎么把最大尺度的编码器特征拆解成不同尺度的图像的累加呢？</p>
+<p><img src="/2024/12/21/20241218-VAR/9.jpg" alt></p>
+<p>在计算拉普拉斯金字塔时，本质上我们用到了两类操作：退化和复原。对于图像而言，退化就是下采样，复原就是上采样。那么，对于编码器输出的隐空间特征，我们也需要定义类似的退化和复原操作。比较巧妙的是，VAR 并没有简单地把退化和复原定义为下采样和上采样，而是参考 <em>Autoregressive Image Generation using Residual Quantization</em> 这篇论文，将向量离散化引入的误差也算入金字塔算法的退化内。也就是说，我们现在的目标不是让编码器特征金字塔的累加和编码器特征相等，而是想办法让嵌入金字塔的累加和编码器特征尽可能相似，如下图所示。</p>
+<p><img src="/2024/12/21/20241218-VAR/10.jpg" alt></p>
+<p>基于这一目标，我们可以把退化定义为下采样加上离散化、查表，复原定义成上采样加一个可学习的卷积。我们来看看在这种新定义下，原来 VQVAE 的向量离散化操作和查表操作应该怎么做。</p>
+<p>先看新的多尺度向量离散化操作。这个操作的输入是编码器特征，输出是一系列多尺度词元图像。算法从最低尺度开始执行，每个循环输出当前尺度的词元图像，并将残差特征作为下一个循环的输入特征。</p>
+<p><img src="/2024/12/21/20241218-VAR/11.jpg" alt></p>
+<p>对于多尺度查表操作，输入是多尺度词元图像，输出是一张最大尺度的隐空间特征，它将成为自编码器的解码器的输入。在这步操作中，我们只需要分别对各个尺度的词元图像做查表和复原（上采样+卷积），再把各尺度的输出加起来，就能得到一个和编码器特征差不多的特征。注意，为了方便理解，这几张示意图都省略了部分实现细节，且一些数值不是十分严谨。比如在查表时，我们可以让不同尺度的词元共享一个嵌入层，也可以分别指定嵌入层。</p>
+<p><img src="/2024/12/21/20241218-VAR/12.jpg" alt></p>
+<p>总结一下这一小节。为了实现尺度自回归生成，我们需要把图像编码成多尺度的词元图像。VAR 采用了一种多尺度残差离散化操作：将编码器特征拆解成最小尺度的特征以及不同尺度的残差特征，并对不同尺度的特征分别做向量离散化。这种做法不仅能高效地将特征拆解成多个尺度，还有一个额外的好处：原来 VQVAE 仅对最大尺度的特征做向量离散化，离散化后的误差会很大；而 VAR 把向量离散化引入的误差分散到多尺度离散化中，巧妙地降低了离散化的误差，提升了 VQVAE 的重建精度。</p>
+<h2 id="下一尺度自回归生成"><a href="#下一尺度自回归生成" class="headerlink" title="下一尺度自回归生成"></a>下一尺度自回归生成</h2><p>把图像压缩成多尺度词元图像后，剩下的事就很简单了。我们只需要把所有词元拆开，拼成一维词元序列，之后用 Transformer 在这样的序列上训练即可。由于现在模型的任务是下一尺度预测，模型会一次性输出同尺度各词元的概率分布，而不是仅仅输出下一个词元的。这样，尽管序列总长度变长了，模型的整体生成速度还是比以前快。同时，随着预测目标的变更，自注意力的掩码也变了。现在同尺度的词元之间可以互相交换信息，只是前一尺度的词元看不到后面的词元。以下是一个 $3 \times 3$ 词元图像在下一词元和下一尺度预测任务下的注意力掩码示意图及生成过程示意图。</p>
+<p><img src="/2024/12/21/20241218-VAR/13.jpg" alt></p>
+<p>除此之外，VAR 的 Transformer 还做了一些其他修改：1）除了给每个词元加上一维位置编码外，同一尺度的词元还会加上同一个表示尺度序号的位置编码。所有位置编码都是可学习的，而不是预定义的正弦位置编码。2）Transformer 与解码器的共用嵌入层。另外，在生成新一层时，为了复用已经生成好的图像的信息，新一层的初始嵌入是通过对上一层的生成结果 bicubic 上采样得到的。</p>
+<p>该 Transformer 的其他设计都与 VQGAN 相同。比如，Transformer 采用了 decoder-only 的结构。为了添加 ImageNet 类别约束，第一层的输入是一个表示类别的特殊词元。训练时用的误差函数是交叉熵函数。</p>
+<p><img src="/2024/12/21/20241218-VAR/14.jpg" alt></p>
+<h2 id="ImageNet-图像生成定量实验"><a href="#ImageNet-图像生成定量实验" class="headerlink" title="ImageNet 图像生成定量实验"></a>ImageNet 图像生成定量实验</h2><p>VAR 的方法部分我们看得差不多了，现在来简单看一下实验部分。论文宣称 VAR 在图像生成实验和参数扩增实验上都取得了不错的成果。特别地，VAR 的拟合能力胜过了 DiT，生成速度是 DiT 的 45 倍以上。我们就主要看一下 VAR 在 ImageNet $256 \times 256$ 图像生成上的实验结果。以下是论文中的表格。我同时还附上了何恺明团队的 MAR 工作（<em>Autoregressive Image Generation without Vector Quantization</em>）的实验结果。</p>
+<p><img src="/2024/12/21/20241218-VAR/15.jpg" alt></p>
+<p>先比一下 DiT 和 VAR。先看速度，不管是多大的模型，DiT 的速度都远远慢于 VAR。再看以 FID 为代表的图像拟合指标。VAR 在参数量为 600M 左右时并没有 DiT 效果好。但继续增加参数量后，DiT 的 FID 没有变好的趋势，而 VAR 的 FID 一直在降。最终 VAR 的 FID 甚至超过了 ImageNet 的验证集，可以认为 FID 再低的也意义不大了。</p>
+<p>再比一下 MAR 和 VAR。MAR 的刷指标能力更加恐怖，943M 的模型就能有 1.55 的 FID。但根据 MAR 论文，其速度是 DiT-XL 的 5 倍左右，也就是说 VAR 还是比 MAR 快，是 MAR 速度的 9 倍左右。</p>
+<p>ImageNet 图像生成已经被各个模型刷到头了。FID 结果能说明 VAR 的拟合能力很强，最起码不逊于 DiT。但在更有挑战性的文生图任务上，VAR 的效果还有待验证。另外，虽然刷指标的时候 DiT 用了 250 步采样，但实际用起来的时候一般就是采样 20 步。如果算上蒸馏的话，采样步数能缩小到 4 步。加上这些加速技巧的话，VAR 不见得会比 DiT 快。</p>
+<h2 id="VAR-各尺度生成结果"><a href="#VAR-各尺度生成结果" class="headerlink" title="VAR 各尺度生成结果"></a>VAR 各尺度生成结果</h2><p>看完了论文的主要内容，我来分享一下我对 VAR 的一些理论分析与实验结果。</p>
+<p>先看一下随机采样结果。我用的是最大的 <code>d=30</code> 的 VAR 模型。在官方采样脚本的默认配置下，两个随机种子 (0, 15) 的输出如下所示。用到的图像类别为火山、灯塔、老鹰、喷泉，每个类别的图各生成了两张。图像的生成速度很快，一秒就生成了全部 8 张图片。</p>
+<p><img src="/2024/12/21/20241218-VAR/16.jpg" alt></p>
+<p>我们还可以观察每个尺度的生成结束后解码出的临时图片。和我们预估得一样，图像是按从粗到精的顺序逐渐生成的。</p>
+<p><img src="/2024/12/21/20241218-VAR/17.jpg" alt></p>
+<p>为了进一步探究每一个尺度负责生成哪些图像成分，我们可以做如下的实验：从某个尺度开始，随机更换新的随机数生成器。这样，每张动图里不变的部分就是前几个尺度生成好的内容；不断在变的部分就是后几个尺度负责的内容。可以看出，从第三个尺度开始，图像的内容就基本固定下来了，也就是说结构信息是在前两个尺度里生成的。越往后，图像的细节越固定。</p>
+<p><img src="https://pic2.zhimg.com/v2-18d914281847cb0f25d44d4054beda93_b.webp" alt></p>
+<p>这个结果还挺令人惊讶的：难道 $2 \times 2$ 这么小的特征图就已经决定了图像的整体内容？让我们来仔细探究这一点。</p>
+<h2 id="有缺陷的单尺度生成"><a href="#有缺陷的单尺度生成" class="headerlink" title="有缺陷的单尺度生成"></a>有缺陷的单尺度生成</h2><p>不知道大家在学习 VAR 的采样算法时候有没有感到不对劲：在生成同一个尺度的词元图像时，每个词元是<strong>独立地</strong>在一个概率分布里采样。</p>
+<p>而根据作者在论文里的说法，VAR 的尺度自回归是一种新的自回归概率模型：</p>
+<script type="math/tex; mode=display">
+p(r_1, r_2, ..., r_K) = \prod_{k=1}^{K}p(r_k|r_1, r_2, ..., r_{k-1})</script><p>其中，$r_k$ 表示从小到大第 $k$ 个尺度的词元图像，共 $K$ 个尺度。同一个尺度的词元图像 $r_k$ 的每个词元的分布是并行生成的。这也就是说，VAR 的这种训练（用交叉熵误差）和采样方式是认为每张词元图像的概率等于所有词元的概率的乘积，词元的分布之间是独立的：</p>
+<script type="math/tex; mode=display">
+p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})</script><p>其中，$r_k^i$ 表示第 $k$ 个尺度的第 $i$ 个词元，$I_k$ 为第 $k$ 个尺度的词元总数。我觉得上面这个等式是不成立的，哪怕有之前尺度的信息作为约束，同一尺度的每个词元的概率分布之间不会是互不相关的。且随着 $I_k$ 的增大，上面这个式子的误差会越来越大。</p>
+<p>词元之间的采样互相独立，理论上会导致图像出现不连贯的地方。比如，假设一个图像词元表示 $16 \times 16$ 个像素，那么每隔 16 个像素图像就会出现「断层」。但是，为什么 VAR 的输出结果那么正常呢？仔细分析 VAR 的生成算法，我们可以发现有两项设计提升了图像的连续性：</p>
+<ul>
+<li>VAR 的自编码器使用了向量离散化操作。这个操作会让解码器的输入总是合理的，解码器也总是会输出连贯的图像。</li>
+<li>在生成一个新尺度的图像时，模型输入会被初始化成之前尺度的图像的 bicubic 上采样。bicubic 采样保证了词元嵌入之间的连续性。</li>
+</ul>
+<p><img src="/2024/12/21/20241218-VAR/14.jpg" alt></p>
+<p>此外，为了进一步缓解独立采样带来的负面影响，VAR 在生成完第二或第三个尺度后就已经把图像的整体内容确定下来了，后面的生成只是略微影响图像细节而已（因为随着词元数量变多，独立采样的误差越大）。这个结论已经在前文的可视化结果中验证了。为了证明只有前几个尺度是重要的，我做了一个大胆的实验：用 Transformer 生成完前两个尺度的词元后，后续所有词元都随机生成。如下图所示，我展示了固定前两个尺度的输出后，多个随机种子下的生成结果。结果显示，如果前两个尺度的词元生成得比较好，后面词元无论采样得多乱，都不怎么会影响最终的图像质量。</p>
+<p><img src="https://pic1.zhimg.com/v2-0202cac9b2f4cdb9f149a4557f2f02d6_b.webp" alt></p>
+<p>根据这些实验结果，我认为 VAR 真正有效的原因并不能用「下一尺度预测这种全新生成范式更好」这样粗浅的话来概括。VAR 中最核心的组件可能是其多尺度残差离散自编码器。这个编码器至少做到了以下几件事：</p>
+<ul>
+<li>使用向量离散化确保解码器的输入总是合理的。</li>
+<li>使用多尺度残差设计，且下一尺度的残差图像不仅记录了因下采样而导致的信息损失，还记录了因向量离散化带来的精度损失。相比简单的、人类能够理解的拉普拉斯金字塔，这种可学习的多尺度拆分方法或许更加合理。</li>
+<li>使用 bicubic 对低尺度词元图上采样。这步固定的操作让生成的图像总是连续的。</li>
+</ul>
+<p>当然，这几件事是互相耦合的。不进行更深入的实验的话，我们难以解耦出 VAR 中最有效的设计。</p>
+<p>多尺度生成其实并不是什么新奇的思想。之前 StyleGAN 和 Cascaded Diffusion 都用了类似的策略。然而，VAR 做了一个大胆的设计：同一尺度的不同词元在采样时是相互独立的。令人惊讶的是，这种在数学上不太合理的设计没怎么降低图像的质量。并且，得益于这一设计，VAR 能够并行地对同一尺度的词元采样，极大地提升了生成速度。</p>
+<h2 id="总结与评论"><a href="#总结与评论" class="headerlink" title="总结与评论"></a>总结与评论</h2><p>此前，以经典工作 VQGAN 为代表的图像自回归生成模型无论在速度上还是图像质量上都不尽如人意。究其原因，下一个图像词元预测的建模方式既不够合理，也拖慢了生成速度。为此，VAR 提出一种新式自回归策略：将词元图像拆分成多个尺度，通过<strong>下一尺度预测</strong>实现图像生成。为了兼容这一设计，VAR 对 VQGAN 的自编码器和 Transformer 都进行了修改：自编码器能够将图像编码成多尺度的<strong>残差</strong>词元图像，而 Transformer 同时输出同一尺度每个词元的<strong>独立分布</strong>。实验表明，VAR 在 ImageNet 图像生成指标上超越了以 DiT 为代表的扩散模型，且生成速度至少比 DiT 快 45 倍。另外，还有实验表明 VAR 符合扩增定律：增加参数量即可提升模型性能。</p>
+<p>我个人认为，和其他前沿生成模型一样，VAR 在 ImageNet 上的表现已经满分了。它能否完成更困难的图像生成认为还有待验证。最近字节跳动发布了 VAR 的文生图版本：Infinity，但这个模型还没有开源。我们可以持续关注 VAR 的各个后续工作。VAR 的生成速度也没有比 DiT 快上那么多，通过减小采样步数，再加上模型蒸馏，DiT 不会比 VAR 慢。当然，VAR 或许也存在进一步加速的可能，只是相关研究暂时没有扩散模型那么多。</p>
+<p>VAR 的数学模型是存在缺陷的：词元图的分布不应该等于词元间的独立分布的乘积。最起码论文里没有任何相关分析（用了类似做法的 MAR 论文也没有分析）。通过一些简单的生成实验，我们发现由于 VAR 在其他设计上提升了输出图像的连续性，哪怕同一尺度的词元间是独立采样，甚至是随机均匀采样，模型的输出质量也不会太差。我们需要通过更深入的实验来挖掘 VAR 的生效原理。</p>
+<p>我觉得如果一个科研工作能够解释清楚 VAR 中哪些模块起到了最主要的作用，并取其精华，去其糟粕，提出一个更好的生成模型，那这会是一个很不错的工作。我觉得能够探索的方向有：</p>
+<ul>
+<li>VAR 的前几个尺度的词元图是最重要的。能不能用更好的方式，比如用扩散模型，来生成前几个尺度的图像，而更大尺度的词元图用一个比 Transformer 更高效的模型来生成。这样模型的质量和效率能进一步提升。</li>
+<li>VAR 还是用了 VQ 自编码器。无论怎么样，VQ 操作都会降低模型的重建质量。但另一方面，VQ 也能起到规范解码器输入的作用。究竟我们能不能把 VQ 自编码器换成精度更高的 VAE 呢？换了之后怎么设计多尺度编码呢？</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%AD%A6%E4%B9%A0/" rel="tag"># 学习</a>
+              <a href="/tags/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" rel="tag"># 知识记录</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/12/15/20241212-Pyramid-Flow/" rel="prev" title="论文速览 | Pyramid Flow：以低分辨率的前几帧为约束高效生成视频">
+      <i class="fa fa-chevron-left"></i> 论文速览 | Pyramid Flow：以低分辨率的前几帧为约束高效生成视频
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#VQGAN-%E5%8E%9F%E7%90%86%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">VQGAN 原理回顾</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E8%87%AA%E5%9B%9E%E5%BD%92%E7%94%9F%E6%88%90"><span class="nav-number">1.1.</span> <span class="nav-text">图像自回归生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VQVAE"><span class="nav-number">1.2.</span> <span class="nav-text">VQVAE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VQGAN"><span class="nav-number">1.3.</span> <span class="nav-text">VQGAN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transformer"><span class="nav-number">1.4.</span> <span class="nav-text">Transformer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E8%AF%8D%E5%85%83%E9%A2%84%E6%B5%8B%E5%88%B0%E5%B0%BA%E5%BA%A6%E9%A2%84%E6%B5%8B"><span class="nav-number">2.</span> <span class="nav-text">从词元预测到尺度预测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E5%B0%BA%E5%BA%A6%E6%AE%8B%E5%B7%AE%E7%A6%BB%E6%95%A3%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">多尺度残差离散自编码器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E4%B8%80%E5%B0%BA%E5%BA%A6%E8%87%AA%E5%9B%9E%E5%BD%92%E7%94%9F%E6%88%90"><span class="nav-number">4.</span> <span class="nav-text">下一尺度自回归生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ImageNet-%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90%E5%AE%9A%E9%87%8F%E5%AE%9E%E9%AA%8C"><span class="nav-number">5.</span> <span class="nav-text">ImageNet 图像生成定量实验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#VAR-%E5%90%84%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90%E7%BB%93%E6%9E%9C"><span class="nav-number">6.</span> <span class="nav-text">VAR 各尺度生成结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%89%E7%BC%BA%E9%99%B7%E7%9A%84%E5%8D%95%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90"><span class="nav-number">7.</span> <span class="nav-text">有缺陷的单尺度生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E4%B8%8E%E8%AF%84%E8%AE%BA"><span class="nav-number">8.</span> <span class="nav-text">总结与评论</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">141</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

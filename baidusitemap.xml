@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://zhouyifan.net/2024/12/21/20241218-VAR/</loc>
+    <lastmod>2024-12-21</lastmod>
+  </url>
+  <url>
+    <loc>https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/</loc>
+    <lastmod>2024-12-18</lastmod>
+  </url>
+  <url>
     <loc>https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/</loc>
     <lastmod>2024-12-15</lastmod>
   </url>
@@ -15,10 +23,6 @@
   <url>
     <loc>https://zhouyifan.net/2024/12/05/20241202-fourier-feature/</loc>
     <lastmod>2024-12-06</lastmod>
-  </url>
-  <url>
-    <loc>https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/</loc>
-    <lastmod>2024-11-28</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2024/01/23/20230707-SD1/</loc>
