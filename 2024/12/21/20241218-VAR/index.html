@@ -48,7 +48,7 @@
 <meta property="og:image" content="https://zhouyifan.net/2024/12/21/20241218-VAR/14.jpg">
 <meta property="og:image" content="https://pic1.zhimg.com/v2-0202cac9b2f4cdb9f149a4557f2f02d6_b.webp">
 <meta property="article:published_time" content="2024-12-21T03:32:50.000Z">
-<meta property="article:modified_time" content="2024-12-22T16:08:24.573Z">
+<meta property="article:modified_time" content="2024-12-23T11:54:31.689Z">
 <meta property="article:author" content="Zhou Yifan">
 <meta property="article:tag" content="深度学习">
 <meta property="article:tag" content="自回归">
@@ -100,6 +100,7 @@
   </style>
 </noscript>
 
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
@@ -360,6 +361,9 @@ p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})
 <li>VAR 的前几个尺度的词元图是最重要的。能不能用更好的方式，比如用扩散模型，来生成前几个尺度的图像，而更大尺度的词元图用一个比 Transformer 更高效的模型来生成。这样模型的质量和效率能进一步提升。</li>
 <li>VAR 还是用了 VQ 自编码器。无论怎么样，VQ 操作都会降低模型的重建质量。但另一方面，VQ 也能起到规范解码器输入的作用。究竟我们能不能把 VQ 自编码器换成精度更高的 VAE 呢？换了之后怎么设计多尺度编码呢？</li>
 </ul>
+<blockquote>
+<p>以前我一直将 “quantization” 翻译成「离散化」，但经仔细学习后发现它与真正的离散化 “discretization” 存在区别。因此，以后我会采用「量化」这个更常见的翻译，尽管我认为这个翻译容易和「量化投资」里的「量化」混淆。</p>
+</blockquote>
 
     </div>
 
@@ -410,6 +414,16 @@ p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})
             </span>
 
             <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
           </a>
         </div>
     </div>
@@ -523,6 +537,11 @@ p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})
       </div>
   </nav>
 </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
 
 
 

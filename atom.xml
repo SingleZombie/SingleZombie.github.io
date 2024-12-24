@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>周弈帆的博客</title>
+  <icon>https://zhouyifan.net/images/favicon-32x32-next.png</icon>
+  
+  <link href="https://zhouyifan.net/atom.xml" rel="self"/>
+  
+  <link href="https://zhouyifan.net/"/>
+  <updated>2024-12-23T11:54:31.689Z</updated>
+  <id>https://zhouyifan.net/</id>
+  
+  <author>
+    <name>Zhou Yifan</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？</title>
+    <link href="https://zhouyifan.net/2024/12/21/20241218-VAR/"/>
+    <id>https://zhouyifan.net/2024/12/21/20241218-VAR/</id>
+    <published>2024-12-21T03:32:50.000Z</published>
+    <updated>2024-12-23T11:54:31.689Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;今年四月，北大和字节跳动在 Arxiv 上发表了论文 &lt;em&gt;Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction&lt;/em&gt;，介绍了一种叫做 Visual</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>论文速览 | Pyramid Flow：以低分辨率的前几帧为约束高效生成视频</title>
+    <link href="https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/"/>
+    <id>https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/</id>
+    <published>2024-12-15T13:55:08.000Z</published>
+    <updated>2024-12-15T13:55:08.884Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;按分辨率从低到高的顺序生成图像是一种常见思路。此外，Diffusion Forcing 等论文带来了一种新的扩散模型视频生成思路：将视频生成转换为约束于前几帧图像的单张图像自回归生成。Pyramid Flow</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="视频生成" scheme="https://zhouyifan.net/tags/%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90/"/>
+    
+    <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>论文速览 | Laplacian Diffusion Models：将图像拆成不同频率分量并分别生成</title>
+    <link href="https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/"/>
+    <id>https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/</id>
+    <published>2024-12-15T13:55:03.000Z</published>
+    <updated>2024-12-15T13:55:03.237Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;受到经典图像表示方法拉普拉斯金字塔（Laplacian Pyramid）的启发，英伟达最近公布了一种叫做 Laplacian Diffusion Model （拉普拉斯扩散模型，后文简称</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>让预训练 Transformer 生成更长的文本/图像：位置编码长度外推技术</title>
+    <link href="https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/"/>
+    <id>https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/</id>
+    <published>2024-12-08T18:15:32.000Z</published>
+    <updated>2024-12-12T08:07:57.909Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;随着视觉主干模型不断向 Transformer 靠拢，和 Transformer 配套的一些技术也从 NLP 社区涌入了 CV 社区。比如 Stable Diffusion 3 还在用标准 Transformer 那一套正弦位置编码，而其升级版 FLUX.1</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="位置编码" scheme="https://zhouyifan.net/tags/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>位置编码背后的理论解释——傅里叶特征 (Fourier Feature）与核回归</title>
+    <link href="https://zhouyifan.net/2024/12/05/20241202-fourier-feature/"/>
+    <id>https://zhouyifan.net/2024/12/05/20241202-fourier-feature/</id>
+    <published>2024-12-05T03:34:08.000Z</published>
+    <updated>2024-12-06T06:16:58.552Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;最近我在看位置编码最新技术时，看到了一个叫做 “NTK-aware” 的词。我想：「”NTK”是什么？Next ToKen （下一个词元）吗？为什么要用这么时髦的缩写？」看着看着，我才发现不对劲。原来，NTK 是神经网络理论里的一个概念，它从 kernel</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
+    
+    <category term="位置编码" scheme="https://zhouyifan.net/tags/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/"/>
+    
+    <category term="StyleGAN" scheme="https://zhouyifan.net/tags/StyleGAN/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>论文速览 | Diffusion Forcing：给视频扩散模型的每一帧添加不同强度的噪声</title>
+    <link href="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/"/>
+    <id>https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/</id>
+    <published>2024-11-28T14:58:06.000Z</published>
+    <updated>2024-12-18T07:16:05.465Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;论文速览&quot;&gt;&lt;a href=&quot;#论文速览&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>速览多模态模型 Transfusion 和 Show-o：用 Transformer + 扩散模型同时处理文本和图像</title>
+    <link href="https://zhouyifan.net/2024/09/13/20240825-trans-diff/"/>
+    <id>https://zhouyifan.net/2024/09/13/20240825-trans-diff/</id>
+    <published>2024-09-13T05:48:27.000Z</published>
+    <updated>2024-09-13T05:48:27.277Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;近期，有两个大型多模态模型于同期公布：一个是来自 Meta 的 Transfusion，另一个是来自 Show Lab 和字节跳动的 Show-o 。好巧不巧，二者都宣称自己的模型是几乎最早将多模态任务用一个 Transformer</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>锐评能模拟射击游戏的扩散模型 GameNGen</title>
+    <link href="https://zhouyifan.net/2024/09/03/20240829-GameNGen/"/>
+    <id>https://zhouyifan.net/2024/09/03/20240829-GameNGen/</id>
+    <published>2024-09-03T08:33:35.000Z</published>
+    <updated>2024-09-03T08:33:35.942Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;今天看到一则新闻，说 Google DeepMind 发布了一个叫做 GameNGen （英文读音 “game engine”，游戏引擎）的扩散模型，它可以仅用神经网络的生成结果，模拟经典射击游戏 DOOM。&lt;/p&gt;
+&lt;p&gt;项目网站：&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    <category term="议论文" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E8%AE%AE%E8%AE%BA%E6%96%87/"/>
+    
+    
+    <category term="游戏设计" scheme="https://zhouyifan.net/tags/%E6%B8%B8%E6%88%8F%E8%AE%BE%E8%AE%A1/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Stable Diffusion 3「精神续作」FLUX.1 源码深度前瞻解读</title>
+    <link href="https://zhouyifan.net/2024/09/03/20240809-flux1/"/>
+    <id>https://zhouyifan.net/2024/09/03/20240809-flux1/</id>
+    <published>2024-09-03T06:41:19.000Z</published>
+    <updated>2024-09-03T06:41:19.445Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;前几个月，推出了著名文生图模型 Stable Diffusion 的 Stability AI 公司曝出了核心团队集体离职的消息。一时间，AI 从业者们议论纷纷，不知道这究竟是团队出现了矛盾，还是这些员工觉得文生图模型做下去没有前途了。而近期，该核心团队重新组建的创业团队</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>解读何恺明新作：不用向量离散化的自回归图像生成（Autoregressive Image Generation without Vector Quantization）</title>
+    <link href="https://zhouyifan.net/2024/07/27/20240717-ar-wo-vq/"/>
+    <id>https://zhouyifan.net/2024/07/27/20240717-ar-wo-vq/</id>
+    <published>2024-07-27T12:32:45.000Z</published>
+    <updated>2024-07-27T12:32:45.415Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;自回归是一种根据之前已生成内容，不断递归预测下一项要生成的内容的生成模型。这种生成方式十分易懂，符合我们对生活的观察。比如我们希望模型生成一句话，第一个是「今」字，那么第二个字很可能就是「天」字。如果前三个字是「今天早」，那么第四个字就很可能是「上」。&lt;br&gt;&lt;figure</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>定制适合自己的 Diffusers 扩散模型训练脚本</title>
+    <link href="https://zhouyifan.net/2024/07/27/20240605-diffusers-training/"/>
+    <id>https://zhouyifan.net/2024/07/27/20240605-diffusers-training/</id>
+    <published>2024-07-27T12:31:57.000Z</published>
+    <updated>2024-08-19T13:00:18.179Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;Diffusers</summary>
+        
+      
+    
+    
+    
+    <category term="创作" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/"/>
+    
+    <category term="编程项目" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/%E7%BC%96%E7%A8%8B%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Stable Diffusion 3 论文及源码概览</title>
+    <link href="https://zhouyifan.net/2024/07/14/20240703-SD3/"/>
+    <id>https://zhouyifan.net/2024/07/14/20240703-SD3/</id>
+    <published>2024-07-14T02:26:06.000Z</published>
+    <updated>2024-08-19T13:01:11.169Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;近期，最受开源社区欢迎的文生图模型 Stable Diffusion 的最新版本 Stable Diffusion 3 开放了源码和模型参数。开发者宣称，Stable Diffusion 3 使用了全新的模型结构和文本编码方法，能够生成更符合文本描述且高质量的图片。得知</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="代码阅读" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E4%BB%A3%E7%A0%81%E9%98%85%E8%AF%BB/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>顽抗生活中的厄运</title>
+    <link href="https://zhouyifan.net/2024/06/24/20240622-CVPR2024/"/>
+    <id>https://zhouyifan.net/2024/06/24/20240622-CVPR2024/</id>
+    <published>2024-06-24T11:18:57.000Z</published>
+    <updated>2024-06-24T11:18:57.249Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;今年第一次参加 CVPR</summary>
+        
+      
+    
+    
+    
+    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    <category term="记叙文" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E8%AE%B0%E5%8F%99%E6%96%87/"/>
+    
+    
+    <category term="日记" scheme="https://zhouyifan.net/tags/%E6%97%A5%E8%AE%B0/"/>
+    
+    <category term="吐槽" scheme="https://zhouyifan.net/tags/%E5%90%90%E6%A7%BD/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Stable Video Diffusion 源码解读 (Diffusers 版)</title>
+    <link href="https://zhouyifan.net/2024/06/05/20240407-SVD-1/"/>
+    <id>https://zhouyifan.net/2024/06/05/20240407-SVD-1/</id>
+    <published>2024-06-05T07:52:35.000Z</published>
+    <updated>2024-08-19T12:59:46.019Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;在上篇文章中，我们浏览了 Stable Video Diffusion (SVD) 的论文，并特别学习了没有在论文中提及的模型结构、噪声调度器这两个模块。在这篇文章中，让我们来看看 SVD 在 Diffusers 中的源码实现。我们会先学习 SVD 的模型结构，再学习</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="代码阅读" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E4%BB%A3%E7%A0%81%E9%98%85%E8%AF%BB/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Stable Video Diffusion 结构浅析与论文速览</title>
+    <link href="https://zhouyifan.net/2024/06/05/20240405-SVD/"/>
+    <id>https://zhouyifan.net/2024/06/05/20240405-SVD/</id>
+    <published>2024-06-05T07:52:11.000Z</published>
+    <updated>2024-06-05T07:52:11.539Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;近期，各个科技公司纷纷展示了自己在视频生成模型上的最新成果。虽然不少模型的演示效果都非常惊艳，但其中可供学术界研究的开源模型却少之又少。Stable Video Diffusion (SVD)</summary>
+        
+      
+    
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/tags/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/tags/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>FID 指标简介与修正 TorchEval FID 计算接口经历分享</title>
+    <link href="https://zhouyifan.net/2024/04/04/20240221-TorchEval-FID/"/>
+    <id>https://zhouyifan.net/2024/04/04/20240221-TorchEval-FID/</id>
+    <published>2024-04-04T06:08:44.000Z</published>
+    <updated>2024-06-24T10:52:49.169Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;FID 是一种衡量图像生成模型质量的指标。对于这种常见的指标，一般都能找到好用的 PyTorch 计算接口。然而，当我用 PyTorch 的官方库 TorchEval 来算 FID 指标时，却发现它的结果和多数非官方库无法对齐。我花了不少时间，总算把 TorchEval</summary>
+        
+      
+    
+    
+    
+    <category term="记录" scheme="https://zhouyifan.net/categories/%E8%AE%B0%E5%BD%95/"/>
+    
+    <category term="项目" scheme="https://zhouyifan.net/categories/%E8%AE%B0%E5%BD%95/%E9%A1%B9%E7%9B%AE/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
+    
+    <category term="吐槽" scheme="https://zhouyifan.net/tags/%E5%90%90%E6%A7%BD/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>CVPR 2024 | DiffMorpher：实现两张图像间的平滑变形</title>
+    <link href="https://zhouyifan.net/2024/03/09/20240228-DiffMorpher/"/>
+    <id>https://zhouyifan.net/2024/03/09/20240228-DiffMorpher/</id>
+    <published>2024-03-09T14:58:43.000Z</published>
+    <updated>2024-03-09T14:58:43.963Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;相信大家都在网上看过这种「笑容逐渐消失」的表情包：一张图片经过经过平滑的变形，逐渐变成另一张截然不同的图片。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/2024/03/09/20240228-DiffMorpher/1.png&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>OpenAI 视频模型 Sora 科研贡献速览</title>
+    <link href="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/"/>
+    <id>https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/</id>
+    <published>2024-02-21T08:46:58.000Z</published>
+    <updated>2024-02-21T08:46:58.415Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;今天，一则重磅消息席卷了 AI 圈：OpenAI 发布了视频模型 Sora，能根据文本生成长达一分钟的高质量 1920x1080 视频，生成能力远超此前只能生成 25 帧 576x1024 图像的顶尖视频生成模型 Stable Video</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Stable Diffusion 中的自注意力替换技术与 Diffusers 实现</title>
+    <link href="https://zhouyifan.net/2024/01/27/20240123-SD-Attn/"/>
+    <id>https://zhouyifan.net/2024/01/27/20240123-SD-Attn/</id>
+    <published>2024-01-27T08:48:55.000Z</published>
+    <updated>2024-01-27T08:48:55.984Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;在使用预训练 Stable Diffusion (SD) 生成图像时，如果将其 U-Net 的自注意力层在某去噪时刻的输入 K, V 替换成另一幅参考图像的，则输出图像会和参考图像更加相似。许多无需训练的 SD</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>LoRA 在 Stable Diffusion 中的三种应用：原理讲解与代码示例</title>
+    <link href="https://zhouyifan.net/2024/01/23/20240114-SD-LoRA/"/>
+    <id>https://zhouyifan.net/2024/01/23/20240114-SD-LoRA/</id>
+    <published>2024-01-23T11:42:10.000Z</published>
+    <updated>2024-01-23T11:42:10.576Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;如果你一直关注 Stable Diffusion (SD) 社区，那你一定不会对 “LoRA” 这个名词感到陌生。社区用户分享的 SD LoRA 模型能够修改 SD 的画风，使之画出动漫、水墨或像素等风格的图片。但实际上，LoRA 不仅仅能改变 SD</summary>
+        
+      
+    
+    
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+</feed>
