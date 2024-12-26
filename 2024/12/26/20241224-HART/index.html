@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="今年年初，多尺度自回归模型 VAR 为图像生成开辟了新的发展方向：通过将图像生成建模成下一尺度预测，且每轮一次性生成同一尺度的所有像素，VAR 以极快的速度实现了高质量图像生成。随后，有许多工作都尝试对其改进。为弥补 VAR 中 VQ (Vector Quantization，向量量化) 操作引入的信息损失，HART (Hybrid Autoregressive Transformer，混合自回归">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文速览 | 混合自回归 HART：用扩散模型缓解 VQ 编码误差">
+<meta property="og:url" content="https://zhouyifan.net/2024/12/26/20241224-HART/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="今年年初，多尺度自回归模型 VAR 为图像生成开辟了新的发展方向：通过将图像生成建模成下一尺度预测，且每轮一次性生成同一尺度的所有像素，VAR 以极快的速度实现了高质量图像生成。随后，有许多工作都尝试对其改进。为弥补 VAR 中 VQ (Vector Quantization，向量量化) 操作引入的信息损失，HART (Hybrid Autoregressive Transformer，混合自回归">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/8.jpg">
+<meta property="article:published_time" content="2024-12-26T08:15:06.000Z">
+<meta property="article:modified_time" content="2024-12-26T08:15:06.970Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta property="article:tag" content="自回归">
+<meta property="article:tag" content="多尺度生成">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/12/26/20241224-HART/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>论文速览 | 混合自回归 HART：用扩散模型缓解 VQ 编码误差 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/26/20241224-HART/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          论文速览 | 混合自回归 HART：用扩散模型缓解 VQ 编码误差
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-26 16:15:06" itemprop="dateCreated datePublished" datetime="2024-12-26T16:15:06+08:00">2024-12-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>今年年初，多尺度自回归模型 VAR 为图像生成开辟了新的发展方向：通过将图像生成建模成下一尺度预测，且每轮一次性生成同一尺度的所有像素，VAR 以极快的速度实现了高质量图像生成。随后，有许多工作都尝试对其改进。为弥补 VAR 中 VQ (Vector Quantization，向量量化) 操作引入的信息损失，HART (Hybrid Autoregressive Transformer，混合自回归 Transformer) 把 VQ 损失的信息用一张残差图表示，并用一个轻量的扩散模型来生成该残差图。做完改进后，作者用 HART 实现了 $1024 \times 1024$ 高分辨率文生图任务。在这篇博文中，我们将学习 HART 的核心方法并分析它在文生图任务上的实验结果。</p>
+<p>论文链接：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2410.10812">https://arxiv.org/abs/2410.10812</a></p>
+<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>本文涉及的所有自回归图像生成方法都起源于 VQVAE, VQGAN。在阅读本文前，建议读者先熟悉这两个经典工作。</p>
+<p>HART 直接基于 VAR (<em>Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction</em>) 开发，且其部分思想和 MAR (Masked Autoregressive models，出自论文 <em>Autoregressive Image Generation without Vector Quantization</em>) 类似。欢迎大家阅读我之前的解读。</p>
+<p>VAR 解读</p>
+<p>MAR 解读</p>
+<p>在 VQGAN 两阶段生成方法的基础上，VAR 让自编码器输出一系列不同尺度的图像词元 (token)，而不仅仅是最大尺度的词元。生成时，VAR 自回归地生成不同尺度的词元图，同一尺度的词元图会在一轮 Transformer 推理中一次性生成。</p>
+<p><img src="/2024/12/26/20241224-HART/1.jpg" alt></p>
+<p>VQ 操作会丢失编码器输出中的信息，这导致所有使用 VQ 自编码器的图像生成模型生成质量略低。VAR, VQGAN 等方法之所以不得不使用 VQ，是因为这些方法都用类别分布（categorical distribution）来建模词元的分布。为了彻底去除 VQ 操作，MAR 使用扩散模型来代替类别分布，使得我们能够用精度更高的 VAE 来压缩图像。</p>
+<h2 id="弥补-VQ-的信息损失"><a href="#弥补-VQ-的信息损失" class="headerlink" title="弥补 VQ 的信息损失"></a>弥补 VQ 的信息损失</h2><p>为了缓解 VAR 中 VQ 造成的质量下降，HART 使用了一项思路直接的设计：既然 VQ 无论如何都会造成信息损失，不妨把损失的信息看成一张残差图像。用普通的 VAR 生成完图片后，再用扩散模型生成该残差图像。把残差图像加到原输出图像后，新输出图像会质量更高。</p>
+<p>让我们通过论文里的图片来直观感受这一点。第一行是 VAR 自编码器和 HART 的混合自编码器的重建结果。可以看出，由于 VQ 操作，模型难以重建输入图像。第二行原 VAR 的输出和残差图像输出。我们发现，加上残差图像后，图像的细节更加丰富，不会像之前一样模糊。</p>
+<p><img src="/2024/12/26/20241224-HART/2.jpg" alt></p>
+<p>在下两个小节里，我们来学习 HART 是怎么分别改进 VAR 的词元生成模型和自编码器的。</p>
+<h2 id="用扩散模型生成残差图像"><a href="#用扩散模型生成残差图像" class="headerlink" title="用扩散模型生成残差图像"></a>用扩散模型生成残差图像</h2><p>为了理解整套方法，我们需要理解 HART 的「残差图像」是从哪来的。因此，我们先看词元生成模型上的修改，再看自编码器的对应修改。</p>
+<p>我们先仔细回顾一下 VAR 中 VQ 误差是怎么引入的。VAR 借用了传统拉普拉斯金字塔的思想来建模不同尺度的词元图。</p>
+<p><img src="/2024/12/26/20241224-HART/3.jpg" alt></p>
+<p>也就是说，VAR 并没有将完整图像拆解成内容相同、不同分辨率的词元图，而是拆解成了最低分辨率的图以及各个尺度上的信息损失。这里的信息损失不仅包括了下采样导致的，还包括了 VQ 导致的。</p>
+<p><img src="/2024/12/26/20241224-HART/4.jpg" alt></p>
+<p>即使在多尺度拆解时考虑了 VQ 的信息损失，最终的重建特征（即解码器输入，词元查表输出的累加）依然不能和编码器输出特征完全一致。HART 想用扩散模型生成的「残差图像」，就是上图中重建特征和编码器输出特征的差。</p>
+<p>和离散的词元图不同，残差图像是连续的。为了生成该连续图像，HART 参考 MAR，使用了一个图像约束的扩散模型。该任务可以解释为：已知离散词元图的输出，该如何用扩散模型生成细节，以提升输出图像质量。</p>
+<p>HART 的生成模型示意图如下所示。前面的生成过程和 VAR 一模一样。在最后一步，Transformer 的中间隐状态会输入给用 MLP 表示的扩散模型，扩散模型会为每个词元<strong>独立地</strong>预测残差量。也就是说，这不是一个图像扩散模型，而是只生成一个词元值的像素扩散模型。词元之间的采样互相独立。得益于这种独立性假设，HART 可以用一个非常轻量的扩散模型来生成残差图，几乎没有增加整体的生成时间。</p>
+<p><img src="/2024/12/26/20241224-HART/5.jpg" alt></p>
+<blockquote>
+<p>HART 还将 VAR 的类别约束换成了文本约束。我们稍后在实验部分讨论。</p>
+</blockquote>
+<h2 id="AE-VQVAE-混合自编码器"><a href="#AE-VQVAE-混合自编码器" class="headerlink" title="AE + VQVAE 混合自编码器"></a>AE + VQVAE 混合自编码器</h2><p>知道了 HART 要生成的残差图像从何而来，我们可以回头学习自编码器上的对应修改。现在，自编码器的解码器有两种输入：一种是 VAR 离散词元累加而成的近似重建特征，一种是加上了 HART 的残差图的精确重建特征，这个重建特征就等于编码器输出特征。为了同时处理这两类输入，在训练 HART 的混合自编码器时，解码器的输入一半的时候是编码器输出，另一半的时候是离散词元的重建特征。当然，在生成时，由于加上了残差图像，可以认为解码器的输入就等于编码器的输出。</p>
+<blockquote>
+<p>下图中采用的术语 token 与 VAR 不同。VAR 把编码器输出和解码器输出都叫做特征图 (feature map)，把过了 VQ 操作的索引图叫做词元图 (token map)。而 HART 将 VAR 里的特征图称为 token，continuous token 表示编码器输出特征，discrete token 表示词元的重建特征。这篇博文采用了 VAR 的称呼方法。同理，HART 里的 residual token 在本文被称为「残差图像」。</p>
+</blockquote>
+<p><img src="/2024/12/26/20241224-HART/6.jpg" alt></p>
+<p>这样看来，HART 的混合编码器既像没有 KL Loss 的 VAE，即普通自编码器 (AE)，也像 VQVAE。</p>
+<h2 id="高分辨率文生图实现细节"><a href="#高分辨率文生图实现细节" class="headerlink" title="高分辨率文生图实现细节"></a>高分辨率文生图实现细节</h2><p>我们来简单看一下 HART 是如何把 ImageNet $256 \times 256$ 按类别生成的 VAR 拓展成 $1024 \times 1024$ 的文生图模型的。</p>
+<ul>
+<li>文本约束：HART 没有通过交叉注意力输入文本信息，而是和 VAR 对类别嵌入的做法一样，将文本嵌入作为第一尺度的输入及 AdaLN 层的输入。</li>
+<li>位置编码：不管是对于尺度编号还是图像位置编号，VAR 用的是可学习的绝对位置编码。HART 对尺度采取了正弦编码，对图像词元采取了 2D RoPE（旋转位置编码）。</li>
+<li>更大尺度：原 VAR 词元图的最大边长是 <code>16</code>，HART 往后面添加了 <code>21,27,36,48,64</code> 这几个边长。</li>
+<li>轻量级扩散模型：由于扩散模型仅需建模单个词元的分布，它仅有 37M 参数，只需 8 步就能完成高质量采样。</li>
+</ul>
+<h2 id="定量实验结果"><a href="#定量实验结果" class="headerlink" title="定量实验结果"></a>定量实验结果</h2><p>先看一下最热门的「刷点」指标——ImageNet $256 \times 256$ 按类别生成。作者没放最好的 MAR 模型，我补上去了。</p>
+<p><img src="/2024/12/26/20241224-HART/7.jpg" alt></p>
+<p>在这个模型上，HART 和 VAR 的主要区别在于是否使用扩散模型输出残差图像。从结果可以看出，残差扩散模型几乎没有提升推理时间，却对 FID 指标有不小的提升（考虑到数值越低，提升难度越大）。并且，通过比较不同模型的速度，我们发现类 VAR 模型最大的优势在于推理速度快。</p>
+<p>再看一下这篇论文重点关注的文生图指标。除了常用的主要衡量文图匹配度的 GenEval 外，论文还展示了两个今年刚出的指标： MJHQ-30K 数据集上的指标和 DPG-Bench。</p>
+<p><img src="/2024/12/26/20241224-HART/8.jpg" alt></p>
+<p>这些指标不见得很有说服力。在由用户投票的排名中 (<a target="_blank" rel="noopener" href="https://imgsys.org/rankings)，Playground">https://imgsys.org/rankings)，Playground</a> v2.5 最好，SD3 和 PixelArt-Σ 差不多。但是，MJHQ FID 和 DPG-banech 指标都不能反映出这些模型的排名。特别地，FID 用到的 Inception V3 网络是在 $299 \times 299$ 的 ImageNet 上训练的，所以 FID 既不能很好地反映高分辨率图像的相似度，也不能反映更复杂的图像的相似度。</p>
+<p>综上，HART 在高分辨率文生图任务上的表现暂时不能通过实验结果反映。根据部分社区用户的反馈（<a target="_blank" rel="noopener" href="https://www.reddit.com/r/StableDiffusion/comments/1glig4u/mits_hart_fast_texttoimage_model_you_need_to_see/">https://www.reddit.com/r/StableDiffusion/comments/1glig4u/mits_hart_fast_texttoimage_model_you_need_to_see/</a> ），HART 在高频细节的生成上存在缺陷。通过回顾 HART 的方法，我们可以猜测这是残差扩散模型的设计不够好导致的。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>为了缓解 VQ 自编码器中 VQ 操作带来的信息损失，HART 把信息损失当成一张残差图，并额外用一个轻量级像素扩散模型来独立地生成残差图的每个像素。HART 把这一改进直接应用到了 VAR 上，并提升了 VAR 的 ImageNet FID 指标。HART 在高分辨率文生图任务上依然无法媲美扩散模型，并且由于扩散模型存在诸多加速手段，它在生成速度上也没有优势。</p>
+<p>VQ 操作将复杂的图像转换成了易于学习的图像词元，但牺牲了自编码器的重建质量。为了改进这一点，有许多工作都试图改进原 VQVAE 的最近邻 VQ 操作。但无论如何，VQ 导致的误差是不可避免的。HART 从另一个角度缓解 VQ 重建误差：用另一个模型来生成残差图像。这种设计思想很有前途，有希望彻底去除 VQ 的误差。然而，天下没有免费的午餐，提升了生成效果，就不得不增加训练和生成时间。HART 用轻量级像素扩散模型生成残差图的做法虽然不会拖慢模型速度，但效果还不够好。或许可以将其换成一个感受野稍大一点的扩散模型，在不显著增加生成时间的前提下提升残差图生成效果。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+              <a href="/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/" rel="tag"># 自回归</a>
+              <a href="/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/" rel="tag"># 多尺度生成</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/12/21/20241218-VAR/" rel="prev" title="NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？">
+      <i class="fa fa-chevron-left"></i> NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%BE%80%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">以往工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%A5%E8%A1%A5-VQ-%E7%9A%84%E4%BF%A1%E6%81%AF%E6%8D%9F%E5%A4%B1"><span class="nav-number">2.</span> <span class="nav-text">弥补 VQ 的信息损失</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E7%94%9F%E6%88%90%E6%AE%8B%E5%B7%AE%E5%9B%BE%E5%83%8F"><span class="nav-number">3.</span> <span class="nav-text">用扩散模型生成残差图像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AE-VQVAE-%E6%B7%B7%E5%90%88%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8"><span class="nav-number">4.</span> <span class="nav-text">AE + VQVAE 混合自编码器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E5%88%86%E8%BE%A8%E7%8E%87%E6%96%87%E7%94%9F%E5%9B%BE%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-number">5.</span> <span class="nav-text">高分辨率文生图实现细节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E9%87%8F%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">6.</span> <span class="nav-text">定量实验结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">142</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

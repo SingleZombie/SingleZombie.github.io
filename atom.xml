@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2024-12-23T11:54:31.689Z</updated>
+  <updated>2024-12-26T08:15:06.970Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,39 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>论文速览 | 混合自回归 HART：用扩散模型缓解 VQ 编码误差</title>
+    <link href="https://zhouyifan.net/2024/12/26/20241224-HART/"/>
+    <id>https://zhouyifan.net/2024/12/26/20241224-HART/</id>
+    <published>2024-12-26T08:15:06.000Z</published>
+    <updated>2024-12-26T08:15:06.970Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;今年年初，多尺度自回归模型 VAR 为图像生成开辟了新的发展方向：通过将图像生成建模成下一尺度预测，且每轮一次性生成同一尺度的所有像素，VAR 以极快的速度实现了高质量图像生成。随后，有许多工作都尝试对其改进。为弥补 VAR 中 VQ (Vector</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
+    
+  </entry>
   
   <entry>
     <title>NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？</title>
@@ -595,35 +628,6 @@
     <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
     
     <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
-    
-    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>LoRA 在 Stable Diffusion 中的三种应用：原理讲解与代码示例</title>
-    <link href="https://zhouyifan.net/2024/01/23/20240114-SD-LoRA/"/>
-    <id>https://zhouyifan.net/2024/01/23/20240114-SD-LoRA/</id>
-    <published>2024-01-23T11:42:10.000Z</published>
-    <updated>2024-01-23T11:42:10.576Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;如果你一直关注 Stable Diffusion (SD) 社区，那你一定不会对 “LoRA” 这个名词感到陌生。社区用户分享的 SD LoRA 模型能够修改 SD 的画风，使之画出动漫、水墨或像素等风格的图片。但实际上，LoRA 不仅仅能改变 SD</summary>
-        
-      
-    
-    
     
     
     <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>

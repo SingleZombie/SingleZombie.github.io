@@ -168,6 +168,148 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/01/20220625-stylegan-introduction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/01/20220625-stylegan-introduction/" class="post-title-link" itemprop="url">用18支画笔作画的AI ~ StyleGAN特点浅析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-01 21:30:13" itemprop="dateCreated datePublished" datetime="2022-07-01T21:30:13+08:00">2022-07-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>GAN（生成对抗网络）是一种能够自动生成内容的神经网络模型。近年来，许多图像生成的研究都基于GAN。</p>
+<p>以人脸生成任务为例，一类常见图像GAN的原理如下：模型先要学会辨别一张图像是不是人脸。之后，模型会把一个个高维实数向量表示的“身份证号”映射成一幅幅图像，并根据辨别人脸的知识学习如何让图像长得更像人脸。最终，学习结束后，每一个“身份证号”都会映射到一张逼真的人脸上。只需要给模型一个随机的高维向量，模型就会生成一张人脸。</p>
+<p>但是，使用这类图像GAN时，我们不能对图像生成的过程加以干预。也就是说，我们不知道神经网络是怎么把一个个向量映射成一张张栩栩如生的人脸的，而只能将其视作一个黑盒。因此，这些GAN只能用来随机地画出几张漂亮的画，搞搞大新闻，难以产生更加实际的应用。</p>
+<p>对此，英伟达提出了可控的图像生成网络StyleGAN，引发了无数研究者的关注。在这个模型生成完一幅图像后，我们可以对图片进行由粗至精共18种微调：同样以人脸生成为例，我们既可以调整性别、年龄这种更宏观的属性，也能调整肤色、发色这种更具体的属性。下图是论文中展示的结果：</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/1.jpg" alt></p>
+<p>最左侧一列是生成的图集A，最上方一行是生成的图集B。前三行、中间两行、最后一行分别是把图集B图像的高级、中级、低级属性混合进图集A图像得到的结果。</p>
+<p>可以看出，混入高级属性，人脸的肤色得以保留，而五官、性别等特征被修改了；混入中级属性，人脸的性别、年龄得以保留，而脸部的轮廓被修改了；混入低级属性，人脸的样子几乎不变，而发色、肤色被修改了。StyleGAN确实能神奇地修改生成图像的各类属性。</p>
+<p>那么，StyleGAN是如何用这18支“画笔”作画的呢？StyleGAN还有哪些出色的特性呢？我们能用StyleGAN开发出怎样的应用呢？在这篇文章里，让我们来认识一下StyleGAN的主要特点，并快速地用开源项目运行一下StyleGAN。</p>
+<blockquote>
+<p>本文不会对StyleGAN的原理进行详细的解读。在后续文章中，我会系统地讲解StyleGAN的论文及开源实现的使用方法。</p>
+</blockquote>
+<h1 id="原理讲解"><a href="#原理讲解" class="headerlink" title="原理讲解"></a>原理讲解</h1><h2 id="控制图像的风格"><a href="#控制图像的风格" class="headerlink" title="控制图像的风格"></a>控制图像的风格</h2><p>StyleGAN的名字里有一个”style”，该单词是“风格”的意思。这个单词在图像领域有一个特别的含义：一项神经网络风格迁移（Neural Style Transfer）的研究曾指出，图像可以看成是内容与风格的结合。即使是同一幅风景，不同艺术家也会画出不同风格的作品：</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/2.jpg" alt></p>
+<blockquote>
+<p>如果对神经网络风格迁移的经典论文感兴趣，欢迎阅读我之前写的<a href="https://zhouyifan.net/2022/06/01/20220531-styletransfer/">解读文章</a>。</p>
+</blockquote>
+<p>在那项研究中，人们发现，在由很多卷积层堆成的卷积神经网络中，越浅的层能表示越实际的风格，越深的层能表示越抽象的风格。受此启发，StyleGAN也使用了卷积神经网络来生成图像，并把“控制信号”放在了每个卷积层后。这样，只要调整“控制信号”，就能改变图像的风格了。StyleGAN的生成网络的部分结构如下：</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/3-2.jpg" alt></p>
+<p>在这个网络中，”Const 4x4x512”表示一个恒定的数据块，该数据块的分辨率是4x4。网络会通过一系列操作，把这个数据块逐渐放大成一幅1024x1024的图像。”AdaIN”是一种运算，该运算受到表示风格的“控制信号”A的影响。”Conv 3x3”是普通的3x3卷积层。”Upsample”表示图像上采样2倍。</p>
+<p>把图像从4x4翻倍放大至1024x1024，要翻倍8次，一共涉及9个模块的运算（一个模块就是图中的一个灰框）。而每个模块里又有2个AdaIN，所以，一共有18个调整图像风格的“控制信号”。这就是为什么我们可以说AI在用18支画笔作画。</p>
+<p>那么，如何像开头所展示得一样，混合不同人脸的风格呢？这就要详细介绍一下“控制信号”的由来了。前面也提过，通常图像GAN需要输入一个高维实数向量，模型会根据这个向量来生成图像。在StyleGAN中，“控制信号”就来自于这个高维向量。默认情况下，所有“控制信号”都来自同一个高维向量。而如果令某些层的“控制信号”来自于另一个高维向量，就能产生<strong>风格混合</strong>的效果。前面提到把图像B的低级、高级特征混入图像A，其实就是用图像B代替图像A在网络的浅层、深层的“控制信号”。</p>
+<p>为什么调整不同层的风格能够对图像产生不同程度的改变呢？可以这样想象：浅层的数据分辨率较低，只能记录图像的年龄、姿态这种更宏观的信息；而随着数据的分辨率不断放大，深层的数据已经逐渐记录下了人脸的形状，只剩下肤色、发色这种更具体的信息可供更改了。</p>
+<p>实际上，从开头展示出来的图片中能够看出，风格混合并不是真的混合了图像的绘画风格，而是混合了图像的各种属性。出于对之前「神经风格迁移」论文中“风格”一词的统一描述，StyleGAN的论文沿用了“风格”一词。</p>
+<p>除此之外，StyleGAN还有哪些特性呢？让我们看下去。</p>
+<h2 id="随机调整图像细节"><a href="#随机调整图像细节" class="headerlink" title="随机调整图像细节"></a>随机调整图像细节</h2><p>在让计算机生成图像时，除了要求图像足够像某种事物外，最好还要能够随机改变图像的细节。比如对于一幅人脸照片来说，如果几束头发的位置发生了偏移，我们还是会认为这是原来那张照片。因此，我们希望生成出来的人脸在头发上的细节可以随机一点。</p>
+<p>在传统的图像生成方法中，研究者总是得构造出一些巧妙的参数，通过随机改变这些参数让图像在内容大致不变的前提下调整细节。构造这些参数的过程是非常困难的。而对于StyleGAN来说，它的结构特别适合插入能够修改图像细节的<strong>噪声</strong>，让我们看一看StyleGAN生成网络完整的结构图：</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/3.jpg" alt></p>
+<p>其实，在输入层或者卷积层后，还有一个与噪声B的加法操作。其中，B通常是从标准正态分布中随机生成的。对于同一个高维向量生成出的图像，改变噪声B会修改图像的细节：</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/4.jpg" alt></p>
+<p>如图所示，改变噪声会改变头发的细节。实际上，噪声几乎不会影响整幅图片的观感，而只会改变头发、胡须、衣领等小细节。</p>
+<p>通过改变噪声，我们能够从一幅照片的多个版本中找出一个细节最好的。此外，通过连续改变噪声，我们能够让图像发生连续的变化。这一特性很适合制作简单的2D动画。</p>
+<h2 id="靠近平均图像"><a href="#靠近平均图像" class="headerlink" title="靠近平均图像"></a>靠近平均图像</h2><p>StyleGAN还有一个很好玩的应用：让生成的某张脸更加靠近大众脸。这一功能是怎么实现的呢？</p>
+<p>对数字求平均值，得到的是所有数字的平均水平；对坐标求平均值，得到是一个平均位置。可是，该怎么对照片求平均值呢？如果只是把所有照片的像素值加到一起，再求平均值，肯定只会得到一幅乱糟糟的图像。而StyleGAN则提供了一种求平均图像的方法。</p>
+<p>前面提过，GAN是靠一个高维向量表示的“身份证号”来生成图像的。StyleGAN通过一些映射操作，让高维向量的距离与生成出来的图片的相似度相关。也就是说，越近的向量，生成出来的图片就越像。因此，我们可以求出一堆向量的平均值，从而得到一幅平均图像。</p>
+<p>有了平均图像，接下来就是如何让另一幅图像更靠近平均图像了。和前面一样的道理，相似的向量能生成相似的图像，那么两个向量的平均值，就能几乎均等地表示两幅图的特性。理想情况下，如果一个向量表示“白发萝莉”，另一个向量表示“黑发熟女”，那么它们的平均向量应该表示“银发少女”。当然，如果不使用平均值，而是使用其他和为1的加权方式，就能让中间的图像更靠近另外某幅图像了。这一操作叫做图像插值。</p>
+<p>有了平均图像，有了图像插值方法，就可以一幅图像更靠近平均图像了。下面是几个插值示例图，其中$\psi$表示原图像的加权权重：</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/5.jpg" alt></p>
+<p>$\psi=1$表示随机生成的原图像，$\psi=0$就是平均图像，$\psi&lt;0$表示图像往平均图像“相反”的方向移动得到的图像。</p>
+<p>可以看出，随着人像不断靠近平均，甚至往反的方向移动，人像的整体内容都在平滑地改变。比较有趣的是，当人像反向后，人物的性别都反过来了。</p>
+<p>从这个例子能看出，StyleGAN使用的输入向量隐含了语义上的信息。通过对输入向量进行简单的数学操作，就能让生成出来的图像朝有意义的方向改变。</p>
+<h2 id="总结与展望"><a href="#总结与展望" class="headerlink" title="总结与展望"></a>总结与展望</h2><p>通过认识StyleGAN的网络结构，我们了解了StyleGAN的两大输入：表示风格的高维向量与随机扰动图像的噪声。通过修改这些输入，图像会发生不同程度的改变。</p>
+<p>基于这些基本操作，我们可以开发出许多图像编辑应用，比如风格混合、简单动画、图像插值、语义反向等。正是因为这些五花八门的图像编辑效果，许多研究者都尝试对StyleGAN的功能进行改进与拓展，发表了很多有趣的科研工作。</p>
+<p>令一方面，由于GAN的生成内容取决于训练数据。如果我们用人脸以外的图片作为训练集，就可以让AI画出其他物体来，比如动漫头像、小猫、汽车、酒店房间。这样，就可以开发出人脸编辑之外的应用了。</p>
+<p>如果你想直观地体会StyleGAN的效果，可以查看StyleGAN作者发布的视频（在外网）。</p>
+<p>如果你想立刻跑一跑StyleGAN，别走开。在附录中，我会介绍如何利用开源项目快速运行StyleGAN。</p>
+<p>这篇文章只是对StyleGAN非常粗浅的一个介绍。如果你想认真研究StyleGAN，欢迎阅读我之后发布的StyleGAN论文精读。</p>
+<h1 id="快速运行StyleGAN"><a href="#快速运行StyleGAN" class="headerlink" title="快速运行StyleGAN"></a>快速运行StyleGAN</h1><p><a target="_blank" rel="noopener" href="https://github.com/open-mmlab">OpenMMLab</a>的<a target="_blank" rel="noopener" href="https://github.com/open-mmlab/mmgeneration">MMGeneration</a>用PyTorch实现了StyleGAN并提供了模型权重文件。让我们看看该怎样快速运行StyleGAN。</p>
+<blockquote>
+<p>我使用的MMGen版本是0.7.1</p>
+</blockquote>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>访问<a target="_blank" rel="noopener" href="https://mmgeneration.readthedocs.io/en/latest/get_started.html">官方文档</a>，按照教程装好mmgen。</p>
+<p>安装大致分以下几步：</p>
+<ol>
+<li>装PyTorch。</li>
+<li>装mmcv。</li>
+<li>装mmgen。</li>
+</ol>
+<h2 id="下模型权重文件"><a href="#下模型权重文件" class="headerlink" title="下模型权重文件"></a>下模型权重文件</h2><p>在<a target="_blank" rel="noopener" href="https://github.com/open-mmlab/mmgeneration/tree/master/configs/styleganv1">这个网站</a>里找到模型的下载链接。</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/6.jpg" alt></p>
+<p>模型名称中最后的数字表示生成图像的分辨率。按照需要，点击某个模型后面的”model”，下载权重文件。</p>
+<p>权重文件下载好了后，推荐放到代码仓库的<code>checkpoints</code>目录下。</p>
+<h2 id="运行模型"><a href="#运行模型" class="headerlink" title="运行模型"></a>运行模型</h2><p>在某目录下（比如代码仓库的<code>work_dirs</code>目录下）新建并编写Python文件：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> mmgen.apis <span class="keyword">import</span> init_model, sample_unconditional_model</span><br><span class="line"><span class="keyword">import</span> mmcv</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> utils</span><br><span class="line"></span><br><span class="line">config_file = <span class="string">&quot;configs/styleganv1/styleganv1_ffhq_1024_g8_25Mimg.py&quot;</span></span><br><span class="line">checkpoint_file = <span class="string">&quot;checkpoints/styleganv1_ffhq_1024_g8_25Mimg_20210407_161627-850a7234.pth&quot;</span></span><br><span class="line">device = <span class="string">&quot;cuda:0&quot;</span></span><br><span class="line"></span><br><span class="line">model = init_model(config_file, checkpoint_file, device)</span><br><span class="line">results = sample_unconditional_model(model, <span class="number">16</span>)</span><br><span class="line">results = (results[:, [<span class="number">2</span>, <span class="number">1</span>, <span class="number">0</span>]] + <span class="number">1.</span>) / <span class="number">2.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># save images</span></span><br><span class="line">mmcv.mkdir_or_exist(<span class="string">&#x27;work_dirs/styleganv1&#x27;</span>)</span><br><span class="line">utils.save_image(results, <span class="string">&#x27;work_dirs/styleganv1/output.png&#x27;</span>, nrow=<span class="number">4</span>)</span><br></pre></td></tr></table></figure>
+<p>稍微解释一下这段代码。<code>init_model</code>用于新建一个模型，该函数有三个参数：配置文件<code>config_file</code>、权重文件<code>checkpoint_file</code>、运行设备<code>device</code>。配置文件放在仓库的<code>configs/styleganv1</code>目录下，根据刚刚下载的权重文件，选择配套的配置文件，修改<code>config_file</code>即可。<code>checkpoint_file</code>要填写刚刚下载好的权重文件的路径。<code>device</code>是运行的设备，有GPU的话写<code>cuda:0</code>即可。</p>
+<p><code>sample_unconditional_model</code>用于随机生成一些向量，并用这些向量来生成图片。该函数第一个参数是模型，第二个参数是生成图像的数量。</p>
+<p>图像生成完毕后，数据范围是<code>(-1, 1)</code>，我们要把它转换成数据范围是<code>(0, 1)</code>的图像。同时，为了兼容输出图像的API，我们还要把颜色通道反向。</p>
+<p>最后，调用创建文件夹和保存图片的API，把所有输出图片以网格形式保存到某个文件中。</p>
+<p>执行这个Python脚本后，我们就能得到分布在4x4网格中的16幅人脸图像了。我得到的一个结果是：</p>
+<p><img src="/2022/07/01/20220625-stylegan-introduction/6.png" alt></p>
+<p>注意！虽然大部分情况下生成器的表现都挺不错，但它偶尔会生成一些很吓人的图像（比如右上角那张史莱姆人）。大家看输出结果前一定要做好心理准备！</p>
+<hr>
+<p>这段代码仅仅展示了StyleGAN生成图像的基本功能。在后续的论文解读文章中，我还会继续介绍如何利用mmgen实现StyleGAN的各种花式应用。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/01/20220701-pytorchinstall2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2570,665 +2712,6 @@ dA^{[l-1]} & \gets W^{[l]T}dZ^{[l]} &use \ W^{[l]} \\
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/05/23/DLS-note-3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/05/23/DLS-note-3/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记+代码实战（三）：“浅度”神经网络</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-05-23 15:36:34" itemprop="dateCreated datePublished" datetime="2022-05-23T15:36:34+08:00">2022-05-23</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在上节课中，我们学习了逻辑回归——一种经典的学习算法。我兴致勃勃地用它训练了一个猫狗分类模型，结果只得到了57%这么个惨淡的准确率。正好，这周开始学习如何实现更复杂的模型了。这次，我一定要一雪前耻！</p>
-<p>开始学这周的课之前，先回忆一下上周我们学习了什么。</p>
-<p>对于一个神经网络，我们要定义它的网络结构（一个数学公式），定义损失函数。根据损失函数和网络结构，我们可以对网络的参数求导，并用梯度下降法最小化损失函数。</p>
-<p>也就是说，不管是什么神经网络，都由以下几部分组成：</p>
-<ul>
-<li><strong>网络结构</strong></li>
-<li><strong>损失函数</strong></li>
-<li><strong>优化策略</strong></li>
-</ul>
-<p>而在编程实现神经网络时，我们不仅要用计算机语言定义上面这几项内容，还需要<strong>收集数据</strong>、<strong>预处理数据</strong>。</p>
-<p>在这堂课中，我们要学一个更复杂的模型，其知识点逃不出上面这些范围。在之后的学习中我们还会看到，浅层神经网络的<strong>损失函数</strong>和<strong>优化策略</strong>和上节课的逻辑回归几乎是一模一样的。我们要关心的，主要是<strong>网络结构</strong>上的变化。</p>
-<p>在学习之前，我们可以先有一个心理准备，知道大概要学到哪些东西。</p>
-<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="神经网络概述与符号标记"><a href="#神经网络概述与符号标记" class="headerlink" title="神经网络概述与符号标记"></a>神经网络概述与符号标记</h2><p><img src="/2022/05/23/DLS-note-3/0.jpg" alt></p>
-<p>上节课我们使用的逻辑回归过于简单，它只能被视为只有一个神经元（计算单元）的神经网络。如上图第一行所示。</p>
-<p>一般情况下，神经网络都是由许多神经元组成的。我们把一次性计算的神经元都算作“一层”。比如上图第二行的网络有两层，第一层有3个神经元，第二层有1个神经元。</p>
-<p>上节课中，对于一个样本$x$，一层的神经网络是用下面的公式计算的：</p>
-<script type="math/tex; mode=display">
-\hat{y}=a=\sigma(w^Tx+b)</script><p>而这节课将使用的两层神经网络，也使用类似的公式计算：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-a^{[1]} & = \sigma(W^{[1]}x+b^{[1]}) \\
-
-\hat{y}=a^{[2]} & = \sigma(W^{[2]}a^{[1]}+b^{[2]})
-\end{align*}</script><blockquote>
-<p>上节课中，参数$w$是一个列向量。这节课的参数$W$是一个矩阵。我们稍后会见到$W$的全貌。</p>
-</blockquote>
-<p>这里的方括号上标$[l]$表示第$l$层相关的变量。总结一下，$a_i^{<a href="k">j</a>}$表示第$k$个样本在网络第$j$层中向量的第$i$个分量。</p>
-<p>事实上，输入$x$可以看成$a^{[0]}$。</p>
-<blockquote>
-<p>这里的a是activation（激活）意思，每个$a$都是激活函数的输出。</p>
-</blockquote>
-<p>为了方便称呼，我们给神经网络的层取了些名字：</p>
-<p><img src="/2022/05/23/DLS-note-3/1.jpg" alt></p>
-<p>其中，输入叫做“输入层”，最后一个计算层叫做“输出层”，中间其余的层都叫做“隐藏层”。事实上，由于第一个输入层不参与计算，它不会计入网络的总层数，只是为了方便称呼才这么叫。因此，上面这个网络看上去有3层，但叫做“双层神经网络”，或“单隐藏层神经网络”。</p>
-<h2 id="单样本多神经元的计算"><a href="#单样本多神经元的计算" class="headerlink" title="单样本多神经元的计算"></a>单样本多神经元的计算</h2><p>让我们先看一下，对于<strong>一个输入样本</strong>$x^{(1)}$，神经网络是怎么计算输出的。</p>
-<p><img src="/2022/05/23/DLS-note-3/2.jpg" alt></p>
-<p>如图，输入 $x$ 是一个形状为$3 \times 1$的列向量。第一层有三个神经元，第一个神经元的参数是$w_1^{[1]}, b_1^{[1]}$，第二个是$w_2^{[1]}, b_2^{[1]}$，第三个是$w_3^{[1]}, b_3^{[1]}$。</p>
-<p>$w_i^{[1]}$的形状是$1 \times 3$，$b_i^{[1]}$是常数。</p>
-<p>每个神经元的计算公式和上节课的逻辑回归相同，都是$z_i^{[1]}=w_i^{[1]}x+b_i^{[1]}$，$a_i^{[1]}=\sigma(z_i^{[1]})$（$i \in [1, 2, 3]$)。</p>
-<blockquote>
-<p>回忆一下，上一节课里$w$的形状是$n_x \times1$，即一个长度为$n_x$的<strong>列向量</strong>，其中$n_x$是输入向量的长度（此处为3）。$b$是一个常数。计算结果时，我们要把$w$转置，计算$w^Tx+b$。这里的$w_i^{[1]}$是一个<strong>行向量</strong>，其形状是$1 \times n_x$，计算时不用转置。计算时直接$w_i^{[1]}x+b_i^{[1]}$就行。</p>
-</blockquote>
-<p>因为有三个神经元，我们得到三个计算结果$a_1^{[1]}, a_2^{[1]}, a_3^{[1]}$。我们可以把它们合起来当成一个$3 \times 1$的列向量$a^{[1]}$，就像输入$x$一样。</p>
-<p>之后，这三个输出作为输入传入第二层的神经元，计算$z^{[2]}=W_1^{[2]}a^{[1]}+b^{[2]}$, $\hat{y}=a^{[2]}=\sigma(z^{[2]})$。这个算式和上周的逻辑回归一模一样。</p>
-<p>总结一下，如果某一层有$n$个神经元，那么这一层的输出就是一个长度为$n$的列向量。这个输出会被当作下一层的输入。神经网络的每一层都按同样的方式计算着。</p>
-<p>对于单隐层神经网络，隐藏层的参数$W^{[1]}$的形状是$n_1 \times n_x$，其中$n_1$是隐藏层神经元个数，$n_x$是每个输入样本的向量长度。参数$b^{[1]}$的形状是$n_1 \times 1$。输出层参数$W^{[2]}$的形状是$1 \times n_1$，$b^{[2]}$的形状是$1 \times 1$。</p>
-<h2 id="多样本多神经元的计算"><a href="#多样本多神经元的计算" class="headerlink" title="多样本多神经元的计算"></a>多样本多神经元的计算</h2><p>和上一节课一样，让我们把一个输入样本拓展到<strong>多个样本</strong>，看看整个计算公式该怎么写。</p>
-<p>对于第$i$个输入样本$x^{(i)}$，我们要计算：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-a^{[1](i)} & =\sigma(W^{[1]}x^{(i)}+b^{[1]}) \\
-a^{[2](i)} & =\sigma(W^{[2]}a^{[1](i)}+b^{[2]})
-\end{align*}</script><p>直接写的话，我们要写个for循环，把$i$从$0$遍历到$m-1$。</p>
-<blockquote>
-<p>回忆一下，$m$是样本总数。</p>
-</blockquote>
-<p>但是，如果把输入打包在一起，形成一个$n_x \times m$的矩阵$X$，那么整个计算过程可以用十分相似的向量化计算公式表示：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-A^{[1]} & =\sigma(W^{[1]}X+b^{[1]}) \\
-A^{[2]} & =\sigma(W^{[2]}A^{[1]}+b^{[2]})
-\end{align*}</script><blockquote>
-<p>这里的$X$,$A$相当于横向“拉长了”：</p>
-<script type="math/tex; mode=display">
-X=\left[
-  \begin{matrix}
-  | & | & & | \\
-  x^{(1)} & x^{(2)} & ... & x^{(m)} \\
-  | & | & & |
-  \end{matrix}
-\right] \\ 
-\ \\
-A^{[l]}=\left[
-  \begin{matrix}
-  | & | & & | \\
-  a^{[l](1)} & a^{[l](2)} & ... & a^{[l](m)} \\
-  | & | & & |
-  \end{matrix}
-\right]</script></blockquote>
-<h2 id="激活函数"><a href="#激活函数" class="headerlink" title="激活函数"></a>激活函数</h2><p>在神经网络中，我们每做完一个线性运算$Z=WX+b$后，都会做一个$\sigma(Z)$的操作。上周我们讲这个$\sigma$（sigmoid函数）是为了把实数的输入映射到$[0, 1]$。这是它在逻辑回归的作用。而在普通的神经网络中，$\sigma$就有别的作用了——<strong>激活</strong>线性输出。$\sigma$其实只是激活输出的<strong>激活函数</strong>的一员，还有很多其他函数都可以用作为激活函数。我们现在暂时不管这个“激活”是什么意思，先认识一下常见的激活函数。</p>
-<p><img src="/2022/05/23/DLS-note-3/3.jpg" alt></p>
-<blockquote>
-<p>画这些函数的代码见后文。</p>
-</blockquote>
-<p>它们的数学公式如下：</p>
-<script type="math/tex; mode=display">
-sigmoid(x)=\frac{1}{1+e^{-x}} \\
-tanh(x)=\frac{e^x - e^{-x}}{e^x + e^{-x}} \\
-relu(x) = \left\{
-\begin{aligned}
-   x & \ (x \geq 0) \\
-   0 & \ (x < 0)
-\end{aligned}
-\right. \\
-leaky\_relu(x) = \left\{
-\begin{aligned}
-   x & \ (x \geq 0) \\
-   kx & \ (x < 0, k < 1)
-\end{aligned}
-\right.</script><p>其中leaky_relu里的$k$是一个常数，这个常数要小于1。图中的leaky_relu的$k$取了0.1。</p>
-<p>现在来介绍一下这些激活函数。</p>
-<p>sigmiod，老熟人了，这个函数可以把实数上的输入映射到$(0, 1)$。tanh其实是sigmoid的一个“位移版”（二者的核心都是$e^x$），它可以把实数的输入映射到$(-1, 1)$。</p>
-<p>这两个函数有一个问题：当x极大或者极小的时候，函数的梯度几乎为0。从图像上来看，也就是越靠近左边或者右边，函数曲线就越平。梯度过小，会导致梯度下降法每次更新的幅度较小，从而使网络训练速度变慢。</p>
-<p>为了解决梯度变小的问题，研究者们又提出了relu函数(rectified linear unit, 线性整流单元)。别看这个名字很高大上，relu函数本身其实很简单：你是正数，就取原来的值；你是负数，就取0。非常的简单直接。把这个函数用作激活函数，梯度总是不会太小，可以有效加快训练速度。</p>
-<p>有人觉得relu对负数太“一刀切”了，把relu在负数上的值改成了一个随输入$x$变化的，十分接近0的值。这样一个新的relu函数就叫做leaky relu。（大家应该知道为什么leaky_relu的$k$要小于1了吧）</p>
-<blockquote>
-<p>写在博客里的题外话：浅谈文章的统一性。为什么这里relu用的是小写呢？按照英文的写法，应该是ReLU才对啊？这里是不是写文章的时候不够严谨啊？其实不是。我们这里其实统一用的是代码写法，即全部单词小写。我们首次介绍relu时，是在上文的图片和公式里。那里面用的是小写的relu。后文其实是对这种描述的一个统一，表示“前文用到的relu”，而不是一般用语中的ReLU。在后面的文章中，我会使用ReLU这个称呼。</p>
-<p>如果有严谨的文字工作者，还会质疑道：“你这篇文章里有些单词应该用公式框起来，有些应该用代码框起来，怎么直接用文本表示啊？”这是因为微信公众号对公式的支持很烂，我编辑得累死了，不想动脑去思考到底用公式还是用代码了。要把一个东西写得天衣无缝，需要耗费大量的时间。为了权衡，我抛弃了部分严谨性，换来了写文章的效率。</p>
-</blockquote>
-<h2 id="如何选择激活函数"><a href="#如何选择激活函数" class="headerlink" title="如何选择激活函数"></a>如何选择激活函数</h2><p>tanh由于其值域比sigmoid大，原理又一模一样，所以tanh在数学上严格优于sigmoid。除非是输出恰好处于$(0, 1)$(比如逻辑回归的输出)，不然宁可用tanh也不要用sigmoid。</p>
-<p>现在大家都默认使用relu作为激活函数，偶尔也有使用leaky_relu的。吴恩达老师鼓励大家多多尝试不同的激活函数。</p>
-<p>在之前介绍的公式中，我们所有激活函数$g$都默认用的是$g=\sigma$。准确来说，单隐层神经网络公式应该写成下面这种形式：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-A^{[1]} & =g^{[1]}(W^{[1]}X+b^{[1]}) \\
-A^{[2]} & =g^{[2]}(W^{[2]}A^{[1]}+b^{[2]})
-\end{align*}</script><p>由于第二层网络的输出落在[0, 1]，我们第二个激活函数还是可以用sigmoid，即$g^{[2]}=\sigma$。</p>
-<h2 id="激活函数的作用"><a href="#激活函数的作用" class="headerlink" title="激活函数的作用"></a>激活函数的作用</h2><p>假设我们有一个两层神经网络：</p>
-<script type="math/tex; mode=display">
-\hat{y} = g(W_2 \cdot g(W_1x+b_1) + b_2)</script><p>其中激活函数用$g$表示。</p>
-<p>假如我们不使用激活函数，即令$g(x)=x$的话，这个神经网络就变成了：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-\hat{y} &= W_2 \cdot (W_1x+b_1) + b_2 \\
-&= (W_2W_1)x+(b_1+b_2)
-\end{align*}</script><p>我们把$W_2W_1$看成一个新的“$W$”,$(b_1+b_2)$看成一个新的”$b$”,那么这其实是一个单层神经网络。</p>
-<p>也就是说，如果我们不用激活函数，那么无论神经网络有多少层，这个神经网络都等价于只有一层。这种神经网络永远只能拟合一个线性函数。</p>
-<p>为了让神经网络取拟合一个非线性的，超级复杂的函数，我们必须要使用激活函数。</p>
-<h2 id="激活函数的导数（选读）"><a href="#激活函数的导数（选读）" class="headerlink" title="激活函数的导数（选读）"></a>激活函数的导数（选读）</h2><blockquote>
-<p>为了让大家重新体验一下高中学数学的感觉，这里求导的步骤推得十分详细。</p>
-</blockquote>
-<h3 id="sigmoid"><a href="#sigmoid" class="headerlink" title="sigmoid"></a>sigmoid</h3><script type="math/tex; mode=display">
-\begin{align*}
-f(x) &= \frac{1}{1+e^{-x}} \\
-f'(x) &=  -(\frac{1}{1+e^{-x}})^2(e^{-x})' \\
-&= -(\frac{1}{1+e^{-x}})^2(-e^{-x}) \\
-&= \frac{e^{-x}}{(1+e^{-x})^2} \\
-&= f(x)(1-f(x))
-\end{align*}</script><blockquote>
-<p>上篇笔记也吐槽过了，想写出最后一步，需要发动数学家的固有技能：「注意到」。这不怎么学数学的人谁能注意到最后这一步啊。</p>
-</blockquote>
-<h3 id="tanh"><a href="#tanh" class="headerlink" title="tanh"></a>tanh</h3><script type="math/tex; mode=display">
-\begin{align*}
-f(x) &= \frac{e^x - e^{-x}}{e^x + e^{-x}} = \frac{e^{2x}-1}{e^{2x}+1}\\
-\\
-(\frac{x-1}{x+1})' &=\frac{(x+1)-(x-1)}{(x+1)^2}\\
-&= \frac{2}{(x+1)^2}\\
-\\
-f'(x) &=  (\frac{x-1}{x+1})'(e^{2x}) \cdot (e^{2x})' \\
-&= \frac{2}{(e^{2x}+1)^2}(2e^{2x}) \\
-&= \frac{4e^{2x}}{(e^{2x}+1)^2} \\
-&= (1+ f(x))(1-f(x))
-\end{align*}</script><blockquote>
-<p>回忆一下，$(\frac{u}{v})’=(\frac{u’v-uv’}{v^2})$。</p>
-<p>最后这步我依然注意不到。我猜原函数$f(x)$是用$f’(x)=(1+ f(x))(1-f(x))$这个微分方程构造出来的，而不是反过来恰好发现导数能够写得这么简单。</p>
-</blockquote>
-<h3 id="relu"><a href="#relu" class="headerlink" title="relu"></a>relu</h3><script type="math/tex; mode=display">
-f(x) = \left\{
-\begin{aligned}
-   x & \ (x \geq 0) \\
-   0 & \ (x < 0)
-\end{aligned}
-\right. \\
-f'(x) = \left\{
-\begin{aligned}
-   1 & \ (x > 0) \\
-   0 & \ (x < 0)
-\end{aligned}
-\right. \\</script><blockquote>
-<p>这个导求得神清气爽。</p>
-</blockquote>
-<h3 id="leaky-relu"><a href="#leaky-relu" class="headerlink" title="leaky relu"></a>leaky relu</h3><script type="math/tex; mode=display">
-f(x) = \left\{
-\begin{aligned}
-   x & \ (x \geq 0) \\
-   kx & \ (x < 0)
-\end{aligned}
-\right. \\
-f'(x) = \left\{
-\begin{aligned}
-   1 & \ (x > 0) \\
-   k & \ (x < 0)
-\end{aligned}
-\right. \\</script><blockquote>
-<p>学数学的人可能会很在意：relu和leaky relu在0处没有导数啊！碰到0你怎么梯度下降啊？实际上，我们编程的时候，不用管那么多，直接也令0处的导数为1就行（即导数在0处的右极限）。</p>
-</blockquote>
-<h2 id="对神经网络做梯度下降"><a href="#对神经网络做梯度下降" class="headerlink" title="对神经网络做梯度下降"></a>对神经网络做梯度下降</h2><p>回顾一下，如果只有两个参数$w, b$，应该用下式做梯度下降：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-w & \gets w - \alpha \frac{dJ}{dw} \\ 
-b & \gets b - \alpha \frac{dJ}{db}
-\end{align*}</script><blockquote>
-<p>回忆一下，$\alpha$是学习率，表示梯度更新的速度，一般取$0.0001$这种很小的值。</p>
-</blockquote>
-<p>现在，我们有4个参数：$W^{[1]},W^{[2]}, b^{[1]},b^{[2]}$，它们也应该按照同样的规则执行梯度下降：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-W^{[1]} & \gets W^{[1]} - \alpha \frac{dJ}{dW^{[1]}} \\ 
-W^{[2]} & \gets W^{[2]} - \alpha \frac{dJ}{dW^{[2]}} \\ 
-b^{[1]} & \gets b^{[1]} - \alpha \frac{dJ}{db^{[1]}} \\
-b^{[2]} & \gets b^{[2]} - \alpha \frac{dJ}{db^{[2]}} \\
-\end{align*}</script><p>剩下的问题就是怎么求导了。让我们再看一遍神经网络正向传播的公式：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-Z^{[1]} &= W^{[1]}X+b^{[1]} \\
-A^{[1]} &= g^{[1]}(Z^{[1]}) \\
-Z^{[2]} &= W^{[2]}X+b^{[2]} \\
-A^{[2]} &= g^{[2]}(Z^{[2]})
-\end{align*}</script><p>由于我们令$g^{[2]}=\sigma$，所以神经网络第二层（输出层）的导数可以直接套用上周的导数公式：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-dZ^{[2]} &= A^{[2]}-Y \\
-dW^{[2]} &=  \frac{1}{m}dZ^{[2]}A^{[1]T} \\
-db^{[2]} &= \frac{1}{m} \Sigma_{i=1}^m dZ^{[2](i)} 
-\end{align*}</script><blockquote>
-<p><strong>注意！</strong> 上周我们算的是$AdZ^T$，这周是$dZ^{[2]}A^{[1]T}$。这是因为参数$W$转置了一下。上周的$w$是列向量，这周每个神经元的权重$W_i$是行向量。</p>
-</blockquote>
-<p>之后，我们来看第一层。首先求$dZ^{[1]}$:</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-dZ^{[1]} &= dA^{[1]}\frac{dA^{[1]}}{dZ^{[1]}} \\
-&=W^{[2]T}dZ^{[2]} \ast g^{[1]'} (Z^{[1]})
-\end{align*}</script><blockquote>
-<p>注意，上式中右边第一项$dA^{[1]}$是$\frac{dJ}{dA^{[1]}}$的简写，第二项$\frac{dA^{[1]}}{dZ^{[1]}}$是实实在在的求导。</p>
-<p>这里$dA^{[1]}$和$dW^{[2]}$的计算是对称的哟。</p>
-</blockquote>
-<p>之后的$dW^{[1]}, db^{[1]}$的公式和前面$dW^{[2]}, db^{[2]}$的相同：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-dW^{[1]} &=  \frac{1}{m}dZ^{[1]}X^{T} \\
-db^{[1]} &= \frac{1}{m} \Sigma_{i=1}^m dZ^{[1](i)} 
-\end{align*}</script><blockquote>
-<p>别忘了，$X=A^{[0]}$。</p>
-</blockquote>
-<p>这些求导的步骤写成代码如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">dZ2=A2-Y</span><br><span class="line">dW2=np.dot(dZ2, A1.T) / m</span><br><span class="line">db2=np.<span class="built_in">sum</span>(dZ2, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>) / m</span><br><span class="line">dZ1=np.dot(W2.T, dZ2) * g1_backward(Z1)</span><br><span class="line">dW1=np.dot(dZ1, X.T) / m</span><br><span class="line">db1=np.<span class="built_in">sum</span>(dZ1, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>) / m</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>再次温馨提示，搞不清楚数学公式的细节没关系，直接拿来用就好了。要学会的是算法的整体思路。</p>
-</blockquote>
-<p>这段代码有一点需要注意：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">db2=np.<span class="built_in">sum</span>(dZ2, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>)</span><br><span class="line">db1=np.<span class="built_in">sum</span>(dZ1, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure><br>这个<code>keepdims=True</code>是必不可少的。使用<code>np.sum, np.mean</code>这种会导致维度变少的计算时，如果加了<code>keepdims=True</code>,会让变少的那一个维度保持长度1.比如一个[4, 3]的矩阵，我们对第二维做求和，理论上得到的是一个[4]的向量。但如果用了<code>keepdims=True</code>，就会得到一个[4, 1]的矩阵。</p>
-<p>保持向量的维度，可以让某些广播运算正确进行。比如我要用[4, 3]的矩阵减去[4]的矩阵就会报错，而减去[4, 1]的矩阵就不会报错。</p>
-<h2 id="参数随机初始化"><a href="#参数随机初始化" class="headerlink" title="参数随机初始化"></a>参数随机初始化</h2><p>再次回顾下，梯度下降算法的结构如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">初始化参数</span><br><span class="line">迭代 k 步：</span><br><span class="line">   算参数的梯度</span><br><span class="line">   用梯度更新参数</span><br></pre></td></tr></table></figure>
-<p>对于这节课新学的单隐层神经网络，求导、更新参数的过程我们已经学完了。我们还有一个东西没有详细探究：参数的初始化方式。现在，我们来详细研究一下参数初始化。</p>
-<p>在上节课中，我们用一句话就带过了参数初始化方法：令参数全为0就行了。这种初始化方法在这节课还有用吗？让我们来看课堂里提到的一个示例：</p>
-<p><img src="/2022/05/23/DLS-note-3/4.jpg" alt></p>
-<p>如上图，对于输入长度为2，第一层有2个神经元的网络，其第一层参数$W^{[1]}$为<code>[[0, 0], [0, 0]]</code>。这样算出来的神经元输出$a^{[1]}_1,a^{[1]}_2$是一样的。而更新梯度时，每一个神经元的参数$W^{[1]}_1, W^{[1]}_2$的梯度都只和该神经元的输出有关。这样，每个神经元参数的导数<code>dw</code>都是一模一样的。导数一样，初始化的值也一样，那么每个神经元的参数的值会一直保持相同。这样，不论我们在某一层使用了多少个神经元，都等价于只使用一个神经元。</p>
-<p>为了不发生这样的情况，我们需要让每一个神经元的参数$w$都<strong>取不同的值</strong>。这可以通过<strong>随机初始化</strong>实现。只需要使用下面的代码就可以随机初始化$w$:</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">w = np.random.randn((h, w)) * 0.01</span><br></pre></td></tr></table></figure>
-<p>注意，这里我们给随机出的数乘了个0.01。这是因为出于经验，人们更倾向于使用更小的参数，以计算出更小的结果，防止激活函数（如tanh）在绝对值过大时梯度过小的问题。</p>
-<blockquote>
-<p>后面的课会详细介绍该如何初始化这些参数，以及初始化参数可以解决哪些问题。</p>
-</blockquote>
-<p>而$b$和之前一样，直接用0初始化就行了。</p>
-<h2 id="知识总结"><a href="#知识总结" class="headerlink" title="知识总结"></a>知识总结</h2><p>在这堂课中，我们正式认识了神经网络的定义。原来，上周的逻辑回归只是一个特殊的神经网络。它只有一个输出层，并且使用sigmoid作激活函数。而这周，我们学习了如何定义一个两层（一个隐藏层、一个输出层）的神经网络，并且知道如何在网络中使用不同的激活函数。</p>
-<p>让我们来看一下这节课的知识点：</p>
-<ul>
-<li>神经网络的定义<ul>
-<li>输入层、隐藏层、输出层</li>
-<li>每一层每一个神经元相关的参数该怎么表示</li>
-</ul>
-</li>
-<li>神经网络的计算方式<ul>
-<li>单样本 -&gt; 多样本</li>
-<li>正向传播与反向传播</li>
-</ul>
-</li>
-<li>激活函数<ul>
-<li>直观认识激活函数——激活函数属于神经网络计算中的哪一部分？</li>
-<li>常见的四种激活函数：sigmoid, tanh, relu, leaky_relu</li>
-<li><strong>如何选择激活函数</strong></li>
-<li><strong>为什么要使用激活函数</strong></li>
-</ul>
-</li>
-<li>神经网络与逻辑回归的区别——参数初始化问题<ul>
-<li><strong>为什么不能用0初始化$W$</strong></li>
-<li>随机初始化$W$</li>
-<li>可以用0初始化$b$</li>
-</ul>
-</li>
-</ul>
-<h1 id="代码实战"><a href="#代码实战" class="headerlink" title="代码实战"></a>代码实战</h1><p>这节课的编程作业是搞一个点集分类器。此任务的数据集如下图所示：</p>
-<p><img src="/2022/05/23/DLS-note-3/5.jpg" alt></p>
-<p>在平面上，已知有一堆红色的点和绿色的点。我们希望任意给定一个点，程序能够判断这个点是红点还是绿点。</p>
-<p>让我们人类来分类的话，肯定会认为左边一片花瓣和右上角两片花瓣是绿色的，剩下三片花瓣是红色的（有部分点不满足这个规律，可以认为这些点是噪声，即不正确的数据）。让神经网络来做这个任务，会得到怎样的结果呢？</p>
-<p>现在，让我们用这周学的单隐层神经网络，来实现这个分类器。</p>
-<p>虽然前面说这周要继续挑战猫狗分类任务，但我估摸着这周的模型可能还是简单了一点。等下周学了再强大一点的模型，我再来复仇。</p>
-<p>项目链接:<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/ShallowNetwork">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/ShallowNetwork</a></p>
-<h2 id="通用分类器类"><a href="#通用分类器类" class="headerlink" title="通用分类器类"></a>通用分类器类</h2><p>在上节课的编程实战中，我们很暴力地写了“一摊”代码。说实话，有编程洁癖的我是不能接受那种潦草的代码的。如果代码写得太乱，就根本不能复用，根本不可读，根本不能体现编程的逻辑之美。</p>
-<p>这周，我将解除封印，释放我30%的编程水平，展示一个比较优雅的通用分类器类该怎么写。我们会先把上周的逻辑回归用继承基类的方式实现一遍，再实现一遍这周的浅层神经网络。</p>
-<p>分类器基类的代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> abc</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BaseRegressionModel</span>(<span class="params">metaclass=abc.ABCMeta</span>):</span></span><br><span class="line">    <span class="comment"># Use Cross Entropy as the cost function</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, X, train_mode=<span class="literal">True</span></span>):</span></span><br><span class="line">        <span class="comment"># if self.train_mode:</span></span><br><span class="line">        <span class="comment">#   forward_train()</span></span><br><span class="line">        <span class="comment"># else:</span></span><br><span class="line">        <span class="comment">#   forward_test()</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">backward</span>(<span class="params">self, Y</span>):</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span>(<span class="params">self, learning_rate=<span class="number">0.001</span></span>):</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">self, Y_hat, Y</span>):</span></span><br><span class="line">        <span class="keyword">return</span> np.mean(-(Y * np.log(Y_hat) + (<span class="number">1</span> - Y) * np.log(<span class="number">1</span> - Y_hat)))</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">evaluate</span>(<span class="params">self, X, Y</span>):</span></span><br><span class="line">        Y_hat = self.forward(X, train_mode=<span class="literal">False</span>)</span><br><span class="line">        predicts = np.where(Y_hat &gt; <span class="number">0.5</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">        score = np.mean(np.where(predicts == Y, <span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;Accuracy: <span class="subst">&#123;score&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>为了简化代码，我们用<code>BaseRegressionModel</code>表示一个使用交叉熵为损失函数的二分类模型。这样，我们所有的模型都可以共用一套损失函数<code>loss</code>、一套评估方法<code>evaluate</code>。这里损失函数和评估方法的实现都是从上周的代码里复制过来的。</p>
-<p>让我们分别看一下其他几个类方法的描述：</p>
-<ul>
-<li><code>__init__</code>: 模型的参数应该在<code>__init__</code>方法里初始化。</li>
-<li><code>forward</code>：正向传播函数。这个函数即可以用于测试，也可以用于训练。如果是用于训练，就要令参数<code>train_mode=True</code>。为什么要区分训练和测试呢？这是因为，正向传播在训练的时候需要额外保存一些数据(缓存)，保存数据是存在开销的。在测试的时候，我们可以不做缓存，以降低程序运行开销。</li>
-<li><code>backward</code>：反向传播函数。这个函数用于<code>forward</code>之后的梯度计算。算出来的梯度会缓存起来，供反向传播使用。</li>
-<li><code>gradient_descent</code>：用梯度下降更新模型的参数。（一般框架会把优化器和模型分开写。由于我们现在只学了梯度下降这一种优化策略，所以直接把梯度下降当成了模型类的方法）</li>
-</ul>
-<p>有了这样一个分类器基类后，我们可以用统一的方式训练模型：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train_model</span>(<span class="params">model: BaseRegressionModel,</span></span></span><br><span class="line"><span class="params"><span class="function">                X_train,</span></span></span><br><span class="line"><span class="params"><span class="function">                Y_train,</span></span></span><br><span class="line"><span class="params"><span class="function">                X_test,</span></span></span><br><span class="line"><span class="params"><span class="function">                Y_test,</span></span></span><br><span class="line"><span class="params"><span class="function">                steps=<span class="number">1000</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                learning_rate=<span class="number">0.001</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                print_interval=<span class="number">100</span></span>):</span></span><br><span class="line">    <span class="keyword">for</span> step <span class="keyword">in</span> <span class="built_in">range</span>(steps):</span><br><span class="line">        Y_hat = model.forward(X_train)</span><br><span class="line">        model.backward(Y_train)</span><br><span class="line">        model.gradient_descent(learning_rate)</span><br><span class="line">        <span class="keyword">if</span> step % print_interval == <span class="number">0</span>:</span><br><span class="line">            train_loss = model.loss(Y_hat, Y_train)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&#x27;Step <span class="subst">&#123;step&#125;</span>&#x27;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&#x27;Train loss: <span class="subst">&#123;train_loss&#125;</span>&#x27;</span>)</span><br><span class="line">            model.evaluate(X_test, Y_test)</span><br></pre></td></tr></table></figure><br>有了一个初始化好的模型<code>model</code>后，我们在训练函数<code>train_model</code>里可以直接开始循环训练模型。每次我们先调用<code>model.forward</code>做正向传播，缓存一些数据，再调用<code>model.backward</code>反向传播算梯度，最后调用<code>model.gradient_descent</code>更新模型的参数。每训练一定的步数，我们监控一次模型的训练情况，输出模型的训练loss和测试精度。</p>
-<p>看吧，是不是使用了类来实现神经网络后，整个代码清爽而整洁？</p>
-<h2 id="工具函数"><a href="#工具函数" class="headerlink" title="工具函数"></a>工具函数</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sigmoid</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> / (<span class="number">1</span> + np.exp(-x))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">relu</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> np.maximum(x, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">relu_de</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> np.where(x &gt; <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<p>同样，为了让代码更整洁，我把一些工具函数单独放到了一个文件里。现在，如上面的代码所示，我们的工具函数只有几个损失函数及它们的导数。（用于sigmoid只用于最后一层，我们可以直接用<code>dZ=A-Y</code>跳一个导数计算步骤，所以这里没有写sigmoid的导数）。</p>
-<h2 id="复现逻辑回归"><a href="#复现逻辑回归" class="headerlink" title="复现逻辑回归"></a>复现逻辑回归</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LogisticRegression</span>(<span class="params">BaseRegressionModel</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, n_x</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.n_x = n_x</span><br><span class="line">        self.w = np.zeros((n_x, <span class="number">1</span>))</span><br><span class="line">        self.b = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, X, train_mode=<span class="literal">True</span></span>):</span></span><br><span class="line">        Z = np.dot(self.w.T, X) + self.b</span><br><span class="line">        A = sigmoid(Z)  <span class="comment"># hat_Y = A</span></span><br><span class="line">        <span class="keyword">if</span> train_mode:</span><br><span class="line">            self.m_cache = X.shape[<span class="number">1</span>]</span><br><span class="line">            self.X_cache = X</span><br><span class="line">            self.A_cache = A</span><br><span class="line">        <span class="keyword">return</span> A</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">backward</span>(<span class="params">self, Y</span>):</span></span><br><span class="line">        d_Z = self.A_cache - Y</span><br><span class="line">        d_w = np.dot(self.X_cache, d_Z.T) / self.m_cache</span><br><span class="line">        d_b = np.mean(d_Z)</span><br><span class="line">        self.d_w_cache = d_w</span><br><span class="line">        self.d_b_cache = d_b</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span>(<span class="params">self, learning_rate=<span class="number">0.001</span></span>):</span></span><br><span class="line">        self.w -= learning_rate * self.d_w_cache</span><br><span class="line">        self.b -= learning_rate * self.d_b_cache</span><br></pre></td></tr></table></figure>
-<p>逻辑回归是上节课的内容，这里就不讲解，直接贴代码了。大家可以通过这个例子看一看<code>BaseRegressionModel</code>的子类应该怎么写。</p>
-<h2 id="实现单隐层神经网络"><a href="#实现单隐层神经网络" class="headerlink" title="实现单隐层神经网络"></a>实现单隐层神经网络</h2><p>有了基类后，我们更加明确代码中哪些地方是要重新写，不能复用以前的代码了。在实现浅层神经网络时，我们要重写<strong>模型初始化</strong>、<strong>正向传播</strong>、<strong>反向传播</strong>、<strong>梯度下降</strong>这几个步骤。</p>
-<h3 id="模型初始化"><a href="#模型初始化" class="headerlink" title="模型初始化"></a>模型初始化</h3><p>我们要在<code>__init__</code>里初始化模型的参数。回忆一下这周的单隐层神经网络推理公式：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-A^{[1]} & =g^{[1]}(W^{[1]}X+b^{[1]}) \\
-A^{[2]} & =g^{[2]}(W^{[2]}A^{[1]}+b^{[2]})
-\end{align*}</script><p>其中，有四个参数$W^{[1]}, W^{[2]}, b^{[1]}, b^{[2]}$，它们的形状分别是$n_1 \times n_x$, $1 \times n_1$, $n_1 \times 1$, $1 \times 1$。我们需要在这里决定$n_x, n_1$这两个数。</p>
-<p>$n_x$由输入向量的长度决定。由于我们是做2维平面点集分类，每一个输入数据就是一个二维的点。因此，在稍后初始化模型时，我们会令$n_x=2$。</p>
-<p>$n_1$属于网络的超参数，我们可以调整这个参数的值。</p>
-<p>计划好了初始化函数的输入参数后，我们来看看初始化函数的代码：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, n_x, n_1</span>):</span></span><br><span class="line">   <span class="built_in">super</span>().__init__()</span><br><span class="line">   self.n_x = n_x</span><br><span class="line">   self.n_1 = n_1</span><br><span class="line">   self.W1 = np.random.randn(n_1, n_x) * <span class="number">0.01</span></span><br><span class="line">   self.b1 = np.zeros((n_1, <span class="number">1</span>))</span><br><span class="line">   self.W2 = np.random.randn(<span class="number">1</span>, n_1) * <span class="number">0.01</span></span><br><span class="line">   self.b2 = np.zeros((<span class="number">1</span>, <span class="number">1</span>))</span><br></pre></td></tr></table></figure></p>
-<p>别忘了，前面我们学过，初始化<code>W</code>时要使用随机初始化，且让初始化出来的值比较小。</p>
-<h3 id="正向传播"><a href="#正向传播" class="headerlink" title="正向传播"></a>正向传播</h3><p>我们打算神经网络令第一层的激活函数为relu，第二层的激活函数为sigmoid。因此，模型的正向传播公式如下：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-A^{[1]} & =relu(W^{[1]}X+b^{[1]}) \\
-A^{[2]} & =sigmoid(W^{[2]}A^{[1]}+b^{[2]})
-\end{align*}</script><p>用代码表示如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, X, train_mode=<span class="literal">True</span></span>):</span></span><br><span class="line">   Z1 = np.dot(self.W1, X) + self.b1</span><br><span class="line">   A1 = relu(Z1)</span><br><span class="line">   Z2 = np.dot(self.W2, A1) + self.b2</span><br><span class="line">   A2 = sigmoid(Z2)</span><br><span class="line">   <span class="keyword">if</span> train_mode:</span><br><span class="line">      self.m_cache = X.shape[<span class="number">1</span>]</span><br><span class="line">      self.X_cache = X</span><br><span class="line">      self.Z1_cache = Z1</span><br><span class="line">      self.A1_cache = A1</span><br><span class="line">      self.A2_cache = A2</span><br><span class="line">   <span class="keyword">return</span> A2</span><br></pre></td></tr></table></figure></p>
-<p>其中<code>train_mode</code>里的内容是我们待会儿要在反向传播用到的数据，这里需要先缓存起来。</p>
-<blockquote>
-<p>事实上，我是边写反向传播函数，边写这里<code>if train_mode:</code>里面的缓存数据的。编程不一定要按照顺序写。</p>
-</blockquote>
-<h3 id="反向传播"><a href="#反向传播" class="headerlink" title="反向传播"></a>反向传播</h3><p>翻译一下这些公式：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-dZ^{[2]} &= A^{[2]}-Y \\
-dW^{[2]} &=  \frac{1}{m}dZ^{[2]}A^{[1]T} \\
-db^{[2]} &= \frac{1}{m} \Sigma_{i=1}^m dZ^{[2](i)} \\
-dZ^{[1]} &=W^{[2]T}dZ^{[2]} \ast g^{[1]'} (Z^{[1]}) \\
-dW^{[1]} &=  \frac{1}{m}dZ^{[1]}X^{T} \\
-db^{[1]} &= \frac{1}{m} \Sigma_{i=1}^m dZ^{[1](i)} 
-\end{align*}</script><p>用代码写就是这样：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">backward</span>(<span class="params">self, Y</span>):</span></span><br><span class="line">   dZ2 = self.A2_cache - Y</span><br><span class="line">   dW2 = np.dot(dZ2, self.A1_cache.T) / self.m_cache</span><br><span class="line">   db2 = np.<span class="built_in">sum</span>(dZ2, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>) / self.m_cache</span><br><span class="line">   dA1 = np.dot(self.W2.T, dZ2)</span><br><span class="line"></span><br><span class="line">   dZ1 = dA1 * relu_de(self.Z1_cache)</span><br><span class="line">   dW1 = np.dot(dZ1, self.X_cache.T) / self.m_cache</span><br><span class="line">   db1 = np.<span class="built_in">sum</span>(dZ1, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>) / self.m_cache</span><br><span class="line"></span><br><span class="line">   self.dW2_cache = dW2</span><br><span class="line">   self.dW1_cache = dW1</span><br><span class="line">   self.db2_cache = db2</span><br><span class="line">   self.db1_cache = db1</span><br></pre></td></tr></table></figure>
-<p>算完梯度后，我们要把它们缓存起来，用于之后的梯度下降。</p>
-<h3 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span>(<span class="params">self, learning_rate=<span class="number">0.001</span></span>):</span></span><br><span class="line">   self.W1 -= learning_rate * self.dW1_cache</span><br><span class="line">   self.b1 -= learning_rate * self.db1_cache</span><br><span class="line">   self.W2 -= learning_rate * self.dW2_cache</span><br><span class="line">   self.b2 -= learning_rate * self.db2_cache</span><br></pre></td></tr></table></figure>
-<p>梯度已经算好了，梯度下降就没什么好讲的了。</p>
-<h2 id="挑战点集分类问题"><a href="#挑战点集分类问题" class="headerlink" title="挑战点集分类问题"></a>挑战点集分类问题</h2><h3 id="数据收集"><a href="#数据收集" class="headerlink" title="数据收集"></a>数据收集</h3><blockquote>
-<p>这里我已经提前实现好了生成数据集的函数。本文的附录里会介绍这些函数的细节。</p>
-</blockquote>
-<p>使用项目里的 <code>generate_point_set</code> 函数可以生成一个平面点集分类数据集：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">x, y, label = generate_point_set()</span><br><span class="line"><span class="comment"># x: [240]</span></span><br><span class="line"><span class="comment"># y: [240]</span></span><br><span class="line"><span class="comment"># label: [240]</span></span><br></pre></td></tr></table></figure></p>
-<p>其中，<code>x[i]</code>是第i个点的横坐标，<code>y[i]</code>是第i个点的纵坐标，<code>label[i]</code>是第i个点的标签。标签为0表示是红色的点，标签为1表示是绿色的点。</p>
-<h3 id="数据预处理"><a href="#数据预处理" class="headerlink" title="数据预处理"></a>数据预处理</h3><p>得到了原始数据后，我们要把数据处理成矩阵X和Y，其中X的形状是<code>[2, m]</code>，Y的形状是<code>[1, m]</code>，其中<code>m</code>是样本大小。之后，我们还需要把原始数据拆分成训练集和测试集。</p>
-<p>第一步生成矩阵的代码如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">X = np.stack((x, y), axis=<span class="number">1</span>)</span><br><span class="line">Y = np.expand_dims(label, axis=<span class="number">1</span>)</span><br><span class="line"><span class="comment"># X: [240, 2]</span></span><br><span class="line"><span class="comment"># Y: [240, 1]</span></span><br></pre></td></tr></table></figure></p>
-<p>大家应该能猜出<code>stack</code>和<code>expand_dims</code>是什么意思。<code>stack</code>能把两个张量堆起来，比如这里把表示x,y坐标的一维向量合成起来，变成一个向量（长度为2）的向量（长度为240）。<code>expand_dims</code>就是凭空给张量加一个长度为1的维度，比如这里给<code>Y</code>添加了<code>axis=1</code>上的维度。</p>
-<p>第二步划分数据集的方法如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">indices = np.random.permutation(X.shape[<span class="number">0</span>])</span><br><span class="line">X_train = X[indices[<span class="number">0</span>:<span class="number">200</span>], :].T</span><br><span class="line">Y_train = Y[indices[<span class="number">0</span>:<span class="number">200</span>], :].T</span><br><span class="line">X_test = X[indices[<span class="number">200</span>:], :].T</span><br><span class="line">Y_test = Y[indices[<span class="number">200</span>:], :].T</span><br><span class="line"><span class="comment"># X_train: [2, 200]</span></span><br><span class="line"><span class="comment"># Y_train: [1, 200]</span></span><br><span class="line"><span class="comment"># X_test: [2, 40]</span></span><br><span class="line"><span class="comment"># Y_test: [1, 40]</span></span><br></pre></td></tr></table></figure><br>注意，我们划分数据集的时候最好要随机划分。我这里使用<code>np.random.permutation</code>生成了一个排列，把这个排列作为下标来打乱数据集。</p>
-<p>大家看不懂这段代码的话，可以想象这样一个例子：老师想抽10个人去值日，于是，他把班上同学的学号打乱，在打乱后的学号列表中，把前10个学号的同学叫了出来。代码里<code>indices</code>就是用随机排列生成的一个“打乱过的学号”，根据这个随机索引值，我们把前200个索引的数据当成训练集，200号索引之后的数据当成测试集。</p>
-<p>经过这些处理，数据就符合课堂上讲过的形状要求了。</p>
-<h3 id="使用模型"><a href="#使用模型" class="headerlink" title="使用模型"></a>使用模型</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">n_x = <span class="number">2</span></span><br><span class="line"></span><br><span class="line">model1 = LogisticRegression(n_x)</span><br><span class="line">model2 = ShallowNetwork(n_x, <span class="number">2</span>)</span><br><span class="line">model3 = ShallowNetwork(n_x, <span class="number">4</span>)</span><br><span class="line">model4 = ShallowNetwork(n_x, <span class="number">10</span>)</span><br><span class="line">train_model(model1, X_train, Y_train, X_test, Y_test, <span class="number">500</span>, <span class="number">0.0001</span>, <span class="number">50</span>)</span><br><span class="line">train_model(model2, X_train, Y_train, X_test, Y_test, <span class="number">2000</span>, <span class="number">0.01</span>, <span class="number">100</span>)</span><br><span class="line">train_model(model3, X_train, Y_train, X_test, Y_test, <span class="number">2000</span>, <span class="number">0.01</span>, <span class="number">100</span>)</span><br><span class="line">train_model(model4, X_train, Y_train, X_test, Y_test, <span class="number">2000</span>, <span class="number">0.01</span>, <span class="number">100</span>)</span><br></pre></td></tr></table></figure>
-<p>由于我们前面已经定义好了模型，使用模型的过程就很惬意了。这里直接初始化我们自己编写的类，再用训练函数训练模型即可。</p>
-<p>为了比较不同的模型，从感性上认识不同模型间的区别，在示例代码中我训练了4个模型。第一个模型是逻辑回归，后三个模型分别是隐藏层有2、4、10个神经元的单隐藏层神经网络。</p>
-<p>模仿这堂课的编程作业，我也贴心地实现了模型可视化函数：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">visualize_X = generate_plot_set()</span><br><span class="line">plot_result = model4.forward(visualize_X, train_mode=<span class="literal">False</span>)</span><br><span class="line">visualize(X, Y, plot_result)</span><br></pre></td></tr></table></figure>
-<p>只要运行上面这些代码，大家就可以看到模型具体是怎么分类2维平面上所有点的。让我们在下一节里看看这些函数的运行效果。</p>
-<h3 id="实验报告"><a href="#实验报告" class="headerlink" title="实验报告"></a>实验报告</h3><p>好了，最好玩的地方来了。让我们有请四位选手，看看他们在二维点分类任务上表现如何。</p>
-<p>首先是逻辑回归：</p>
-<p><img src="/2022/05/23/DLS-note-3/6.jpg" alt></p>
-<p>逻辑回归选手也太菜了吧！他只能模拟一条直线。这条直线虽然把下面两片红色花瓣包进去了，但忽略了左上角的花瓣。太弱了，太弱了！</p>
-<p><img src="/2022/05/23/DLS-note-3/7.jpg" alt></p>
-<p>隐藏层只有2个神经元的选手也菜得不行，和逻辑回归一起可谓是“卧龙凤雏”啊！</p>
-<p><img src="/2022/05/23/DLS-note-3/8.jpg" alt></p>
-<p><img src="/2022/05/23/DLS-note-3/9.jpg" alt></p>
-<p>4-神经元选手似乎在尝试做出一些改变！好像有一次的运行结果还挺不错！但怎么我感觉他的发挥不是很稳定啊？他是在瞎蒙吧？</p>
-<p>好，那我们最后上场的是4号选手10-神经元网络。4号选手可谓是受到万众的期待啊。据说，他有着“二维点分类小丸子”的称号，让我们来看一看他的表现:</p>
-<p><img src="/2022/05/23/DLS-note-3/10.jpg" alt></p>
-<p><img src="/2022/05/23/DLS-note-3/11.jpg" alt></p>
-<p>只见4号网络手起刀落，刀刀见血。不论是怎么运行程序，他都能精准无误地把点集正确分类。我宣布，他就是本届点集分类大赛的冠军！让我们祝贺他！</p>
-<p>程序里很多超参数是可调的，数据集也是可以随意修改的。欢迎大家去使用<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/ShallowNetwork">本课的代码</a>，比较一下不同的神经网络。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过这节课的编程练习后，大家应该掌握以下编程技能：</p>
-<ul>
-<li>编写单隐层神经网络的正向传播</li>
-<li>编写单隐层神经网络的反向传播</li>
-<li>正确初始化神经网络的参数</li>
-<li>常见激活函数及其导数的实现</li>
-</ul>
-<p>此外，通过浏览我的项目，大家应该能够提前学到以下技能：</p>
-<ul>
-<li>在神经网络中使用<strong>缓存</strong>的方法保存数据</li>
-</ul>
-<p>当然，我相信我的项目里还展示了许多编程技术。这些技能严格来说不在本课程的要求范围内，大家可以自行体悟。</p>
-<h1 id="附赠内容"><a href="#附赠内容" class="headerlink" title="附赠内容"></a>附赠内容</h1><h2 id="如何画激活函数"><a href="#如何画激活函数" class="headerlink" title="如何画激活函数"></a>如何画激活函数</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br></pre></td></tr></table></figure>
-<p>先导入第三方库。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sigmoid</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> / (<span class="number">1</span> + np.exp(-x))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">tanh</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">relu</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> np.maximum(x, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">leaky_relu</span>(<span class="params">x</span>):</span></span><br><span class="line">    <span class="keyword">return</span> np.maximum(x, <span class="number">0.1</span> * x)</span><br></pre></td></tr></table></figure>
-<p>再定义好激活函数的公式。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">x = np.linspace(-<span class="number">3</span>, <span class="number">3</span>, <span class="number">100</span>)</span><br><span class="line">y1 = sigmoid(x)</span><br><span class="line">y2 = tanh(x)</span><br><span class="line">y3 = relu(x)</span><br><span class="line">y4 = leaky_relu(x)</span><br></pre></td></tr></table></figure>
-<p>画函数，其实就是生成函数上的一堆点，再把相邻的点用直线两两连接起来。为了生成函数上的点，我们先用<code>np.linspace(-3, 3, 100)</code>生成100个位于[-3, 3]上的x坐标值，用这些x坐标值算出每个函数的y坐标值。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">plt.subplot(<span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>)</span><br><span class="line">plt.axvline(x=<span class="number">0</span>, color=<span class="string">&#x27;k&#x27;</span>)</span><br><span class="line">plt.axhline(y=<span class="number">0</span>, color=<span class="string">&#x27;k&#x27;</span>)</span><br><span class="line">plt.plot(x, y1)</span><br><span class="line">plt.title(<span class="string">&#x27;sigmoid&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>之后就是调用API了。这里只展示一下sigmoid函数是怎么画出来的。<code>plt.subplot(a, b, c)</code>表示你要在一个a <em>x</em> b的网格里的第c个格子里画图。 <code>plt.axvline(x=0, color=&#39;k&#39;) plt.axhline(y=0, color=&#39;k&#39;)</code>用于生成x,y轴，<code>plt.plot(x, y1)</code>用于画函数曲线，<code>plt.title(&#39;sigmoid&#39;)</code>用于给图像写标题。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p>用类似的方法画完所有函数后，调用<code>plt.show()</code>把图片显示出来就大功告成了。</p>
-<p>这段代码的链接：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/blob/master/dldemos/ShallowNetwork/plot_activation_func.py">https://github.com/SingleZombie/DL-Demos/blob/master/dldemos/ShallowNetwork/plot_activation_func.py</a></p>
-<p>学API本身没有任何技术含量，知道API能做什么，有需求的时候去查API用法即可。</p>
-<h2 id="画花"><a href="#画花" class="headerlink" title="画花"></a>画花</h2><p>看完上面的内容，有些人肯定会想：“诶，你数据集里那朵花画得挺不错啊，你是不是学过美术的啊？”嘿嘿，你们能这么想，我很荣幸。其实那朵花是用程序生成出来的。作为笔记的赠品，我打算顺手介绍一下该怎么用高中知识画出前面的那朵花。</p>
-<p>代码文件：<code>dldemos/ShallowNetwork/genereate_points.py</code></p>
-<h3 id="流程一览"><a href="#流程一览" class="headerlink" title="流程一览"></a>流程一览</h3><p><img src="/2022/05/23/DLS-note-3/12.jpg" alt></p>
-<p>这幅图足以概括花朵绘制的流程。</p>
-<ol>
-<li>生成半个椭圆。</li>
-<li>合成完整的椭圆。</li>
-<li>把椭圆移到x正半轴。</li>
-<li>复制、旋转椭圆。</li>
-</ol>
-<p>有人会说：“这前三步可以用一步就完成吧？你直接生成一个在x正半轴上的椭圆就好了，干嘛要拆开来？”别急，看了后文你就知道了。我这么做，完全是为了多展示一点知识，可谓是用心良苦啊。</p>
-<h3 id="画半个椭圆"><a href="#画半个椭圆" class="headerlink" title="画半个椭圆"></a>画半个椭圆</h3><p><img src="/2022/05/23/DLS-note-3/13.jpg" alt></p>
-<p>椭圆的公式是$\frac{x^2}{a^2}+\frac{y^2}{b^2}=1$，其中$a$是椭圆在x轴上的轴长，$b$是在y轴上的轴长。我画的椭圆的长轴为20，短轴为10，其形状和公式如图所示。</p>
-<p>但程序可不认得这个公式。为了生成椭圆上的点，我们可以遍历横坐标x，用公式$y=b\sqrt{1-\frac{x^2}{a^2}}$算出对应的y坐标。</p>
-<p>这段生成半椭圆的代码如下所示：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">half_oval</span>(<span class="params">cnt, h=<span class="number">10</span>, w=<span class="number">20</span></span>):</span></span><br><span class="line">    x = np.linspace(-w, w, cnt)</span><br><span class="line">    y = np.sqrt(h * h * (<span class="number">1</span> - x * x / w / w))</span><br><span class="line">    <span class="keyword">return</span> np.stack((x, y), <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">petal1 = half_oval(<span class="number">20</span>)</span><br></pre></td></tr></table></figure>
-<p><code>hafl_ovel</code>的参数分别表示椭圆上点的数量、y轴上轴长、x轴上轴长。根据刚刚的理论分析，我们在第二、三行算出所有点的x, y坐标。第四行用<code>np.stack((x, y), 1)</code>把坐标合并起来。</p>
-<p>这里要介绍一下<code>stack</code>函数的用法。<code>stack</code>用于把多个张量（第一个参数）按某一维（第二个参数）堆叠起来。第一个参数很好理解，而第二个参数“堆叠的维度”就不是那么好理解了。让我们针对这份代码，看两个取不同维度的例子。</p>
-<p>在我们这份代码中，执行完第二、三行后，<code>x</code>是<code>[x1, x2 ..., xn]</code>这样一个形状为<code>[n]</code>的向量，<code>y</code>也是<code>[y1, y2 ..., yn]</code>这样一个形状为<code>[n]</code>的向量。</p>
-<p>当堆叠维度取0时，<code>x</code>会变成<code>[[x1, x2, ..., xn]]([1, n])</code>的矩阵，<code>y</code>会变成<code>[[y1, y2, ..., yn]]([1, n])</code>的矩阵。之后，两个矩阵的第一维会拼起来，变成<code>[[x1, x2, ..., xn], [y1, y2, ..., yn]]</code>这样一个形状为<code>[2, n]</code>的矩阵。</p>
-<p>当堆叠维度取1时，<code>x</code>会变成<code>[[x1], [x2], ..., [xn]]([n, 1])</code>的矩阵，<code>y</code>会变成<code>[[y1], [y2], ..., [yn]]([n, 1])</code>的矩阵。之后，两个矩阵的第二维会拼起来，变成<code>[[x1, y1], [x2, y2]..., [xn, yn]]</code>这样一个形状为<code>[n, 2]</code>的矩阵。</p>
-<p>我们希望生成一个坐标的数组，即形状为<code>[n 2]</code>的矩阵。因此，我们会堆叠维度1（第二个维度），即使用如下代码:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">np.stack((x, y), <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
-<p>总之，经过以上操作，<code>half_oval</code>会返回一个形状为<code>[n, 2]</code>的坐标数组，表示半个花瓣上每个点的坐标。</p>
-<h3 id="翻转合并椭圆"><a href="#翻转合并椭圆" class="headerlink" title="翻转合并椭圆"></a>翻转合并椭圆</h3><p>要把半椭圆垂直翻转,实际上只要令半椭圆上所有点的y坐标取反即可：</p>
-<script type="math/tex; mode=display">
-\left\{
-\begin{aligned}
-   x &\gets x \\ 
-   y &\gets -y
-\end{aligned}
-\right.</script><p>但是，这种写法不够高级。我们可以写成矩阵乘法的形式：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-&\left[
-\begin{aligned}
-   &x  \\
-   &y  
-\end{aligned}
-\right] \gets
-\left[
-\begin{aligned}
-   &1  &0 \\
-   &0  &-1
-\end{aligned}
-\right] \times
-\left[
-\begin{aligned}
-   &x  \\
-   &y  
-\end{aligned}
-\right] \\
-\Rightarrow&\left[
-\begin{aligned}
-   &x  \\
-   &y  
-\end{aligned}
-\right] \gets
-
-\left[
-\begin{aligned}
-   x  \\
-   -y  
-\end{aligned}
-\right]
-\end{align*}</script><blockquote>
-<p>如果你对矩阵乘法不熟，只需要知道</p>
-<script type="math/tex; mode=display">
-\left[
-\begin{aligned}
-   &a  &b \\
-   &c  &d
-\end{aligned}
-\right] \times
-\left[
-\begin{aligned}
-   &x  \\
-   &y  
-\end{aligned}
-\right]=
-\left[
-\begin{aligned}
-   &ax+by  \\
-   &cx+dy  
-\end{aligned}
-\right]</script></blockquote>
-<p>设翻转矩阵为$F$，坐标向量为$p$，则翻转后的向量$p’$可以写成：</p>
-<script type="math/tex; mode=display">
-p'=Fp</script><p>这里我们默认$p$和$p’$都是列向量。但是，刚刚我们生成点的坐标时，每个坐标都是一个行向量。也就是说，$p$和$p’$其实都是行向量。因此，上式应该改成：</p>
-<script type="math/tex; mode=display">
-p'^T=Fp^T</script><p>最后我们要算的是$p’$，因此可以对上式两边再取转置：</p>
-<script type="math/tex; mode=display">
-\begin{align*}
-p'&=(Fp^T)^T \\
-&=pF^T
-\end{align*}</script><p>有了这些数学上的分析，我们可以写代码了。</p>
-<p>首先是生成翻转矩阵：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">vertical_flip</span>():</span></span><br><span class="line">    <span class="keyword">return</span> np.array([[<span class="number">1</span>, <span class="number">0</span>], [<span class="number">0</span>, -<span class="number">1</span>]])</span><br></pre></td></tr></table></figure>
-<p>之后生成翻转后的花瓣：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">petal2 = np.dot(half_oval(<span class="number">20</span>), vertical_flip().T)</span><br></pre></td></tr></table></figure></p>
-<p>现在，我们有开始得到的<code>petal1</code>和翻转后的<code>petal2</code>，它们的形状都是<code>[n, 2]</code>。我们希望把这两个坐标数组合并起来。这可以通过下面这行代码实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">petal = np.concatenate((petal1, petal2), <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<p><code>concatenate</code>用于按某一维（第二个参数）拼接张量（第一个参数）。回顾一下，刚刚的半椭圆张量的形状<code>[n, 2]</code>表示有<code>n</code>个<code>2</code>维坐标。合并两个半椭圆后，我们应该得到<code>2n</code>个点，即得到一个形状为<code>[2n, 2]</code>的张量。因此，这里我们要把两个半椭圆数组按第一维（<code>0</code>号维度）拼接。</p>
-<p><code>concatenate</code>和刚刚提到的<code>stack</code>有点像。其实，<code>stack</code>就是新建了一个维度，再做<code>concatenate</code>操作。<code>stack</code>一般由于把单独计算出来的<code>x, y, z</code>这样的坐标堆叠成一个坐标数组/坐标张量，<code>concatenate</code>一般用于合并多个性质一样的张量，比如这里的合并两个坐标数组。</p>
-<h3 id="移动椭圆"><a href="#移动椭圆" class="headerlink" title="移动椭圆"></a>移动椭圆</h3><p>移动椭圆很简单，只要给所有坐标加同一个向量就行了：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">petal += [<span class="number">25</span>, <span class="number">0</span>]</span><br></pre></td></tr></table></figure>
-<p>注意，这里的<code>petal</code>是一个形状为<code>[2n, 2]</code>的张量，而<code>[25, 0]</code>是一个形状为<code>[2]</code>的张量。这一个逐元素的加法操作之所以能够被程序正常解读，是因为上周提到的“广播”操作。通过使用广播，<code>[25, 0]</code>这个向量被加到了坐标数组中的每一个坐标里。</p>
-<h3 id="旋转花瓣，生成花朵"><a href="#旋转花瓣，生成花朵" class="headerlink" title="旋转花瓣，生成花朵"></a>旋转花瓣，生成花朵</h3><p><img src="/2022/05/23/DLS-note-3/14.jpg" alt></p>
-<p>如上图1所示，一个坐标$(x, y)$可以用它到原点的距离$r$和与x正半轴夹角$\theta$表示：</p>
-<script type="math/tex; mode=display">
-\left\{
-\begin{aligned}
-   x = r \cdot cos\theta \\
-   y = r \cdot sin\theta
-\end{aligned}
-\right.</script><p>那么，如上图2所示，假设现在把一个夹角为$\theta$的$(x_1, y_1)$旋转$\alpha$后得到了$(x_2, y_2)$，$(x_2, y_2)$可以表示为:</p>
-<script type="math/tex; mode=display">
-\left\{
-\begin{aligned}
-   x_2 = r \cdot cos(\theta+\alpha) \\
-   y_2 = r \cdot sin(\theta+\alpha)
-\end{aligned}
-\right.</script><p>但是，我们现在只知道$(x_1, y_1)$这个坐标。给定$x_1, y_1, \alpha$，该怎么计算出$x_2, y_2$呢？</p>
-<p>这里，我们可以用高中学过的三角函数两角和公式，把刚才那个三角函数“拆开”：</p>
-<script type="math/tex; mode=display">
-\left\{
-\begin{aligned}
-   x_2 &= r \cdot cos(\theta+\alpha) \\
-   &= r(cos \theta cos\alpha - sin \theta sin\alpha)\\
-   y_2 &= r \cdot sin(\theta+\alpha) \\
-   &= r(sin \theta cos\alpha + cos \theta sin\alpha)
-\end{aligned}
-\right.</script><p>我们又已知：</p>
-<script type="math/tex; mode=display">
-\left\{
-\begin{aligned}
-   x_1 = r \cdot cos\theta \\
-   y_1 = r \cdot sin\theta
-\end{aligned}
-\right.</script><p>因此，$x_2, y_2$可以用下面的式子表示：</p>
-<script type="math/tex; mode=display">
-\left\{
-\begin{aligned}
-   x_2 &= r(cos \theta cos\alpha - sin \theta sin\alpha)\\
-   &= cos\alpha \cdot x_1 - sin\alpha \cdot y_1\\
-   y_2 &= r(sin \theta cos\alpha + cos \theta sin\alpha) \\
-   &= cos\alpha \cdot y_1 + sin\alpha \cdot x_1
-\end{aligned}
-\right.</script><p>这个式子用矩阵乘法表达如下：</p>
-<script type="math/tex; mode=display">
-\left[
-\begin{aligned}
-   &x_2  \\
-   &y_2  
-\end{aligned}
-\right]=
-\left[
-\begin{aligned}
-   &cos\alpha  &-sin\alpha \\
-   &sin\alpha  &cos\alpha
-\end{aligned}
-\right] \times
-\left[
-\begin{aligned}
-   &x_1  \\
-   &y_2  
-\end{aligned}
-\right]</script><p>也就是说，旋转操作也可以用一个矩阵表示。我们可以用和刚刚做翻转操作相同的办法，对坐标数组做旋转。以下是代码实现：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">rotate</span>(<span class="params">theta</span>):</span></span><br><span class="line">    <span class="keyword">return</span> np.array([[np.cos(theta), -np.sin(theta)],</span><br><span class="line">                     [np.sin(theta), np.cos(theta)]])</span><br></pre></td></tr></table></figure>
-<p>这个函数可以生成一个让坐标旋转<code>theta</code>弧度的矩阵。</p>
-<p>这样，我们如果想让一个坐标数组旋转60度，可以写下面的代码：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new_petal = np.dot(petal, rotate(np.radians(<span class="number">60</span>)).T)</span><br></pre></td></tr></table></figure>
-<p>在生成花朵时，我们除了生成第一片花瓣外，还要通过旋转生成另外5朵花瓣，并把花瓣合并起来。这整个流程的代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">petal1 = half_oval(<span class="number">20</span>)</span><br><span class="line">petal2 = np.dot(half_oval(<span class="number">20</span>), vertical_flip().T)</span><br><span class="line">petal = np.concatenate((petal1, petal2), <span class="number">0</span>)</span><br><span class="line">petal += [<span class="number">25</span>, <span class="number">0</span>]</span><br><span class="line">flower = petal.copy()</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">    new_petal = np.dot(petal.copy(), rotate(np.radians(<span class="number">60</span>) * (i + <span class="number">1</span>)).T)</span><br><span class="line">    flower = np.concatenate((flower, new_petal), <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<p>我们可以给每个坐标打上0或1的标签，0表示点是红色，1表示点是绿色。然后，我们把各个花瓣染成不同的颜色：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">label = np.zeros([<span class="number">40</span> * <span class="number">6</span>])</span><br><span class="line">label[<span class="number">0</span>:<span class="number">40</span>] = <span class="number">1</span></span><br><span class="line">label[<span class="number">40</span>:<span class="number">80</span>] = <span class="number">1</span></span><br><span class="line">label[<span class="number">120</span>:<span class="number">160</span>] = <span class="number">1</span></span><br></pre></td></tr></table></figure>
-<p>再做一些操作就可以用<code>matplotlib</code>画出花朵了：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">x = flower[:, <span class="number">0</span>]</span><br><span class="line">y = flower[:, <span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">c = np.where(label == <span class="number">0</span>, <span class="string">&#x27;r&#x27;</span>, <span class="string">&#x27;g&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">plt.scatter(x, y, c=c)</span><br><span class="line"></span><br><span class="line">plt.xlim(-<span class="number">50</span>, <span class="number">50</span>)</span><br><span class="line">plt.ylim(-<span class="number">50</span>, <span class="number">50</span>)</span><br><span class="line"></span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<h3 id="在数据中加入噪声"><a href="#在数据中加入噪声" class="headerlink" title="在数据中加入噪声"></a>在数据中加入噪声</h3><p>大家可以发现，我生成的花朵数据中，有几个点的颜色“不太对劲”。这是为了模拟训练数据中的噪声数据。让我们看看这些噪声是怎么添加的。</p>
-<p>为了让部分数据的标签出错，我们只需要随机挑选出一些数据，然后令它们的标签取反（0变1，1变0）即可。这里涉及一个问题：该怎样从n个数据中随机挑选出若干个数据呢？</p>
-<p>在我项目中，我使用的方法如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> numpy.random <span class="keyword">import</span> default_rng</span><br><span class="line"></span><br><span class="line">rng = default_rng()</span><br><span class="line">noise_indice1 = rng.choice(<span class="number">40</span> * <span class="number">6</span>, <span class="number">10</span>, replace=<span class="literal">False</span>)</span><br><span class="line">label[noise_indice1] = <span class="number">1</span> - label[noise_indice1]</span><br></pre></td></tr></table></figure></p>
-<p>生成随机数需要一个随机数生成器。这里我用<code>rng = default_rng()</code>生成了一个默认的随机数生成器，它从<strong>均匀分布</strong>生成随机数。</p>
-<p><code>noise_indice1 = rng.choice(40 * 6, 10, replace=False)</code>用于生成多个不重复的随机数。<code>rng.choice</code>的第一个参数<code>40*6</code>表示生成出来的随机数位于区间[1, 40*6]。第二个参数<code>10</code>表示生成10个随机数。<code>replace=False</code>表示生成的随机数不重复。</p>
-<p>最后，我们用<code>label[noise_indice1] = 1 - label[noise_indice1]</code>把随机选中的标签取反。</p>
-<h1 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h1><p>我很早之前就在计划如何构建我的个人IP。没想到，从上周日开始，我不知不觉地开始认真地在公开渠道上发文章了。</p>
-<p>发完文章后，我其实抱有很大的期待，希望能有很多人来读我的文章（哪怕是早已养成了不以他人的评价来评价自己的我，也不能免俗）。很可惜，文章似乎并不是很受欢迎。</p>
-<p>还好我有着强大的自信心，心态一点也不受影响。首先，我自己有着强大的鉴别能力，在我自己来看，我的文章水准不低；其次，我的部署教程经 OpenMMLab 发表，受到了不少赞誉，客观上证明我当前的写作水平很强。文章不受欢迎，肯定另有原因。</p>
-<p>首先，是我现在没有曝光度。这是当然的，毕竟我之前一点名气也没有，平台并不会去推荐你的文章，能够接触到你文章的人本来就少。另外，我的文章十分冗长，用我自己的话来讲，“根本不是给人来看的”（本来写文章的目的就是为了总结我自己的学习心得，提升我的学习效果）。虽然认真读起来，其实还可以，但几乎没有人有足够的动力去把我这些文章认真读完。</p>
-<p>这两个问题，我都会去想办法解决。曝光度的问题我已经想好了办法，在这里就不提了。而第二点，文章可读性这点，对现在的我来说非常好解决。说实话，我不是写不出大家很愿意去读的文章，而是不愿写。如果你想去迎合他人的体验，那你肯定要付出额外的心血。我现在的主业是学习，不是搞自媒体，我之前比较高傲，懒得去把文章写得更加适合大部分人群阅读。但是，现在，我生气了，我认真了，我很不服气。我不是做不好，而是没有去做。我一旦出手，必定是一鸣惊人。</p>
-<p>从这周开始，我的博客只发笔记原稿。发到其他平台上时，我会做一定的修改，使之阅读体验更好。</p>
-<p>最可怕的是，我还是不会花大量的时间去讨好读者，我还是会保证我的学习工作不受影响。我会拿出我的真实实力，真正的人性洞察能力，真正的时间分配能力，真正的权衡利弊的能力，以最高效率生产出质量优秀的文章。以我这些精心写作的博客原稿为基础，我有自信生产出大量有趣、有深度的文章。我靠这些文字火不起来，可以理解，因为认真愿意去学深度学习的人，没有那么多。但是，我有足够的信心，我认为我的文章一定会受到很多人的好评。</p>
-<p>另外，我刚刚是承认我仅凭这些深度学习教程文章是火不起来的。但我并没有承认我的个人IP火不起来。究竟我之后还会干出哪些大事？我这里不讲，且看历史是怎么发展的。</p>
-<hr>
-<p>嘿嘿嘿，为了准备之后的编程实况解说，我这一课的编程是一边在录制一边编的。结果我发挥超神，3小时左右就把这一课代码写完了，其中实现逻辑回归和通用分类器框架花了40分钟，实现神经网络花了20分钟，剩下时间都在捣鼓Numpy API，在可视化网络的输出结果。可以说我的编程水平相比普通人已经登峰造极了。但我还会继续精进我的编程技术，直至出神入化，神鬼莫及的境界。</p>
-<p>顺带一提，第一次编写一个程序的直播是没有节目效果的。你大部分时间都会花在思考上，你脑子里想的东西是无法即时传递给观众的。哪怕是搞节目效果能力这么强的我，录出来的视频也不太好看。要做编程教学视频，必须要提前写一遍代码，第二次重新编同一段程序的时候，才有可能游刃有余地解说。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -3298,7 +2781,7 @@ p'&=(Fp^T)^T \\
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">141</span>
+          <span class="site-state-item-count">142</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
