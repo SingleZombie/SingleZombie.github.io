@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2024-12-26T08:15:06.970Z</updated>
+  <updated>2024-12-27T19:17:34.894Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,33 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>令人惊喜的 2024</title>
+    <link href="https://zhouyifan.net/2024/12/28/20241228-2024/"/>
+    <id>https://zhouyifan.net/2024/12/28/20241228-2024/</id>
+    <published>2024-12-27T19:17:34.000Z</published>
+    <updated>2024-12-27T19:17:34.894Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;年底难得有闲暇，我打算首次写一下年终回顾。写这样的文章总是很害羞，我现在不好意思去看我以前写的「随笔」类文章了。但是，今天，我就是有一股冲劲，想要实现心中那小小的想法，不想被生活的洪荒冲走我那鲜活的热情。不去思考为谁而写，不去思考是否有人会看，不去纠结于遣词造句。只求能够纯</summary>
+        
+      
+    
+    
+    
+    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    <category term="随笔" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E9%9A%8F%E7%AC%94/"/>
+    
+    
+    <category term="传记" scheme="https://zhouyifan.net/tags/%E4%BC%A0%E8%AE%B0/"/>
+    
+  </entry>
   
   <entry>
     <title>论文速览 | 混合自回归 HART：用扩散模型缓解 VQ 编码误差</title>
@@ -489,7 +516,7 @@
     <link href="https://zhouyifan.net/2024/06/05/20240405-SVD/"/>
     <id>https://zhouyifan.net/2024/06/05/20240405-SVD/</id>
     <published>2024-06-05T07:52:11.000Z</published>
-    <updated>2024-06-05T07:52:11.539Z</updated>
+    <updated>2024-12-27T16:06:28.574Z</updated>
     
     
       
@@ -502,14 +529,14 @@
     
     
     
-    <category term="深度学习" scheme="https://zhouyifan.net/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
     
-    <category term="扩散模型" scheme="https://zhouyifan.net/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
     
     
-    <category term="学习" scheme="https://zhouyifan.net/tags/%E5%AD%A6%E4%B9%A0/"/>
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
     
-    <category term="知识记录" scheme="https://zhouyifan.net/tags/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
   </entry>
   
@@ -602,39 +629,6 @@
     
     
     <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Stable Diffusion 中的自注意力替换技术与 Diffusers 实现</title>
-    <link href="https://zhouyifan.net/2024/01/27/20240123-SD-Attn/"/>
-    <id>https://zhouyifan.net/2024/01/27/20240123-SD-Attn/</id>
-    <published>2024-01-27T08:48:55.000Z</published>
-    <updated>2024-01-27T08:48:55.984Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;在使用预训练 Stable Diffusion (SD) 生成图像时，如果将其 U-Net 的自注意力层在某去噪时刻的输入 K, V 替换成另一幅参考图像的，则输出图像会和参考图像更加相似。许多无需训练的 SD</summary>
-        
-      
-    
-    
-    
-    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
-    
-    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
     
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
