@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://zhouyifan.net/2025/01/04/20250104-pycco/</loc>
+    <lastmod>2025-01-04</lastmod>
+  </url>
+  <url>
+    <loc>https://zhouyifan.net/2024/12/26/20241224-HART/</loc>
+    <lastmod>2024-12-30</lastmod>
+  </url>
+  <url>
+    <loc>https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/</loc>
+    <lastmod>2024-12-30</lastmod>
+  </url>
+  <url>
+    <loc>https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/</loc>
+    <lastmod>2024-12-30</lastmod>
+  </url>
+  <url>
     <loc>https://zhouyifan.net/2024/12/28/20241228-2024/</loc>
     <lastmod>2024-12-27</lastmod>
   </url>
@@ -9,24 +25,12 @@
     <lastmod>2024-12-27</lastmod>
   </url>
   <url>
-    <loc>https://zhouyifan.net/2024/12/26/20241224-HART/</loc>
-    <lastmod>2024-12-26</lastmod>
-  </url>
-  <url>
     <loc>https://zhouyifan.net/2024/12/21/20241218-VAR/</loc>
     <lastmod>2024-12-23</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/</loc>
     <lastmod>2024-12-18</lastmod>
-  </url>
-  <url>
-    <loc>https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/</loc>
-    <lastmod>2024-12-15</lastmod>
-  </url>
-  <url>
-    <loc>https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/</loc>
-    <lastmod>2024-12-15</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/</loc>

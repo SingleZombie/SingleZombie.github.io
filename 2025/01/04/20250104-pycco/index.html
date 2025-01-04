@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="最近，我在网上看到了一个专门介绍深度学习源代码的网站（https:&#x2F;&#x2F;nn.labml.ai&#x2F;index.html ），各类流行网络架构一应俱全。这个网站最吸引我的，是它的双列式结构。如下所示，每个页面右边显示代码，左边显示每段代码对应的注释。  一直以来，我在博客中介绍代码时，都是先写描述文字，再贴一段代码。这种方式对作者和读者来说都十分低效。受到上面那个网站的启发，我决定以后也采用这种方式介绍">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用 Pycco 为 Python 代码快速创建双列注释网页">
+<meta property="og:url" content="https://zhouyifan.net/2025/01/04/20250104-pycco/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="最近，我在网上看到了一个专门介绍深度学习源代码的网站（https:&#x2F;&#x2F;nn.labml.ai&#x2F;index.html ），各类流行网络架构一应俱全。这个网站最吸引我的，是它的双列式结构。如下所示，每个页面右边显示代码，左边显示每段代码对应的注释。  一直以来，我在博客中介绍代码时，都是先写描述文字，再贴一段代码。这种方式对作者和读者来说都十分低效。受到上面那个网站的启发，我决定以后也采用这种方式介绍">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/10.png">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/13.jpg">
+<meta property="article:published_time" content="2025-01-04T15:02:57.000Z">
+<meta property="article:modified_time" content="2025-01-04T15:02:57.948Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2025/01/04/20250104-pycco/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2025/01/04/20250104-pycco/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>用 Pycco 为 Python 代码快速创建双列注释网页 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/01/04/20250104-pycco/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          用 Pycco 为 Python 代码快速创建双列注释网页
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-01-04 23:02:57" itemprop="dateCreated datePublished" datetime="2025-01-04T23:02:57+08:00">2025-01-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E5%B7%A5%E5%85%B7%E7%94%A8%E6%B3%95%E6%8C%87%E5%8D%97/" itemprop="url" rel="index"><span itemprop="name">工具用法指南</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>最近，我在网上看到了一个专门介绍深度学习源代码的网站（<a target="_blank" rel="noopener" href="https://nn.labml.ai/index.html">https://nn.labml.ai/index.html</a> ），各类流行网络架构一应俱全。这个网站最吸引我的，是它的双列式结构。如下所示，每个页面右边显示代码，左边显示每段代码对应的注释。</p>
+<p><img src="/2025/01/04/20250104-pycco/1.jpg" alt></p>
+<p>一直以来，我在博客中介绍代码时，都是先写描述文字，再贴一段代码。这种方式对作者和读者来说都十分低效。受到上面那个网站的启发，我决定以后也采用这种方式介绍源代码。很可惜，上面那个网站是由 labml.ai 这个组织维护的，似乎并没有提供开源的、可定制的注释网站搭建方式。为此，我找到了一个替代品：Pycco。它可以方便地为 Python 代码生成双列带注释的静态页面。</p>
+<h2 id="Pycco-安装与使用"><a href="#Pycco-安装与使用" class="headerlink" title="Pycco 安装与使用"></a>Pycco 安装与使用</h2><p>Pycco 是页面生成工具 Docco 的 Python 实现版。它们都是「快而脏」的文档生成器：源代码只有几百行，没有多余封装，直观而暴力地生成 HTML 页面的所有内容。它们为初学者只提供了一个文档页面，这个文档页面讲的是它们的源代码，且文档页面就是由它们本身创建出来的。Pycco 的官方文档页面如下所示。一开始介绍完 Pycco 的背景信息和安装方式后，文档就会直接开始介绍源代码。</p>
+<p><img src="/2025/01/04/20250104-pycco/2.jpg" alt></p>
+<p>根据文档的指示，我们可以通过下面的命令在 <code>pip</code> 里安装 Pycco：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pycco</span><br></pre></td></tr></table></figure>
+<p>在使用 Pycco 时，我们完全不用去理解其源代码的意思，只需要准备一个带注释的 Python 源文件就行。Pycco 提供了一键式命令，帮我们把源文件里的注释和代码分离，并生成左侧为注释，右侧为代码的静态文档页面。这里的注释既包括了 <code>#</code> 开头的单行注释，也包括了 <code>&quot;&quot;&quot; &quot;&quot;&quot;&quot;</code> 包裹的多行注释。注意，三个单引号构成的多行注释 <code>&#39;&#39;&#39; &#39;&#39;&#39;</code> 不会被该工具识别。</p>
+<p>我们来看一个示例。假设我们有下面一个名为 <code>hello.py</code> 的 Python 源文件。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">Hello</span></span><br><span class="line"><span class="string">World</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> pycco</span><br><span class="line"></span><br><span class="line"><span class="comment"># Hello</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;hello world&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">End of file</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>我们用下面的命令为其生成文档页面。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pycco hello.py</span><br></pre></td></tr></table></figure>
+<p>页面会生成在目录下的 <code>docs</code> 子目录里，子目录包含一个 <code>hello.html</code> 文件和一个 <code>pycco.css</code> 文件。我们可以用浏览器打开 <code>.html</code> 网页，看到下图所示内容。</p>
+<p><img src="/2025/01/04/20250104-pycco/3.jpg" alt></p>
+<p>注释默认使用 Markdown 语法。如果平时就习惯用 Markdown 写博客的话可以无缝切换。但是，默认情况下网页无法渲染公式。</p>
+<p><img src="/2025/01/04/20250104-pycco/4.jpg" alt></p>
+<h2 id="页面跳转"><a href="#页面跳转" class="headerlink" title="页面跳转"></a>页面跳转</h2><p>除了普通的 Markdown 语法外，Pycco 还支持一个特殊的功能：文档跳转。我们可以把文件名写在 <code>[[ ]]</code> 内，实现源文件内部或源文件间的跳转。特别地，我们还可以在页面某处打上标签，并跳转到某页面的标签处。以下是一个示例。为了给「注释」加上注释，我别出心裁地把注释写进了代码部分。</p>
+<p><img src="/2025/01/04/20250104-pycco/5.jpg" alt></p>
+<h2 id="让页面渲染-LaTeX-公式"><a href="#让页面渲染-LaTeX-公式" class="headerlink" title="让页面渲染 LaTeX 公式"></a>让页面渲染 LaTeX 公式</h2><p>刚才我们发现，目前的 Pycco 页面并不支持公式渲染。而在解释深度学习代码时，很多时候不得不用到公式。因此，我决定给 Pycco 加上渲染公式的功能。</p>
+<p>Pycco 这种直观暴力的实现方法让网页开发者能够快速地修改页面生成逻辑。然而，我已经把 HTML 的知识快忘光了，配不上「网页开发者」这个名号。因此，我让 ChatGPT o1 来帮我开发这一功能。</p>
+<p>经指导，我认识了 MathJax 这个在网页上渲染公式的工具。只需要在 HTML 的 <code>head</code> 里导入一些包，网页就可以自动识别单行公式 <script type="math/tex"> </script> 和多行公式 $$$ $$$。我不记得 <code>head</code> 是什么了，但大概能猜到这个是一个相当于声明全局变量的语句块。</p>
+<p>我在 <code>pycco_resources\__init__.py</code> 文件里找到了设置 <code>head</code> 的地方。这个文件提供了生成网页的模板，包括了写死的 CSS 文件和部分 HTML 代码。打开这个文件的最快方式是在某处写 <code>import pycco_resources</code>，之后用 IDE 的代码跳转找到这个包在本地的位置。</p>
+<p>我们在该文件下图所示的位置插入和 MathJax 相关的代码。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="title class_">MathJax</span> = &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="attr">tex</span>: &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="attr">inlineMath</span>: [ [<span class="string">&quot;$&quot;</span>,<span class="string">&quot;$&quot;</span>] ]</span></span><br><span class="line"><span class="language-javascript">      &#125;</span></span><br><span class="line"><span class="language-javascript">    &#125;;</span></span><br><span class="line"><span class="language-javascript">  </span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/6.jpg" alt></p>
+<p>修改模板后，重新生成网页，可以发现现在公式能够正确渲染了。</p>
+<p><img src="/2025/01/04/20250104-pycco/7.jpg" alt></p>
+<h2 id="高亮新增-删除代码"><a href="#高亮新增-删除代码" class="headerlink" title="高亮新增/删除代码"></a>高亮新增/删除代码</h2><p>在以后讲解代码的时候，我想高亮新增的或者删去的代码，就像 GitHub 里显示代码的更改一样。由于 Pycco 非常容易做二次开发，我又去请教 ChatGPT o1 该如何实现这样的功能。</p>
+<p>经指导，我了解到代码高亮可以通过设置背景颜色 style 来实现。为此，我需要做两件事：</p>
+<ol>
+<li>新增有关背景颜色的 CSS style</li>
+<li>想办法指定要高亮的代码块</li>
+</ol>
+<p>第一件事很简单，只需要打开模板文件 <code>pycco_resources\__init__.py</code>，添加背景颜色 style 即可。我添加了两种背景颜色，分别表示删去的和新增的代码块。我是在 VSCode 里找到想要的颜色值的。随便打开一个 CSS 文件，输入一个大概的颜色值，VSCode 就会弹出一个选择颜色的小窗口。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.highlighted-line-<span class="number">1</span> &#123;</span><br><span class="line">  background-color: <span class="comment">#fa53208c;</span></span><br><span class="line">&#125;</span><br><span class="line">.highlighted-line-<span class="number">2</span> &#123;</span><br><span class="line">  background-color: <span class="comment">#68fc5d;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/8.jpg" alt></p>
+<p>第二件事就比较难了。我需要先看懂目前高亮源代码的逻辑，再在其基础之上添加背景高亮的功能。Pycco 的主函数在文件 <code>pycco/main.py</code> 里，我们可以用导入 Python 包的方式快速找到这份源文件。原来的高亮关键字的逻辑如下，我在其中加入了一些代码用于输出中间结果。</p>
+<p><img src="/2025/01/04/20250104-pycco/9.jpg" alt></p>
+<p>函数的主要输入是列表 <code>sections</code>，函数的输出存储在列表项 <code>section</code> 的 <code>&quot;docs_html&quot;</code>, <code>&quot;code_html&quot;</code> 字段。 </p>
+<p><code>sections</code> 内容如下，可见其中是过了解析器的注释块和代码块。每一段注释都会对应一段代码。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[&#123;&#x27;docs_text&#x27;: &#x27;=== BeGin ===\r\n\n&#x27;, &#x27;code_text&#x27;: &#x27;import torch\r\nimport pycco\r\n\r&#x27;&#125;, &#123;&#x27;docs_text&#x27;: &#x27;# Hello\r\n## World\r\nThis is a **Python** [code](https://www.python.org/).\r\nTry formula $\\epsilon$ .\r\n$$\r\n3 = 1 + 2\r\n$$\r\n\n\n&#x27;, &#x27;code_text&#x27;: &#x27;print(&quot;hello world&quot;)\r\n\r&#x27;&#125;, &#123;&#x27;docs_text&#x27;: &#x27;End of file\r\n\n&#x27;, &#x27;code_text&#x27;: &#x27;\n&#x27;&#125;]</span><br></pre></td></tr></table></figure>
+<p>函数的输出是完整 HTML 文件的一部分。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;h3&gt;&lt;span id=&quot;begin&quot; href=&quot;begin&quot;&gt; BeGin &lt;/span&gt;&lt;/h3&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;torch&lt;/span&gt;</span><br><span class="line">&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pycco&lt;/span&gt;&lt;/pre&gt;&lt;/div&gt;</span><br><span class="line">&lt;h1&gt;Hello&lt;/h1&gt;</span><br><span class="line">&lt;h2&gt;World&lt;/h2&gt;</span><br><span class="line">&lt;p&gt;This is a &lt;strong&gt;Python&lt;/strong&gt; &lt;a href=&quot;https://www.python.org/&quot;&gt;code&lt;/a&gt;.</span><br><span class="line">Try formula $\epsilon$ .</span><br><span class="line">$$</span><br><span class="line">3 = 1 + 2</span><br><span class="line">$$&lt;/p&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;hello world&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/pre&gt;&lt;/div&gt;</span><br><span class="line">&lt;p&gt;End of file&lt;/p&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;/pre&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+<p>那么，我的目标就是修改这个文件。我需要先根据输入的原始代码块，判断这段代码是否要高亮，再修改 HTML 代码块的内容。</p>
+<p>首先，从用户的角度考虑，应该怎么指定要背景高亮的代码呢？既然现在代码被拆成了一块一块的，且每块代码对应一段注释，我决定用一些特殊注释来高亮一整块代码，就像前面的设置标签和跳转标签的特殊注释一样。我加入了以下判断：如果注释前几个字符是 <code>&#39;===ADD===&#39;</code> 或 <code>&#39;===DEL===&#39;</code>，就用对应的颜色高亮这段代码。</p>
+<p>判断了是否要高亮后，我还需要做对应的修改。我不仅要在 HTML 代码块里高亮代码，还需要把注释块里的特殊命令删掉。通过观察相关代码，我忽然回忆起了 HTML 的部分实现原理：背景高亮就是把一段 HTML 字符串封进一个带有背景高亮样式的标签 <code>&lt;div&gt;&lt;/div&gt;</code> 里。那剩下的删除注释也很简单，只需要对字符串做一点简单操作就行了。代码修改过程及使用示例如下所示。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Add following code</span></span><br><span class="line"></span><br><span class="line">delete_background_start = <span class="string">&#x27;&lt;div class=&quot;highlighted-line-1&quot;&gt;&#x27;</span></span><br><span class="line">add_background_start = <span class="string">&#x27;&lt;div class=&quot;highlighted-line-2&quot;&gt;&#x27;</span></span><br><span class="line">background_end = <span class="string">&#x27;&lt;/div&gt;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> section[<span class="string">&quot;docs_text&quot;</span>].startswith(<span class="string">&#x27;===ADD===&#x27;</span>):</span><br><span class="line">    section[<span class="string">&quot;docs_text&quot;</span>] = section[<span class="string">&quot;docs_text&quot;</span>][<span class="number">9</span>:]</span><br><span class="line">    section[<span class="string">&quot;code_html&quot;</span>] = add_background_start + section[<span class="string">&quot;code_html&quot;</span>] + background_end</span><br><span class="line"><span class="keyword">elif</span> section[<span class="string">&quot;docs_text&quot;</span>].startswith(<span class="string">&#x27;===DEL===&#x27;</span>):</span><br><span class="line">    section[<span class="string">&quot;docs_text&quot;</span>] = section[<span class="string">&quot;docs_text&quot;</span>][<span class="number">9</span>:]</span><br><span class="line">    section[<span class="string">&quot;code_html&quot;</span>] = delete_background_start + section[<span class="string">&quot;code_html&quot;</span>] + background_end</span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/10.png" alt></p>
+<h2 id="修正多行注释缩进"><a href="#修正多行注释缩进" class="headerlink" title="修正多行注释缩进"></a>修正多行注释缩进</h2><p>在写这篇博文的时候，我又发现 Pycco 的一个 bug：在多行注释带缩进时，HTML 页面上的注释也会缩进，导致页面布局完全乱套。</p>
+<p><img src="/2025/01/04/20250104-pycco/11.jpg" alt></p>
+<p>我找到了 <code>pycco/main.py</code> 里处理多行注释的代码。我把旧代码全部删掉，换了一种暴力的字符串处理方式：删除多行注释左侧所有空格及制表符。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docs_text += line.lstrip(<span class="string">&#x27;\t &#x27;</span>) + <span class="string">&#x27;\n&#x27;</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/12.jpg" alt></p>
+<p>改完之后 bug 就修好了。</p>
+<p><img src="/2025/01/04/20250104-pycco/13.jpg" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了 Pycco 这个为 Python 代码生成双列注释-代码静态页面的 Python 工具，并分享了我对其的三个修改：支持 MathJax 公式、支持背景高亮、修复多行注释缩进 bug。相比介绍开源项目的 readthedocs 等文档构建工具，Pycco 能够为每行 Python 代码写注释，尤其适合详细讲解深度学习代码。对于熟练的网页开发者，Pycco 的源代码很短，改起来很方便；但另一方面，Pycco 似乎比较小众，多年都没人维护，可能有各种 bug。主要推荐想在个人博客里讲解代码的朋友使用这个工具。我以后都会用它来讲解代码。 </p>
+<h2 id="ChatGPT-小插曲"><a href="#ChatGPT-小插曲" class="headerlink" title="ChatGPT 小插曲"></a>ChatGPT 小插曲</h2><p>ChatGPT 在指导我添加 MathJax 时，先叫我下载 <code>python-markdown-math</code> 这个 pip 包，让 Python 脚本里的 Markdown 解析器能够解析公式。但我在实践中发现不解析 $$$$ 符号，在正确导入 MathJax 包后，网页依然能够正确渲染。</p>
+<p>ChatGPT 一开始提供的 MathJax 导入代码是 MathJax V3 的。经过 <code>python-markdown-math</code> 解析后，双行注释被转换成了 <code>&lt;script type=&quot;math/tex; mode=display&quot;&gt;&lt;/script&gt;</code> 包裹的内容。这些公式没法成功渲染。我把添加双行公式的详细过程提供给 ChatGPT 后，它分析出这种 <code>&lt;script&gt;</code> 的写法是 MathJax V2 的，让我把 <code>head</code> 里的包改成 MathJax V2。修改过后，双行公式果然渲染成功了。然而，如上一段所述，我发现哪怕不用 <code>python-markdown-math</code> 也行。于是我又用回了 MathJax V3。可见 ChatGPT 有功有过，给我制造了一些麻烦，也算是能够帮我解决。</p>
+<p>在求助 ChatGPT 添加背景高亮功能时，它非常出色地分析了问题：先理解 Pycco 生成 HTML 的过程，再决定用户如何指定要高亮的内容，最后根据不同的方案做实现。但它给的三个信息输入方案都不尽如人意：(1) 在命令行里指定要高亮的行；(2) 在每行要高亮的代码前都加特殊注释；(3) 用另一个配置文件来指定要高亮的行。这些方法的用户体验都不好，且难于实现。当然，由于我没有把所有源代码给它，它或许没有发挥完整的实力。最后我还是靠自己理解了 Pycco 的页面生成逻辑，选了一种好实现且好用的方案。</p>
+<p>我从来没有用 ChatGPT 做过特别复杂的编程任务，这次稍微体会了一下。感觉它的能力有时候会出乎意料地强（比如发现 HTML 的风格是 MathJax V2 的），但不见得次次都靠谱。它的能力主要还是基于大量数据的「搜索」，加上一点浅显的思考。只是因为看过的数据过多，所以很多时候能从历史经验中直接给出很好的答案。当然，作为语言模型，它对于语言的理解能力极强，哪怕描述不完全也能准确理解用户的意图。做为使用者，我们要在用之前就想好能从 ChatGPT 那里获取到哪些帮助，并提供充足的信息，而不能全盘接受它的输出，就和我们日常和别人交流一样。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/12/28/20241228-2024/" rel="prev" title="令人惊喜的 2024">
+      <i class="fa fa-chevron-left"></i> 令人惊喜的 2024
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Pycco-%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">Pycco 安装与使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%B7%B3%E8%BD%AC"><span class="nav-number">2.</span> <span class="nav-text">页面跳转</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A9%E9%A1%B5%E9%9D%A2%E6%B8%B2%E6%9F%93-LaTeX-%E5%85%AC%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">让页面渲染 LaTeX 公式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E4%BA%AE%E6%96%B0%E5%A2%9E-%E5%88%A0%E9%99%A4%E4%BB%A3%E7%A0%81"><span class="nav-number">4.</span> <span class="nav-text">高亮新增&#x2F;删除代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%AD%A3%E5%A4%9A%E8%A1%8C%E6%B3%A8%E9%87%8A%E7%BC%A9%E8%BF%9B"><span class="nav-number">5.</span> <span class="nav-text">修正多行注释缩进</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ChatGPT-%E5%B0%8F%E6%8F%92%E6%9B%B2"><span class="nav-number">7.</span> <span class="nav-text">ChatGPT 小插曲</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">144</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

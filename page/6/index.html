@@ -168,6 +168,279 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-14/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/09/21/DLS-note-14/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（十四）：循环神经网络基础</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-21 17:47:24" itemprop="dateCreated datePublished" datetime="2022-09-21T17:47:24+08:00">2022-09-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在上一门课中，我们学习了如何用CNN处理网格状的数据。由于最常见的网格状数据是图像，我们主要学习了如何用CNN完成和图像相关的任务。而在这一门课中，我们要学习如何用循环神经网络（RNN）等序列模型处理序列数据。序列数据的种类就比较丰富多彩了：</p>
+<p><img src="/2022/09/21/DLS-note-14/1.jpg" alt></p>
+<p>如上图所示，对于语音识别、音乐生成、情绪分类、DNA序列分析、机器翻译、视频动作识别、命名实体识别这些任务，它们的输入和输出至少有一个是某类序列数据，它们都可以用序列模型来建模。</p>
+<p>计算机科学中的自然语言处理（NLP）任务常常需要使用序列模型。我们在学这门课时，主要会围绕NLP问题进行讨论。</p>
+<h2 id="符号标记"><a href="#符号标记" class="headerlink" title="符号标记"></a>符号标记</h2><p>序列数据需要用到一些新的符号标记。在开始正式学习之前，我们先以命名实体识别任务为例，认识一下这些新的符号标记。</p>
+<p>命名实体识别任务要求找出句子中的有意义的人名、地名等特殊名词。以这个任务的一个训练样本为例，我们来看一看序列数据的符号标记。</p>
+<p>设输入是 Harry Potter and Hermione Granger invented a new spell。</p>
+<p>命名实体识别任务的输出$y$也是一个序列。序列的每一个元素是1或0，表示输入中对应的单词是否为命名实体。刚刚那个输入对应的输出应该是1 1 0 1 1 0 0 0 0。</p>
+<p>输入输出都由单词或数字组成的序列。设输入为$x$，序列中的第$i$个单词记作$x^{&lt;  i  &gt;}$。比如$x^{&lt; 2 &gt;}$ = Potter。整个序列的长度$T_x=9$。同理，输出序列中的第$i$个元素记作$y^{&lt; i &gt;}$，整个序列的长度$T_y=9$。</p>
+<p>对于第$i$个样本而言，其输入的长度为$T_x^{(i)}$，第$t$个单词为$x^{(i)&lt; t &gt;}$。值得注意的是，每个样本的长度可能不一致。</p>
+<p>在表示这些数据时，还有一个问题：怎么表示一个单词？计算机可不认识一大堆字母。为了让只懂数字的计算机能够分清不同的单词，我们要先准备一个词汇表，并用单词在词汇表里的one-hot编码作为单词的表示。比如Harry是长度为10000的词汇表里第4075个单词，则Harry的表示是$[0, 0, 0…,0, 1, 0, …, 0]$，这个向量的长度是10000，只有第4075个元素是1，其他地方都是0。</p>
+<blockquote>
+<p>在大型的模型中，词汇表的大小会是30000至50000，甚至有100000的。</p>
+</blockquote>
+<p>有了这些符号标记，和序列数据有关的任务就可以完全用数学语言表示了。比如对于命名实体识别任务，每一条样本输入是一个向量序列，输出是一个01的数字序列。</p>
+<h2 id="循环神经网络模型"><a href="#循环神经网络模型" class="headerlink" title="循环神经网络模型"></a>循环神经网络模型</h2><p>在序列问题上使用标准神经网络（全连接网络）会有几个问题：</p>
+<ul>
+<li>每个样本的长度可能不一致。尽管我们可以找到一个最大的长度，并对长度不足的样本进行零填充，但这种做法看上去就不太好。</li>
+<li>同一个单词在不同的位置时应该算出类似的特征。而标准神经网络会把每个位置的输入区别对待，无法共享各个位置的知识。</li>
+<li>和图像数据类似，序列数据的输入长度也很大。假如一个句子有10个单词，词汇表的大小是10000，则输入向量的大小就是100000。这样，神经网络第一层的参数量会很大，网络会过拟合。</li>
+</ul>
+<p>因此，我们要用一些其他的架构来处理序列数据以规避这些问题。其中一种可行的架构就是循环神经网络(Recurrent Neural Network, RNN)。</p>
+<p>RNN运算过程如下图所示。在RNN中，对于一个样本，我们每次只输入一个单词$x^{&lt; t &gt;}$，得到一个输出$y^{&lt; t &gt;}$。除了输出$y^{&lt; t &gt;}$外，神经网络还会把中间激活输出$a^{&lt; t &gt;}$传递给下一轮计算，这个$a^{&lt; t &gt;}$记录了之前单词的某些信息。所有的输出按照这种方法依次计算。当然，第一轮计算时也会用到激活输出$a^{&lt; 0 &gt;}$，简单地令$a^{&lt; 0 &gt;}$为零张量即可。注意，所有的计算都是用同一个权重一样的神经网络。</p>
+<p><img src="/2022/09/21/DLS-note-14/1.gif" alt></p>
+<blockquote>
+<p>有些文章会把一行RNN计算折叠成一个带循环箭头的神经网络，这只是另一种画图的方法：</p>
+</blockquote>
+<p><img src="/2022/09/21/DLS-note-14/2.jpg" alt></p>
+<p>看完了示意图，让我们看看怎样用数学语言表示RNN。在第$t$轮计算中：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{< t >} &= g_1(W_{ax} x^{< t >} + W_{aa} a^{< t - 1 >} + b_a) \\
+\hat{y}^{< t >} &=g_2(W_{ya} a^{< t >} + b_y)
+\end{aligned}</script><p>其中，$W_{ij}$表示用于计算$i$的，乘在$j$上的矩阵。$g$是激活函数。中间层激活函数多数情况下用tanh，也可以用ReLU。输出的激活函数视任务而定，在二分类的命名实体识别中，输出激活函数是sigmoid。</p>
+<p>为了简化表示，可以把$W_{ax}, W_{aa}$拼一下，$x^{&lt; t &gt;}, a^{&lt; t - 1 &gt;}$拼一下：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+W_a &= [W_{aa} | W_{ax}] \\
+[a^{< t - 1 >}, x^{< t >}] &= \left[
+  \begin{matrix}
+  a^{< t - 1 >} \\
+  --- \\
+   x^{< t >}
+  \end{matrix}
+\right]
+\end{aligned}</script><p>这样，原来的式子就可以化简了：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{< t >} &= g_1(W_{a} [a^{< t - 1 >}, x^{< t >}] + b_a) \\
+\hat{y}^{< t >} &=g_2(W_{y} a^{< t >} + b_y)
+\end{aligned}</script><p>RNN也有一些问题。首先，显而易见，每个RNN的输出只能看到它之前的单词。这样是不太好的。比如一句话第一个单词是Teddy，你不知道这是一个人名，还是Teddy bear这样一个普通的物体。稍后我们会学习双向的RNN以解决此问题。</p>
+<p>另外，RNN也会面临标准神经网络的梯度爆炸问题。后几节会介绍一些更高级的RNN架构。</p>
+<h2 id="「穿越时空之反向传播」"><a href="#「穿越时空之反向传播」" class="headerlink" title="「穿越时空之反向传播」"></a>「穿越时空之反向传播」</h2><p>看完了正向传播，我们稍微看一下RNN反向传播的过程。</p>
+<p>反向传播前，先要定义一个误差函数。对于命名实体识别这种结果是01的问题，可以继续采用交叉熵误差，即对于序列中每一个元素：</p>
+<script type="math/tex; mode=display">
+L^{< t >}(y^{< t >}, \hat{y}^{< t >}) = -(y^{< t >}log\hat{y}^{< t >}+(1 - y^{< t >})log(1 - \hat{y}^{< t >}))</script><p>对于一个样本：</p>
+<script type="math/tex; mode=display">
+L(y, \hat{y}) = -\Sigma_{t=1}^{T_y}(y^{< t >}log\hat{y}^{< t >}+(1 - y^{< t >})log(1 - \hat{y}^{< t >}))</script><p>接下来是反向传播的过程。RNN的计算虽然复杂了一些，但它本质上还是一个计算图。如下图所示，按照红色箭头的方向对变量反向求导即可：</p>
+<p><img src="/2022/09/21/DLS-note-14/3.jpg" alt></p>
+<p>使用了编程框架后，反向传播可以自动由框架完成，可以不需要关心里面的细节了。</p>
+<p>由于序列数据有先后的概念，而RNN的反向传播又是从后面的数据向前面的数据进行，因此这样的反向传播有着「穿越时空之反向传播」的称呼。</p>
+<h2 id="不同输入输出格式的RNN"><a href="#不同输入输出格式的RNN" class="headerlink" title="不同输入输出格式的RNN"></a>不同输入输出格式的RNN</h2><p>刚刚学习的那种RNN只能描述输入输出长度一致的任务。在那种架构的基础上稍作修改，我们就能得到描述各种输入输出格式的任务。</p>
+<p><img src="/2022/09/21/DLS-note-14/4.jpg" alt></p>
+<ul>
+<li>一对一：其实一对一问题就是标准神经网络，可以不要那个激活输入$a$。</li>
+<li>一对多：只把输入放入第一轮计算中，后续计算的输入是上一轮的输出。</li>
+<li>多对一：只输出最后一轮计算的结果。</li>
+<li>等长多对多：输入一个元素就输出一个元素。</li>
+<li>不等长多对多：先做几轮不产生输出的计算（编码器），再做几轮只产生输出的计算（解码器）。解码器的输入也可以和一对多一样，来自于上一轮的输出（图中没有画出）。</li>
+</ul>
+<h2 id="RNN应用：语言模型"><a href="#RNN应用：语言模型" class="headerlink" title="RNN应用：语言模型"></a>RNN应用：语言模型</h2><p>为了加深对RNN的理解，我们来看一个基于RNN的应用——语言模型。</p>
+<p>语言模型是NLP中的一个基础任务。一个语言模型能够输出某种语言某句话的出现概率。通过比较不同句子的出现概率，我们能够开发出很多应用。比如在英语里，同音的”apple and pear”比”apple and pair”的出现概率高（更可能是一个合理的句子）。当一个语音识别软件听到这句话时，可以分别写下这两句发音相近的句子，再根据语言模型断定这句话应该写成前者。</p>
+<p>也就是说，对于一句话$x^{&lt; 1 &gt;}…x^{&lt; T_x &gt;}$，语言模型的输出是$P(x^{&lt; 1 &gt;},…, x^{&lt; T_x &gt;})$。这个式子也可以写成$P(x^{&lt; 1 &gt;}) \times P(x^{&lt; 2 &gt;} |x^{&lt; 1 &gt;}) \times  P(x^{&lt; 3 &gt;} |x^{&lt; 1 &gt;}, x^{&lt; 2 &gt;}) … \times  P(x^{&lt; T_x &gt;} |x^{&lt; 1 &gt;}, x^{&lt; 2 &gt;}, …, x^{&lt; T_x-1 &gt;})$，即一句话的出现概率，等于第一个单词出现在句首的概率，乘上第二个单词在第一个单词之后的概率，乘上第三个单词再第一、二个单词之后的概率，这样一直乘下去。</p>
+<p>在训练语言模型时，我们一般要用到语料库(corpus)。语料库包含了某种语言大量的通顺的句子。我们希望一个模型能够学习到这些句子中的规律，知道一句话在这种语言中的出现概率是多少。</p>
+<p>语言模型可以用RNN巧妙地实现。整个实现分两步：数据预处理和模型训练。</p>
+<p>由于语料库中包含的是自然语言，而RNN的输入是one-hot编码，所以这中间要经过一个预处理的步骤。在NLP中，这一步骤叫做符号化(tokenize)。如我们在「符号标记」一节所学的，我们可以找来一个大小为10000的词汇表，根据每个单词在词汇表中的位置，生成一个one-hot编码。除了普通的词汇外，NLP中还有一些特殊的符号，比如表示句尾的<code>&lt;EOS&gt;</code> (End Of Sentence)，表示词汇表里没有的词的<code>&lt;UNK&gt;</code> (Unknown)。</p>
+<p>经过预处理后，语料库里的每一句自然语言就变成了训练样本$x^{&lt; 1 &gt;} … x^{&lt; T_x &gt;}$。我们可以把每一句话输入RNN，巧妙地训练一个语言模型：</p>
+<p><img src="/2022/09/21/DLS-note-14/5.jpg" alt></p>
+<p>这个计算过程初次接触时有些令人费解，我们慢慢来看懂它。先竖着看一轮计算是怎么完成的。对于每一轮计算，都会给定一个单词编码$x^{&lt; i &gt;}$，输出一个softmax后的概率分布$\hat{y}^{&lt; i &gt;}$，它要对齐的训练标签是训练集某一句话的某个单词$y^{&lt; i &gt;}$。$\hat{y}$表示接收之前所有的输入单词后，此时刻应该输出某单词的概率分布，这个输出的含义和多分类中的类似。</p>
+<p>算出这样的$\hat{y}$有什么用呢？别急，再横着看一遍。回忆一下，语言模型要求的概率可以写成$P(y^{&lt; 1 &gt;}) \times P(y^{&lt; 2 &gt;} |y^{&lt; 1 &gt;}) \times  P(y^{&lt; 3 &gt;} |y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;}) …$。RNN每一轮的输出，其实就是要拟合$P(y^{&lt; 1 &gt;})$, $P(y^{&lt; 2 &gt;} |y^{&lt; 1 &gt;})$, $P(y^{&lt; 3 &gt;} |y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;})$, …。每一个条件概率的条件，就是每一轮RNN的输入；每一个条件概率的待求事件，就是每一轮RNN的训练标签。比如$P(y^{&lt; 3 &gt;} |y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;})$这个条件概率，它的条件是$y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;}$，待求事件是$y^{&lt; 3 &gt;}$，所以第三轮RNN的标签是$y^{&lt; 3 &gt;}$，输入是$y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;}$（别忘了，在RNN中，前几轮的输入其实也影响了后续的计算）。当然，第一个概率$P(y^{&lt; 1 &gt;})$没有条件，所以第一轮的输入$x^{&lt; 1 &gt;}=0$。对softmax的结果依然使用的是交叉熵误差，一个序列的误差等于所有元素的误差之和。</p>
+<p>刚刚介绍的是训练过程。在用这个模型计算某句子的概率时，只要把一个句子输入进这个RNN，再去softmax的概率分布里取出需要的概率，一乘，就能算出语言模型要求的整句话的概率了。比如<code>Cats average 15 hours of sleep a day. &lt; EOS &gt;</code>这个句子，我们要令$x^{&lt; 1 &gt;}=0$, $x^{&lt; 2 &gt;}=one_ hot(cats)$, $x^{&lt; 3 &gt;}=one_ hot(average)$，……。然后，从第一个输出概率分布$\hat{y}^{&lt; 1 &gt;}$里找出cats对应的概率，去$\hat{y}^{&lt; 2 &gt;}$里找到average对应的概率，去$\hat{y}^{&lt; 3 &gt;}$里找到15对应的概率，以此类推。最后把所有的概率乘起来。</p>
+<p>通过这一节，我们学到了RNN的一种应用。是否真正理解语言模型这一任务，并不重要。重要的是，我们学到了RNN是怎么巧妙去完成一项任务的。在完成和序列数据有关的任务时，我们要精心定义RNN的输入序列和输出序列。一旦这两个序列定义好了，训练模型并解决任务就是很轻松的事情。</p>
+<h2 id="用语言模型采样出全新的序列"><a href="#用语言模型采样出全新的序列" class="headerlink" title="用语言模型采样出全新的序列"></a>用语言模型采样出全新的序列</h2><p>给定一个别人训练好的RNN语言模型，我们可以弄出一个很好玩的应用：生成一个训练集里没有的句子。</p>
+<p>我们刚刚学过，在计算一句话的概率时，RNN会把句子里的每一个单词输入，输出单词出现在前几个单词之后的概率分布$\hat{y}$。反过来想，我们可以根据RNN输出的概率分布，随机采样出某一个单词的下一个单词出来。具体来说，我们先随机生成句子里的第一个单词，把它输入RNN。再用RNN生成概率分布，对概率分布采样出下一个单词，采样出一个单词就输入一个单词，直到采样出<code>&lt; EOS &gt;</code>。这个过程就好像是在让AI生成句子一样。</p>
+<blockquote>
+<p>对概率分布采样，其实就是以某种概率随机挑选。比如我有两个骰子，我要计算两个骰子点数之和。这个点数之和就是一个概率分布，掷一轮骰子就是去分布里采样。我们可以快速地算出，点数之和为2的概率是$\frac{1}{36}$, 点数之和为3的概率是$\frac{2}{36}$。也就是说，我们在采样时，有$\frac{1}{36}$的概率取到2，$\frac{2}{36}$的概率取到3。</p>
+</blockquote>
+<p>如果把语料库的最小单元从单词换成字母，句子生成就变成了单词生成，我们可以让AI生成出从没出现过却看上去很合理的单词。</p>
+<h2 id="RNN-的梯度问题"><a href="#RNN-的梯度问题" class="headerlink" title="RNN 的梯度问题"></a>RNN 的梯度问题</h2><p>在前几门课中，我们曾学过，过深的神经网络会有梯度过大/过小的问题。这些问题在RNN中也存在，毕竟RNN一般都是用来处理很长的序列数据的。</p>
+<p>梯度过大的问题倒是有办法解决：设置一个梯度最大值，让所有梯度都不能超过这个值。</p>
+<p>梯度过小的问题比较麻烦。想象一个很长的句子:The <strong>cat</strong>, which ate apples, pears, …., <strong>was</strong> full.这个cat和was存在着依赖关系。一旦梯度过小，一个句子前后的依赖关系就不是那么好传递了。</p>
+<p>下面几节我们会学一些解决梯度问题的架构。</p>
+<h2 id="GRU-Gated-Recurrent-Unit"><a href="#GRU-Gated-Recurrent-Unit" class="headerlink" title="GRU (Gated Recurrent Unit)"></a>GRU (Gated Recurrent Unit)</h2><p>我们可以用GRU (Gated Recurrent Unit)来替代标准RNN中的计算单元，以解决梯度问题。</p>
+<p>为了明确标准RNN的哪些模块被替换了，我们先回顾一下RNN原来的计算单元。</p>
+<p><img src="/2022/09/21/DLS-note-14/6.jpg" alt></p>
+<p>在标准的RNN单元中，$x^{&lt; t &gt;}$和$a^{&lt; t-1 &gt;}$一起决定了$a^{&lt; t &gt;}$，$a^{&lt; t &gt;}$又决定了$\hat{y}^{&lt; t &gt;}$。</p>
+<p>先在脑中对这张图有个印象，稍后我们会看到GRU是怎样改进这个计算单元的。</p>
+<p>上一节里，我们分析过，梯度消失会导致一句话后面的单词忘掉了前面的单词。那么，可不可以让网络的“记性”更好一点呢？我们可以参考一下人类的记忆行为。比如，当我们在接到了验证码短信后，要把验证码在脑子里记一段时间：读完了短信，要记住验证码；关闭短信应用，要记住验证码；打开需要验证码的应用，要记住验证码；输入验证吗时，要记住验证码；输完了验证码，总算可以忘记验证码了。这个过程中，我们一直在维护“验证码”这个信息，决定是记住它还是忘记它。我们可以让神经网络模型也按照这种思路记忆之前的信息。</p>
+<p>在每轮计算更新中间变量$a$时，GRU还要使用到一个新的变量，表示中间变量$a$该不该忘记。这个变量越靠近0，就说明越应该保持之前的中间变量；越靠近1，就越靠近新的$a$。GRU的这个变量起到了电路中逻辑门的效果（GRU的第一个单词是gated）。</p>
+<p>具体来说，一个简化版GRU的计算过程用数学符号表示如下：</p>
+<p>我们把中间变量$a$临时更名为$c$，表示记忆单元memory cell。和之前的$a$一样，我们每轮要算一个新的$\tilde{c}$：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\tilde{c}^{< t >} &= tanh(W_{c} [c^{< t - 1 >}, x^{< t >}] + b_c)
+\end{aligned}</script><p>而同时，我们还要算一个决定是不是要用$\tilde{c}$去更新过去的$c$的“逻辑门” $\Gamma_u$:</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\Gamma_u &= sigmoid(W_{u} [c^{< t - 1 >}, x^{< t >}] + b_u)
+\end{aligned}</script><p>注意，$\Gamma_u$和逻辑门不同，不是真的只能取0或1，而是取0~1中一个中间的值，表示更新的程度。</p>
+<p>之后，每一轮的$c^{&lt; t &gt;}$是这样更新的：</p>
+<script type="math/tex; mode=display">
+c^{< t >} = \Gamma_u \ast \tilde{c}^{< t >} + (1 - \Gamma_u) \ast c^{< t - 1 >}</script><p>它的图示如下，其中紫色部分是更新操作。</p>
+<p><img src="/2022/09/21/DLS-note-14/7.jpg" alt></p>
+<p>在完整的GRU中，计算公式稍微复杂一点：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\tilde{c}^{< t >} &= tanh(W_{c} [\Gamma_r \ast c^{< t - 1 >}, x^{< t >}] + b_c) \\
+\Gamma_u &= sigmoid(W_{u} [c^{< t - 1 >}, x^{< t >}] + b_u) \\
+\Gamma_r &= sigmoid(W_{r} [c^{< t - 1 >}, x^{< t >}] + b_r) \\
+c^{< t >} &= \Gamma_u \ast \tilde{c}^{< t >} + (1 - \Gamma_u) \ast c^{< t - 1 >}
+\end{aligned}</script><p>唯一的区别是$c^{&lt; t - 1 &gt;}$多过了一道$\Gamma_r$。这种设计的好处很难从理论上解释。当时的研究者试了很多类似的GRU架构，最后发现这样的GRU是效果最好的。</p>
+<h2 id="LSTM-long-short-term-memory-单元"><a href="#LSTM-long-short-term-memory-单元" class="headerlink" title="LSTM (long short term memory) 单元"></a>LSTM (long short term memory) 单元</h2><p>LSTM单元是另一种改进版的RNN单元。LSTM的核心思想和GRU一模一样，也是使用门来控制记忆变量的更新幅度，只是公式更复杂了一点。在LSTM中，要传递的中间变量有两个：$c$和$a$，使用的输出门也从2个增加到了3个。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\tilde{c}^{< t >} &= tanh(W_{c} [\Gamma_r \ast a^{< t - 1 >}, x^{< t >}] + b_c) \\
+\Gamma_u &= sigmoid(W_{u} [a^{< t - 1 >}, x^{< t >}] + b_u) \\
+\Gamma_f &= sigmoid(W_{f} [a^{< t - 1 >}, x^{< t >}] + b_f) \\
+\Gamma_o &= sigmoid(W_{o} [a^{< t - 1 >}, x^{< t >}] + b_o) \\
+c^{< t >} &= \Gamma_u \ast \tilde{c}^{< t >} + \Gamma_f \ast c^{< t - 1 >} \\
+a^{< t >} &= \Gamma_o 
+\ast tanh (c^{< t >})
+\end{aligned}</script><p><img src="/2022/09/21/DLS-note-14/8.jpg" alt></p>
+<blockquote>
+<p>我觉得看图不如看公式看得清楚。</p>
+</blockquote>
+<p>我们不需要刻意去记LSTM的结构，也不要纠结为什么要在哪个地方用哪个门，只需要知道LSTM和GRU的区别，会用它们就行了。</p>
+<p>虽然LSTM比GRU更复杂，但实际上LSTM很早（1997年）就有了，GRU是近几年才有的。二者的效果并没有显著的差别，一般认为LSTM功能更强大，GRU计算速度更快。碰到新任务无脑用LSTM即可，而如果要构建较大的网络则可以考虑使用性能更好的GRU。</p>
+<h2 id="双向RNN"><a href="#双向RNN" class="headerlink" title="双向RNN"></a>双向RNN</h2><p>之前提过，标准的RNN有一个问题：先出现的单词无法获取后续单词的信息。比如句首单词是Teddy，你不知道这是“泰迪熊”还是“泰迪”这个人名。为了解决这个问题，我们可以升级一下RNN的基础架构，使用双向RNN（BRNN）。在这个新架构下，GRU和LSTM的单元可以照用，不受影响。</p>
+<p>BRNN的示意图如下：</p>
+<p><img src="/2022/09/21/DLS-note-14/9.jpg" alt></p>
+<p>假设一句话有4个单词。在BRNN中，除了会先从1-4正着输入一遍序列外，还会从4-1倒着输入一遍序列。正着传的中间变量叫$\overrightarrow{a}$，倒着传的中间变量叫做$\overleftarrow{a}$。每一轮输出满足$\hat{y}=g(W_y[ \overrightarrow{a}, \overleftarrow{a}  ] + b_y)$。</p>
+<p>BRNN+LSTM通常是一个新序列任务的标配。当然，BRNN也有一个缺点：必须等一个序列输入完了才能返回结果，而不能实时返回结果。在语音识别等实时性较强的任务里，可能普通RNN更合适一点。</p>
+<h2 id="深层RNN"><a href="#深层RNN" class="headerlink" title="深层RNN"></a>深层RNN</h2><p>到目前为止，我们学的RNN都是由几个简单的矩阵运算构成的，似乎和这套课的标题“深度学习”不沾边。实际上，也可以给基础的RNN多加一些参数，变成一个深层的RNN。</p>
+<p>正如堆叠标准神经网络的隐藏层一样，我们可以堆叠RNN的基础模块，并传递多个中间变量。由于时序计算的计算成本很高，堆3层的计算量就已经很大了。</p>
+<p><img src="/2022/09/21/DLS-note-14/10.jpg" alt></p>
+<p>如果想进一步提升网络的拟合能力，可以修改计算输出$y$的结构，堆叠一些非时序的神经网络隐藏层。</p>
+<p><img src="/2022/09/21/DLS-note-14/11.jpg" alt></p>
+<blockquote>
+<p>时序模块之所以计算缓慢，一大原因是无法并行。靠后的变量必须等之前的变量算好了才能计算。而在输出$y$的路径中添加一些隐藏层的运算代价没有那么大，因为这些运算是可以并行的。</p>
+</blockquote>
+<p>同样，使用深层RNN时，双向RNN，还有LSTM, GRU都是可以用的。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这一课里，我们初次认识了序列数据，并学习了处理序列数据的RNN。利用RNN，我们可以开发出许多和序列数据相关的应用。基础的RNN存在不少问题，所以RNN存在着许多改进方法。让我们看一看这一课的具体知识点：</p>
+<ul>
+<li><p>序列数据及相关任务的示例</p>
+<ul>
+<li>语音识别：输入语音，输出文字</li>
+<li>音乐生成：无输入，输出语音</li>
+<li>机器翻译：输入某种文字，输出另一种文字</li>
+<li>情绪分类：输入文字，输出1-5的分数</li>
+<li>命名实体识别：输入文字，输出每个单词是否是命名实体</li>
+</ul>
+</li>
+<li><p>单词的表示</p>
+<ul>
+<li>先准备好一个词汇表。比如大小为10000的词汇表（要包括<code>&lt;UNK&gt;, &lt;EOS&gt;</code>）。</li>
+<li>每一个单词是一个长度10000的one-hot向量。单词在词汇表中的序号，就是one-hot向量中值为1的下标。</li>
+</ul>
+</li>
+<li><p>循环神经网络（RNN）</p>
+<ul>
+<li>基本思想：用$a$表示上文信息</li>
+<li>计算流程：循环输入序列元素，维护$a$</li>
+<li>计算公式</li>
+<li>反向传播的大概流程</li>
+</ul>
+</li>
+<li><p>防止RNN梯度消失：GRU, LSTM</p>
+<ul>
+<li>基本思想：选择性更新$a$</li>
+<li>大概了解GRU, LSTM的公式</li>
+<li>GRU, LSTM的使用场景</li>
+</ul>
+</li>
+<li><p>获取下文信息：BRNN</p>
+<ul>
+<li>基本思想与结构</li>
+<li>使用场景</li>
+</ul>
+</li>
+<li><p>增强表达能力：深层RNN</p>
+<ul>
+<li>怎么添加更多层RNN</li>
+<li>怎么更好地拟合输出</li>
+</ul>
+</li>
+<li><p>RNN应用：语言模型</p>
+<ul>
+<li>语言模型的定义</li>
+<li>语言模型的训练与推理</li>
+<li>对语言模型采样</li>
+</ul>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-14-2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1610,289 +1883,6 @@ J^{[l]}_{style}(S, G) = ||G^{[l]}(S)- G^{[l]}(G)||_F^2</script><p>这是一层�
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-11/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/07/24/DLS-note-11/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（十一）：深度卷积模型——从示例中学习</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-07-24 00:31:30" itemprop="dateCreated datePublished" datetime="2022-07-24T00:31:30+08:00">2022-07-24</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>上周，我们学完了CNN的基础组成模块。而从这周开始，我们要换一种学习方式：我们会认识一些经典的CNN架构，从示例中学习。一方面来说，通过了解他人的网络，阅读他人的代码，我们能够更快地掌握如何整合CNN的基础模块；另一方面，CNN架构往往泛化能力较强，学会了其他任务中成熟的架构，可以把这些架构直接用到我们自己的任务中。</p>
-<p>接下来，我们会按照CNN的发展历史，认识许多CNN架构。首先是经典网络：</p>
-<ul>
-<li>LeNet-5</li>
-<li>AlexNet</li>
-<li>VGG</li>
-</ul>
-<p>之后是近年来的一些网络：</p>
-<ul>
-<li>ResNet</li>
-<li>Inception</li>
-<li>MobileNet</li>
-</ul>
-<p>我们不会把这些研究的论文详细过一遍，而只会学习各研究中最精华的部分。学有余力的话，最好能在课后把论文自己过一遍。</p>
-<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="经典网络"><a href="#经典网络" class="headerlink" title="经典网络"></a>经典网络</h2><h3 id="LeNet-5"><a href="#LeNet-5" class="headerlink" title="LeNet-5"></a>LeNet-5</h3><p>LeNet-5是用于手写数字识别（识别0~9的阿拉伯数字）的网络。它的结构如下：</p>
-<p><img src="/2022/07/24/DLS-note-11/1.jpg" alt></p>
-<p>网络是输入是一张[32, 32, 1]的灰度图像，输入经过4个卷积+池化层，再经过两个全连接层，输出一个0~9的数字。这个网络和我们上周见过的网络十分相似，数据体的宽和高在不断变小，而通道数在不断变多。</p>
-<p>这篇工作是1998年发表的，当时的神经网络架构和现在我们学的有不少区别：</p>
-<ul>
-<li>当时padding还没有得到广泛使用，数据体的分辨率会越降越小。</li>
-<li>当时主要使用平均池化，而现在最大池化更常见。</li>
-<li>网络只输出一个值，表示识别出来的数字。而现在的多分类任务一般会输出10个值并使用softmax激活函数。</li>
-<li>当时激活函数只用sigmoid和tanh，没有人用ReLU。</li>
-<li>当时的算力没有现在这么强，原工作在计算每个通道卷积时使用了很多复杂的小技巧。而现在我们直接算就行了。</li>
-</ul>
-<p>LeNet-5只有6万个参数。随着算力的增长，后来的网络越来越大了。</p>
-<h3 id="AlexNet"><a href="#AlexNet" class="headerlink" title="AlexNet"></a>AlexNet</h3><p>AlexNet是2012年发表的有关图像分类的CNN结构。它的输入是[227, 227, 3]的图像，输出是一个1000类的分类结果。</p>
-<blockquote>
-<p>原论文里写的是输入形状是[224, 224, 3]，但实际上这个分辨率是有问题的，按照这个分辨率是算不出后续结果的分辨率的。但现在一些框架对AlexNet的复现中，还是会令输入的分辨率是224。这是因为框架在第一层卷积中加了一个padding的操作，强行让后续数据的分辨率和原论文对上了。 </p>
-</blockquote>
-<p><img src="/2022/07/24/DLS-note-11/2.jpg" alt></p>
-<p>AlexNet和LeNet-5在架构上十分接近。但是，AlexNet做出了以下改进：</p>
-<ul>
-<li>AlexNet用了更多的参数，一共有约6000万个参数。</li>
-<li>使用ReLU作为激活函数。</li>
-</ul>
-<p>AlexNet还提出了其他一些创新，但与我们要学的知识没有那么多关系：</p>
-<ul>
-<li>当时算力还是比较紧张，AlexNet用了双GPU训练。论文里写了很多相关的工程细节。</li>
-<li>使用了Local Response Normalization这种归一化层。现在几乎没人用这种归一化。</li>
-</ul>
-<p>AlexNet中的一些技术在今天看来，已经是常识般的存在。而在那个年代，尽管深度学习在语音识别等任务上已经初露锋芒，人们还没有开始重视深度学习这项技术。正是由于AlexNet这一篇工作的出现，计算机视觉的研究者开始关注起了深度学习。甚至在后来，这篇工作的影响力已经远超出了计算机视觉社区。</p>
-<h3 id="VGG-16"><a href="#VGG-16" class="headerlink" title="VGG-16"></a>VGG-16</h3><p>VGG-16也是一个图像分类网络。VGG的出发点是：为了简化网络结构，只用3x3等长(same)卷积和2x2最大池化。</p>
-<p><img src="/2022/07/24/DLS-note-11/3.jpg" alt></p>
-<p>可以看出，VGG也是经过了一系列的卷积和池化层，最后使用全连接层和softmax输出结果。顺带一提，VGG-16里的16表示有16个带参数的层。</p>
-<p>VGG非常庞大，有138M(1.38亿)个参数。但是它简洁的结构吸引了很多人的关注。</p>
-<p>吴恩达老师鼓励大家去读一读这三篇论文。可以先看AlexNet，再看VGG。LeNet有点难读，可以放到最后去读。</p>
-<h2 id="ResNets（基于残差的网络）"><a href="#ResNets（基于残差的网络）" class="headerlink" title="ResNets（基于残差的网络）"></a>ResNets（基于残差的网络）</h2><p>非常非常深的神经网络是很难训练的，这主要是由梯度爆炸/弥散问题导致的。在这一节中，我们要学一种叫做“跳连(skip connection)”的网络模块连接方式。使用跳连，我们能让浅层模块的输出直接对接到深层模块的输入上，进而搭建基于残差的网络，解决梯度爆炸/弥散问题，训练深达100层的网络。</p>
-<h3 id="残差块"><a href="#残差块" class="headerlink" title="残差块"></a>残差块</h3><p>回忆一下，在全连接网络中，假如我们有中间层的输出$a^{[l]}, a^{[l+2]}$，$a^{[l+2]}$是怎么由$a^{[l]}$算出来的呢？我们之前用的公式如下：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-z^{[l+1]}&=W^{[l+1]}a^{[l]}+b^{[l+1]} \\
-a^{[l+1]}&=g(z^{[l+1]}) \\
-z^{[l+2]}&=W^{[l+2]}a^{[l+1]}+b^{[l+2]} \\
-a^{[l+2]}&=g(z^{[l+2]}) \\
-\end{aligned}</script><p>也就是说，$a^{[l]}$要经过一个线性层、一个激活函数、一个线性层、一个激活函数，才能传递到$a^{[l+2]}$，这条路径非常长：</p>
-<p><img src="/2022/07/24/DLS-note-11/4.jpg" alt></p>
-<p>而在残差块(Residual block)中，我们使用了一种新的连接方法：</p>
-<p><img src="/2022/07/24/DLS-note-11/5.jpg" alt></p>
-<p>$a^{[l]}$的值被直接加到了第二个ReLU层之前的线性输出上，这是一种类似电路中短路的连接方法（又称跳连）。这样，浅层的信息能更好地传到深层了。</p>
-<p>使用这种方法后，计算公式变更为：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-z^{[l+1]}&=W^{[l+1]}a^{[l]}+b^{[l+1]} \\
-a^{[l+1]}&=g(z^{[l+1]}) \\
-z^{[l+2]}&=W^{[l+2]}a^{[l+1]}+b^{[l+2]} \\
-a^{[l+2]}&=g(z^{[l+2]}+a^{[l]}) \\
-\end{aligned}</script><p>残差块中还有一个要注意的细节。$a^{[l+2]}=g(z^{[l+2]}+a^{[l]})$这个式子能够成立，实际上是默认了$a^{[l+2]}, a^{[l]}$的维度相同。而一旦$a^{[l+2]}$的维度发生了变化，就需要用下面这种方式来调整了。</p>
-<p>$a^{[l+2]}=g(z^{[l+2]}+W’a^{[l]})$</p>
-<p>我们可以用一个$W’$来完成维度的转换。为了方便理解，我们先让所有$a$都是一维向量，$W’$是矩阵。这样，假设$a^{[l+2]}$的长度是256，$a^{[l]}$的长度是128，则$W’$的形状就是$256 \times 128$。</p>
-<p>但实际上，$a$是一个三维的图像张量，三个维度的长度都可能发生变化。因此，对于图像，上式中的$W’$应该表示的是一个卷积操作。通过卷积操作，我们能够减小图像的宽高，调整图像的通道数，使得$a^{[l]}$和$a^{[l+2]}$的维度完全相同。</p>
-<h3 id="残差网络"><a href="#残差网络" class="headerlink" title="残差网络"></a>残差网络</h3><p>在构建残差网络ResNet时，只要把这种残差块一个一个拼接起来即可。或者从另一个角度来看，对于一个“平坦网络”（”plain network”, ResNet论文中用的词，用于表示非残差网络），我们只要把线性层两两打包，添加跳连即可。</p>
-<p><img src="/2022/07/24/DLS-note-11/6.jpg" alt></p>
-<p>残差块起到了什么作用呢？让我们看看在网络层数变多时，平坦网络和残差网络训练误差的变化趋势：</p>
-<p><img src="/2022/07/24/DLS-note-11/7.jpg" alt></p>
-<p>理论上来说，层数越深，训练误差应该越低。但在实际中，对平坦网络增加深度，反而会让误差变高。而使用ResNet后，随着深度增加，训练误差起码不会降低了。</p>
-<p>正是有这样的特性，我们可以用ResNet架构去训练非常深的网络。</p>
-<p>为什么ResNet是有这样的特性呢？我们还是从刚刚那个ResNet的公式里找答案。</p>
-<p>假设我们设计好了一个网络，又给它新加了一个残差块，即多加了两个卷积层，那么最后的输出可以写成：</p>
-<script type="math/tex; mode=display">
-a^{[l+2]}=g(z^{[l+2]}+a^{[l]}),</script><p>即</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-a^{[l+2]}&=g(z^{[l+2]}+a^{[l]}) \\
-a^{[l+2]}&=g(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}) \\
-\end{aligned}</script><p>由于正则化的存在，所有$W$和$b$都倾向于变得更小。极端情况下，$W, b$都变为0了。那么，</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-a^{[l+2]}&=g(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}), \\
-a^{[l+2]}&=g(a^{[l]}). \\
-\end{aligned}</script><p>再不妨设$g=ReLU$。则因为$a^{[l]}$也是ReLU的输出，有</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-a^{[l+2]}&=g(a^{[l]}), \\
-a^{[l+2]}&=a^{[l]}. \\
-\end{aligned}</script><p>这其实是一个恒等映射，也就是说，新加的残差块对之前的输出没有任何影响。网络非常容易学习到恒等映射。这样，最起码能够保证较深的网络不比浅的网络差。</p>
-<p>准备好了所有基础知识，我们来看看完整的ResNet长什么样。</p>
-<p><img src="/2022/07/24/DLS-note-11/7_2.jpg" alt></p>
-<p>ResNet有几个参数量不同的版本。这里展示的叫做ResNet-34。完整的网络很长，我们只用关注其中一小部分就行了。</p>
-<p>一开始，网络还是用一个大卷积核大步幅的卷积以及一个池化操作快速降低图像的宽度，再把数据传入残差块中。和我们刚刚学的一样，残差块有两种，一种是维度相同可以直接相加的（实线），一种是要调整维度的（虚线）。整个网络就是由这若干个这样的残差块组构成。经过所有残差块后，还是和经典的网络一样，用全连接层输出结果。</p>
-<p>这里，我们只学习了残差连接的基本原理。ResNet的论文里还有更多有关网络结构、实验的细节。最好能读一读论文。当然，这周的编程实战里我们也会复现ResNet，以加深对其的理解。</p>
-<h2 id="Inception-网络"><a href="#Inception-网络" class="headerlink" title="Inception 网络"></a>Inception 网络</h2><p>我们已经见过不少CNN的示例了。当我们仿照它们设计自己的网络时，或许会感到迷茫：有3x3, 5x5卷积，有池化，该怎么选择每一个模块呢？Inception网络给了一个解决此问题的答案：我全都要。</p>
-<p>Inception网络用到了一种特殊的1x1卷积。我们会先学习1x1卷积，再学习Inception网络的知识。</p>
-<h3 id="1x1卷积"><a href="#1x1卷积" class="headerlink" title="1x1卷积"></a>1x1卷积</h3><p>用1x1的卷积核去卷一幅图像，似乎是一件很滑稽的事情。假设一幅图像的数字是[1, 2, 3]，卷积核是[2]，那么卷出来的图像就是[2, 4, 6]。这不就是把每个数都做了一次乘法吗？</p>
-<p>对于通道数为1的图像，1x1卷积确实没什么大用。而当通道数多起来后，1x1卷积的意义就逐渐显现出来了。思考一下，对多通道的图像做1x1卷积，就是把某像素所有通道的数字各乘一个数，求和，加一个bias，再通过激活函数。这是计算一个输出结果的过程，而如果有多个卷积核，就可以计算出多个结果。（下图中，蓝色的数据体是输入图像，黄色的数据体是1x1的卷积核。两个数据体重合部分的数据会先做乘法，再求和，加bias，经过激活函数。）</p>
-<p><img src="/2022/07/24/DLS-note-11/7_3.jpg" alt></p>
-<p>这个过程让你想起了什么？没错，正是最早学习的全连接网络。1x1卷积，实际上就是在各通道上做了一次全连接的计算。1x1卷积的输入通道数，就是全连接层上一层神经元的数量；1x1卷积核的数量，就是这一层神经元的数量。</p>
-<p>1x1卷积主要用于变换图像的通道数。比如要把一个192通道数的图像变成32通道的，就应该用32个1x1卷积去卷原图像。</p>
-<h3 id="Inception块的原理"><a href="#Inception块的原理" class="headerlink" title="Inception块的原理"></a>Inception块的原理</h3><p>在Inception网络中，我们会使用这样一种混合模块：对原数据做1x1, 3x3, 5x5卷积以及最大池化，得到通道数不同的数据体。这些数据体会被拼接起来，作为整个模块的输出。</p>
-<p><img src="/2022/07/24/DLS-note-11/7_4.jpg" alt></p>
-<p>值得注意的是，这里的池化操作和我们之前见过的不太一样。为了保持输出张量的宽高，这个池化的步幅为1，且使用了等长填充。另外，为了调整池化操作输出的通道数，这条数据处理路线上还有一个用1x1卷积变换通道数的操作。这份图省略了很多这样的细节，下一节我们会见到这幅图的完整版。</p>
-<p>在实现这样一种模块时，会碰到计算量过大的问题。比如把上面$28 \times 28 \times 192$的数据体用$5 \times 5$卷积卷成$28 \times 28 \times 32$的数据体，需要多少次乘法计算呢？对每个像素单独考虑，一个通道上的卷积要做$5 \times 5$此乘法，192个通道的卷积要做$192 \times 5 \times 5$次乘法。32个这样的卷积在$28 \times 28$的图片上要做$28 \times 28 \times 32 \times 192 \times 5 \times 5 \approx 120M$次乘法。这个计算量太大了。</p>
-<p>为此，我们可以巧妙地先利用1x1卷积减少通道数，再做5x5卷积。这样，计算量就少得多了。</p>
-<p><img src="/2022/07/24/DLS-note-11/7_5.jpg" alt></p>
-<p>这样一种两头大，中间小的结构被形象地称为瓶颈(bottlenect)。这种结构被广泛用在许多典型网络中。</p>
-<h3 id="Inception网络"><a href="#Inception网络" class="headerlink" title="Inception网络"></a>Inception网络</h3><p>有了之前的知识，我们可以看Inception模块的完整结构了。1x1卷积没有什么特别的。为了减少3x3卷积和5x5卷积的计算量，做这两种卷积之前都会用1x1卷积减少通道数。而为了改变池化结果的通道数，池化后接了一个1x1卷积操作。</p>
-<p><img src="/2022/07/24/DLS-note-11/7_6.jpg" alt></p>
-<p>实际上，理解了Inception块，也就能看懂Inception网络了。如下图所示，红框内的模块都是Inception块。而这个网络还有一些小细节：除了和普通网络一样在网络的最后使用softmax输出结果外，这个网络还根据中间结果也输出了几个结果。当然，这些都是早期网络的设计技巧了。</p>
-<p><img src="/2022/07/24/DLS-note-11/7_7.jpg" alt></p>
-<h2 id="MobileNet"><a href="#MobileNet" class="headerlink" title="MobileNet"></a>MobileNet</h2><p>MobileNet，顾名思义，这是一种适用于移动(mobile)设备的神经网络。移动设备的计算资源通常十分紧缺，因此，MobileNet对网络的计算量进行了极致的压缩。</p>
-<h3 id="减少卷积运算量"><a href="#减少卷积运算量" class="headerlink" title="减少卷积运算量"></a>减少卷积运算量</h3><p>再回顾一遍，一次卷积操作中主要的计算量如下：</p>
-<p><img src="/2022/07/24/DLS-note-11/7_8.jpg" alt></p>
-<p>计算量这么大，主要问题出在每一个输出通道都要与每一个输入通道“全连接”上。为此，我们可以考虑让输出通道只由部分的输入通道决定。这样一种卷积的策略叫逐深度可分卷积(Depthwise Separable Convolution)。</p>
-<blockquote>
-<p>这里的depthwise是“逐深度”的意思，但我觉得“逐通道”这个称呼会更容易理解一点。</p>
-</blockquote>
-<p>逐深度可分卷积分为两步：逐深度卷积(depthwise convolution)，逐点卷积(pointwise convolution)。逐深度卷积生成新的通道，逐点卷积把各通道的信息关联起来。</p>
-<p><img src="/2022/07/24/DLS-note-11/7_9.jpg" alt></p>
-<p>之前，要对下图中的三通道图片做卷积，需要3个卷积核分别处理3个通道。而在逐深度卷积中，我们只要1个卷积核。这个卷积核会把输入图像当成三个单通道图像来看待，分别对原图像的各个通道进行卷积，并生成3个单通道图像，最后把3个单通道图像拼回一个三通道图像。也就是说，逐深度卷积只能生成一幅通道数相同的新图像。</p>
-<blockquote>
-<p>逐深度卷积可以通过设置卷积在编程框架中的<code>groups</code>参数来实现。参见我<a href>讲解卷积的文章</a>。</p>
-</blockquote>
-<p><img src="/2022/07/24/DLS-note-11/7_10.jpg" alt></p>
-<p>下一步，是逐点卷积，也就是1x1卷积。它用来改变图片的通道数。</p>
-<p><img src="/2022/07/24/DLS-note-11/7_11.jpg" alt></p>
-<p>之前的卷积有2160次乘法，现在只有432+240=672次，计算量确实减少了不少。实际上，优化后计算量占原计算量的比例是：</p>
-<script type="math/tex; mode=display">
-\frac{1}{n_c'} + \frac{1}{f^2}</script><p>其中$n_c’$是输出通道数，$f$是卷积核边长。一般来说计算量都会少10倍。</p>
-<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><p>知道了MobileNet的基本思想，我们来看几个不同版本的MobileNet。</p>
-<h4 id="MobileNet-v1"><a href="#MobileNet-v1" class="headerlink" title="MobileNet v1"></a>MobileNet v1</h4><p>13个逐深度可分卷积模块，之后接通常的池化、全连接、softmax。</p>
-<p><img src="/2022/07/24/DLS-note-11/8.jpg" alt></p>
-<h4 id="MobileNet-v2"><a href="#MobileNet-v2" class="headerlink" title="MobileNet v2"></a>MobileNet v2</h4><p>两个改进：</p>
-<ol>
-<li>残差连接</li>
-<li>扩张(expansion)操作</li>
-</ol>
-<p><img src="/2022/07/24/DLS-note-11/9.jpg" alt></p>
-<p>残差连接和ResNet一样。这里我们关注一下第二个改进。</p>
-<p>在MobileNet v2中，先做一个扩张维度的1x1卷积，再做逐深度卷积，最后做之前的逐点1x1卷积。由于最后的逐点卷积起到的是减小维度的作用，所以最后一步操作也叫做投影。</p>
-<p><img src="/2022/07/24/DLS-note-11/10.jpg" alt></p>
-<p>这种架构很好地解决了性能和效果之间的矛盾：在模块之间，数据的通道数只有3，占用内存少；在模块之内，更高通道的数据能拟合更复杂的函数。</p>
-<h2 id="EfficientNet"><a href="#EfficientNet" class="headerlink" title="EfficientNet"></a>EfficientNet</h2><p>EfficientNet能根据设备的计算能力，自动调整网络占用的资源。</p>
-<p>让我们想想，哪些因素决定了一个网络占用的运算资源？我们很快能想到下面这些因素：</p>
-<ul>
-<li>图像分辨率</li>
-<li>网络深度</li>
-<li>特征的长度（即卷积核数量或神经元数量）</li>
-</ul>
-<p>在EfficientNet中，我们可以在这三个维度上缩放网络，动态改变网络的计算量。EfficientNet的开源实现中，一般会提供各设备下的最优参数。</p>
-<h2 id="卷积网络实现细节"><a href="#卷积网络实现细节" class="headerlink" title="卷积网络实现细节"></a>卷积网络实现细节</h2><h3 id="使用开源实现"><a href="#使用开源实现" class="headerlink" title="使用开源实现"></a>使用开源实现</h3><p>由于深度学习项目涉及很多训练上的细节，想复现一个前人的工作是很耗时的。最好的学习方法是找到别人的开源代码，在现有代码的基础上学习。</p>
-<p>深度学习的开源代码一般在GitHub上都能找到。如果是想看PyTorch实现，可以直接去GitHub上搜索OpenMMLab。</p>
-<h3 id="使用迁移学习"><a href="#使用迁移学习" class="headerlink" title="使用迁移学习"></a>使用迁移学习</h3><p>如第三门课第二周所学，我们可以用迁移学习，导入别人训练好的模型里的权重为初始权重，加速我们自己模型的训练。</p>
-<p>还是以多分类任务的迁移学习为例（比如把一个1000分类的分类器迁移到一个猫、狗、其他的三分类模型上）。迁移后，新的网络至少要删除输出层，并按照新的多分类个数，重新初始化一个输出层。之后，根据新任务的数据集大小，冻结网络的部分参数，从导入的权重开始重新训练网络的其他部分：</p>
-<p><img src="/2022/07/24/DLS-note-11/11.jpg" alt></p>
-<p>当然，可以多删除几个较深的层，也可以多加入几个除了输出层以外的隐藏层。</p>
-<h3 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h3><p>由于CV任务总是缺少数据，数据增强是一种常见的提升网络性能的手段。</p>
-<p>常见的改变形状的数据增强手段有：</p>
-<ul>
-<li>镜像</li>
-<li>裁剪</li>
-<li>旋转</li>
-<li>扭曲</li>
-</ul>
-<p>此外，还可以改变图像的颜色。比如对三个颜色通道都随机加一个偏移量。</p>
-<p>数据增强有一些实现上的细节：数据的读取及增强是放在CPU上运行的，训练是放在CPU或GPU上运行的。这两步其实是独立的，可以并行完成。最常见的做法是，在CPU上用多进程（发挥多核的优势）读取数据并进行数据增强，之后把数据搬到GPU上训练。</p>
-<h3 id="计算机视觉的现状与相关建议"><a href="#计算机视觉的现状与相关建议" class="headerlink" title="计算机视觉的现状与相关建议"></a>计算机视觉的现状与相关建议</h3><p>一般来说，算法从两个来源获取知识：标注的数据，人工设计的特征。这二者是互补的关系。对于人工智能任务来说，如果有足够的数据，设计一个很简单的网络就行了；而如果数据量不足，则需要去精心设计网络结构。</p>
-<p>像语音识别这种任务就数据充足，用简单的网络就行了。而大部分计算机视觉任务都处于数据不足的状态。哪怕计算机视觉中比较基础的图像分类任务，都需要设计结构复杂的网络，更不用说目标检测这些更难的任务了。</p>
-<p>如果你想用深度学习模型参加刷精度的比赛，可以使用以下几个小技巧：</p>
-<ul>
-<li>同时开始训练多个网络，算结果时取它们的平均值。</li>
-<li>对图像分类任务，可以把图像随机裁剪一部分并输入网络，多次执行这一步骤并取平均分类结果。</li>
-</ul>
-<p>也就是说，只是为了提高精度的话，可以想办法对同一份输入执行多次条件不同的推理，并对结果求平均。当然，实际应用中是不可能用性能这么低的方法。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课是CNN中最重要的一节课。通过学习一些经典的CNN架构，我们掌握了很多有关搭建CNN的知识。总结一下：</p>
-<ul>
-<li>早期CNN<ul>
-<li>卷积、池化、全连接</li>
-<li>边长减小，通道数增加</li>
-</ul>
-</li>
-<li>ResNet<ul>
-<li>为什么使用ResNet？</li>
-<li>梯度问题是怎么被解决的？</li>
-<li>残差块的一般结构</li>
-<li>输入输出通道数不同的残差块</li>
-<li>了解ResNet的结构(ResNet-18, ResNet-50)</li>
-</ul>
-</li>
-<li>Incpetion 网络<ul>
-<li>1x1卷积</li>
-<li>用1x1卷积减少计算量</li>
-<li>Inception网络的基本模块</li>
-</ul>
-</li>
-<li>MobileNet<ul>
-<li>逐深度可分卷积</li>
-<li>MobileNet v2中的瓶颈结构</li>
-</ul>
-</li>
-</ul>
-<p>这节课介绍的都是比较前沿的CNN架构。在深度学习技术日新月异的今天，最好的学习方式是读论文，尽快一步一步跟上最新的技术。这堂课中提及的比较新的几篇论文，都有很高的阅读价值。</p>
-<p>我打算在学完CNN的四周课后，暂时不去学第五门课，而是去阅读这些经典CNN论文并分享一下笔记。</p>
-<p>在这周的代码实战里，我会分享一下如何用TensorFlow和PyTorch编写ResNet，同时介绍两种框架的进阶用法。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1962,7 +1952,7 @@ a^{[l+2]}&=a^{[l]}. \\
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-count">144</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2007,7 +1997,7 @@ a^{[l+2]}&=a^{[l]}. \\
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2024</span>
+  <span itemprop="copyrightYear">2025</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

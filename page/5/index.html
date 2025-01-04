@@ -168,6 +168,285 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/11/12/20220925-Transformer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/11/12/20220925-Transformer/" class="post-title-link" itemprop="url">Attention Is All You Need (Transformer) 论文精读</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-12 20:30:25" itemprop="dateCreated datePublished" datetime="2022-11-12T20:30:25+08:00">2022-11-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><em>Attention Is All You Need</em> (Transformer) 是当今深度学习初学者必读的一篇论文。但是，这篇工作当时主要是用于解决机器翻译问题，有一定的写作背景，对没有相关背景知识的初学者来说十分难读懂。在这篇文章里，我将先补充背景知识，再清晰地解读一下这篇论文，保证让大多数对深度学习仅有少量基础的读者也能彻底读懂这篇论文。</p>
+<h2 id="知识准备"><a href="#知识准备" class="headerlink" title="知识准备"></a>知识准备</h2><p>机器翻译，就是将某种语言的一段文字翻译成另一段文字。</p>
+<p>由于翻译没有唯一的正确答案，用准确率来衡量一个机器翻译算法并不合适。因此，机器翻译的数据集通常会为每一条输入准备若干个参考输出。统计算法输出和参考输出之间的重复程度，就能评价算法输出的好坏了。这种评价指标叫做BLEU Score。这一指标越高越好。</p>
+<p><img src="/2022/11/12/20220925-Transformer/1.jpg" alt></p>
+<p>在深度学习时代早期，人们使用RNN（循环神经网络）来处理机器翻译任务。一段输入先是会被预处理成一个token序列。RNN会对每个token逐个做计算，并维护一个表示整段文字整体信息的状态。根据当前时刻的状态，RNN可以输出当前时刻的一个token。</p>
+<blockquote>
+<p>所谓token，既可以是一个单词、一个汉字，也可能是一个表示空白字符、未知字符、句首字符的特殊字符。</p>
+</blockquote>
+<p>具体来说，在第$t$轮计算中，输入是上一轮的状态$a^{&lt; t - 1 &gt;}$以及这一轮的输入token $x ^{&lt; t &gt;}$，输出这一轮的状态$a^{&lt; t &gt;}$以及这一轮的输出token $y ^{&lt; t &gt;}$。</p>
+<p><img src="/2022/11/12/20220925-Transformer/1.gif" alt></p>
+<p>这种简单的RNN架构仅适用于输入和输出等长的任务。然而，大多数情况下，机器翻译的输出和输入都不是等长的。因此，人们使用了一种新的架构。前半部分的RNN只有输入，后半部分的RNN只有输出（上一轮的输出会当作下一轮的输入以补充信息）。两个部分通过一个状态$a^{&lt; T_x &gt;}$来传递信息。把该状态看成输入信息的一种编码的话，前半部分可以叫做“编码器”，后半部分可以叫做“解码器”。这种架构因而被称为“编码器-解码器”架构。</p>
+<p><img src="/2022/11/12/20220925-Transformer/2.jpg" alt></p>
+<p>这种架构存在不足：编码器和解码器之间只通过一个隐状态来传递信息。在处理较长的文章时，这种架构的表现不够理想。为此，有人提出了基于注意力的架构。这种架构依然使用了编码器和解码器，只不过解码器的输入是编码器的状态的加权和，而不再是一个简单的中间状态。每一个输出对每一个输入的权重叫做注意力，注意力的大小取决于输出和输入的相关关系。这种架构优化了编码器和解码器之间的信息交流方式，在处理长文章时更加有效。</p>
+<p><img src="/2022/11/12/20220925-Transformer/3.jpg" alt></p>
+<p>尽管注意力模型的表现已经足够优秀，但所有基于RNN的模型都面临着同样一个问题：RNN本轮的输入状态取决于上一轮的输出状态，这使RNN的计算必须串行执行。因此，RNN的训练通常比较缓慢。</p>
+<p>在这一背景下，抛弃RNN，只使用注意力机制的Transformer横空出世了。</p>
+<h2 id="摘要与引言"><a href="#摘要与引言" class="headerlink" title="摘要与引言"></a>摘要与引言</h2><p>补充完了背景知识，文章就读起来比较轻松了。</p>
+<p>摘要传递的信息非常简练：</p>
+<ul>
+<li><p>当前最好的架构是基于注意力的”encoder-decoder”架构。这些架构都使用了CNN或RNN。这篇文章提出的Transformer架构仅使用了注意力机制，而无需使用CNN和RNN。</p>
+</li>
+<li><p>两项机器翻译的实验表明，这种架构不仅精度高，而且训练时间大幅缩短。</p>
+</li>
+</ul>
+<p>摘要并没有解释Transformer的设计动机。让我们在引言中一探究竟。</p>
+<p>引言的第一段回顾了RNN架构。以LSTM和GRU为代表的RNN在多项序列任务中取得顶尖的成果。许多研究仍在拓宽循环语言模型和”encoder-decoder”架构的能力边界。</p>
+<p>第二段就开始讲RNN的不足了。RNN要维护一个隐状态，该隐状态取决于上一时刻的隐状态。这种内在的串行计算特质阻碍了训练时的并行计算（特别是训练序列较长时，每一个句子占用的存储更多，batch size变小，并行度降低）。有许多研究都在尝试解决这一问题，但是，串行计算的本质是无法改变的。</p>
+<p>上一段暗示了Transformer的第一个设计动机：提升训练的并行度。第三段讲了Transformer的另一个设计动机：注意力机制。注意力机制是当时最顶尖的模型中不可或缺的组件。这一机制可以让每对输入输出关联起来，而不用像早期使用一个隐状态传递信息的”encoder-decoder”模型一样，受到序列距离的限制。然而，几乎所有的注意力机制都用在RNN上的。</p>
+<p>既然注意力机制能够无视序列的先后顺序，捕捉序列间的关系，为什么不只用这种机制来构造一个适用于并行计算的模型呢？因此，在这篇文章中，作者提出了Transformer架构。这一架构规避了RNN的使用，完全使用注意力机制来捕捉输入输出序列之间的依赖关系。这种架构不仅训练得更快了，表现还更强了。</p>
+<p>通过阅读摘要和引言，我们基本理解了Transformer架构的设计动机。作者想克服RNN不能并行的缺点，又想充分利用没有串行限制的注意力机制，于是就提出了一个只有注意力机制的模型。模型训练出来了，结果出乎预料地好，不仅训练速度大幅加快，模型的表现也超过了当时所有其他模型。</p>
+<p>接下来，我们可以直接跳到第三章学习Tranformer的结构。</p>
+<h2 id="注意力机制"><a href="#注意力机制" class="headerlink" title="注意力机制"></a>注意力机制</h2><p>文章在介绍Transformer的架构时，是自顶向下介绍的。但是，一开始我们并不了解Transformer的各个模块，理解整体框架时会有不少的阻碍。因此，我们可以自底向上地来学习Transformer架构。</p>
+<p>首先，跳到3.2节，这一节介绍了Transformer里最核心的机制——注意力。在阅读这部分的文字之前，我们先抽象地理解一下注意力机制究竟是在做什么。</p>
+<h3 id="注意力计算的一个例子"><a href="#注意力计算的一个例子" class="headerlink" title="注意力计算的一个例子"></a>注意力计算的一个例子</h3><p>其实，“注意力”这个名字取得非常不易于理解。这个机制应该叫做“全局信息查询”。做一次“注意力”计算，其实就跟去数据库了做了一次查询一样。假设，我们现在有这样一个以人名为key（键），以年龄为value（值）的数据库：</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    张三: 18,</span><br><span class="line">    张三: 20,</span><br><span class="line">    李四: 22,</span><br><span class="line">    张伟: 19</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在，我们有一个query（查询），问所有叫“张三”的人的年龄平均值是多少。让我们写程序的话，我们会把字符串“张三”和所有key做比较，找出所有“张三”的value，把这些年龄值相加，取一个平均数。这个平均数是(18+20)/2=19。</p>
+<p>但是，很多时候，我们的查询并不是那么明确。比如，我们可能想查询一下所有姓张的人的年龄平均值。这次，我们不是去比较<code>key == 张三</code>,而是比较<code>key[0] == 张</code>。这个平均数应该是(18+20+19)/3=19。</p>
+<p>或许，我们的查询会更模糊一点，模糊到无法用简单的判断语句来完成。因此，最通用的方法是，把query和key各建模成一个向量。之后，对query和key之间算一个相似度（比如向量内积），以这个相似度为权重，算value的加权和。这样，不管多么抽象的查询，我们都可以把query, key建模成向量，用向量相似度代替查询的判断语句，用加权和代替直接取值再求平均值。“注意力”，其实指的就是这里的权重。</p>
+<p>把这种新方法套入刚刚那个例子里。我们先把所有key建模成向量，可能可以得到这样的一个新数据库：</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    [1, 2, 0]: 18, # 张三</span><br><span class="line">    [1, 2, 0]: 20, # 张三 </span><br><span class="line">    [0, 0, 2]: 22, # 李四</span><br><span class="line">    [1, 4, 0]: 19 # 张伟 </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>假设<code>key[0]==1</code>表示姓张。我们的查询“所有姓张的人的年龄平均值”就可以表示成向量<code>[1, 0, 0]</code>。用这个query和所有key算出的权重是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dot([1, 0, 0], [1, 2, 0]) = 1</span><br><span class="line">dot([1, 0, 0], [1, 2, 0]) = 1</span><br><span class="line">dot([1, 0, 0], [0, 0, 2]) = 0</span><br><span class="line">dot([1, 0, 0], [1, 4, 0]) = 1</span><br></pre></td></tr></table></figure>
+<p>之后，我们该用这些权重算平均值了。注意，算平均值时，权重的和应该是1。因此，我们可以用softmax把这些权重归一化一下，再算value的加权和。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">softmax([1, 1, 0, 1]) = [1/3, 1/3, 0, 1/3]</span><br><span class="line">dot([1/3, 1/3, 0, 1/3], [18, 20, 22, 19]) = 19</span><br></pre></td></tr></table></figure>
+<p>这样，我们就用向量运算代替了判断语句，完成了数据库的全局信息查询。那三个<code>1/3</code>，就是query对每个key的注意力。</p>
+<h3 id="Scaled-Dot-Product-Attention-（3-2-1节）"><a href="#Scaled-Dot-Product-Attention-（3-2-1节）" class="headerlink" title="Scaled Dot-Product Attention （3.2.1节）"></a>Scaled Dot-Product Attention （3.2.1节）</h3><p>我们刚刚完成的计算差不多就是Transformer里的注意力，这种计算在论文里叫做放缩点乘注意力（Scaled Dot-Product Attention）。它的公式是：</p>
+<script type="math/tex; mode=display">
+Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><p>我们先来看看$Q, K, V$在刚刚那个例子里究竟是什么。$K$比较好理解，$K$其实就是key向量的数组，也就是</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">K = [[1, 2, 0], [1, 2, 0], [0, 0, 2], [1, 4, 0]] </span><br></pre></td></tr></table></figure>
+<p>同样，$V$就是value向量的数组。而在我们刚刚那个例子里，value都是实数。实数其实也就是可以看成长度为1的向量。因此，那个例子的$V$应该是</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V = [[18], [20], [22], [19]]</span><br></pre></td></tr></table></figure>
+<p>在刚刚那个例子里，我们只做了一次查询。因此，准确来说，我们的操作应该写成。</p>
+<script type="math/tex; mode=display">
+MyAttention(q, K, V)=softmax(qK^T)V</script><p>其中，query $q$就是<code>[1, 0, 0]</code>了。</p>
+<p>实际上，我们可以一次做多组query。把所有$q$打包成矩阵$Q$，就得到了公式</p>
+<script type="math/tex; mode=display">
+Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><p>等等，这个$d_k$是什么意思？$d_k$就是query和key向量的长度。由于query和key要做点乘，这两种向量的长度必须一致。value向量的长度倒是可以不一致，论文里把value向量的长度叫做$d_v$。在我们这个例子里，$d_k=3, d_v=1$。</p>
+<p>为什么要用一个和$d_k$成比例的项来放缩$QK^T$呢？这是因为，softmax在绝对值较大的区域梯度较小，梯度下降的速度比较慢。因此，我们要让被softmax的点乘数值尽可能小。而一般在$d_k$较大时，也就是向量较长时，点乘的数值会比较大。除以一个和$d_k$相关的量能够防止点乘的值过大。</p>
+<p>刚才也提到，$QK^T$其实是在算query和key的相似度。而算相似度并不只有求点乘这一种方式。另一种常用的注意力函数叫做加性注意力，它用一个单层神经网络来计算两个向量的相似度。相比之下，点乘注意力算起来快一些。出于性能上的考量，论文使用了点乘注意力。</p>
+<h3 id="自注意力"><a href="#自注意力" class="headerlink" title="自注意力"></a>自注意力</h3><blockquote>
+<p>自注意力是3.2.3节里提及的内容。我认为，学完注意力的原理后，立刻去学自注意力能够更快地理解注意力机制。当然，论文里并没有对自注意力进行过多的引入，初学者学起来会非常困难。因此，这里我参考《深度学习专项》里的介绍方式，用一个更具体的例子介绍了自注意力。</p>
+</blockquote>
+<p>大致明白了注意力机制其实就是“全局信息查询”，并掌握了注意力的公式后，我们来以Transformer的自注意力为例，进一步理解注意力的意义。</p>
+<p>自注意力模块的目的是为每一个输入token生成一个向量表示，该表示不仅能反映token本身的性质，还能反映token在句子里特有的性质。比如翻译“简访问非洲”这句话时，第三个字“问”在中文里有很多个意思，比如询问、慰问等。我们想为它生成一个表示，知道它在句子中的具体意思。而在例句中，“问”字组词组成了“访问”，所以它应该取“询问”这个意思，而不是“慰问”。“询问”就是“问”字在这句话里的表示。</p>
+<p>让我们看看自注意力模块具体是怎么生成这种表示的。自注意力模块的输入是3个矩阵$Q, K, V$。准确来说，这些矩阵是向量的数组，也就是每一个token的query, key, value向量构成的数组。自注意力模块会为每一个token输出一个向量表示$A$。$A^{&lt; t &gt;}$是第$t$个token在这句话里的向量表示。</p>
+<blockquote>
+<p>我们先别管token的query, key, value究竟是什么算出来的，后文会对此做解释。</p>
+</blockquote>
+<p>让我们还是以刚刚那个句子“简访问非洲”为例，看一下自注意力是怎么计算的。现在，我们想计算$A^{&lt; 3 &gt;}$。$A^{&lt; 3 &gt;}$表示的是“问”字在句子里的确切含义。为了获取$A^{&lt; 3 &gt;}$，我们可以问这样一个可以用数学表达的问题：“和‘问’字组词的字的词嵌入是什么？”。这个问题就是第三个token的query向量$q^{&lt; 3 &gt;}$。</p>
+<p>和“问”字组词的字，很可能是一个动词。恰好，每一个token的key $k^{&lt; t &gt;}$就表示这个token的词性；每一个token的value $v^{&lt; t &gt;}$，就是这个token的嵌入。</p>
+<p><img src="/2022/11/12/20220925-Transformer/4.jpg" alt></p>
+<p>这样，我们就可以根据每个字的词性（key），尽量去找动词（和query比较相似的key），求出权重（query和key做点乘再做softmax），对所有value求一个加权平均，就差不多能回答问题$q^{&lt; 3 &gt;}$了。</p>
+<p>经计算，$q^{&lt; 3 &gt;}, k^{&lt; 2 &gt;}$可能会比较相关，即这两个向量的内积比较大。因此，最终算出来的$A^{&lt; 3 &gt;}$应该约等于$v^{&lt; 2 &gt;}$，即问题“哪个字和‘问’字组词了？”的答案是第二个字“访”。</p>
+<p><img src="/2022/11/12/20220925-Transformer/5.jpg" alt></p>
+<p>这是$A^{&lt; 3 &gt;}$的计算过程。准确来说，$A^{&lt; 3 &gt;}=A(q^{&lt; 3 &gt;}, K, V)$。类似地，$A^{&lt; 1 &gt;}到A^{&lt; 5 &gt;}$都是用这个公式来计算。把所有$A$的计算合起来，把$q$合起来，得到的公式就是注意力的公式。</p>
+<script type="math/tex; mode=display">
+Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><p>从上一节中，我们知道了注意力其实就是全局信息查询。而在这一节，我们知道了注意力的一种应用：通过让一句话中的每个单词去向其他单词查询信息，我们能为每一个单词生成一个更有意义的向量表示。</p>
+<p>可是，我们还留了一个问题没有解决：每个单词的query, key, value是怎么得来的？这就要看Transformer里的另一种机制了——多头注意力。</p>
+<h3 id="多头注意力-（3-2-2节）"><a href="#多头注意力-（3-2-2节）" class="headerlink" title="多头注意力 （3.2.2节）"></a>多头注意力 （3.2.2节）</h3><p>在自注意力中，每一个单词的query, key, value应该只和该单词本身有关。因此，这三个向量都应该由单词的词嵌入得到。另外，每个单词的query, key, value不应该是人工指定的，而应该是可学习的。因此，我们可以用可学习的参数来描述从词嵌入到query, key, value的变换过程。综上，自注意力的输入$Q, K, V$应该用下面这个公式计算：</p>
+<script type="math/tex; mode=display">
+\left\{
+\begin{aligned}
+Q = EW^Q \\
+K = EW^K \\
+V = EW^V 
+\end{aligned}
+\right.</script><p>其中，$E$是词嵌入矩阵，也就是每个单词的词嵌入的数组；$W^Q, W^K, W^V$是可学习的参数矩阵。在Transformer中，大部分中间向量的长度都用$d_{model}$表示，词嵌入的长度也是$d_{model}$。因此，设输入的句子长度为$n$，则$E$的形状是$n \times d_{model}$，$W^Q, W^K$的形状是$d_{model} \times d_k$，$W^V$的形状是$d_{model} \times d_v$。</p>
+<p>就像卷积层能够用多个卷积核生成多个通道的特征一样，我们也用多组$W^Q, W^K, W^V$生成多组自注意力结果。这样，每个单词的自注意力表示会更丰富一点。这种机制就叫做多头注意力。把多头注意力用在自注意力上的公式为：</p>
+<blockquote>
+<p>Transformer似乎默认所有向量都是行向量，参数矩阵都写成了右乘而不是常见的左乘。</p>
+</blockquote>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&head_i = Attention(EW^Q_i, EW^K_i, EW^V_i) \\
+&MultiHeadSelfAttention(E) = Concat(head_1, ...head_h)W^O
+\end{aligned}</script><p>其中，$h$是多头自注意力的“头”数，$W^O$是另一个参数矩阵。多头注意力模块的输入输出向量的长度都是$d_{model}$。因此，$W^O$的形状是$hd_v \times d_{model}$（自注意力的输出长度是$d_v$，有$h$个输出）。在论文中，Transfomer的默认参数配置如下：</p>
+<ul>
+<li>$d_{model} = 512$</li>
+<li>$h = 8$</li>
+<li>$d_k = d_v = d_{model}/h = 64$</li>
+</ul>
+<p>实际上，多头注意力机制不仅仅可以用在计算自注意力上。推广一下，如果把多头自注意力的输入$E$拆成三个矩阵$Q, K, V$，则多头注意力的公式为：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&head_i = Attention(QW^Q_i, KW^K_i, VW^V_i) \\
+&MultiHeadAttention(Q, K, V) = Concat(head_1, ...head_h)W^O
+\end{aligned}</script><h2 id="Transformer-模型架构"><a href="#Transformer-模型架构" class="headerlink" title="Transformer 模型架构"></a>Transformer 模型架构</h2><p>看懂了注意力机制，可以回过头阅读3.1节学习Transformer的整体架构了。</p>
+<p>论文里的图1是Transformer的架构图。然而，由于我们没读后面的章节，有一些模块还没有见过。因此，我们这轮阅读的时候可以只关注模型主干，搞懂encoder和decoder之间是怎么组织起来的。</p>
+<p><img src="/2022/11/12/20220925-Transformer/6.jpg" alt></p>
+<p>我们现在仅知道多头注意力模块的原理，对模型主干中的三个模块还有疑问：</p>
+<ol>
+<li>Add &amp; Norm</li>
+<li>Feed Forward</li>
+<li>为什么一个多头注意力前面加了Masked</li>
+</ol>
+<p>我们来依次看懂这三个模块。</p>
+<h3 id="残差连接（3-1节）"><a href="#残差连接（3-1节）" class="headerlink" title="残差连接（3.1节）"></a>残差连接（3.1节）</h3><p>Transformer使用了和ResNet类似的残差连接，即设模块本身的映射为$F(x)$，则模块输出为$Normalization(F(x)+x)$。和ResNet不同，Transformer使用的归一化方法是LayerNorm。</p>
+<p>另外要注意的是，残差连接有一个要求：输入$x$和输出$F(x)+x$的维度必须等长。在Transformer中，包括所有词嵌入在内的向量长度都是$d_{model}=512$。</p>
+<h3 id="前馈网络"><a href="#前馈网络" class="headerlink" title="前馈网络"></a>前馈网络</h3><p>架构图中的前馈网络（Feed Forward）其实就是一个全连接网络。具体来说，这个子网络由两个线性层组成，中间用ReLU作为激活函数。</p>
+<script type="math/tex; mode=display">
+FFN(x) = max(0, xW_1+b_1)W_2+b_2</script><p>中间的隐藏层的维度数记作$d_{ff}$。默认$d_{ff}=2048$。</p>
+<h3 id="整体架构与掩码多头注意力"><a href="#整体架构与掩码多头注意力" class="headerlink" title="整体架构与掩码多头注意力"></a>整体架构与掩码多头注意力</h3><p>现在，我们基本能看懂模型的整体架构了。只有读懂了整个模型的运行原理，我们才能搞懂多头注意力前面的masked是哪来的。</p>
+<p>论文第3章开头介绍了模型的运行原理。和多数强力的序列转换模型一样，Transformer使用了encoder-decoder的架构。早期基于RNN的序列转换模型在生成序列时一般会输入前$i$个单词，输出第$i+1$个单词。</p>
+<p><img src="/2022/11/12/20220925-Transformer/7-1.jpg" alt></p>
+<p>而Transformer不同。对于输入序列$(x_1, …, x_s)$，它会被编码器编码成中间表示 $\mathbf{z} = (z_1, …, z_s)$。给定$\mathbf{z}$的前提下，解码器输入$(y_1, …, y_t)$，输出$(y_2, …, y_{t+1})$的预测。</p>
+<p><img src="/2022/11/12/20220925-Transformer/7.jpg" alt></p>
+<blockquote>
+<p>Transformer 默认会并行地输出结果。而在推理时，序列必须得串行生成。直接调用Transformer的并行输出逻辑会产生非常多的冗余运算量。推理的代码实现可以进行优化。</p>
+</blockquote>
+<p>具体来说，输入序列$x$会经过$N=6$个结构相同的层。每层由多个子层组成。第一个子层是多头注意力层，准确来说，是多头自注意力。这一层可以为每一个输入单词提取出更有意义的表示。之后数据会经过前馈网络子层。最终，输出编码结果$\mathbf{z}$。</p>
+<p>得到了$\mathbf{z}$后，要用解码器输出结果了。解码器的输入是当前已经生成的序列，该序列会经过一个掩码（masked）多头自注意力子层。我们先不管这个掩码是什么意思，暂且把它当成普通的多头自注意力层。它的作用和编码器中的一样，用于提取出更有意义的表示。</p>
+<p>接下来，数据还会经过一个多头注意力层。这个层比较特别，它的K，V来自$\mathbf{z}$，Q来自上一层的输出。为什么会有这样的设计呢？这种设计来自于早期的注意力模型。如下图所示，在早期的注意力模型中，每一个输出单词都会与每一个输入单词求一个注意力，以找到每一个输出单词最相关的某几个输入单词。用注意力公式来表达的话，Q就是输出单词，K, V就是输入单词。</p>
+<p><img src="/2022/11/12/20220925-Transformer/3.jpg" alt></p>
+<p>经过第二个多头注意力层后，和编码器一样，数据会经过一个前馈网络。最终，网络并行输出各个时刻的下一个单词。</p>
+<p>这种并行计算有一个要注意的地方。在输出第$t+1$个单词时，模型不应该提前知道$t+1$时刻之后的信息。因此，应该只保留$t$时刻之前的信息，遮住后面的输入。这可以通过添加掩码实现。添加掩码的一个不严谨的示例如下表所示：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>输入</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(y1, <del>y2, y3, y4</del>)</td>
+<td>y2</td>
+</tr>
+<tr>
+<td>(y1, y2, <del>y3, y4</del>)</td>
+<td>y3</td>
+</tr>
+<tr>
+<td>(y1, y2, y3, <del>y4</del>)</td>
+<td>y4</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这就是为什么解码器的多头自注意力层前面有一个masked。在论文中，mask是通过令注意力公式的softmax的输入为$- \infty$来实现的（softmax的输入为$- \infty$，注意力权重就几乎为0，被遮住的输出也几乎全部为0）。每个mask都是一个上三角矩阵。</p>
+<h3 id="嵌入层"><a href="#嵌入层" class="headerlink" title="嵌入层"></a>嵌入层</h3><p>看完了Transformer的主干结构，再来看看输入输出做了哪些前后处理。</p>
+<p><img src="/2022/11/12/20220925-Transformer/8.jpg" alt></p>
+<p>和其他大多数序列转换任务一样，Transformer主干结构的输入输出都是词嵌入序列。词嵌入，其实就是一个把one-hot向量转换成有意义的向量的转换矩阵。在Transformer中，解码器的嵌入层和输出线性层是共享权重的——输出线性层表示的线性变换是嵌入层的逆变换，其目的是把网络输出的嵌入再转换回one-hot向量。如果某任务的输入和输出是同一种语言，那么编码器的嵌入层和解码器的嵌入层也可以共享权重。</p>
+<blockquote>
+<p>论文中写道：“输入输出的嵌入层和softmax前的线性层共享权重”。这个描述不够清楚。如果输入和输出的不是同一种语言，比如输入中文输出英文，那么共享一个词嵌入是没有意义的。</p>
+</blockquote>
+<p>嵌入矩阵的权重乘了一个$\sqrt{d_{model}}$。</p>
+<p>由于模型要预测一个单词，输出的线性层后面还有一个常规的softmax操作。</p>
+<h3 id="位置编码"><a href="#位置编码" class="headerlink" title="位置编码"></a>位置编码</h3><p>现在，Transformer的结构图还剩一个模块没有读——位置编码。无论是RNN还是CNN，都能自然地利用到序列的先后顺序这一信息。然而，Transformer的主干网络并不能利用到序列顺序信息。因此，Transformer使用了一种叫做“位置编码”的机制，对编码器和解码器的嵌入输入做了一些修改，以向模型提供序列顺序信息。</p>
+<p><img src="/2022/11/12/20220925-Transformer/9.jpg" alt></p>
+<p>嵌入层的输出是一个向量数组，即词嵌入向量的序列。设数组的位置叫$pos$，向量的某一维叫$i$。我们为每一个向量里的每一个数添加一个实数编码，这种编码方式要满足以下性质：</p>
+<ol>
+<li>对于同一个$pos$不同的$i$，即对于一个词嵌入向量的不同元素，它们的编码要各不相同。</li>
+<li>对于向量的同一个维度处，不同$pos$的编码不同。且$pos$间要满足相对关系，即$f(pos+1) - f(pos) = f(pos) - f(pos - 1)$。</li>
+</ol>
+<p>要满足这两种性质的话，我们可以轻松地设计一种编码函数:</p>
+<script type="math/tex; mode=display">
+Encoding(pos, i) = \frac{pos}{1000^{i}}</script><p>即对于每一个位置$i$，用小数点后的3个十进制数位来表示不同的$pos$。$pos$之间也满足相对关系。</p>
+<p>但是，这种编码不利于网络的学习。我们更希望所有编码都差不多大小，且都位于0~1之间。为此，Transformer使用了三角函数作为编码函数。这种位置编码（Positional Encoding, PE）的公式如下。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+PE(pos, 2i) &= sin(pos/10000^{2i/d_{model}}) \\
+PE(pos, 2i+1) &= cos(pos/10000^{2i/d_{model}})
+\end{aligned}</script><p>$i$不同，则三角函数的周期不同。同$pos$不同周期的三角函数值不重复。这满足上面的性质1。另外，根据三角函数的和角公式：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+sin(a+b) = sina \cdot cosb + cosa \cdot sinb \\
+cos(a+b) = cosa \cdot cosb - sina \cdot sinb
+\end{aligned}</script><p>$f(pos + k)$ 是 $f(pos)$ 的一个线性函数，即不同的pos之间有相对关系。这满足性质2。</p>
+<p>本文作者也尝试了用可学习的函数作为位置编码函数。实验表明，二者的表现相当。作者还是使用了三角函数作为最终的编码函数，这是因为三角函数能够外推到任意长度的输入序列，而可学习的位置编码只能适应训练时的序列长度。</p>
+<h2 id="为什么用自注意力"><a href="#为什么用自注意力" class="headerlink" title="为什么用自注意力"></a>为什么用自注意力</h2><p>在论文的第四章，作者用自注意力层对比了循环层和卷积层，探讨了自注意力的一些优点。</p>
+<p>自注意力层是一种和循环层和卷积层等效的计算单元。它们的目的都是把一个向量序列映射成另一个向量序列，比如说编码器把$x$映射成中间表示$z$。论文比较了三个指标：每一层的计算复杂度、串行操作的复杂度、最大路径长度。</p>
+<p><img src="/2022/11/12/20220925-Transformer/10.jpg" alt></p>
+<p>前两个指标很容易懂，第三个指标最大路径长度需要解释一下。最大路径长度表示数据从某个位置传递到另一个位置的最大长度。比如对边长为n的图像做普通卷积操作，卷积核大小3x3，要做$n/3$次卷积才能把信息从左上角的像素传播到右下角的像素。设卷积核边长为$k$，则最大路径长度$O(n/k)$。如果是空洞卷积的话，像素第一次卷积的感受野是3x3，第二次是5x5，第三次是9x9，以此类推，感受野会指数级增长。这种卷积的最大路径长度是$O(log_k(n))$。</p>
+<p>我们可以从这三个指标分别探讨自注意力的好处。首先看序列操作的复杂度。如引言所写，循环层最大的问题是不能并行训练，序列计算复杂度是$O(n)$。而自注意力层和卷积一样可以完全并行。</p>
+<p>再看每一层的复杂度。设$n$是序列长度，$d$是词嵌入向量长度。其他架构的复杂度有$d^2$，而自注意力是$d$。一般模型的$d$会大于$n$，自注意力的计算复杂度也会低一些。</p>
+<p>最后是最大路径长度。注意力本来就是全局查询操作，可以在$O(1)$的时间里完成所有元素间信息的传递。它的信息传递速度远胜卷积层和循环层。</p>
+<p>为了降低每层的计算复杂度，可以改进自注意力层的查询方式，让每个元素查询最近的$r$个元素。本文仅提出了这一想法，并没有做相关实验。</p>
+<h2 id="实验与结果"><a href="#实验与结果" class="headerlink" title="实验与结果"></a>实验与结果</h2><p>本工作测试了“英语-德语”和“英语-法语”两项翻译任务。使用论文的默认模型配置，在8张P100上只需12小时就能把模型训练完。本工作使用了Adam优化器，并对学习率调度有一定的优化。模型有两种正则化方式：1）每个子层后面有Dropout，丢弃概率0.1；2）标签平滑（Label Smoothing）。Transformer在翻译任务上胜过了所有其他模型，且训练时间大幅缩短。</p>
+<p>论文同样展示了不同配置下Transformer的消融实验结果。</p>
+<p><img src="/2022/11/12/20220925-Transformer/11.jpg" alt></p>
+<p>实验A表明，计算量不变的前提下，需要谨慎地调节$h$和$d_k, d_v$的比例，太大太小都不好。这些实验也说明，多头注意力比单头是要好的。</p>
+<p>实验B表明，$d_k$增加可以提升模型性能。作者认为，这说明计算key, value相关性是比较困难的，如果用更精巧的计算方式来代替点乘，可能可以提升性能。</p>
+<p>实验C, D表明，大模型是更优的，且dropout是必要的。</p>
+<p>如正文所写，实验E探究了可学习的位置编码。可学习的位置编码的效果和三角函数几乎一致。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>为了改进RNN不可并行的问题，这篇工作提出了Transformer这一仅由注意力机制构成的模型。Transformer的效果非常出色，不仅训练速度快了，还在两项翻译任务上胜过其他模型。</p>
+<p>作者也很期待Transformer在其他任务上的应用。对于序列长度比较大的任务，如图像、音频、视频，可能要使用文中提到的只关注局部的注意力机制。由于序列输出时仍然避免不了串行，作者也在探究如何减少序列输出的串行度。</p>
+<p>现在来看，Transformer是近年来最有影响力的深度学习模型之一。它先是在NLP中发扬光大，再逐渐扩散到了CV等领域。文中的一些预测也成为了现实，现在很多论文都在讨论如何在图像中使用注意力，以及如何使用带限制的注意力以降低长序列导致的计算性能问题。</p>
+<p>我认为，对于深度学习的初学者，不管是研究什么领域，都应该仔细学习Transformer。在学Transformer之前，最好先了解一下RNN和经典的encoder-decoder架构，再学习注意力模型。有了这些基础，读Transformer论文就会顺利很多。读论文时，最重要的是看懂注意力公式的原理，再看懂自注意力和多头注意力，最后看一看位置编码。其他一些和机器翻译任务相关的设计可以不用那么关注。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1768,279 +2047,6 @@ minimize (\theta^{T}_je_i-logx_{ij})</script><blockquote>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-14/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/09/21/DLS-note-14/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（十四）：循环神经网络基础</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-21 17:47:24" itemprop="dateCreated datePublished" datetime="2022-09-21T17:47:24+08:00">2022-09-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在上一门课中，我们学习了如何用CNN处理网格状的数据。由于最常见的网格状数据是图像，我们主要学习了如何用CNN完成和图像相关的任务。而在这一门课中，我们要学习如何用循环神经网络（RNN）等序列模型处理序列数据。序列数据的种类就比较丰富多彩了：</p>
-<p><img src="/2022/09/21/DLS-note-14/1.jpg" alt></p>
-<p>如上图所示，对于语音识别、音乐生成、情绪分类、DNA序列分析、机器翻译、视频动作识别、命名实体识别这些任务，它们的输入和输出至少有一个是某类序列数据，它们都可以用序列模型来建模。</p>
-<p>计算机科学中的自然语言处理（NLP）任务常常需要使用序列模型。我们在学这门课时，主要会围绕NLP问题进行讨论。</p>
-<h2 id="符号标记"><a href="#符号标记" class="headerlink" title="符号标记"></a>符号标记</h2><p>序列数据需要用到一些新的符号标记。在开始正式学习之前，我们先以命名实体识别任务为例，认识一下这些新的符号标记。</p>
-<p>命名实体识别任务要求找出句子中的有意义的人名、地名等特殊名词。以这个任务的一个训练样本为例，我们来看一看序列数据的符号标记。</p>
-<p>设输入是 Harry Potter and Hermione Granger invented a new spell。</p>
-<p>命名实体识别任务的输出$y$也是一个序列。序列的每一个元素是1或0，表示输入中对应的单词是否为命名实体。刚刚那个输入对应的输出应该是1 1 0 1 1 0 0 0 0。</p>
-<p>输入输出都由单词或数字组成的序列。设输入为$x$，序列中的第$i$个单词记作$x^{&lt;  i  &gt;}$。比如$x^{&lt; 2 &gt;}$ = Potter。整个序列的长度$T_x=9$。同理，输出序列中的第$i$个元素记作$y^{&lt; i &gt;}$，整个序列的长度$T_y=9$。</p>
-<p>对于第$i$个样本而言，其输入的长度为$T_x^{(i)}$，第$t$个单词为$x^{(i)&lt; t &gt;}$。值得注意的是，每个样本的长度可能不一致。</p>
-<p>在表示这些数据时，还有一个问题：怎么表示一个单词？计算机可不认识一大堆字母。为了让只懂数字的计算机能够分清不同的单词，我们要先准备一个词汇表，并用单词在词汇表里的one-hot编码作为单词的表示。比如Harry是长度为10000的词汇表里第4075个单词，则Harry的表示是$[0, 0, 0…,0, 1, 0, …, 0]$，这个向量的长度是10000，只有第4075个元素是1，其他地方都是0。</p>
-<blockquote>
-<p>在大型的模型中，词汇表的大小会是30000至50000，甚至有100000的。</p>
-</blockquote>
-<p>有了这些符号标记，和序列数据有关的任务就可以完全用数学语言表示了。比如对于命名实体识别任务，每一条样本输入是一个向量序列，输出是一个01的数字序列。</p>
-<h2 id="循环神经网络模型"><a href="#循环神经网络模型" class="headerlink" title="循环神经网络模型"></a>循环神经网络模型</h2><p>在序列问题上使用标准神经网络（全连接网络）会有几个问题：</p>
-<ul>
-<li>每个样本的长度可能不一致。尽管我们可以找到一个最大的长度，并对长度不足的样本进行零填充，但这种做法看上去就不太好。</li>
-<li>同一个单词在不同的位置时应该算出类似的特征。而标准神经网络会把每个位置的输入区别对待，无法共享各个位置的知识。</li>
-<li>和图像数据类似，序列数据的输入长度也很大。假如一个句子有10个单词，词汇表的大小是10000，则输入向量的大小就是100000。这样，神经网络第一层的参数量会很大，网络会过拟合。</li>
-</ul>
-<p>因此，我们要用一些其他的架构来处理序列数据以规避这些问题。其中一种可行的架构就是循环神经网络(Recurrent Neural Network, RNN)。</p>
-<p>RNN运算过程如下图所示。在RNN中，对于一个样本，我们每次只输入一个单词$x^{&lt; t &gt;}$，得到一个输出$y^{&lt; t &gt;}$。除了输出$y^{&lt; t &gt;}$外，神经网络还会把中间激活输出$a^{&lt; t &gt;}$传递给下一轮计算，这个$a^{&lt; t &gt;}$记录了之前单词的某些信息。所有的输出按照这种方法依次计算。当然，第一轮计算时也会用到激活输出$a^{&lt; 0 &gt;}$，简单地令$a^{&lt; 0 &gt;}$为零张量即可。注意，所有的计算都是用同一个权重一样的神经网络。</p>
-<p><img src="/2022/09/21/DLS-note-14/1.gif" alt></p>
-<blockquote>
-<p>有些文章会把一行RNN计算折叠成一个带循环箭头的神经网络，这只是另一种画图的方法：</p>
-</blockquote>
-<p><img src="/2022/09/21/DLS-note-14/2.jpg" alt></p>
-<p>看完了示意图，让我们看看怎样用数学语言表示RNN。在第$t$轮计算中：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-a^{< t >} &= g_1(W_{ax} x^{< t >} + W_{aa} a^{< t - 1 >} + b_a) \\
-\hat{y}^{< t >} &=g_2(W_{ya} a^{< t >} + b_y)
-\end{aligned}</script><p>其中，$W_{ij}$表示用于计算$i$的，乘在$j$上的矩阵。$g$是激活函数。中间层激活函数多数情况下用tanh，也可以用ReLU。输出的激活函数视任务而定，在二分类的命名实体识别中，输出激活函数是sigmoid。</p>
-<p>为了简化表示，可以把$W_{ax}, W_{aa}$拼一下，$x^{&lt; t &gt;}, a^{&lt; t - 1 &gt;}$拼一下：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-W_a &= [W_{aa} | W_{ax}] \\
-[a^{< t - 1 >}, x^{< t >}] &= \left[
-  \begin{matrix}
-  a^{< t - 1 >} \\
-  --- \\
-   x^{< t >}
-  \end{matrix}
-\right]
-\end{aligned}</script><p>这样，原来的式子就可以化简了：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-a^{< t >} &= g_1(W_{a} [a^{< t - 1 >}, x^{< t >}] + b_a) \\
-\hat{y}^{< t >} &=g_2(W_{y} a^{< t >} + b_y)
-\end{aligned}</script><p>RNN也有一些问题。首先，显而易见，每个RNN的输出只能看到它之前的单词。这样是不太好的。比如一句话第一个单词是Teddy，你不知道这是一个人名，还是Teddy bear这样一个普通的物体。稍后我们会学习双向的RNN以解决此问题。</p>
-<p>另外，RNN也会面临标准神经网络的梯度爆炸问题。后几节会介绍一些更高级的RNN架构。</p>
-<h2 id="「穿越时空之反向传播」"><a href="#「穿越时空之反向传播」" class="headerlink" title="「穿越时空之反向传播」"></a>「穿越时空之反向传播」</h2><p>看完了正向传播，我们稍微看一下RNN反向传播的过程。</p>
-<p>反向传播前，先要定义一个误差函数。对于命名实体识别这种结果是01的问题，可以继续采用交叉熵误差，即对于序列中每一个元素：</p>
-<script type="math/tex; mode=display">
-L^{< t >}(y^{< t >}, \hat{y}^{< t >}) = -(y^{< t >}log\hat{y}^{< t >}+(1 - y^{< t >})log(1 - \hat{y}^{< t >}))</script><p>对于一个样本：</p>
-<script type="math/tex; mode=display">
-L(y, \hat{y}) = -\Sigma_{t=1}^{T_y}(y^{< t >}log\hat{y}^{< t >}+(1 - y^{< t >})log(1 - \hat{y}^{< t >}))</script><p>接下来是反向传播的过程。RNN的计算虽然复杂了一些，但它本质上还是一个计算图。如下图所示，按照红色箭头的方向对变量反向求导即可：</p>
-<p><img src="/2022/09/21/DLS-note-14/3.jpg" alt></p>
-<p>使用了编程框架后，反向传播可以自动由框架完成，可以不需要关心里面的细节了。</p>
-<p>由于序列数据有先后的概念，而RNN的反向传播又是从后面的数据向前面的数据进行，因此这样的反向传播有着「穿越时空之反向传播」的称呼。</p>
-<h2 id="不同输入输出格式的RNN"><a href="#不同输入输出格式的RNN" class="headerlink" title="不同输入输出格式的RNN"></a>不同输入输出格式的RNN</h2><p>刚刚学习的那种RNN只能描述输入输出长度一致的任务。在那种架构的基础上稍作修改，我们就能得到描述各种输入输出格式的任务。</p>
-<p><img src="/2022/09/21/DLS-note-14/4.jpg" alt></p>
-<ul>
-<li>一对一：其实一对一问题就是标准神经网络，可以不要那个激活输入$a$。</li>
-<li>一对多：只把输入放入第一轮计算中，后续计算的输入是上一轮的输出。</li>
-<li>多对一：只输出最后一轮计算的结果。</li>
-<li>等长多对多：输入一个元素就输出一个元素。</li>
-<li>不等长多对多：先做几轮不产生输出的计算（编码器），再做几轮只产生输出的计算（解码器）。解码器的输入也可以和一对多一样，来自于上一轮的输出（图中没有画出）。</li>
-</ul>
-<h2 id="RNN应用：语言模型"><a href="#RNN应用：语言模型" class="headerlink" title="RNN应用：语言模型"></a>RNN应用：语言模型</h2><p>为了加深对RNN的理解，我们来看一个基于RNN的应用——语言模型。</p>
-<p>语言模型是NLP中的一个基础任务。一个语言模型能够输出某种语言某句话的出现概率。通过比较不同句子的出现概率，我们能够开发出很多应用。比如在英语里，同音的”apple and pear”比”apple and pair”的出现概率高（更可能是一个合理的句子）。当一个语音识别软件听到这句话时，可以分别写下这两句发音相近的句子，再根据语言模型断定这句话应该写成前者。</p>
-<p>也就是说，对于一句话$x^{&lt; 1 &gt;}…x^{&lt; T_x &gt;}$，语言模型的输出是$P(x^{&lt; 1 &gt;},…, x^{&lt; T_x &gt;})$。这个式子也可以写成$P(x^{&lt; 1 &gt;}) \times P(x^{&lt; 2 &gt;} |x^{&lt; 1 &gt;}) \times  P(x^{&lt; 3 &gt;} |x^{&lt; 1 &gt;}, x^{&lt; 2 &gt;}) … \times  P(x^{&lt; T_x &gt;} |x^{&lt; 1 &gt;}, x^{&lt; 2 &gt;}, …, x^{&lt; T_x-1 &gt;})$，即一句话的出现概率，等于第一个单词出现在句首的概率，乘上第二个单词在第一个单词之后的概率，乘上第三个单词再第一、二个单词之后的概率，这样一直乘下去。</p>
-<p>在训练语言模型时，我们一般要用到语料库(corpus)。语料库包含了某种语言大量的通顺的句子。我们希望一个模型能够学习到这些句子中的规律，知道一句话在这种语言中的出现概率是多少。</p>
-<p>语言模型可以用RNN巧妙地实现。整个实现分两步：数据预处理和模型训练。</p>
-<p>由于语料库中包含的是自然语言，而RNN的输入是one-hot编码，所以这中间要经过一个预处理的步骤。在NLP中，这一步骤叫做符号化(tokenize)。如我们在「符号标记」一节所学的，我们可以找来一个大小为10000的词汇表，根据每个单词在词汇表中的位置，生成一个one-hot编码。除了普通的词汇外，NLP中还有一些特殊的符号，比如表示句尾的<code>&lt;EOS&gt;</code> (End Of Sentence)，表示词汇表里没有的词的<code>&lt;UNK&gt;</code> (Unknown)。</p>
-<p>经过预处理后，语料库里的每一句自然语言就变成了训练样本$x^{&lt; 1 &gt;} … x^{&lt; T_x &gt;}$。我们可以把每一句话输入RNN，巧妙地训练一个语言模型：</p>
-<p><img src="/2022/09/21/DLS-note-14/5.jpg" alt></p>
-<p>这个计算过程初次接触时有些令人费解，我们慢慢来看懂它。先竖着看一轮计算是怎么完成的。对于每一轮计算，都会给定一个单词编码$x^{&lt; i &gt;}$，输出一个softmax后的概率分布$\hat{y}^{&lt; i &gt;}$，它要对齐的训练标签是训练集某一句话的某个单词$y^{&lt; i &gt;}$。$\hat{y}$表示接收之前所有的输入单词后，此时刻应该输出某单词的概率分布，这个输出的含义和多分类中的类似。</p>
-<p>算出这样的$\hat{y}$有什么用呢？别急，再横着看一遍。回忆一下，语言模型要求的概率可以写成$P(y^{&lt; 1 &gt;}) \times P(y^{&lt; 2 &gt;} |y^{&lt; 1 &gt;}) \times  P(y^{&lt; 3 &gt;} |y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;}) …$。RNN每一轮的输出，其实就是要拟合$P(y^{&lt; 1 &gt;})$, $P(y^{&lt; 2 &gt;} |y^{&lt; 1 &gt;})$, $P(y^{&lt; 3 &gt;} |y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;})$, …。每一个条件概率的条件，就是每一轮RNN的输入；每一个条件概率的待求事件，就是每一轮RNN的训练标签。比如$P(y^{&lt; 3 &gt;} |y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;})$这个条件概率，它的条件是$y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;}$，待求事件是$y^{&lt; 3 &gt;}$，所以第三轮RNN的标签是$y^{&lt; 3 &gt;}$，输入是$y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;}$（别忘了，在RNN中，前几轮的输入其实也影响了后续的计算）。当然，第一个概率$P(y^{&lt; 1 &gt;})$没有条件，所以第一轮的输入$x^{&lt; 1 &gt;}=0$。对softmax的结果依然使用的是交叉熵误差，一个序列的误差等于所有元素的误差之和。</p>
-<p>刚刚介绍的是训练过程。在用这个模型计算某句子的概率时，只要把一个句子输入进这个RNN，再去softmax的概率分布里取出需要的概率，一乘，就能算出语言模型要求的整句话的概率了。比如<code>Cats average 15 hours of sleep a day. &lt; EOS &gt;</code>这个句子，我们要令$x^{&lt; 1 &gt;}=0$, $x^{&lt; 2 &gt;}=one_ hot(cats)$, $x^{&lt; 3 &gt;}=one_ hot(average)$，……。然后，从第一个输出概率分布$\hat{y}^{&lt; 1 &gt;}$里找出cats对应的概率，去$\hat{y}^{&lt; 2 &gt;}$里找到average对应的概率，去$\hat{y}^{&lt; 3 &gt;}$里找到15对应的概率，以此类推。最后把所有的概率乘起来。</p>
-<p>通过这一节，我们学到了RNN的一种应用。是否真正理解语言模型这一任务，并不重要。重要的是，我们学到了RNN是怎么巧妙去完成一项任务的。在完成和序列数据有关的任务时，我们要精心定义RNN的输入序列和输出序列。一旦这两个序列定义好了，训练模型并解决任务就是很轻松的事情。</p>
-<h2 id="用语言模型采样出全新的序列"><a href="#用语言模型采样出全新的序列" class="headerlink" title="用语言模型采样出全新的序列"></a>用语言模型采样出全新的序列</h2><p>给定一个别人训练好的RNN语言模型，我们可以弄出一个很好玩的应用：生成一个训练集里没有的句子。</p>
-<p>我们刚刚学过，在计算一句话的概率时，RNN会把句子里的每一个单词输入，输出单词出现在前几个单词之后的概率分布$\hat{y}$。反过来想，我们可以根据RNN输出的概率分布，随机采样出某一个单词的下一个单词出来。具体来说，我们先随机生成句子里的第一个单词，把它输入RNN。再用RNN生成概率分布，对概率分布采样出下一个单词，采样出一个单词就输入一个单词，直到采样出<code>&lt; EOS &gt;</code>。这个过程就好像是在让AI生成句子一样。</p>
-<blockquote>
-<p>对概率分布采样，其实就是以某种概率随机挑选。比如我有两个骰子，我要计算两个骰子点数之和。这个点数之和就是一个概率分布，掷一轮骰子就是去分布里采样。我们可以快速地算出，点数之和为2的概率是$\frac{1}{36}$, 点数之和为3的概率是$\frac{2}{36}$。也就是说，我们在采样时，有$\frac{1}{36}$的概率取到2，$\frac{2}{36}$的概率取到3。</p>
-</blockquote>
-<p>如果把语料库的最小单元从单词换成字母，句子生成就变成了单词生成，我们可以让AI生成出从没出现过却看上去很合理的单词。</p>
-<h2 id="RNN-的梯度问题"><a href="#RNN-的梯度问题" class="headerlink" title="RNN 的梯度问题"></a>RNN 的梯度问题</h2><p>在前几门课中，我们曾学过，过深的神经网络会有梯度过大/过小的问题。这些问题在RNN中也存在，毕竟RNN一般都是用来处理很长的序列数据的。</p>
-<p>梯度过大的问题倒是有办法解决：设置一个梯度最大值，让所有梯度都不能超过这个值。</p>
-<p>梯度过小的问题比较麻烦。想象一个很长的句子:The <strong>cat</strong>, which ate apples, pears, …., <strong>was</strong> full.这个cat和was存在着依赖关系。一旦梯度过小，一个句子前后的依赖关系就不是那么好传递了。</p>
-<p>下面几节我们会学一些解决梯度问题的架构。</p>
-<h2 id="GRU-Gated-Recurrent-Unit"><a href="#GRU-Gated-Recurrent-Unit" class="headerlink" title="GRU (Gated Recurrent Unit)"></a>GRU (Gated Recurrent Unit)</h2><p>我们可以用GRU (Gated Recurrent Unit)来替代标准RNN中的计算单元，以解决梯度问题。</p>
-<p>为了明确标准RNN的哪些模块被替换了，我们先回顾一下RNN原来的计算单元。</p>
-<p><img src="/2022/09/21/DLS-note-14/6.jpg" alt></p>
-<p>在标准的RNN单元中，$x^{&lt; t &gt;}$和$a^{&lt; t-1 &gt;}$一起决定了$a^{&lt; t &gt;}$，$a^{&lt; t &gt;}$又决定了$\hat{y}^{&lt; t &gt;}$。</p>
-<p>先在脑中对这张图有个印象，稍后我们会看到GRU是怎样改进这个计算单元的。</p>
-<p>上一节里，我们分析过，梯度消失会导致一句话后面的单词忘掉了前面的单词。那么，可不可以让网络的“记性”更好一点呢？我们可以参考一下人类的记忆行为。比如，当我们在接到了验证码短信后，要把验证码在脑子里记一段时间：读完了短信，要记住验证码；关闭短信应用，要记住验证码；打开需要验证码的应用，要记住验证码；输入验证吗时，要记住验证码；输完了验证码，总算可以忘记验证码了。这个过程中，我们一直在维护“验证码”这个信息，决定是记住它还是忘记它。我们可以让神经网络模型也按照这种思路记忆之前的信息。</p>
-<p>在每轮计算更新中间变量$a$时，GRU还要使用到一个新的变量，表示中间变量$a$该不该忘记。这个变量越靠近0，就说明越应该保持之前的中间变量；越靠近1，就越靠近新的$a$。GRU的这个变量起到了电路中逻辑门的效果（GRU的第一个单词是gated）。</p>
-<p>具体来说，一个简化版GRU的计算过程用数学符号表示如下：</p>
-<p>我们把中间变量$a$临时更名为$c$，表示记忆单元memory cell。和之前的$a$一样，我们每轮要算一个新的$\tilde{c}$：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\tilde{c}^{< t >} &= tanh(W_{c} [c^{< t - 1 >}, x^{< t >}] + b_c)
-\end{aligned}</script><p>而同时，我们还要算一个决定是不是要用$\tilde{c}$去更新过去的$c$的“逻辑门” $\Gamma_u$:</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\Gamma_u &= sigmoid(W_{u} [c^{< t - 1 >}, x^{< t >}] + b_u)
-\end{aligned}</script><p>注意，$\Gamma_u$和逻辑门不同，不是真的只能取0或1，而是取0~1中一个中间的值，表示更新的程度。</p>
-<p>之后，每一轮的$c^{&lt; t &gt;}$是这样更新的：</p>
-<script type="math/tex; mode=display">
-c^{< t >} = \Gamma_u \ast \tilde{c}^{< t >} + (1 - \Gamma_u) \ast c^{< t - 1 >}</script><p>它的图示如下，其中紫色部分是更新操作。</p>
-<p><img src="/2022/09/21/DLS-note-14/7.jpg" alt></p>
-<p>在完整的GRU中，计算公式稍微复杂一点：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\tilde{c}^{< t >} &= tanh(W_{c} [\Gamma_r \ast c^{< t - 1 >}, x^{< t >}] + b_c) \\
-\Gamma_u &= sigmoid(W_{u} [c^{< t - 1 >}, x^{< t >}] + b_u) \\
-\Gamma_r &= sigmoid(W_{r} [c^{< t - 1 >}, x^{< t >}] + b_r) \\
-c^{< t >} &= \Gamma_u \ast \tilde{c}^{< t >} + (1 - \Gamma_u) \ast c^{< t - 1 >}
-\end{aligned}</script><p>唯一的区别是$c^{&lt; t - 1 &gt;}$多过了一道$\Gamma_r$。这种设计的好处很难从理论上解释。当时的研究者试了很多类似的GRU架构，最后发现这样的GRU是效果最好的。</p>
-<h2 id="LSTM-long-short-term-memory-单元"><a href="#LSTM-long-short-term-memory-单元" class="headerlink" title="LSTM (long short term memory) 单元"></a>LSTM (long short term memory) 单元</h2><p>LSTM单元是另一种改进版的RNN单元。LSTM的核心思想和GRU一模一样，也是使用门来控制记忆变量的更新幅度，只是公式更复杂了一点。在LSTM中，要传递的中间变量有两个：$c$和$a$，使用的输出门也从2个增加到了3个。</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\tilde{c}^{< t >} &= tanh(W_{c} [\Gamma_r \ast a^{< t - 1 >}, x^{< t >}] + b_c) \\
-\Gamma_u &= sigmoid(W_{u} [a^{< t - 1 >}, x^{< t >}] + b_u) \\
-\Gamma_f &= sigmoid(W_{f} [a^{< t - 1 >}, x^{< t >}] + b_f) \\
-\Gamma_o &= sigmoid(W_{o} [a^{< t - 1 >}, x^{< t >}] + b_o) \\
-c^{< t >} &= \Gamma_u \ast \tilde{c}^{< t >} + \Gamma_f \ast c^{< t - 1 >} \\
-a^{< t >} &= \Gamma_o 
-\ast tanh (c^{< t >})
-\end{aligned}</script><p><img src="/2022/09/21/DLS-note-14/8.jpg" alt></p>
-<blockquote>
-<p>我觉得看图不如看公式看得清楚。</p>
-</blockquote>
-<p>我们不需要刻意去记LSTM的结构，也不要纠结为什么要在哪个地方用哪个门，只需要知道LSTM和GRU的区别，会用它们就行了。</p>
-<p>虽然LSTM比GRU更复杂，但实际上LSTM很早（1997年）就有了，GRU是近几年才有的。二者的效果并没有显著的差别，一般认为LSTM功能更强大，GRU计算速度更快。碰到新任务无脑用LSTM即可，而如果要构建较大的网络则可以考虑使用性能更好的GRU。</p>
-<h2 id="双向RNN"><a href="#双向RNN" class="headerlink" title="双向RNN"></a>双向RNN</h2><p>之前提过，标准的RNN有一个问题：先出现的单词无法获取后续单词的信息。比如句首单词是Teddy，你不知道这是“泰迪熊”还是“泰迪”这个人名。为了解决这个问题，我们可以升级一下RNN的基础架构，使用双向RNN（BRNN）。在这个新架构下，GRU和LSTM的单元可以照用，不受影响。</p>
-<p>BRNN的示意图如下：</p>
-<p><img src="/2022/09/21/DLS-note-14/9.jpg" alt></p>
-<p>假设一句话有4个单词。在BRNN中，除了会先从1-4正着输入一遍序列外，还会从4-1倒着输入一遍序列。正着传的中间变量叫$\overrightarrow{a}$，倒着传的中间变量叫做$\overleftarrow{a}$。每一轮输出满足$\hat{y}=g(W_y[ \overrightarrow{a}, \overleftarrow{a}  ] + b_y)$。</p>
-<p>BRNN+LSTM通常是一个新序列任务的标配。当然，BRNN也有一个缺点：必须等一个序列输入完了才能返回结果，而不能实时返回结果。在语音识别等实时性较强的任务里，可能普通RNN更合适一点。</p>
-<h2 id="深层RNN"><a href="#深层RNN" class="headerlink" title="深层RNN"></a>深层RNN</h2><p>到目前为止，我们学的RNN都是由几个简单的矩阵运算构成的，似乎和这套课的标题“深度学习”不沾边。实际上，也可以给基础的RNN多加一些参数，变成一个深层的RNN。</p>
-<p>正如堆叠标准神经网络的隐藏层一样，我们可以堆叠RNN的基础模块，并传递多个中间变量。由于时序计算的计算成本很高，堆3层的计算量就已经很大了。</p>
-<p><img src="/2022/09/21/DLS-note-14/10.jpg" alt></p>
-<p>如果想进一步提升网络的拟合能力，可以修改计算输出$y$的结构，堆叠一些非时序的神经网络隐藏层。</p>
-<p><img src="/2022/09/21/DLS-note-14/11.jpg" alt></p>
-<blockquote>
-<p>时序模块之所以计算缓慢，一大原因是无法并行。靠后的变量必须等之前的变量算好了才能计算。而在输出$y$的路径中添加一些隐藏层的运算代价没有那么大，因为这些运算是可以并行的。</p>
-</blockquote>
-<p>同样，使用深层RNN时，双向RNN，还有LSTM, GRU都是可以用的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这一课里，我们初次认识了序列数据，并学习了处理序列数据的RNN。利用RNN，我们可以开发出许多和序列数据相关的应用。基础的RNN存在不少问题，所以RNN存在着许多改进方法。让我们看一看这一课的具体知识点：</p>
-<ul>
-<li><p>序列数据及相关任务的示例</p>
-<ul>
-<li>语音识别：输入语音，输出文字</li>
-<li>音乐生成：无输入，输出语音</li>
-<li>机器翻译：输入某种文字，输出另一种文字</li>
-<li>情绪分类：输入文字，输出1-5的分数</li>
-<li>命名实体识别：输入文字，输出每个单词是否是命名实体</li>
-</ul>
-</li>
-<li><p>单词的表示</p>
-<ul>
-<li>先准备好一个词汇表。比如大小为10000的词汇表（要包括<code>&lt;UNK&gt;, &lt;EOS&gt;</code>）。</li>
-<li>每一个单词是一个长度10000的one-hot向量。单词在词汇表中的序号，就是one-hot向量中值为1的下标。</li>
-</ul>
-</li>
-<li><p>循环神经网络（RNN）</p>
-<ul>
-<li>基本思想：用$a$表示上文信息</li>
-<li>计算流程：循环输入序列元素，维护$a$</li>
-<li>计算公式</li>
-<li>反向传播的大概流程</li>
-</ul>
-</li>
-<li><p>防止RNN梯度消失：GRU, LSTM</p>
-<ul>
-<li>基本思想：选择性更新$a$</li>
-<li>大概了解GRU, LSTM的公式</li>
-<li>GRU, LSTM的使用场景</li>
-</ul>
-</li>
-<li><p>获取下文信息：BRNN</p>
-<ul>
-<li>基本思想与结构</li>
-<li>使用场景</li>
-</ul>
-</li>
-<li><p>增强表达能力：深层RNN</p>
-<ul>
-<li>怎么添加更多层RNN</li>
-<li>怎么更好地拟合输出</li>
-</ul>
-</li>
-<li><p>RNN应用：语言模型</p>
-<ul>
-<li>语言模型的定义</li>
-<li>语言模型的训练与推理</li>
-<li>对语言模型采样</li>
-</ul>
-</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2110,7 +2116,7 @@ a^{< t >} &= \Gamma_o
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-count">144</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2155,7 +2161,7 @@ a^{< t >} &= \Gamma_o
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2024</span>
+  <span itemprop="copyrightYear">2025</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

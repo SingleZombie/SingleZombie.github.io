@@ -36,11 +36,12 @@
 <meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/7.jpg">
 <meta property="og:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/8.jpg">
 <meta property="article:published_time" content="2024-12-26T08:15:06.000Z">
-<meta property="article:modified_time" content="2024-12-26T08:15:06.970Z">
+<meta property="article:modified_time" content="2024-12-30T08:14:41.102Z">
 <meta property="article:author" content="Zhou Yifan">
 <meta property="article:tag" content="深度学习">
 <meta property="article:tag" content="扩散模型">
 <meta property="article:tag" content="自回归">
+<meta property="article:tag" content="论文速览">
 <meta property="article:tag" content="多尺度生成">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://zhouyifan.net/2024/12/26/20241224-HART/1.jpg">
@@ -238,8 +239,8 @@
 <p>论文链接：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2410.10812">https://arxiv.org/abs/2410.10812</a></p>
 <h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>本文涉及的所有自回归图像生成方法都起源于 VQVAE, VQGAN。在阅读本文前，建议读者先熟悉这两个经典工作。</p>
 <p>HART 直接基于 VAR (<em>Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction</em>) 开发，且其部分思想和 MAR (Masked Autoregressive models，出自论文 <em>Autoregressive Image Generation without Vector Quantization</em>) 类似。欢迎大家阅读我之前的解读。</p>
-<p>VAR 解读</p>
-<p>MAR 解读</p>
+<p><a href="https://zhouyifan.net/2024/12/21/20241218-VAR/">VAR 解读</a></p>
+<p><a href="https://zhouyifan.net/2024/07/27/20240717-ar-wo-vq/">MAR 解读</a></p>
 <p>在 VQGAN 两阶段生成方法的基础上，VAR 让自编码器输出一系列不同尺度的图像词元 (token)，而不仅仅是最大尺度的词元。生成时，VAR 自回归地生成不同尺度的词元图，同一尺度的词元图会在一轮 Transformer 推理中一次性生成。</p>
 <p><img src="/2024/12/26/20241224-HART/1.jpg" alt></p>
 <p>VQ 操作会丢失编码器输出中的信息，这导致所有使用 VQ 自编码器的图像生成模型生成质量略低。VAR, VQGAN 等方法之所以不得不使用 VQ，是因为这些方法都用类别分布（categorical distribution）来建模词元的分布。为了彻底去除 VQ 操作，MAR 使用扩散模型来代替类别分布，使得我们能够用精度更高的 VAE 来压缩图像。</p>
@@ -261,7 +262,7 @@
 </blockquote>
 <h2 id="AE-VQVAE-混合自编码器"><a href="#AE-VQVAE-混合自编码器" class="headerlink" title="AE + VQVAE 混合自编码器"></a>AE + VQVAE 混合自编码器</h2><p>知道了 HART 要生成的残差图像从何而来，我们可以回头学习自编码器上的对应修改。现在，自编码器的解码器有两种输入：一种是 VAR 离散词元累加而成的近似重建特征，一种是加上了 HART 的残差图的精确重建特征，这个重建特征就等于编码器输出特征。为了同时处理这两类输入，在训练 HART 的混合自编码器时，解码器的输入一半的时候是编码器输出，另一半的时候是离散词元的重建特征。当然，在生成时，由于加上了残差图像，可以认为解码器的输入就等于编码器的输出。</p>
 <blockquote>
-<p>下图中采用的术语 token 与 VAR 不同。VAR 把编码器输出和解码器输出都叫做特征图 (feature map)，把过了 VQ 操作的索引图叫做词元图 (token map)。而 HART 将 VAR 里的特征图称为 token，continuous token 表示编码器输出特征，discrete token 表示词元的重建特征。这篇博文采用了 VAR 的称呼方法。同理，HART 里的 residual token 在本文被称为「残差图像」。</p>
+<p>下图中采用的术语 token 与 VAR 不同。VAR 把编码器输出和解码器输入都叫做特征图 (feature map)，把过了 VQ 操作的索引图叫做词元图 (token map)。而 HART 将 VAR 里的特征图称为 token，continuous token 表示编码器输出特征，discrete token 表示词元的重建特征。这篇博文采用了 VAR 的称呼方法。同理，HART 里的 residual token 在本文被称为「残差图像」。</p>
 </blockquote>
 <p><img src="/2024/12/26/20241224-HART/6.jpg" alt></p>
 <p>这样看来，HART 的混合编码器既像没有 KL Loss 的 VAE，即普通自编码器 (AE)，也像 VQVAE。</p>
@@ -274,7 +275,7 @@
 </ul>
 <h2 id="定量实验结果"><a href="#定量实验结果" class="headerlink" title="定量实验结果"></a>定量实验结果</h2><p>先看一下最热门的「刷点」指标——ImageNet $256 \times 256$ 按类别生成。作者没放最好的 MAR 模型，我补上去了。</p>
 <p><img src="/2024/12/26/20241224-HART/7.jpg" alt></p>
-<p>在这个模型上，HART 和 VAR 的主要区别在于是否使用扩散模型输出残差图像。从结果可以看出，残差扩散模型几乎没有提升推理时间，却对 FID 指标有不小的提升（考虑到数值越低，提升难度越大）。并且，通过比较不同模型的速度，我们发现类 VAR 模型最大的优势在于推理速度快。</p>
+<p>在这个任务上，HART 和 VAR 的主要区别在于是否使用扩散模型输出残差图像。从结果可以看出，残差扩散模型几乎没有提升推理时间，却对 FID 指标有不小的提升（考虑到数值越低，提升难度越大）。并且，通过比较不同模型的速度，我们发现类 VAR 模型最大的优势在于推理速度快。</p>
 <p>再看一下这篇论文重点关注的文生图指标。除了常用的主要衡量文图匹配度的 GenEval 外，论文还展示了两个今年刚出的指标： MJHQ-30K 数据集上的指标和 DPG-Bench。</p>
 <p><img src="/2024/12/26/20241224-HART/8.jpg" alt></p>
 <p>这些指标不见得很有说服力。在由用户投票的排名中 (<a target="_blank" rel="noopener" href="https://imgsys.org/rankings)，Playground">https://imgsys.org/rankings)，Playground</a> v2.5 最好，SD3 和 PixelArt-Σ 差不多。但是，MJHQ FID 和 DPG-banech 指标都不能反映出这些模型的排名。特别地，FID 用到的 Inception V3 网络是在 $299 \times 299$ 的 ImageNet 上训练的，所以 FID 既不能很好地反映高分辨率图像的相似度，也不能反映更复杂的图像的相似度。</p>
@@ -352,6 +353,7 @@
               <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
               <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
               <a href="/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/" rel="tag"># 自回归</a>
+              <a href="/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/" rel="tag"># 论文速览</a>
               <a href="/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/" rel="tag"># 多尺度生成</a>
           </div>
 
@@ -440,7 +442,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-count">144</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -485,7 +487,7 @@
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2024</span>
+  <span itemprop="copyrightYear">2025</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

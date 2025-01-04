@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2024-12-27T19:17:34.894Z</updated>
+  <updated>2025-01-04T15:02:57.948Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,37 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>用 Pycco 为 Python 代码快速创建双列注释网页</title>
+    <link href="https://zhouyifan.net/2025/01/04/20250104-pycco/"/>
+    <id>https://zhouyifan.net/2025/01/04/20250104-pycco/</id>
+    <published>2025-01-04T15:02:57.000Z</published>
+    <updated>2025-01-04T15:02:57.948Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;最近，我在网上看到了一个专门介绍深度学习源代码的网站（&lt;a href=&quot;https://nn.labml.ai/index.html&quot;&gt;https://nn.labml.ai/index.html&lt;/a&gt;</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="工具用法指南" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E5%B7%A5%E5%85%B7%E7%94%A8%E6%B3%95%E6%8C%87%E5%8D%97/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="Python" scheme="https://zhouyifan.net/tags/Python/"/>
+    
+  </entry>
   
   <entry>
     <title>令人惊喜的 2024</title>
@@ -48,7 +79,7 @@
     <link href="https://zhouyifan.net/2024/12/26/20241224-HART/"/>
     <id>https://zhouyifan.net/2024/12/26/20241224-HART/</id>
     <published>2024-12-26T08:15:06.000Z</published>
-    <updated>2024-12-26T08:15:06.970Z</updated>
+    <updated>2024-12-30T08:14:41.102Z</updated>
     
     
       
@@ -71,6 +102,8 @@
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
     <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
     
     <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
     
@@ -112,7 +145,7 @@
     <link href="https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/"/>
     <id>https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/</id>
     <published>2024-12-15T13:55:08.000Z</published>
-    <updated>2024-12-15T13:55:08.884Z</updated>
+    <updated>2024-12-30T08:14:21.782Z</updated>
     
     
       
@@ -134,6 +167,8 @@
     
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
     <category term="视频生成" scheme="https://zhouyifan.net/tags/%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90/"/>
     
     <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
@@ -145,7 +180,7 @@
     <link href="https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/"/>
     <id>https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/</id>
     <published>2024-12-15T13:55:03.000Z</published>
-    <updated>2024-12-15T13:55:03.237Z</updated>
+    <updated>2024-12-30T08:14:31.344Z</updated>
     
     
       
@@ -166,6 +201,8 @@
     <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
     
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
     
     <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
     
@@ -600,35 +637,6 @@
     <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
     
     <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>OpenAI 视频模型 Sora 科研贡献速览</title>
-    <link href="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/"/>
-    <id>https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/</id>
-    <published>2024-02-21T08:46:58.000Z</published>
-    <updated>2024-02-21T08:46:58.415Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;今天，一则重磅消息席卷了 AI 圈：OpenAI 发布了视频模型 Sora，能根据文本生成长达一分钟的高质量 1920x1080 视频，生成能力远超此前只能生成 25 帧 576x1024 图像的顶尖视频生成模型 Stable Video</summary>
-        
-      
-    
-    
-    
-    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
     
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     

@@ -168,6 +168,216 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/03/DLS-note-8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/03/DLS-note-8/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（八）：如何降低误差以达成优化目标</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-03 17:14:58" itemprop="dateCreated datePublished" datetime="2022-07-03T17:14:58+08:00">2022-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>经过了之前的学习，我们学会了许多改进深度学习模型的方法，比如：</p>
+<ul>
+<li>收集更多数据</li>
+<li>收集更多样化的数据</li>
+<li>延长训练时间</li>
+<li>用高级梯度下降算法</li>
+<li>缩小/扩大网络</li>
+<li>使用正则化</li>
+<li>……</li>
+</ul>
+<p>这么多方法，如果只是一个一个试过去，开发效率就太低了。在未来的两周，我们会学习一些改进机器学习的策略。这些策略会给我们一些启发性的指导，让我们在改进模型时更明确下一步该做什么。</p>
+<h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>这周课没有太多的新内容，主要是拓展了第二门课第一周有关偏差与方差分析的内容。学完了这周的课后，大家会进一步了解如何在一个全新的机器学习任务上设置目标，并通过误差分析等技术逐步靠近目标。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="正交化"><a href="#正交化" class="headerlink" title="正交化"></a>正交化</h2><p>如何从众多的改进方案中选择出优先级较高的呢？让我们先看看生活中一些其他事情的例子：</p>
+<p><img src="/2022/07/03/DLS-note-8/1.jpg" alt></p>
+<p>首先，是调整老式电视机的例子。老式电视机的画面不一定恰好能端端正正地填满屏幕，需要人为地调整画面的位置。一般这些电视机都有很多按钮，每个按钮各负责一项调整功能，比如调整上下位置、左右位置、缩放、旋转等。每个按钮之间的功能互不干扰。</p>
+<p>另外，还有一个开汽车的例子。汽车最少有三种操作：转方向盘、加速、减速。只需要组合这三种操作，我们就能让汽车沿着某一路线跑起来。而如果汽车只有两个可以左右调整的按钮，一个按钮控制0.3倍的角度和-0.8倍的速度，另一个按钮控制2倍的角度和0.9倍的速度，那司机控制汽车时肯定会倍感吃力。</p>
+<p>以上两个例子显示了<strong>正交化</strong>的好处。正交可以指数学里两条直线垂直，这里指的是两个调整方向互不干扰。通过调整正交的参数，我们可以把事物的“坐标分量”逐个调整到我们期待的“位置”。</p>
+<p>类似地，在改进机器学习项目时，也可以使用正交化。</p>
+<p><img src="/2022/07/03/DLS-note-8/2.jpg" alt></p>
+<p>在机器学习项目中，大概有4个“坐标分量”需要调整：拟合训练集、拟合开发集、拟合测试集、提升实际应用中的表现。对于这每一项目标，我们都应该使用相互正交的策略去调整，比如：</p>
+<ul>
+<li>拟合训练集 - 用更大的网络</li>
+<li>拟合开发集 - 正则化</li>
+<li>拟合测试集 - 用更大的开发集</li>
+<li>提升实际应用中的表现 - 更换损失函数</li>
+</ul>
+<p>值得一提的是，提前停止是一个即会影响训练误差，又会影响开发误差的方法。这个方法不满足正交化的要求，使用此方法时需要多多注意。</p>
+<h2 id="设置目标"><a href="#设置目标" class="headerlink" title="设置目标"></a>设置目标</h2><h3 id="单一指标"><a href="#单一指标" class="headerlink" title="单一指标"></a>单一指标</h3><p>在分类任务中，一般有下面这两种评价指标：</p>
+<ul>
+<li>精确率（precision, 又称查准率）：所有识别为猫的图片中，究竟有多少确实是猫？</li>
+<li>召回率（recall, 又称查全率）：所有猫的图片中，有多少猫被正确识别了？</li>
+</ul>
+<blockquote>
+<p>注意，我们之前代码实战中用的准确率(accuracy)和精确率(precision)不是一个指标。</p>
+</blockquote>
+<p>现在，假设有两个模型，它们在开发集上的评估结果如下：</p>
+<ul>
+<li>模型1：精确率95%，召回率90%。</li>
+<li>模型2：精确率98%，召回率85%。</li>
+</ul>
+<p>二者在精确率和召回率上各有优劣，该怎么从中选一个更好的模型出来呢？</p>
+<p>设置目标的一个原则是：只使用单一实数作为评价标准。因此，我们要想办法用一个指标把这两个指标都考虑进来。比如使用F1-score，它的公式如下：</p>
+<script type="math/tex; mode=display">
+F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假如我们开发好了几个算法，我们要用来自不同国家的数据去测试它们。不同算法在不同国家的数据上表现较好。为了快速选取一个最好的算法，我们可以去计算每个算法的表现平均值。</p>
+<p><img src="/2022/07/03/DLS-note-8/3.jpg" alt></p>
+<p>有了单一评价标准，我们就可以快速比较各个模型在开发集上的表现，并选择一个更好的模型。这样，我们开发的迭代速度也变快了。</p>
+<h3 id="满足指标与优化指标"><a href="#满足指标与优化指标" class="headerlink" title="满足指标与优化指标"></a>满足指标与优化指标</h3><p>在有多个评价指标时，不是总能挑选出一个最恰当的综合指标的。比如评价某算法时既要考虑到准确率，又要考虑到运行时间。用一个综合指标来组合它们显然不太现实。这时，我们可以把指标分成<strong>满足指标</strong>和<strong>优化指标</strong>。</p>
+<p>比如说，我们有这样几个算法：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>分类器</th>
+<th>准确率</th>
+<th>运行时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>90%</td>
+<td>80ms</td>
+</tr>
+<tr>
+<td>B</td>
+<td>92%</td>
+<td>95ms</td>
+</tr>
+<tr>
+<td>C</td>
+<td>95%</td>
+<td>1500ms</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>算法C是挺好的，但是它相较A,B实在跑的太慢了。因此，我们可以设置以下的评价标准：</p>
+<p><strong>满足</strong>运行时间≤100ms的前提下，<strong>最大化</strong>准确率。</p>
+<p>这个标准既保证了运行时间不会太长，又能选出准确率较高的算法。按照这个标准，B应该是最优的分类器。</p>
+<p>在这个例子中，准确率就是优化指标，运行时间就是满足指标。</p>
+<p>这种新的选取指标的方法应该和之前提到的单一指标原则结合起来。准确来说，应该只有一个优化指标，外加若干个满足指标。</p>
+<h3 id="训练-开发-测试的分布"><a href="#训练-开发-测试的分布" class="headerlink" title="训练/开发/测试的分布"></a>训练/开发/测试的分布</h3><p>开发集和评价指标，共同决定了我们的优化目标。因此，我们应该谨慎地选择各数据集的数据分布，防止优化目标跑偏。</p>
+<p>举个例子，假如我们收集了来自不同地区的数据，有亚洲、欧洲……。假如我们令亚洲的数据为开发集，欧洲的数据为测试集，我们就可能会训练出一个在开发集上表现优秀，却在测试集上表现糟糕的模型。正确的做法是，我们把来自不同地区的数据打乱，把数据随机分成开发集和测试集。</p>
+<p>还有一个改编自真实故事的例子。一个团队想开发根据某人的邮政编码预测他同意贷款的概率的算法。他们以中等收入地区的邮政编码为开发集，却以低收入地区的邮政编码为测试集。显然，在这两个地区的人同意贷款的概率会差很多。最后，这个团队花了3个月优化了算法在开发集上的表现，却发现模型在测试集上表现奇差，不得以推倒重来。</p>
+<p>也就是说，我们应该让训练集和测试集能够反映我们将来实际应用时的数据，并且训练集和测试集都得来自同一个分布。设置开发集和评估指标，就像立了一个靶子一样。训练，就是让射出的箭更靠靶心。而测试集，应该反映我们期望箭射到的位置。我们既要知道箭应该射在哪里，还要把靶子摆对。</p>
+<h3 id="开发集和测试集的大小"><a href="#开发集和测试集的大小" class="headerlink" title="开发集和测试集的大小"></a>开发集和测试集的大小</h3><blockquote>
+<p>这些知识在第二周已经学过了，这里再强调一次。</p>
+</blockquote>
+<p>数据量小的时候（比如说数量级在万以下），我们可以按6:2:2的比例划分训练/开发/测试集。但数据量大的时候，就不用考虑比例了，按固定大小选择差不多大小的开发集和测试集即可。</p>
+<p>那么，测试集要多大才够呢？从统计学的眼光来看，把测试集当成实际应用数据中的一个采样结果的话，我们应该保证测试集有很高的置信度能反映模型在实际应用中的综合表现。当然，对于简单的数据分布，我们可以用统计学知识严谨地算出置信度。而对于人工智能任务中用到的海量数据，数学工具就难以派上用场了。我们只能根据经验选择一个足够大的测试集。比如有百万级数据的话，一万个测试样本就够了。</p>
+<h3 id="何时更换开发-测试集与评价指标"><a href="#何时更换开发-测试集与评价指标" class="headerlink" title="何时更换开发/测试集与评价指标"></a>何时更换开发/测试集与评价指标</h3><p>在算法投入应用后，我们可能会发现新的评价角度。比如对于小猫分类模型，我们本来只期望它能正确识别小猫。可是，随着使用应用的人变多，我们发现有的用户会上传色情图片。这时，我们不仅希望模型能只找出小猫，还要能过滤掉色情图片。</p>
+<p>这样，我们就引入了一个新的评价指标。这样，之前辨认小猫能力强的模型，可能会在辨认色情图片上较差。</p>
+<p>为了考虑这个新的评价指标，我们可以修改误差函数，用更高的权重加大色情图片分类错误的惩罚。</p>
+<p>总结来说，当我们发现使用当前指标得出来的最优模型，与考虑到某些新因素后得到的最优模型不同时，我们就应该更换开发/测试集与评价指标了。</p>
+<h2 id="与人类级表现比较"><a href="#与人类级表现比较" class="headerlink" title="与人类级表现比较"></a>与人类级表现比较</h2><h3 id="为什么是人类级表现"><a href="#为什么是人类级表现" class="headerlink" title="为什么是人类级表现"></a>为什么是人类级表现</h3><p>我们经常能看到AI与人类比较的新闻：什么AlphaGo在围棋上战胜人类了，什么在ImageNet上AI的分类准确率超过了人类啊，等等。除了博眼球的新闻外，业内同样也会时常将机器学习模型和人类比较。这是为什么呢？</p>
+<p>在许多任务中，人类的表现都非常出色。当AI超过了人类后，往往也达到了这类问题的最优精度。在机器学习模型超过人类前，与人类比较有以下好处：</p>
+<ol>
+<li>获取人类标注的数据。</li>
+<li>从手动误差分析中获得启发：为什么人就能做对？</li>
+<li>更好地分析偏差与方差。</li>
+</ol>
+<p>其中，第1条是显然的，第2条会在下周介绍。接下来，我们看看第3条是怎么回事。</p>
+<h3 id="可规避偏差"><a href="#可规避偏差" class="headerlink" title="可规避偏差"></a>可规避偏差</h3><blockquote>
+<p>这个知识之前也学过了一点。</p>
+</blockquote>
+<p>如果一个模型的训练误差是8%，开发误差是10%，我们不一定说模型就存在这个偏差问题。有可能模型在训练集上已经几乎达到了最优的表现;</p>
+<p><img src="/2022/07/03/DLS-note-8/4.jpg" alt></p>
+<p>在判断一件事时，有可能因为信息的缺乏，最优的准确率也达不到100%，总会存在一些误差。这样的最小的误差叫做贝叶斯误差。人类的表现，通常可以用作贝叶斯误差的一个估计。</p>
+<p>在刚才那个例子中，如果人类误差是1%，那么模型的训练误差还有7%的提升空间；而如果人类误差是7.5%，那说不定模型的训练误差只有0.5%的提升空间了。对于前者，我们应该关注偏差；关于后者，我们应该关注方差。这里讲到的7%, 0.5%的提升空间，可以称作<strong>可规避偏差</strong>。</p>
+<h3 id="理解人类级表现"><a href="#理解人类级表现" class="headerlink" title="理解人类级表现"></a>理解人类级表现</h3><p>假如让人类来完成医学图片分类任务，人们得到了以下的分类误差：</p>
+<p><img src="/2022/07/03/DLS-note-8/5.jpg" alt></p>
+<p>从一个普通人，到一群有经验的医生，误差逐渐降低。那么，哪个误差算是人类级表现呢？</p>
+<p>回顾上一节的内容，人类误差是贝叶斯误差的一个估计。因此，人类最优的表现，才应该被视作是人类误差。</p>
+<p>当然，获取人类级表现的目的还是为了做偏差和方差分析。如果当前的训练误差是5%，那不管人类误差是1%，0.7%，还是5%，都差不多。而如果训练误差到了1%，甚至更低，那就要仔细地获取人类误差了。</p>
+<h3 id="提升模型表现"><a href="#提升模型表现" class="headerlink" title="提升模型表现"></a>提升模型表现</h3><p>最后，再一次回顾一下如何减少偏差和方差。</p>
+<p>机器学习有两大假设：模型能够很好地拟合训练集、模型能够泛化到开发/测试集上。它们分别对应偏差问题和方差问题。</p>
+<p>训练误差和人类级表现之间的差是可规避偏差，开发集和训练集之间的差是方差。</p>
+<p>训练更大的模型、训练更久/用更好的优化算法能够解决偏差问题。</p>
+<p>使用更多数据、正则化能解决方差问题。</p>
+<p>用更好的架构、超参数能同时解决这两个问题。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课涉及的新知识很少，大家就权当是复习了一下之前的知识。这节课大概学了这些东西：</p>
+<ul>
+<li>正交化</li>
+<li>目标<ul>
+<li>单一指标</li>
+<li>满足指标与优化指标</li>
+</ul>
+</li>
+<li>开发集与测试集<ul>
+<li>分布</li>
+<li>大小</li>
+</ul>
+</li>
+<li>人类级表现<ul>
+<li>贝叶斯误差</li>
+<li>可规避偏差</li>
+<li>提升模型表现的思路</li>
+</ul>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/02/20220702-gap-year/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2567,192 +2777,6 @@ error=\frac{||\hat{d_{\theta_i}}-d_{\theta_i}||_2}{||\hat{d_{\theta_i}}||_2\cdot
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/01/20220531-styletransfer/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/06/01/20220531-styletransfer/" class="post-title-link" itemprop="url">Neural Style Transfer 风格迁移经典论文讲解与 PyTorch 实现</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-06-01 09:23:03" itemprop="dateCreated datePublished" datetime="2022-06-01T09:23:03+08:00">2022-06-01</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>今天花半小时看懂了“Image Style Transfer Using Convolutional Neural Networks Leon”这篇论文，又花半小时看懂了其 PyTorch 实现，最后用半个下午自己实现了一下这篇工作。现在晚上了，顺便给大家分享一手。</p>
-<p>文章会一边介绍风格迁移的原理，一边展示部分代码。完整的代码会在附录里给出。 </p>
-<h1 id="基于-CNN-的图像风格迁移"><a href="#基于-CNN-的图像风格迁移" class="headerlink" title="基于 CNN 的图像风格迁移"></a>基于 CNN 的图像风格迁移</h1><h2 id="什么是风格迁移"><a href="#什么是风格迁移" class="headerlink" title="什么是风格迁移"></a>什么是风格迁移</h2><p>我们都知道，每一幅画，都可以看成「内容」与「画风」的组合。</p>
-<p><img src="/2022/06/01/20220531-styletransfer/1.jpg" alt></p>
-<p>比如名画《呐喊》画了一个张着嘴巴的人，这是一种表现主义的画风。</p>
-<p><img src="/2022/06/01/20220531-styletransfer/2.jpg" alt></p>
-<p>还有梵高这幅《星夜》，非常有个人风格的一幅夜景。</p>
-<p><img src="/2022/06/01/20220531-styletransfer/3.jpg" alt></p>
-<p>再比如这幅画，一个二次元画风的少女。</p>
-<p><img src="/2022/06/01/20220531-styletransfer/4.jpg" alt></p>
-<p>最后展示的是一个帅哥，这是一张写实的照片。</p>
-<p>所谓风格迁移，就是把一张图片的风格，嵌入到另一张图片的内容里，形成一张新的图片：</p>
-<p><img src="/2022/06/01/20220531-styletransfer/5.jpg" alt></p>
-<p>如上图所示，左上角的A是一幅真实的照片，BCD分别是把其他几幅画作的风格迁移到原图中形成的新图片。</p>
-<p>究竟是什么技术能够实现这么神奇的「风格迁移」效果呢？别急，让我们从几个简单的例子慢慢学起。</p>
-<h2 id="复制一幅图片"><a href="#复制一幅图片" class="headerlink" title="复制一幅图片"></a>复制一幅图片</h2><p>如果你想复制一幅图片，你会怎么做？</p>
-<p><img src="/2022/06/01/20220531-styletransfer/6.jpg" alt></p>
-<p>在Windows上，你可以打开画图软件，点击左上角的选择框，把要复制的图片框起来。Ctrl+C、Ctrl+V，就能轻松完成图像复制。</p>
-<p>但是，我觉得的这种方法太简单了，不能体现出我们这些学过数学的人的智慧。我打算用一个更高端的方法。</p>
-<p>我把复制图像的任务，看成一个数学上的优化问题。已知源图像<code>S</code>，我要生成一个目标图像<code>T</code>，使得二者均方误差<code>MSE(S-T)</code>最小。这样，一个生成图像的问题，就变成求最优的<code>T</code>的优化问题。</p>
-<p>对于这个问题，我们可以随机初始化一张图像<code>T</code>，然后对上面那个优化目标做梯度下降。几轮下来，我们就能求出最优的<code>T</code>——一幅和源图像<code>S</code>一模一样的目标图像。</p>
-<p>这段逻辑可以PyTorch实现：</p>
-<p>假设我们通过<code>read_image</code>函数读取了一个图片<code>img</code>，且把图片预处理成了<code>[1, 3, H, W]</code>的格式。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source_img = read_image(<span class="string">&#x27;dldemos/StyleTransfer/picasso.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>我们可以随机初始化一个<code>[1, 3, H, W]</code>大小的图片。由于这张图片是我们的优化对象，所以我们令<code>input_img.requires_grad_(True)</code>，这样这张图片就可以被PyTorch自动优化了。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">input_img = torch.randn(<span class="number">1</span>, <span class="number">3</span>, *img_size)</span><br><span class="line">input_img.requires_grad_(<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
-<p>之后，我们使用PyTorch的优化器<code>LBFGS</code>，并按照优化器的要求传入被优化参数。（这是这篇论文的作者推荐的优化器~）</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">optimizer = optim.LBFGS([input_img])</span><br></pre></td></tr></table></figure>
-<p>一切变量准备就绪后，我们可以执行梯度下降了：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">steps = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> steps &lt;= <span class="number">10</span>:</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">closure</span>():</span></span><br><span class="line">        <span class="keyword">global</span> steps</span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        loss = F.mse_loss(input_img, source_img)</span><br><span class="line">        loss.backward()</span><br><span class="line">        steps += <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> steps % <span class="number">5</span> == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;Step <span class="subst">&#123;steps&#125;</span>:&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;Loss: <span class="subst">&#123;loss&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> loss</span><br><span class="line"></span><br><span class="line">    optimizer.step(closure)</span><br></pre></td></tr></table></figure>
-<p>这段代码有一点要注意：由于<code>LBFGS</code>执行上的特殊性，我们要把执行梯度下降的代码封装成一个闭包（closure，即一个临时定义的函数），并把这个闭包传给<code>optimizer.step</code>。</p>
-<p>执行上面的代码进行梯度下降后，这个优化问题很快就能得到收敛。优化结束后，假设我们写好了一个后处理图片的函数<code>save_image</code>，我们可以这样保存它：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">save_image(input_img, <span class="string">&#x27;work_dirs/output.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>理论上，这幅图片会和我们的源图像<code>img</code>一模一样。</p>
-<p>大家看到这里，肯定一肚子疑惑：为什么要用这么复杂的方式去复制图像啊？就好像告诉你x=2，拿优化算法求和x完全相等的y一样。这不直接令y=2就行了吗？别急，让我们再看下去。</p>
-<h2 id="拟合神经网络的输出"><a href="#拟合神经网络的输出" class="headerlink" title="拟合神经网络的输出"></a>拟合神经网络的输出</h2><p>刚才我们求解目标图像<code>T</code>的过程，其实可以看成是拟合<code>T</code>的某项<strong>特征</strong>与<code>S</code>的<strong>特征</strong>的过程。只不过，我们使用的是像素值这个最基本的特征。假如我们去拟合更特别的一些特征，会发生什么事呢？</p>
-<p>Gatys 等科学家发现，如果用预训练VGG模型不同层的卷积输出作为拟合特征，则可以拟合出不同的图像：</p>
-<blockquote>
-<p>如果你对预训练VGG模型不熟，也不用担心。VGG是一个包含很多卷积层的神经网络模型。所谓预训练VGG模型，就是在图像分类数据集上训练过的VGG模型。经过了预训练后，VGG模型的各个卷积层都能提取出图像的一些特征，尽管这些特征是我们人类无法理解的。</p>
-</blockquote>
-<p><img src="/2022/06/01/20220531-styletransfer/7.jpg" alt></p>
-<p>上图中，越靠右边的图像，是用越深的卷积层特征进行特征拟合恢复出来的图像。从这些图像恢复结果可以看出，更深的特征只会保留图像的内容（形状），而难以保留图像的纹理（天空的颜色、房子的颜色）。</p>
-<p>看到这，大家可能有一些疑惑：这些图片具体是怎么拟合出来的呢？让我们和刚刚一样，详细地看一看这一图像生成过程。</p>
-<p>假设我们想生成上面的图c，即第三个卷积层的拟合结果。我们已经得到了模型<code>model_conv123</code>，其包含了预训练VGG里的前三个卷积层。我们可以设立以下的优化目标：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">source_feature = model_conv123(source_img)</span><br><span class="line">input_feature = model_conv123(input_img)</span><br><span class="line"><span class="comment"># minimize MSE(source_feature, input_feature)</span></span><br></pre></td></tr></table></figure>
-<p>在实现时，我们只要稍微修改一下开始的代码即可。</p>
-<p>首先，我们可以预处理出源图像的特征。注意，这里我们要用<code>source_feature.detach()</code>来把<code>source_feature</code>从计算图中取出，防止源图像被PyTorch自动更新。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">source_img = read_image(<span class="string">&#x27;dldemos/StyleTransfer/picasso.jpg&#x27;</span>)</span><br><span class="line">source_feature = model_conv123(source_img).detach()</span><br></pre></td></tr></table></figure>
-<p>之后，我们可以用类似的方法做梯度下降：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">steps = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> steps &lt;= <span class="number">50</span>:</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">closure</span>():</span></span><br><span class="line">        <span class="keyword">global</span> steps</span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        input_feature = model_conv123(input_img)</span><br><span class="line">        loss = F.mse_loss(input_feature, source_feature)</span><br><span class="line">        loss.backward()</span><br><span class="line">        steps += <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> steps % <span class="number">5</span> == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;Step <span class="subst">&#123;steps&#125;</span>:&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;Loss: <span class="subst">&#123;loss&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> loss</span><br><span class="line"></span><br><span class="line">    optimizer.step(closure)</span><br></pre></td></tr></table></figure>
-<p>看到没，我们刚刚这种利用优化问题生成目标图像的方法并不愚蠢，只是一开始大材小用了而已。通过这种方法，我们可以生成一幅拟合了源图像在神经网络中的深层特征的目标图像。那么，怎么利用这种方法完成风格迁移呢？</p>
-<h2 id="风格-内容-风格迁移"><a href="#风格-内容-风格迁移" class="headerlink" title="风格+内容=风格迁移"></a>风格+内容=风格迁移</h2><p>Gatys 等科学家发现，不仅是卷积结果可以当作拟合特征，VGG的一些其他中间结果也可以作为拟合特征。受到之前用CNN做纹理生成的工作[2]的启发，他们发现用卷积结果的Gram矩阵作为拟合特征可以得到另一种图像生成效果：</p>
-<p><img src="/2022/06/01/20220531-styletransfer/8.jpg" alt></p>
-<p>上图中，右边a-e是用VGG不同卷积结果的Gram矩阵作为拟合特征，得到的对左图的拟合图像。可以看出，用这种特征来拟合的话，生成图像会失去原图的内容（比如星星和物体的位置完全变了），但是会保持图像的整体风格。</p>
-<p>这里稍微提一下Gram矩阵的计算方法。Gram矩阵定义在两个特征的矩阵<code>F_1, F_2</code>上。其中，每个特征矩阵<code>F</code>是VGG某层的卷积输出张量<code>F_conv(shape: [n, h, w])</code>reshape成一个矩阵<code>F (shape: [n, h * w])</code>的结果。Gram矩阵，就是两个特征矩阵<code>F_1, F_2</code>的内积，即<code>F_1</code>每个通道的特征向量和<code>F_2</code>每个通道的特征向量的相似度构成的矩阵。我们这里假设<code>F_1=F_2</code>，即对某个卷积特征自身生成Gram矩阵。这段逻辑用代码实现如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gram</span>(<span class="params">x: torch.Tensor</span>):</span></span><br><span class="line">    <span class="comment"># x 是VGG卷积层的输出张量</span></span><br><span class="line">    n, c, h, w = x.shape</span><br><span class="line"></span><br><span class="line">    features = x.reshape(n * c, h * w)</span><br><span class="line">    features = torch.mm(features, features.T)</span><br><span class="line">    <span class="keyword">return</span> features</span><br></pre></td></tr></table></figure>
-<p>Gram矩阵表示的是通道之间的相似性，与位置无关。因此，Gram矩阵是一种具有空间不变性（spatial invariance）的指标，可以描述整幅图像的性质，适用于拟合风格。与之相对，我们之前拟合图像内容时用的是图像每一个位置的特征，这一个指标是和空间相关的。Gram矩阵只是拟合风格的一种可选指标。后续研究证明，还有其他类似的特征也能达到和Gram矩阵一样的效果。我们不需要过分纠结于Gram矩阵的原理。</p>
-<p>看到这里，大家或许已经明白风格迁移是怎么实现的了。风格迁移，其实就是既拟合一幅图像的<strong>内容</strong>，又去拟合另一幅图像的<strong>风格</strong>。我们把前一幅图像叫做<strong>内容图像</strong>，后一幅图像叫做<strong>风格图像</strong>。</p>
-<p>我们在上一节知道了如何拟合内容，这一节知道了怎么去拟合风格。要把二者结合起来，只要令我们的优化目标既包含和内容图像的<strong>内容误差</strong>，又包含和风格图像的<strong>风格误差</strong>。在原论文中，这些误差是这样表达的：</p>
-<p><img src="/2022/06/01/20220531-styletransfer/9.jpg" alt></p>
-<p>上面第一行公式表达的是内容误差，第二行公式表达的是风格误差。</p>
-<p>第一行公式中，$F$，$P$分别是生成图像的卷积特征和源图像的卷积特征。</p>
-<p>第二行公式中，$F$是生成图像的卷积特征，$G$是$F$的Gram矩阵，$A$是源图像卷积特征的Gram矩阵，$E_l$表示第$l$层的风格误差。在论文中，总风格误差是某几层风格误差的加权和，其中权重为$w_l$。事实上，不仅总风格误差可以用多层风格误差的加权和表示，总内容误差也可以用多层内容误差的加权和表示。只是在原论文中，只使用了一层的内容误差。</p>
-<p>第三行中，$\alpha, \beta$分别是内容误差的权重和风格误差的权重。实际上，我们只用考虑$\alpha, \beta$的比值即可。如果$\alpha$较大，则说明优化内容的权重更大，生成出来的图像更靠近内容图像。反之亦然。</p>
-<p>只要用这个误差去替换我们刚刚代码实现中的误差，就可以完成图像的风格迁移了，听起来是不是十分简单？但是，用PyTorch实现风格迁移时还要考虑不少细节。在本文的附录中，我会对风格迁移的实现代码做一些讲解。</p>
-<h2 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h2><p>其实这篇文章是比较早期的用神经网络做风格迁移的工作。在近两年里，肯定有许多试图改进此方法的研究。时至今日，再去深究这篇文章里的一些细节（为什么用Gram矩阵，应该用VGG的哪些层做拟合）已经意义不大了。我们应该关注的是这篇文章的主要思想。</p>
-<p>这篇文章对我的最大启发是：神经网络不仅可以用于在大批数据集上训练，完成一项通用的任务，还可以经过预训练，当作一个特征提取器，为其他任务提供额外的信息。同样，要记住神经网络只是优化任务的一项特例，我们完全可以把梯度下降法用于普通的优化任务中。在这种利用了神经网络的参数，而不去更新神经网络参数的优化任务中，梯度下降法也是适用的。</p>
-<p>此外，这篇文章中提到的「风格」也是很有趣的一项属性。这篇文章算是首次利用了神经网络中的信息，用于提取内容、风格等图像属性。这种提取属性（尤其是提取风格）的想法被运用到了很多的后续研究中，比如大名鼎鼎的StyleGAN。</p>
-<p>长期以来，人们总是把神经网络当成黑盒。但是，这篇文章给了我们一个掀开黑盒的思路：通过拟合神经网络中卷积核的特征，我们能够窥见神经网络每一层保留了哪些信息。相信在之后的研究中，人们能够更细致地去研究神经网络的内在原理。</p>
-<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>[1] Gatys L A, Ecker A S, Bethge M. Image style transfer using convolutional neural networks[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2016: 2414-2423.</p>
-<p>[2] Gatys L, Ecker A S, Bethge M. Texture synthesis using convolutional neural networks[J]. Advances in neural information processing systems, 2015, 28.</p>
-<p>[3] 代码实现：<a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/neural_style_tutorial.html">https://pytorch.org/tutorials/advanced/neural_style_tutorial.html</a></p>
-<h1 id="附录：PyTorch-实现风格迁移"><a href="#附录：PyTorch-实现风格迁移" class="headerlink" title="附录：PyTorch 实现风格迁移"></a>附录：PyTorch 实现风格迁移</h1><p>这段代码实现是基于 <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/neural_style_tutorial.html">PyTorch 官方教程</a> 编写的。</p>
-<p>本文的代码仓库链接：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/StyleTransfer">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/StyleTransfer</a></p>
-<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>首先，导入我们需要的库。我们要导入PyTorch的基本库，并导入<code>torchvision</code>做图像变换和初始化预训练模型。此外，我们用<code>PIL</code>读写图像。我们还可以顺手设置一下运算设备（cpu或gpu）。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">import</span> torch.optim <span class="keyword">as</span> optim</span><br><span class="line"><span class="keyword">import</span> torchvision.models <span class="keyword">as</span> models</span><br><span class="line"><span class="keyword">import</span> torchvision.transforms <span class="keyword">as</span> transforms</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line">device = torch.device(<span class="string">&#x27;cuda&#x27;</span> <span class="keyword">if</span> torch.cuda.is_available() <span class="keyword">else</span> <span class="string">&#x27;cpu&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>之后是图像读取。为了正确计算误差，所有图像的形状必须是统一的。因此，在读取图像后，我们要对图像做<code>Resize</code>的预处理。预处理之后，我们得到的图像是<code>c, h, w</code>格式的，别忘了用<code>unsqueeze</code>加上batch那一维。</p>
-<blockquote>
-<p>这里<code>torchvision</code>中的<code>transforms</code>表示一些预处理操作。部分操作只能对PIL图像进行，而不能对<code>np.ndaray</code>进行。所以，这里用<code>PIL</code>存取图像比用<code>cv2</code>更方便。</p>
-</blockquote>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">img_size = (<span class="number">256</span>, <span class="number">256</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">read_image</span>(<span class="params">image_path</span>):</span></span><br><span class="line">    pipeline = transforms.Compose(</span><br><span class="line">        [transforms.Resize((img_size)),</span><br><span class="line">         transforms.ToTensor()])</span><br><span class="line"></span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path).convert(<span class="string">&#x27;RGB&#x27;</span>)</span><br><span class="line">    img = pipeline(img).unsqueeze(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">return</span> img.to(device, torch.<span class="built_in">float</span>)</span><br></pre></td></tr></table></figure>
-<p>保存图像时，只要调用<code>PIL</code>的API即可：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save_image</span>(<span class="params">tensor, image_path</span>):</span></span><br><span class="line">    toPIL = transforms.ToPILImage()</span><br><span class="line">    img = tensor.detach().cpu().clone()</span><br><span class="line">    img = img.squeeze(<span class="number">0</span>)</span><br><span class="line">    img = toPIL(img)</span><br><span class="line">    img.save(image_path)</span><br></pre></td></tr></table></figure></p>
-<h2 id="误差计算"><a href="#误差计算" class="headerlink" title="误差计算"></a>误差计算</h2><p>在 PyTorch 中定义误差时，比较优雅的做法是定义一个<code>torch.autograd.Function</code>。但是这样做比较麻烦，需要手写反向传播。由于本文中新介绍的误差全部都是基于MSE均方误差的，我们可以基于<code>torch.nn.Module</code>编写一些“虚假的”误差函数。</p>
-<p>首先，编写内容误差：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ContentLoss</span>(<span class="params">torch.nn.Module</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, target: torch.Tensor</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.target = target.detach()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, <span class="built_in">input</span></span>):</span></span><br><span class="line">        self.loss = F.mse_loss(<span class="built_in">input</span>, self.target)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">input</span></span><br></pre></td></tr></table></figure><br>在神经网络中，这个类其实没有做任何运算（<code>forward</code>直接把<code>input</code>返回了）。但是，这个类缓存了内容误差值。我们稍后可以取出这个类实例的<code>loss</code>，丢进最终的误差计算公式里。这种通过插入一个不进行计算的<code>torch.nn.Module</code>来保存中间计算结果的方法，算是使用PyTorch的一个小技巧。</p>
-<p>之后，编写<code>gram</code>矩阵的计算方法及风格误差的计算“函数”：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gram</span>(<span class="params">x: torch.Tensor</span>):</span></span><br><span class="line">    <span class="comment"># x is a [n, c, h, w] array</span></span><br><span class="line">    n, c, h, w = x.shape</span><br><span class="line"></span><br><span class="line">    features = x.reshape(n * c, h * w)</span><br><span class="line">    features = torch.mm(features, features.T) / n / c / h / w</span><br><span class="line">    <span class="keyword">return</span> features</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">StyleLoss</span>(<span class="params">torch.nn.Module</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, target: torch.Tensor</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.target = gram(target.detach()).detach()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, <span class="built_in">input</span></span>):</span></span><br><span class="line">        G = gram(<span class="built_in">input</span>)</span><br><span class="line">        self.loss = F.mse_loss(G, self.target)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">input</span></span><br></pre></td></tr></table></figure>
-<p>这里实现风格误差的思路与内容误差同理。</p>
-<h2 id="获取预训练模型"><a href="#获取预训练模型" class="headerlink" title="获取预训练模型"></a>获取预训练模型</h2><p>VGG模型对输入数据的分布有要求（即对输入数据均值、标准差有要求）。为了方便起见，我们可以写一个归一化分布的层，作为最终模型的第一层：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Normalization</span>(<span class="params">torch.nn.Module</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, mean, std</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.mean = torch.tensor(mean).to(device).reshape(-<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">        self.std = torch.tensor(std).to(device).reshape(-<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, img</span>):</span></span><br><span class="line">        <span class="keyword">return</span> (img - self.mean) / self.std</span><br></pre></td></tr></table></figure>
-<p>接下来，我们可以利用torchvision中的预训练VGG，提取出其中我们需要的模块。我们还需要获取刚刚编写的误差类的实例的引用，以计算最终的误差。</p>
-<p>这段代码的实现思路是：我们不直接把VGG拿过来用，而是新建一个用<code>torch.nn.Sequential</code>表示的序列模型。我们先把标准化层加入这个序列，再把原VGG中的计算层逐个加入我们的新序列模型中。一旦我们发现某个计算层的计算结果要用作计算误差，我们就在这个层后面加一个用于捕获误差的误差模块。</p>
-<p>整段逻辑用文字难以说清，大家可以直接看代码理解：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">default_content_layers = [<span class="string">&#x27;conv_4&#x27;</span>]</span><br><span class="line">default_style_layers = [<span class="string">&#x27;conv_1&#x27;</span>, <span class="string">&#x27;conv_2&#x27;</span>, <span class="string">&#x27;conv_3&#x27;</span>, <span class="string">&#x27;conv_4&#x27;</span>, <span class="string">&#x27;conv_5&#x27;</span>]</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_model_and_losses</span>(<span class="params">content_img, style_img, content_layers, style_layers</span>):</span></span><br><span class="line">    num_loss = <span class="number">0</span></span><br><span class="line">    expected_num_loss = <span class="built_in">len</span>(content_layers) + <span class="built_in">len</span>(style_layers)</span><br><span class="line">    content_losses = []</span><br><span class="line">    style_losses = []</span><br><span class="line"></span><br><span class="line">    model = torch.nn.Sequential(</span><br><span class="line">        Normalization([<span class="number">0.485</span>, <span class="number">0.456</span>, <span class="number">0.406</span>], [<span class="number">0.229</span>, <span class="number">0.224</span>, <span class="number">0.225</span>]))</span><br><span class="line">    cnn = models.vgg19(pretrained=<span class="literal">True</span>).features.to(device).<span class="built_in">eval</span>()</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> layer <span class="keyword">in</span> cnn.children():</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(layer, torch.nn.Conv2d):</span><br><span class="line">            i += <span class="number">1</span></span><br><span class="line">            name = <span class="string">f&#x27;conv_<span class="subst">&#123;i&#125;</span>&#x27;</span></span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(layer, torch.nn.ReLU):</span><br><span class="line">            name = <span class="string">f&#x27;relu_<span class="subst">&#123;i&#125;</span>&#x27;</span></span><br><span class="line">            layer = torch.nn.ReLU(inplace=<span class="literal">False</span>)</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(layer, torch.nn.MaxPool2d):</span><br><span class="line">            name = <span class="string">f&#x27;pool_<span class="subst">&#123;i&#125;</span>&#x27;</span></span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(layer, torch.nn.BatchNorm2d):</span><br><span class="line">            name = <span class="string">f&#x27;bn_<span class="subst">&#123;i&#125;</span>&#x27;</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(</span><br><span class="line">                <span class="string">f&#x27;Unrecognized layer: <span class="subst">&#123;layer.__class__.__name__&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line">        model.add_module(name, layer)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> name <span class="keyword">in</span> content_layers:</span><br><span class="line">            <span class="comment"># add content loss:</span></span><br><span class="line">            target = model(content_img)</span><br><span class="line">            content_loss = ContentLoss(target)</span><br><span class="line">            model.add_module(<span class="string">f&#x27;content_loss_<span class="subst">&#123;i&#125;</span>&#x27;</span>, content_loss)</span><br><span class="line">            content_losses.append(content_loss)</span><br><span class="line">            num_loss += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> name <span class="keyword">in</span> style_layers:</span><br><span class="line">            target_feature = model(style_img)</span><br><span class="line">            style_loss = StyleLoss(target_feature)</span><br><span class="line">            model.add_module(<span class="string">f&#x27;style_loss_<span class="subst">&#123;i&#125;</span>&#x27;</span>, style_loss)</span><br><span class="line">            style_losses.append(style_loss)</span><br><span class="line">            num_loss += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> num_loss &gt;= expected_num_loss:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> model, content_losses, style_losses</span><br></pre></td></tr></table></figure><br>这里有些地方要注意：VGG有多个模块，其中我们只需要包含卷积层的<code>vgg19().features</code>模块。另外，我们只需要那些用于计算误差的层，当我们发现所有和误差相关的层都放入了新模型后，就可以停止新建模块了。</p>
-<h2 id="用梯度下降生成图像"><a href="#用梯度下降生成图像" class="headerlink" title="用梯度下降生成图像"></a>用梯度下降生成图像</h2><p>这里的步骤和正文中的类似，我们先准备好输入的噪声图像、模型、误差类实例的引用，并设置好哪些参数需要优化，哪些不需要。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">input_img = torch.randn(<span class="number">1</span>, <span class="number">3</span>, *img_size, device=device)</span><br><span class="line">model, content_losses, style_losses = get_model_and_losses(</span><br><span class="line">    content_img, style_img, default_content_layers, default_style_layers)</span><br><span class="line"></span><br><span class="line">input_img.requires_grad_(<span class="literal">True</span>)</span><br><span class="line">model.requires_grad_(<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
-<p>之后，我们声明好用到的超参数。这两个超参数能够控制图像是更靠近内容图像还是风格图像。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">style_img = read_image(<span class="string">&#x27;dldemos/StyleTransfer/picasso.jpg&#x27;</span>)</span><br><span class="line">content_img = read_image(<span class="string">&#x27;dldemos/StyleTransfer/dancing.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure></p>
-<p>这两张图片来自官方教程。链接分别为<a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/_static/img/neural-style/picasso.jpg">picasso</a>, <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/_static/img/neural-style/dancing.jpg">dancing</a>。</p>
-<p>最后，执行熟悉的梯度下降即可：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">optimizer = optim.LBFGS([input_img])</span><br><span class="line">steps = <span class="number">0</span></span><br><span class="line">prev_loss = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> steps &lt;= <span class="number">1000</span> <span class="keyword">and</span> prev_loss &lt; <span class="number">100</span>:</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">closure</span>():</span></span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            input_img.clamp_(<span class="number">0</span>, <span class="number">1</span>)</span><br><span class="line">        <span class="keyword">global</span> steps</span><br><span class="line">        <span class="keyword">global</span> prev_loss</span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        model(input_img)</span><br><span class="line">        content_loss = <span class="number">0</span></span><br><span class="line">        style_loss = <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> l <span class="keyword">in</span> content_losses:</span><br><span class="line">            content_loss += l.loss</span><br><span class="line">        <span class="keyword">for</span> l <span class="keyword">in</span> style_losses:</span><br><span class="line">            style_loss += l.loss</span><br><span class="line">        loss = content_weight * content_loss + style_weight * style_loss</span><br><span class="line">        loss.backward()</span><br><span class="line">        steps += <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> steps % <span class="number">50</span> == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&#x27;Step <span class="subst">&#123;steps&#125;</span>:&#x27;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&#x27;Loss: <span class="subst">&#123;loss&#125;</span>&#x27;</span>)</span><br><span class="line">            <span class="comment"># Open next line to save intermediate result</span></span><br><span class="line">            <span class="comment"># save_image(input_img, f&#x27;work_dirs/output_&#123;steps&#125;.jpg&#x27;)</span></span><br><span class="line">        prev_loss = loss</span><br><span class="line">        <span class="keyword">return</span> loss</span><br><span class="line"></span><br><span class="line">    optimizer.step(closure)</span><br></pre></td></tr></table></figure>
-<p>由于我们有先验知识，知道图像位于(0, 1)之间，每一轮优化前我们可以手动约束一下图像的数值以加速训练。</p>
-<p>运行程序的时候会有一些特殊情况。有些时候，任务的误差<code>loss</code>会突然涨到一个很高的值，过几轮才会恢复正常。为了保证输出的<code>loss</code>总是不那么大，我加了一个<code>prev_loss &lt; 100</code>的要求。</p>
-<p>这里<code>steps</code>的值是可以调的，误差究竟多小才算小也取决于实际任务以及<code>content_weight, style_weight</code>的大小。这些超参数都是可以去调试的。</p>
-<p>最后，我们可以保存最终输出的图像:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    input_img.clamp_(<span class="number">0</span>, <span class="number">1</span>)</span><br><span class="line">save_image(input_img, <span class="string">&#x27;work_dirs/output.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>正常情况下，运行上面这些的代码，可以得到下面的运行结果（我的<code>style_weight/content_weight=1e6</code>)</p>
-<p><img src="/2022/06/01/20220531-styletransfer/10.jpg" alt></p>
-<h1 id="彩蛋"><a href="#彩蛋" class="headerlink" title="彩蛋"></a>彩蛋</h1><p>在理解了风格迁移是在做什么后，我就立刻想到：可不可以用风格迁移，把照片渲染成二次元风格呢？</p>
-<p>成功完成代码实现后，我立马尝试把动漫风格迁移到我的照片上：</p>
-<p><img src="/2022/06/01/20220531-styletransfer/11.jpg" alt></p>
-<p>这效果也太差了吧？！我不服气，多输出了几幅中间结果。这下好了，结果更诡异了：</p>
-<p><img src="/2022/06/01/20220531-styletransfer/12.jpg" alt></p>
-<p>我都搞不清楚，这是进入了二次元，还是进入了显像管电视机。</p>
-<p>可以看出，这种算法生成出来的二次元图像，还是保留了二次元图片中的一些风格：线条分明，颜色是一块一块的。但是整体效果太差了。</p>
-<p>只能说，这种算法的局限性还是太强了。想进入二次元，任重而道远啊。</p>
-<h1 id="吐槽"><a href="#吐槽" class="headerlink" title="吐槽"></a>吐槽</h1><p>我的智力和效率已经到达了一个可怕的地步。一天时间内，我在正常生活的同时，完成了论文阅读、复现、写文章、吹牛。这种执行能力太强了。如果我每天以这样的效率学东西，成为科研大牛指日可待。</p>
-<p>可惜，搞科研并不是我的归宿。其实写这篇文章的时候，我也在想是什么东西在支持我一直做下去。写文章对现在的我来说是没有任何收益的。想高效获取金钱上的收益，也不该写这种类型的文章。但是我就是想写。不知道究竟是为了完成我的一些个人目标，还是为了向他人展示我修炼多年的表达能力、学习能力，还是纯粹以吹牛为乐。我已经搞不太清楚了。只要觉得好玩，就一直做下去吧。</p>
-<p>最近，我玩视频游戏的时间越来越少了。因为，生活，对我来说，就是一场最具难度、最有挑战性的游戏。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2822,7 +2846,7 @@ error=\frac{||\hat{d_{\theta_i}}-d_{\theta_i}||_2}{||\hat{d_{\theta_i}}||_2\cdot
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-count">144</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2867,7 +2891,7 @@ error=\frac{||\hat{d_{\theta_i}}-d_{\theta_i}||_2}{||\hat{d_{\theta_i}}||_2\cdot
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2024</span>
+  <span itemprop="copyrightYear">2025</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
