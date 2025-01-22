@@ -168,6 +168,132 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/12/19/20221009-style-transfer-via-stylegan/" class="post-title-link" itemprop="url">人脸风格迁移 + StyleGAN 的最新玩法</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-19 19:27:00" itemprop="dateCreated datePublished" datetime="2022-12-19T19:27:00+08:00">2022-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>如今，人脸风格迁移的效果越来越惊人。给定一张人脸照片，不管是变成卡通风格、二次元风格，甚至是变成讽刺画风格，AI都能轻轻松松做到。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/1.jpg" alt></p>
+<p>AI能有这么强的生成效果，都得归功于创作力极强的StyleGAN。StyleGAN本身只是用来随机生成人脸的模型。随着研究的不断推进，StyleGAN被应用到了人脸风格迁移任务中。在这篇文章里，我将简要介绍一下基于StyleGAN的人脸风格迁移的最新pipeline。</p>
+<h2 id="知识准备"><a href="#知识准备" class="headerlink" title="知识准备"></a>知识准备</h2><h3 id="风格迁移"><a href="#风格迁移" class="headerlink" title="风格迁移"></a>风格迁移</h3><p>在深度CNN展示出了强大的图像识别能力后，人们产生了疑问：CNN是感知图像的呢？为此，研究者找出了令深度CNN各层输出值最大的输入图片。这些图片能表明CNN各层“看到了”什么。实验结果显示，浅层网络关注轮廓信息，而深层网络会关注更抽象的信息。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/2.jpg" alt></p>
+<p>受此启发，有人提出了一种叫做神经网络风格迁移[1]的应用——输入一张内容图像(C)和一张风格图像(S)，输出一幅融合内容与风格的图片(G)。这一应用是通过对齐图像在深度CNN中各层的输出结果实现的。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/3.jpg" alt></p>
+<p>风格迁移的具体介绍可以参见我之前的文章：<a href>Neural Style Transfer 风格迁移经典论文讲解</a>。</p>
+<h3 id="StyleGAN"><a href="#StyleGAN" class="headerlink" title="StyleGAN"></a>StyleGAN</h3><p>GAN能够根据一个高维向量$z$生成图像（$z$可以看成图像的身份证号）。但是，早期的图像GAN不能对图像生成的过程加以干预。</p>
+<p>对此，人们提出了可控的图像生成网络StyleGAN[2]。在这个模型生成完一幅图像后，可以对图片进行由粗至精共18种微调：对于人脸生成而言，既可以调整性别、年龄这种更宏观的属性，也可以调整肤色、发色这种更具体的属性。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/4.jpg" alt></p>
+<p>StyleGAN 的详细介绍可以参见我之前的文章：<a href>用18支画笔作画的AI ~ StyleGAN特点浅析</a>。</p>
+<h2 id="基于-image-to-image-的风格迁移"><a href="#基于-image-to-image-的风格迁移" class="headerlink" title="基于 image-to-image 的风格迁移"></a>基于 image-to-image 的风格迁移</h2><p>在计算机眼中，无论是自然语言，还是图像，都是一堆数据。就像不同的语言之间可以翻译一样，不同风格之间也可以翻译。风格迁移任务，其实就可以看成把来自某一种风格的图像翻译到另一种风格中。早期的人脸风格迁移，都是通过图像翻译（image-to-image translation）框架实现的。</p>
+<p>对于语言翻译，需要准备好成对数据的数据集。比如在中文到英文翻译任务中，要给每一个中文句子准备其对应的英文翻译。而在风格迁移任务中，获得成对数据是几乎不可能的：哪有画家会去费心地给上千张人脸绘制出对应的漫画脸呢？因此，在风格迁移中，图像翻译都是通过无监督方式训练的，即不去使用成对的数据。</p>
+<p>无监督的图像翻译一般也是通过GAN实现。生成器的输入是普通的人脸照片，输出是其对应的风格人脸照片；判别器的输入是生成的假图或者风格数据集里的真图，输出为该图片是否是风格图片。受到StyleGAN的启发，风格迁移的图像翻译网络还会使用类似的“风格模块”，以提升风格迁移的效果。下图是近期的图像翻译风格迁移工作 U-GAT-IT[3] 的网络示意图。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/5.jpg" alt></p>
+<p>用图像翻译的想法来做风格迁移确实可行。但是，换一种新风格，就得花费大量精力去训练一个GAN，这一流程十分繁琐。</p>
+<h2 id="利用预训练-StyleGAN-的-Toonify"><a href="#利用预训练-StyleGAN-的-Toonify" class="headerlink" title="利用预训练 StyleGAN 的 Toonify"></a>利用预训练 StyleGAN 的 Toonify</h2><p>在StyleGAN面世后，热心的研究者们对其展开了各个角度的拓展。其中，有一篇短小精悍的文章用一种十分简单的方法让StyleGAN完成了风格迁移。这篇工作后来被称为Toonify[4]。</p>
+<p>先来看一下Toonify的使用效果。Toonify使用了两个StyleGAN，一个能够生成真实的人脸，一个能够生成风格化人脸。对于同一个高维向量输入$z$，只需要对两个StyleGAN的权重进行插值，就能让$z$对应的两幅图像之间发生风格迁移。下图中，a是真实StyleGAN的输出，b是风格化StyleGAN的输出，c, d是把两幅图像的内容和风格交换后的输出，e是精心组合两个StyleGAN权重得到的输出。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/6.jpg" alt></p>
+<p>Toonify使用的权重插值方法非常直接。StyleGAN生成图像时，会先生成分辨率较小的图片，再逐渐把图片放大。修改小分辨率处的权重，会改变图像的内容；修改大分辨率处的权重，会改变图像的风格。Toonify做的插值，仅仅是交换两个StyleGAN不同分辨率处的权重而已。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/7.jpg" alt></p>
+<p>以上只是Toonify的核心思想。要利用Toonify做风格迁移，还有两个问题要解决：</p>
+<ol>
+<li>怎么根据真实StyleGAN得到风格化的StyleGAN？</li>
+<li>StyleGAN的图片是通过$z$生成出来的。对于任意一幅真实人脸图像，怎么得到它的$z$呢？</li>
+</ol>
+<p>对于第一个问题，风格化的StyleGAN是通过微调得到的。作者用预训练的真实StyleGAN在新的风格化数据集上微调出了另一个StyleGAN。</p>
+<p>对于第二个问题，任意一张真实人脸图片的$z$可以通过简单的数学优化来实现：给定一张图片，我们要求一个$z$，使得$z$通过真实StyleGAN的输出和输入图片尽可能相似。当然，这种直接优化得到的$z$不一定是最优的。把任何一张图片嵌入进StyleGAN的隐空间是一个大的研究方向，叫做GAN Inversion.</p>
+<p>总结下来，Toonify使用的pipeline如下：</p>
+<ol>
+<li>在新风格上微调StyleGAN。</li>
+<li>通过GAN Inversion得到真实人脸的$z$。</li>
+<li>交换新旧StyleGAN的权重，得到插值StyleGAN。$z$在插值StyleGAN中的输出就是风格迁移后的图片。</li>
+</ol>
+<h2 id="基于-StyleGAN-的风格迁移"><a href="#基于-StyleGAN-的风格迁移" class="headerlink" title="基于 StyleGAN 的风格迁移"></a>基于 StyleGAN 的风格迁移</h2><p>Toonify这篇工作本身非常简短，但它却为风格迁移指出了一条新的路线。相比基于图像翻译的风格迁移，这种新方法有以下好处：</p>
+<ol>
+<li>训练代价大幅减小。新方法可以直接使用预训练好的StyleGAN，在几百幅新风格的图像上微调即可完成主要的模型训练，而无需从头训练一个GAN。</li>
+<li>可以直接利用StyleGAN的强大图像生成能力，甚至是StyleGAN的图像编辑能力（修改低分辨率或高分辨率的输入，以改变图像的内容和风格）。</li>
+</ol>
+<p>以发表在图形学顶刊ACM TOG上的AgileGAN[5]为例，我们来简单地看一下前沿的风格迁移框架是怎样的。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/8.jpg" alt></p>
+<p>模型训练分两部分，先训练编码器（完成GAN Inversion），再训练解码器（生成图像）。作者用VAE来建模编码器的训练过程，此时的解码器是固定权重的预训练StyleGAN。基于VAE的编码器训练好了之后，再固定编码器的权重，把预训练的StyleGAN在新数据集上微调，得到风格化的StyleGAN。</p>
+<p>在推理时，输入一张图片，VAE输出的分布的均值即是该图片的编码$z$。把$z$输入进微调后的StyleGAN，即可得到风格迁移的结果。</p>
+<p>由于使用了预训练StyleGAN，整个训练过程能在一小时内完成。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/9.jpg" alt></p>
+<p>作者还精心优化了StyleGAN的结构。StyleGAN的浅层决定了生成图像的抽象属性，比如性别、年龄。通过修改浅层的权重，即可得到不同性别、年龄的人脸图像。作者在StyleGAN的浅层网络中加入了多条路径（多条路径其实等价于多个网络），一条路径固定了一种人脸属性。比如第一条路径只能生成男性，第二条路径只能生成女性。每一条路径都有一个专门的判别器，该判别器集成了StyleGAN本身的预训练判别器和一个判断属性的判别器，保证一条路径生成的图像都满足某属性。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/10.jpg" alt></p>
+<p>从这个例子中，我们能够直观地认识到微调StyleGAN的风格迁移方法的优势。训练上的便捷性、StyleGAN强大的生成能力与编辑能力使得这一方法在众多风格迁移方法中脱颖而出。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>在这篇文章中，我简要介绍了一种前沿的风格迁移pipeline，并讲述了它是如何一步一步诞生的。从本文提及的前沿工作中也能看出，当前风格迁移的效果非常好，训练起来也不难，可以用其轻松地开发出人脸年轻化、性别转换、二次元化等等有趣的应用。如果你对相关的研究或应用感兴趣，欢迎参考这篇文章提及的文献进行学习。</p>
+<p>如果你很细心，会发现这篇文章开头展示的图片并不是本文介绍的任何一篇论文的输出结果。实际上，它是一篇更新的工作——DualStyleGAN——的输出结果。这篇工作的原理更加复杂，我会在之后的文章里对其做介绍。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>[1] Image style transfer using convolutional neural networks</p>
+<p>[2] A Style-Based Generator Architecture for Generative Adversarial Networks</p>
+<p>[3] U-GAT-IT: Unsupervised Generative Attentional Networks with Adaptive Layer-Instance Normalization for Image-to-Image Translation</p>
+<p>[4] Resolution Dependent GAN Interpolation for<br>Controllable Image Synthesis Between Domains</p>
+<p>[5] AgileGAN: Stylizing Portraits by Inversion-Consistent Transfer Learning</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/11/12/20220925-Transformer/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1876,177 +2002,6 @@ minimize (\theta^{T}_je_i-logx_{ij})</script><blockquote>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-15-2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/09/21/DLS-note-15-2/" class="post-title-link" itemprop="url">在 PyTorch 中借助 GloVe 词嵌入完成情感分析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-21 17:47:35" itemprop="dateCreated datePublished" datetime="2022-09-21T17:47:35+08:00">2022-09-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>词嵌入能够用更加有意义的向量表示单词。在NLP任务中使用预训练的词嵌入，往往能极大地加快训练效率。在这篇文章中，我将面向NLP初学者，分享一下如何在PyTorch中使用预训练的GloVe词嵌入，并借助它完成一个简单的NLP任务——情感分析。</p>
-<p>相关的背景知识可以参考我之前有关词嵌入的文章：<a href>词嵌入 (Word2Vec, GloVe)</a></p>
-<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/SentimentAnalysis">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/SentimentAnalysis</a></p>
-<h2 id="GloVe-词嵌入"><a href="#GloVe-词嵌入" class="headerlink" title="GloVe 词嵌入"></a>GloVe 词嵌入</h2><p>GloVe是一种学习词嵌入的方法，它希望拟合给定上下文单词$i$时单词$j$出现的次数$x_{ij}$。使用的误差函数为：</p>
-<script type="math/tex; mode=display">
-\sum_{i=1}^{N}\sum_{j=1}^{N}f(x_{ij})(\theta^{T}_je_i+b_i+b'_j-logx_{ij})</script><p>其中，$N$是词汇表大小，$\theta, b$是线性层参数，$e_i$是词嵌入。$f(x)$是权重项，用于平衡不同频率的单词对误差的影响，并消除$log0$时式子不成立的情况。</p>
-<p>GloVe作者提供了官方的预训练词嵌入（<a target="_blank" rel="noopener" href="https://nlp.stanford.edu/projects/glove/">https://nlp.stanford.edu/projects/glove/</a> ）。预训练的GloVe有好几个版本，按数据来源，可以分成：</p>
-<ul>
-<li>维基百科+gigaword（6B）</li>
-<li>爬虫（42B）</li>
-<li>爬虫（840B）</li>
-<li>推特（27B）</li>
-</ul>
-<p>其中，括号里的数字表示数据集的token数。</p>
-<p>按照词嵌入向量的大小分，又可以分成50维、100维、200维等不同维度。</p>
-<p>预训练GloVe的文件格式非常简明。一行表示一个单词向量，每行先是一个单词，再是若干个浮点数，表示该单词向量的每一个元素。</p>
-<p>当然，在使用PyTorch时，我们不必自己去下载解析GloVe，而是可以直接调用PyTorch的库自动下载解析GloVe。首先，我们要安装PyTorch的NLP库——torchtext。</p>
-<p>conda可以用下面的命令安装：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda install -c pytorch torchtext</span><br></pre></td></tr></table></figure>
-<p>pip可以直接安装：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torchtext</span><br></pre></td></tr></table></figure>
-<p>之后，在Python里运行下面的代码，就可以获取GloVe的类了。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torchtext.vocab <span class="keyword">import</span> GloVe</span><br><span class="line"></span><br><span class="line">glove = GloVe(name=<span class="string">&#x27;6B&#x27;</span>, dim=<span class="number">100</span>)</span><br></pre></td></tr></table></figure>
-<p>如前文所述，GloVe的版本可以由其数据来源和向量维数确定。在构建GloVe类时，要提供这两个参数。最好是去GloVe的官网查好一个确定的版本，用该版本的参数构建这个GloVe类。我在这个项目中使用的是6B token，维度数100的GloVe。</p>
-<p>调用<code>glove.get_vecs_by_tokens</code>，我们能够把token转换成GloVe里的向量。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Get vectors</span></span><br><span class="line">tensor = glove.get_vecs_by_tokens([<span class="string">&#x27;&#x27;</span>, <span class="string">&#x27;1998&#x27;</span>, <span class="string">&#x27;199999998&#x27;</span>, <span class="string">&#x27;,&#x27;</span>, <span class="string">&#x27;cat&#x27;</span>], <span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(tensor)</span><br></pre></td></tr></table></figure>
-<p>PyTorch提供的这个函数非常方便。如果token不在GloVe里的话，该函数会返回一个全0向量。如果你运行上面的代码，可以观察到一些有趣的事：空字符串和199999998这样的不常见数字不在词汇表里，而1998这种常见的数字以及标点符号都在词汇表里。</p>
-<p><code>GloVe</code>类内部维护了一个矩阵，即每个单词向量的数组。因此，<code>GloVe</code>需要一个映射表来把单词映射成向量数组的下标。<code>glove.itos</code>和<code>glove.stoi</code>完成了下标与单词字符串的相互映射。比如用下面的代码，我们可以知道词汇表的大小，并访问词汇表的前几个单词：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">myvocab = glove.itos</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">len</span>(myvocab))</span><br><span class="line"><span class="built_in">print</span>(myvocab[<span class="number">0</span>], myvocab[<span class="number">1</span>], myvocab[<span class="number">2</span>], myvocab[<span class="number">3</span>])</span><br></pre></td></tr></table></figure>
-<p>最后，我们来通过一个实际的例子认识一下词嵌入的意义。词嵌入就是向量，向量的关系常常与语义关系对应。利用词嵌入的相对关系，我们能够回答“x1之于y1，相当于x2之于谁？”这种问题。比如，男人之于女人，相当于国王之于王后。设我们要找的向量为y2，我们想让x1-y1=x2-y2，即找出一个和x2-(x1-y1)最相近的向量y2出来。这一过程可以用如下的代码描述：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_counterpart</span>(<span class="params">x1, y1, x2</span>):</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;Find y2 that makes x1-y1=x2-y2&quot;&quot;&quot;</span></span><br><span class="line">    x1_id = glove.stoi[x1]</span><br><span class="line">    y1_id = glove.stoi[y1]</span><br><span class="line">    x2_id = glove.stoi[x2]</span><br><span class="line">    x1, y1, x2 = glove.get_vecs_by_tokens([x1, y1, x2], <span class="literal">True</span>)</span><br><span class="line">    target = x2 - x1 + y1</span><br><span class="line">    max_sim = <span class="number">0</span></span><br><span class="line">    max_id = -<span class="number">1</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(myvocab)):</span><br><span class="line">        vector = glove.get_vecs_by_tokens([myvocab[i]], <span class="literal">True</span>)[<span class="number">0</span>]</span><br><span class="line">        cossim = torch.dot(target, vector)</span><br><span class="line">        <span class="keyword">if</span> cossim &gt; max_sim <span class="keyword">and</span> i <span class="keyword">not</span> <span class="keyword">in</span> &#123;x1_id, y1_id, x2_id&#125;:</span><br><span class="line">            max_sim = cossim</span><br><span class="line">            max_id = i</span><br><span class="line">    <span class="keyword">return</span> myvocab[max_id]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(get_counterpart(<span class="string">&#x27;man&#x27;</span>, <span class="string">&#x27;woman&#x27;</span>, <span class="string">&#x27;king&#x27;</span>))</span><br><span class="line"><span class="built_in">print</span>(get_counterpart(<span class="string">&#x27;more&#x27;</span>, <span class="string">&#x27;less&#x27;</span>, <span class="string">&#x27;long&#x27;</span>))</span><br><span class="line"><span class="built_in">print</span>(get_counterpart(<span class="string">&#x27;apple&#x27;</span>, <span class="string">&#x27;red&#x27;</span>, <span class="string">&#x27;banana&#x27;</span>))</span><br></pre></td></tr></table></figure>
-<p>在函数<code>get_counterpart</code>中，我们遍历所有向量，根据cosine相似度，找一个和x2-x1+y1最相近的向量（除三个输入向量之外）。使用这个函数，我们可以回答以下三组问题：</p>
-<ul>
-<li>man-woman, king-<strong>queen</strong></li>
-<li>more-less, long-<strong>short</strong></li>
-<li>apple-red, banana-<strong>yellow</strong></li>
-</ul>
-<p>词嵌入确实非常神奇，连反义词、水果的颜色这种抽象关系都能记录。当然，这里我只挑选了几组成功的例子。这种算法并不能认出单词的比较级（good-better, bad-worse）等更抽象的关系。</p>
-<p>通过这一节的实践，我们认识了GloVe的基本用法。接下来，我们来看看怎么用词嵌入完成情感分析任务。</p>
-<h2 id="基于GloVe的情感分析"><a href="#基于GloVe的情感分析" class="headerlink" title="基于GloVe的情感分析"></a>基于GloVe的情感分析</h2><h3 id="情感分析任务与数据集"><a href="#情感分析任务与数据集" class="headerlink" title="情感分析任务与数据集"></a>情感分析任务与数据集</h3><p>和猫狗分类类似，情感分析任务是一种比较简单的二分类NLP任务：给定一段话，输出这段话的情感是积极的还是消极的。</p>
-<p>比如下面这段话：</p>
-<p>I went and saw this movie last night after being coaxed to by a few friends of mine. I’ll admit that I was reluctant to see it because from what I knew of Ashton Kutcher he was only able to do comedy. I was wrong. Kutcher played the character of Jake Fischer very well, and Kevin Costner played Ben Randall with such professionalism. ……</p>
-<p>这是一段影评，大意说，这个观众本来不太想去看电影，因为他认为演员Kutcher只能演好喜剧。但是，看完后，他发现他错了，所有演员都演得非常好。这是一段积极的评论。</p>
-<p>再比如这段话：</p>
-<p>This is a pale imitation of ‘Officer and a Gentleman.’ There is NO chemistry between Kutcher and the unknown woman who plays his love interest. The dialog is wooden, the situations hackneyed. </p>
-<p>这段影评说，这部剧是对《军官与绅士》的一个拙劣的模仿。Kutcher和那个成为他心上人的路人女性之间没有产生任何“化学反应”。对话太死板，场景太陈腐了。这是一段消极的评论。</p>
-<p>这些评论都选自斯坦福大学的<a target="_blank" rel="noopener" href="https://ai.stanford.edu/~amaas/data/sentiment/">大型电影数据集</a>。它收录了IMDb上的电影评论，正面评论和负面评论各25000条。这个数据集是情感分析中最为常用的数据集，多数新手在学习NLP时都会用它训练一个情感分析模型。我们这个项目也会使用这个数据集。</p>
-<p>这个数据集的文件结构大致如下：</p>
-<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">├─test</span><br><span class="line">│  ├─neg</span><br><span class="line">│  │  ├ 0_2.txt</span><br><span class="line">│  │  ├ 1_3.txt</span><br><span class="line">│  │  └ ...</span><br><span class="line">│  └─pos</span><br><span class="line">├─train</span><br><span class="line">│   ├─neg</span><br><span class="line">│   └─pos</span><br><span class="line">└─imdb.vocab</span><br></pre></td></tr></table></figure>
-<p>其中，<code>imdb.vocab</code>记录了数据集中的所有单词，一行一个。<code>test</code>和<code>train</code>是测试集和训练集，它们的<code>neg</code>和<code>pos</code>子文件夹分别记录了负面评论和正面评论。每一条评论都是一句话，存在一个txt文件里。</p>
-<p>使用下面这个函数，我们就可以读取一个子文件夹里的所有评论：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">read_imdb</span>(<span class="params"><span class="built_in">dir</span>=<span class="string">&#x27;data/aclImdb&#x27;</span>, split=<span class="string">&#x27;pos&#x27;</span>, is_train=<span class="literal">True</span></span>):</span></span><br><span class="line">    subdir = <span class="string">&#x27;train&#x27;</span> <span class="keyword">if</span> is_train <span class="keyword">else</span> <span class="string">&#x27;test&#x27;</span></span><br><span class="line">    <span class="built_in">dir</span> = os.path.join(<span class="built_in">dir</span>, subdir, split)</span><br><span class="line">    lines = []</span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(<span class="built_in">dir</span>):</span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(os.path.join(<span class="built_in">dir</span>, file), <span class="string">&#x27;rb&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            line = f.read().decode(<span class="string">&#x27;utf-8&#x27;</span>)</span><br><span class="line">            lines.append(line)</span><br><span class="line">    <span class="keyword">return</span> lines</span><br></pre></td></tr></table></figure>
-<p>这里，顺便介绍一下torchtext提供的分词工具。在NLP中，我们在得到一段文本时，一般需要对文本做一步预处理操作，把一段话变成“单词”的数组。这里的“单词”即可以是英文单词，也可以是数字序列、标点符号。在NLP中，这步预处理操作称为分词，“单词”叫做token（中文直译是“符号，记号”）。</p>
-<p>使用torchtext把一段话转换成token数组的方式如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torchtext.data <span class="keyword">import</span> get_tokenizer</span><br><span class="line"></span><br><span class="line">tokenizer = get_tokenizer(<span class="string">&#x27;basic_english&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span>(tokenizer(<span class="string">&#x27;a, b&#x27;</span>))</span><br><span class="line"><span class="comment"># &gt;&gt; [&#x27;a&#x27;, &#x27;,&#x27;, &#x27;b&#x27;]</span></span><br></pre></td></tr></table></figure>
-<p>有了它，我们可以验证读取IMDb数据集和分词的函数。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torchtext.data <span class="keyword">import</span> get_tokenizer</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span>():</span></span><br><span class="line">    lines = read_imdb()</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Length of the file:&#x27;</span>, <span class="built_in">len</span>(lines))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;lines[0]:&#x27;</span>, lines[<span class="number">0</span>])</span><br><span class="line">    tokenizer = get_tokenizer(<span class="string">&#x27;basic_english&#x27;</span>)</span><br><span class="line">    tokens = tokenizer(lines[<span class="number">0</span>])</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;lines[0] tokens:&#x27;</span>, tokens)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
-<p>输出：</p>
-<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Length of the file: 12500</span><br><span class="line">lines[0]: This is a very light headed comedy about a wonderful ...</span><br><span class="line">lines[0] tokens: [&#x27;this&#x27;, &#x27;is&#x27;, &#x27;a&#x27;, &#x27;very&#x27;, &#x27;light&#x27;, &#x27;headed&#x27;, &#x27;comedy&#x27;, &#x27;about&#x27;, &#x27;a&#x27;, &#x27;wonderful&#x27;, ...</span><br></pre></td></tr></table></figure>
-<h3 id="获取经GloVe预处理的数据"><a href="#获取经GloVe预处理的数据" class="headerlink" title="获取经GloVe预处理的数据"></a>获取经GloVe预处理的数据</h3><p>在这个项目中，我们的模型结构十分简单：输入序列经过词嵌入，送入单层RNN，之后输出结果。整个项目最难的部分是如何把token转换成GloVe词嵌入。在这一节里，我将介绍一种非常简单的实现方法。</p>
-<p>torchtext其实还提供了一些更方便的NLP工具类（<code>Field</code>, <code>Vectors</code>等），用于管理词向量。但是，这些工具需要一定的学习成本。由于本文的主旨是介绍深度学习技术而非PyTorch使用技巧，本项目不会用到这些更高级的类。如果你以后要用PyTorch完成NLP任务，建议看完本文后参考<a target="_blank" rel="noopener" href="https://www.analyticsvidhya.com/blog/2021/09/sentiment-analysis-with-lstm-and-torchtext-with-code-and-explanation/">相关文章</a>进一步学习torchtext的用法。</p>
-<p>PyTorch通常用<code>nn.Embedding</code>来表示词嵌入层。<code>nn.Embedding</code>其实就是一个矩阵，每一行都是一个词嵌入。每一个token都是整型索引，表示该token在词汇表里的序号。有了索引，有了矩阵，就可以得到token的词嵌入了。</p>
-<p>但是，有些token在词汇表中并不存在。我们得对输入做处理，把词汇表里没有的token转换成<code>&lt;unk&gt;</code>这个表示未知字符的特殊token。同时，为了对齐序列的长度，我们还得添加<code>&lt;pad&gt;</code>这个特殊字符。而用GloVe直接生成的<code>nn.Embedding</code>里没有<code>&lt;unk&gt;</code>和<code>&lt;pad&gt;</code>字符。如果使用<code>nn.Embedding</code>的话，我们要编写非常复杂的预处理逻辑。</p>
-<p>为此，我们可以用<code>GloVe</code>类的<code>get_vecs_by_tokens</code>直接获取token的词嵌入，以代替<code>nn.Embedding</code>。回忆一下前文提到的<code>get_vecs_by_tokens</code>的使用结果，所有没有出现的token都会被转换成零向量。这样，我们就不必操心数据预处理的事情了。</p>
-<p><code>get_vecs_by_tokens</code>应该发生在数据读取之后，它可以直接被写在<code>Dataset</code>的读取逻辑里。我为此项目编写的<code>Dataset</code>如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader, Dataset</span><br><span class="line"><span class="keyword">from</span> torchtext.data <span class="keyword">import</span> get_tokenizer</span><br><span class="line"><span class="keyword">from</span> torchtext.vocab <span class="keyword">import</span> GloVe</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dldemos.SentimentAnalysis.read_imdb <span class="keyword">import</span> read_imdb</span><br><span class="line"></span><br><span class="line">GLOVE_DIM = <span class="number">100</span></span><br><span class="line">GLOVE = GloVe(name=<span class="string">&#x27;6B&#x27;</span>, dim=GLOVE_DIM)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">IMDBDataset</span>(<span class="params">Dataset</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, is_train=<span class="literal">True</span>, <span class="built_in">dir</span>=<span class="string">&#x27;data/aclImdb&#x27;</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.tokenizer = get_tokenizer(<span class="string">&#x27;basic_english&#x27;</span>)</span><br><span class="line">        pos_lines = read_imdb(<span class="built_in">dir</span>, <span class="string">&#x27;pos&#x27;</span>, is_train)</span><br><span class="line">        neg_lines = read_imdb(<span class="built_in">dir</span>, <span class="string">&#x27;neg&#x27;</span>, is_train)</span><br><span class="line">        self.lines = pos_lines + neg_lines</span><br><span class="line">        self.pos_length = <span class="built_in">len</span>(pos_lines)</span><br><span class="line">        self.neg_length = <span class="built_in">len</span>(neg_lines)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__len__</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.pos_length + self.neg_length</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__getitem__</span>(<span class="params">self, index</span>):</span></span><br><span class="line">        sentence = self.tokenizer(self.lines[index])</span><br><span class="line">        x = GLOVE.get_vecs_by_tokens(sentence)</span><br><span class="line">        label = <span class="number">1</span> <span class="keyword">if</span> index &lt; self.pos_length <span class="keyword">else</span> <span class="number">0</span></span><br><span class="line">        <span class="keyword">return</span> x, label</span><br></pre></td></tr></table></figure>
-<p>数据预处理的逻辑都在<code>__getitem__</code>里。每一段字符串会先被token化，之后由<code>GLOVE.get_vecs_by_tokens</code>得到词嵌入数组。</p>
-<h3 id="对齐输入"><a href="#对齐输入" class="headerlink" title="对齐输入"></a>对齐输入</h3><p>使用一个batch的序列数据时常常会碰到序列不等长的问题。在我的<a href>上篇RNN代码实战文章</a>中，我曾计算了序列的最大长度，并手动为每个序列都创建了一个最大长度的向量。实际上，利用PyTorch <code>DataLoader</code>的<code>collate_fn</code>机制，还有一些更简洁的实现方法。</p>
-<p>在这个项目中，我们可以这样创建<code>DataLoader</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch.nn.utils.rnn <span class="keyword">import</span> pad_sequence</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_dataloader</span>(<span class="params"><span class="built_in">dir</span>=<span class="string">&#x27;data/aclImdb&#x27;</span></span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">collate_fn</span>(<span class="params">batch</span>):</span></span><br><span class="line">        x, y = <span class="built_in">zip</span>(*batch)</span><br><span class="line">        x_pad = pad_sequence(x, batch_first=<span class="literal">True</span>)</span><br><span class="line">        y = torch.Tensor(y)</span><br><span class="line">        <span class="keyword">return</span> x_pad, y</span><br><span class="line"></span><br><span class="line">    train_dataloader = DataLoader(IMDBDataset(<span class="literal">True</span>, <span class="built_in">dir</span>),</span><br><span class="line">                                  batch_size=<span class="number">32</span>,</span><br><span class="line">                                  shuffle=<span class="literal">True</span>,</span><br><span class="line">                                  collate_fn=collate_fn)</span><br><span class="line">    test_dataloader = DataLoader(IMDBDataset(<span class="literal">False</span>, <span class="built_in">dir</span>),</span><br><span class="line">                                 batch_size=<span class="number">32</span>,</span><br><span class="line">                                 shuffle=<span class="literal">True</span>,</span><br><span class="line">                                 collate_fn=collate_fn)</span><br><span class="line">    <span class="keyword">return</span> train_dataloader, test_dataloader</span><br></pre></td></tr></table></figure>
-<p>PyTorch <code>DataLoader</code>在获取<code>Dataset</code>的一个batch的数据时，实际上会先调用<code>Dataset.__getitem__</code>，获取若干个样本，再把所有样本拼接成一个batch。比如用<code>__getitem__</code>获取4个<code>[3, 10, 10]</code>的图片张量，再拼接成<code>[4, 3, 10, 10]</code>这一个batch。可是，序列数据通常长度不等，<code>__getitem__</code>可能会获得<code>[10, 100]</code>, <code>[15, 100]</code>这样不等长的词嵌入数组。</p>
-<p>为了解决这个问题，我们要手动编写把所有张量拼成一个batch的函数。这个函数就是<code>DataLoader</code>的<code>collate_fn</code>函数。我们的<code>collate_fn</code>应该这样编写：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">collate_fn</span>(<span class="params">batch</span>):</span></span><br><span class="line">    x, y = <span class="built_in">zip</span>(*batch)</span><br><span class="line">    x_pad = pad_sequence(x, batch_first=<span class="literal">True</span>)</span><br><span class="line">    y = torch.Tensor(y)</span><br><span class="line">    <span class="keyword">return</span> x_pad, y</span><br></pre></td></tr></table></figure>
-<p><code>collate_fn</code>的输入<code>batch</code>是每次<code>__getitem__</code>的结果的数组。比如在我们这个项目中，第一次获取了一个长度为10的积极的句子，<code>__getitem__</code>返回<code>(Tensor[10, 100], 1)</code>；第二次获取了一个长度为15的消极的句子，<code>__getitem__</code>返回<code>(Tensor[15, 100], 0)</code>。那么，输入<code>batch</code>的内容就是：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[(Tensor[<span class="number">10</span>, <span class="number">100</span>], <span class="number">1</span>), (Tensor[<span class="number">15</span>, <span class="number">100</span>], <span class="number">0</span>)]</span><br></pre></td></tr></table></figure>
-<p>我们可以用<code>x, y = zip(*batch)</code>把它巧妙地转换成两个元组：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x = (Tensor[<span class="number">10</span>, <span class="number">100</span>], Tensor[<span class="number">15</span>, <span class="number">100</span>])</span><br><span class="line">y = (<span class="number">1</span>, <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<p>之后，PyTorch的<code>pad_sequence</code>可以把不等长序列的数组按最大长度填充成一整个batch张量。也就是说，经过这个函数后，<code>x_pad</code>变成了：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x_pad = Tensor[<span class="number">2</span>, <span class="number">15</span>, <span class="number">100</span>]</span><br></pre></td></tr></table></figure>
-<p><code>pad_sequence</code>的<code>batch_first</code>决定了<code>batch</code>是否在第一维。如果它为<code>False</code>，则结果张量的形状是<code>[15, 2, 100]</code>。</p>
-<p><code>pad_sequence</code>还可以决定填充内容，默认填充0。在我们这个项目中，被填充的序列已经是词嵌入了，直接用全零向量表示<code>&lt;pad&gt;</code>没问题。</p>
-<p>有了<code>collate_fn</code>，构建<code>DataLoader</code>就很轻松了：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">DataLoader(IMDBDataset(<span class="literal">True</span>, <span class="built_in">dir</span>),</span><br><span class="line">            batch_size=<span class="number">32</span>,</span><br><span class="line">            shuffle=<span class="literal">True</span>,</span><br><span class="line">            collate_fn=collate_fn)</span><br></pre></td></tr></table></figure>
-<p>注意，使用<code>shuffle=True</code>可以令<code>DataLoader</code>随机取数据构成batch。由于我们的<code>Dataset</code>十分工整，前一半的标签是1，后一半是0，必须得用随机的方式去取数据以提高训练效率。</p>
-<h3 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h3><p>模型非常简单，就是单层RNN：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RNN</span>(<span class="params">torch.nn.Module</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, hidden_units=<span class="number">64</span>, dropout_rate=<span class="number">0.5</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.drop = nn.Dropout(dropout_rate)</span><br><span class="line">        self.rnn = nn.GRU(GLOVE_DIM, hidden_units, <span class="number">1</span>, batch_first=<span class="literal">True</span>)</span><br><span class="line">        self.linear = nn.Linear(hidden_units, <span class="number">1</span>)</span><br><span class="line">        self.sigmoid = nn.Sigmoid()</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, x: torch.Tensor</span>):</span></span><br><span class="line">        <span class="comment"># x shape: [batch, max_word_length, embedding_length]</span></span><br><span class="line">        emb = self.drop(x)</span><br><span class="line">        output, _ = self.rnn(emb)</span><br><span class="line">        output = output[:, -<span class="number">1</span>]</span><br><span class="line">        output = self.linear(output)</span><br><span class="line">        output = self.sigmoid(output)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> output</span><br></pre></td></tr></table></figure>
-<p>这里要注意一下，PyTorch的RNN会返回整个序列的输出。而在预测分类概率时，我们只需要用到最后一轮RNN计算的输出。因此，要用<code>output[:, -1]</code>取最后一次的输出。 </p>
-<h3 id="训练、测试、推理"><a href="#训练、测试、推理" class="headerlink" title="训练、测试、推理"></a>训练、测试、推理</h3><p>项目的其他地方都比较简单，我把剩下的所有逻辑都写到<code>main</code>函数里了。</p>
-<p>先准备好模型。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span>():</span></span><br><span class="line">    device = <span class="string">&#x27;cuda:0&#x27;</span></span><br><span class="line">    train_dataloader, test_dataloader = get_dataloader()</span><br><span class="line">    model = RNN().to(device)</span><br></pre></td></tr></table></figure>
-<p>第一步是训练。训练照着普通RNN的训练模板写就行，没什么特别的。注意，在PyTorch中，使用二分类误差时，要在模型里用<code>nn.Sigmoid</code>，并使用<code>nn.BCELoss</code>作为误差函数。算误差前，得把序列长度那一维去掉。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># train</span></span><br><span class="line"></span><br><span class="line">    optimizer = torch.optim.Adam(model.parameters(), lr=<span class="number">0.001</span>)</span><br><span class="line">    citerion = torch.nn.BCELoss()</span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">100</span>):</span><br><span class="line"></span><br><span class="line">        loss_sum = <span class="number">0</span></span><br><span class="line">        dataset_len = <span class="built_in">len</span>(train_dataloader.dataset)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> x, y <span class="keyword">in</span> train_dataloader:</span><br><span class="line">            batchsize = y.shape[<span class="number">0</span>]</span><br><span class="line">            x = x.to(device)</span><br><span class="line">            y = y.to(device)</span><br><span class="line">            hat_y = model(x)</span><br><span class="line">            hat_y = hat_y.squeeze(-<span class="number">1</span>)</span><br><span class="line">            loss = citerion(hat_y, y)</span><br><span class="line"></span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            loss.backward()</span><br><span class="line">            torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="number">0.5</span>)</span><br><span class="line">            optimizer.step()</span><br><span class="line"></span><br><span class="line">            loss_sum += loss * batchsize</span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;Epoch <span class="subst">&#123;epoch&#125;</span>. loss: <span class="subst">&#123;loss_sum / dataset_len&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    torch.save(model.state_dict(), <span class="string">&#x27;dldemos/SentimentAnalysis/rnn.pth&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>训练几十个epoch，模型就差不多收敛了。词嵌入对于训练还是有很大帮助的。</p>
-<p>训练完了，接下来要测试精度。这些代码也很简单，跑完了模型和0.5比较得到预测结果，再和正确标签比较算一个准确度。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># test</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># model.load_state_dict(</span></span><br><span class="line"><span class="comment">#     torch.load(&#x27;dldemos/SentimentAnalysis/rnn.pth&#x27;, &#x27;cuda:0&#x27;))</span></span><br><span class="line"></span><br><span class="line">accuracy = <span class="number">0</span></span><br><span class="line">dataset_len = <span class="built_in">len</span>(test_dataloader.dataset)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"><span class="keyword">for</span> x, y <span class="keyword">in</span> test_dataloader:</span><br><span class="line">    x = x.to(device)</span><br><span class="line">    y = y.to(device)</span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        hat_y = model(x)</span><br><span class="line">    hat_y.squeeze_(<span class="number">1</span>)</span><br><span class="line">    predictions = torch.where(hat_y &gt; <span class="number">0.5</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">    score = torch.<span class="built_in">sum</span>(torch.where(predictions == y, <span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line">    accuracy += score.item()</span><br><span class="line">accuracy /= dataset_len</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&#x27;Accuracy: <span class="subst">&#123;accuracy&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
-<p>我的精度达到了90%多。考虑到模型并不复杂，且并没有用验证集进行调参，这个精度已经非常棒了。</p>
-<p>训练完了模型，我们来看看模型能不能在实际应用中排上用场。我去最近的财经新闻里摘抄了几句对美股的评论：</p>
-<p>U.S. stock indexes fell Tuesday, driven by expectations for tighter Federal Reserve policy and an energy crisis in Europe. Stocks around the globe have come under pressure in recent weeks as worries about tighter monetary policy in the U.S. and a darkening economic outlook in Europe have led investors to sell riskier assets.</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Inference</span></span><br><span class="line">tokenizer = get_tokenizer(<span class="string">&#x27;basic_english&#x27;</span>)</span><br><span class="line">article = ...</span><br><span class="line"></span><br><span class="line">x = GLOVE.get_vecs_by_tokens(tokenizer(article)).unsqueeze(<span class="number">0</span>).to(device)</span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    hat_y = model(x)</span><br><span class="line">hat_y = hat_y.squeeze_().item()</span><br><span class="line">result = <span class="string">&#x27;positive&#x27;</span> <span class="keyword">if</span> hat_y &gt; <span class="number">0.5</span> <span class="keyword">else</span> <span class="string">&#x27;negative&#x27;</span></span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
-<p>评论说，受到联邦政府更紧缩的保守经济政策和欧洲能源危机的影响，美国股市指数在周二下跌。近几周，全球股市都笼罩在对美国更紧缩的经济政策的担忧压力之下，欧洲灰暗的经济前景令投资者选择抛售高风险的资产。这显然是一段消极的评论。我的模型也很明智地输出了”negative”。看来，情感分析模型还是能在实际应用中发挥用场的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了GloVe词嵌入在PyTorch的一个应用。如果你只是想学习深度学习，建议多关注一下词嵌入的意义，不需要学习过多的API。如果你正在入门NLP，建议从这个简单的项目入手，体会一下词嵌入的作用。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2116,7 +2071,7 @@ minimize (\theta^{T}_je_i-logx_{ij})</script><blockquote>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">144</span>
+          <span class="site-state-item-count">145</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

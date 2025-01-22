@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2025-01-04T15:02:57.948Z</updated>
+  <updated>2025-01-22T15:30:36.159Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,35 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？</title>
+    <link href="https://zhouyifan.net/2025/01/22/20250115-R3GAN/"/>
+    <id>https://zhouyifan.net/2025/01/22/20250115-R3GAN/</id>
+    <published>2025-01-22T15:30:36.000Z</published>
+    <updated>2025-01-22T15:30:36.159Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;最近一篇论文因其吸引眼球的标题而刷屏科技自媒体：”The GAN is dead; long live the GAN!&lt;br&gt;A Modern Baseline GAN (GAN 已死？GAN 万岁！一个现代 GAN</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="GAN" scheme="https://zhouyifan.net/tags/GAN/"/>
+    
+  </entry>
   
   <entry>
     <title>用 Pycco 为 Python 代码快速创建双列注释网页</title>
@@ -605,40 +634,6 @@
     <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
     
     <category term="吐槽" scheme="https://zhouyifan.net/tags/%E5%90%90%E6%A7%BD/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>CVPR 2024 | DiffMorpher：实现两张图像间的平滑变形</title>
-    <link href="https://zhouyifan.net/2024/03/09/20240228-DiffMorpher/"/>
-    <id>https://zhouyifan.net/2024/03/09/20240228-DiffMorpher/</id>
-    <published>2024-03-09T14:58:43.000Z</published>
-    <updated>2024-03-09T14:58:43.963Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;相信大家都在网上看过这种「笑容逐渐消失」的表情包：一张图片经过经过平滑的变形，逐渐变成另一张截然不同的图片。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;/2024/03/09/20240228-DiffMorpher/1.png&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
-    
-    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
   </entry>
   

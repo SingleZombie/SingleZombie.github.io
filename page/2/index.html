@@ -168,6 +168,152 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/09/13/20240825-trans-diff/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/09/13/20240825-trans-diff/" class="post-title-link" itemprop="url">速览多模态模型 Transfusion 和 Show-o：用 Transformer + 扩散模型同时处理文本和图像</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-09-13 13:48:27" itemprop="dateCreated datePublished" datetime="2024-09-13T13:48:27+08:00">2024-09-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>近期，有两个大型多模态模型于同期公布：一个是来自 Meta 的 Transfusion，另一个是来自 Show Lab 和字节跳动的 Show-o 。好巧不巧，二者都宣称自己的模型是几乎最早将多模态任务用一个 Transformer 完成的，不需要借助额外的文本编码器实现图像生成，同时结合了自回归生成和扩散模型。我很好奇这两篇工作究竟有多少创新，于是快速扫完了这两篇论文，并简单给大家分享一下它们的核心内容。</p>
+<p>在这篇文章中，我会快速介绍两篇工作的核心模型架构与部分实验结果。由于我仅对视觉任务比较熟悉，对语言和多模态没有那么了解，我的分析将主要围绕视觉任务。</p>
+<p>论文 Arxiv 链接：</p>
+<p>Transfusion: <a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2408.11039">https://arxiv.org/pdf/2408.11039</a></p>
+<p>Show-o: <a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2408.12528">https://arxiv.org/pdf/2408.12528</a></p>
+<h2 id="读前准备"><a href="#读前准备" class="headerlink" title="读前准备"></a>读前准备</h2><p>在阅读这两篇新工作时，建议大家先熟悉以 Transformer 为代表的自回归生成、以 DDPM、LDM、DiT 为代表的扩散模型、以 MaskGIT (Masked Generative Image Transformer), MAR (Masked autoregressive models, 于 <em>Autoregressive Image Generation without Vector Quantization</em> 论文中提出) 为代表的掩码自回归图像生成这三类生成模型，并简单了解此前较为先进的 Chameleon (<em>Chameleon: Mixed-Modal Early-Fusion Foundation<br>Models</em>) 多模态模型。本文不会对这些知识做深入回顾，如果读者遇到了不懂的旧概念，请先回顾有关论文后再来看这两篇新文章。</p>
+<h3 id="自回归模型"><a href="#自回归模型" class="headerlink" title="自回归模型"></a>自回归模型</h3><p>自回归模型用于生成形如 $\mathbf{x}=\{x_1, x_2, …, x_n\}$ 这样的<strong>有序</strong>序列。自回归算法会逐个生成序列中的元素。假设正在生成第 $i$ 个元素，则算法 $F$ 会参考之前所有的信息 $\{x_j \mid j &lt; i\}$，得到 $x_i = F(\{x_j \mid j &lt; i\})$。比如：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+    x_1 &= F(\emptyset) \\
+    x_2 &= F(\{x_1\}) \\
+    x_3 &= F(\{x_1, x_2\}) \\
+\end{aligned}</script><p>自回归任务最常见的应用场景是文本生成。给定第一个词，生成第二个词；给定前两个词，生成第三个词……。</p>
+<p>为了训练实现这一算法的模型，一般我们需要假设每个元素的取值是有限的。比如我们要建模一个生成单词的模型，每个元素是小写字母，那么元素的取值只有 <code>a, b, c, ..., z</code>。满足这个假设后，我们就可以像分类任务一样，用神经网络模型预测的类别分布建模已知之前所有元素时，下一个元素的分布，并用交叉熵损失函数去优化模型。这种训练任务被称为下一个词元预测 (next token prediction, NTP)。</p>
+<p>用自回归生成建模某类数据时，最重要的是定义好每个元素的先后顺序。对于文本数据，我们只需要把每个词元 (token) 按它们在句子里的先后顺序编号即可。而对于图像中的像素，则有多种编号方式了。最简单的一种方式是按从左到右、从上到下的顺序给像素编号。</p>
+<h3 id="掩码自回归模型"><a href="#掩码自回归模型" class="headerlink" title="掩码自回归模型"></a>掩码自回归模型</h3><p>由于图像的像素数很多，用自回归模型一个一个去生成像素是很慢的；另外，按从左到右、从上到下的顺序给像素编号显然不会是最合理的。为了提升自回归模型的速度和表现，研究者提出了掩码自回归模型。它做了两个改进：</p>
+<p>1） 相比按序号一个一个生成元素的经典自回归模型，这种模型在每轮生成时可以生成多个像素（下图中的橙色像素）。</p>
+<p>2） 相比从左到右、从上到下的固定顺序，像素的先后顺序完全随机（下图中的 (b) 和 (c) ）。</p>
+<p>由于这种方式下必须一次给模型输入所有像素，并用掩码剔除未使用的像素，所以这种自回归被叫做掩码自回归。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/1.jpg" alt></p>
+<h3 id="扩散模型"><a href="#扩散模型" class="headerlink" title="扩散模型"></a>扩散模型</h3><p>扩散模型将图像生成表示成一个噪声图像 $\mathbf{x}_T$ 从时刻 $T$ 开始随时间变化 $\mathbf{x}_t = F(\mathbf{x}_{t+1})$，最后得到目标图像 $\mathbf{x}_0$ 的过程。和输入输出为部分像素的自回归模型不同，扩散模型的输入输出自始至终都是完整图像。</p>
+<p>为了减少扩散模型的计算量，参考 Latent Diffusion Model (LDM) 的做法，我们一般会先用一个自编码器压缩图像，再用扩散模型生成压缩过的小图像。正如 NLP 中将文本拆成单词、标点的「词元化」(tokenize) 操作一样，这一步操作可以被称为「图块化」(patchify)。当然，有些时候大家也会把图块叫做词元，把图块化叫做图像词元化。</p>
+<blockquote>
+<p>严格来说，本文讲到的「像素」其实是代表一个图块的图像词元。用「像素」是为了强调图像元素的二维空间信息，用「图像词元」是强调图像元素在自回归模型中是以一维序列的形式处理的。</p>
+</blockquote>
+<p>有人认为，掩码自回归模型是一种逐渐把纯掩码图像变成有意义图像的模型，它和逐渐把纯噪声图像变成有意义图像的扩散模型原理类似。因此，他们把掩码自回归模型称为<strong>离散扩散模型</strong>。还有人认为扩散模型也算一种更合理的自回归，每轮输入一个高噪声图像，输出一个噪声更少的图像。但这些观点仅仅是从称呼上统一两种模型，两种模型在实现上还是有不少差别的。</p>
+<h3 id="Chameleon"><a href="#Chameleon" class="headerlink" title="Chameleon"></a>Chameleon</h3><p>Chameleon 似乎是此前最为先进的多模态模型，它是这两篇新工作的主要比较对象。在语言模型的基础上，Chameleon 并没有对图像的处理多加设计，只是以离散自编码器（如 VQGAN）的编码器为图像词元化工具，以其解码器为图像词元化还原工具，让被词元化后的图像词元以同样的方式与文本词元混在一起处理。 </p>
+<p><img src="/2024/09/13/20240825-trans-diff/2.jpg" alt></p>
+<h2 id="功能与效果"><a href="#功能与效果" class="headerlink" title="功能与效果"></a>功能与效果</h2><p>看方法前，我们先明确一下两个多模态模型能做的任务，及各任务的输入输出。</p>
+<p>Transfusion 是一个标准多模态模型，也就是一个输入输出可以有图像词元的语言模型。它输入已知文本和图像，输出后续文本和图像。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/3.jpg" alt></p>
+<p>基于这个多模态模型，可以做文生图任务。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/4.jpg" alt></p>
+<p>这个模型似乎没有为特定任务设置特殊词元，所有图像功能完全靠文本指定。因此，要做图像编辑任务的话，需要在带文本标注的图像编辑数据集上微调。文章指出，只需要在一个仅有 8000 项数据的数据集上微调就能让模型具有一定的编辑能力。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/5.jpg" alt></p>
+<p>相比之下，Show-o 可以在序列前多输入一个区分任务的特殊词元。因此，Show-o 可以完成多模态理解（输入多模态，输出文本描述）、图像生成（根据文字生成图像或填补图像）、多模态生成（输入输出都包含图片、文本）等丰富的任务。似乎特殊词元仅有多模态理解 (MMU, Multi-modal Understanding MMU)、文生图 (T2I, Text to Image) 这两种。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/6.jpg" alt></p>
+<p>Transfusion 的基础模型在微调后才能做根据文本提示来编辑图像的任务，而 Show-o 的基础模型默认是在此类带有文本提示的图像编辑数据集上微调的。</p>
+<h2 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h2><p>对于熟悉此前图像生成模型、语言模型的研究者来说，这两篇工作都仅用了现有技术，核心方法非常易懂。这两篇工作并不是试图开发一种新的图像生成技术，而是在考虑如何更好地将现有图像模型融入多模态模型。</p>
+<p>在读新技术之前，我们先以 Chameleon 为例，看一下之前的多模态模型是怎么做生成的。在我看来，之前的多模态模型不应该叫「多模态模型」，而应该叫「强行把图像当成词元的语言模型」。语言模型在处理文本时，文本中的词语、标点会根据规则被拆成「词元」，成为模型的最小处理单位。然而，要用同样的方式处理图像，就要定义什么是「图像词元」。受到之前图像离散压缩模型（以 VQGAN 为代表）的启发，大家用一个编码器把图像切成图块，每个图块可以用一个 1, 2, 3 这样的整数序号表示，再用一个解码器把用序号表示的图块翻译回真实图像。这里的带序号图块就和文本里的单词一样，可以用「词元」来表示。文本、图像都被统一成词元后，就能用标准 Transformer 的下一个词元预测任务来训练多模态模型。</p>
+<p>如下图所示，训练时，文本基于程序规则变成词元，而图像经过一个编码器模型变成词元。两类词元被当成一类数据，以同样的方式按下一个词元预测任务训练。生成时，多模态模型自回归地生成所有词元，随后文本词元基于程序规则恢复成文本，而图像词元通过解码器模型恢复成图像。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/2.jpg" alt></p>
+<p>这种多模态模型最大的问题是没有充分设计图像词元生成，还是暴力地用 Transformer 自回归那一套。虽然有些模型会多加入一些图像生成上的设计，比如 LaVIT (<em>Unified Language-Vision Pretraining in LLM with Dynamic Discrete Visual Tokenization</em>) 用扩散模型来做图像词元的解码，但核心的图像词元生成还是离不开标准自回归。</p>
+<p>Transfusion 和 Show-o 的设计初衷都是引入更先进的图像生成技术来改进图像词元生成。先看 Show-o。要改进标准的一个一个按顺序生成图像词元的图像自回归模型，最容易想到的做法就是按照 MaskGIT, MAR 那一套，将标准自回归换成掩码自回归。在做掩码自回归时，像素的先后顺序完全随机，且一次可以生成多个像素。另外，图像词元之间可以两两互相做交叉注意力，而不用像文本词元一样只能后面的对前面的做交叉注意力。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/7.jpg" alt></p>
+<blockquote>
+<p>Show-o 莫名其妙地把自己的图像生成模型称为离散扩散模型。如前文所述，叫离散扩散模型还是掩码自回归，只是一个称呼上的问题。由于问题建模上的重大差异，大家一般还是会把扩散模型和掩码自回归看成两类模型。</p>
+</blockquote>
+<p>而 Transfusion 更加激进地在革新了多模态模型中的图像生成方式。现在最好的图像生成技术不是扩散模型吗？我们干脆直接把整个扩散模型搬过来。于是，在 Transfusion 生成多模态内容时，程序会交替执行两种模式：在语言模型模式下，程序按标准自回归逐个生成文本词元。一旦生成了特殊词元 BOI (begin of image)，就切换到扩散模式。在扩散模式下，程序按 DiT, SD 3 (Stable Diffusion 3) 那种标准扩散模型的方式，一次性生成所有图像词元。结束此模式后，程序往词元序列里填一个 EOI (end of image)，重返语言模型模式。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/3.jpg" alt></p>
+<p>同理，在训练时，两种模态也用不同的任务来训练。语言模型老老实实地按下一个词元预测训练，而扩散模型那部分就按照训练扩散模型的标准方式，先给所有图像词元加噪，再预测噪声。因此，只看图像生成任务的话，Transfusion 更像 SD 3 这种文生图模型，而不像此前的基于语言模型的多模态模型。</p>
+<p>Transfusion 和 SD 3 之间的最大区别在于，文本词元还是按照语言模型那一套，只能在交叉注意力看到之前的文本词元。而图像词元之间两两都能看到。这种交叉注意力的设计和 Show-o 是一模一样的。当然，由于现在文本也会在同一个 Transformer 里处理，所以 Transfusion 自己就扮演了解读文本的工作，而不像 SD 3 那样还需要单独的文本编码器。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/8.jpg" alt></p>
+<h2 id="定量评测结果"><a href="#定量评测结果" class="headerlink" title="定量评测结果"></a>定量评测结果</h2><p>我们最后来看一下两篇文章展示的定量评测结果。</p>
+<p>Transfusion 用了许多篇幅来展示它与 Chameleon 之间的对比。从数值指标上看，Transfusion 全面领先 Chameleon。明明没有对文本任务做特别的优化，Transfusion 却在文本任务超越了 Chameleon，这挺令人惊讶的。为了探究这一现象的原因，作者从同一个预训练语言模型开始，以同样的配置训练了 Transfusion, Chameleon。结果显示，相比加入图像扩散模型，加入 Chameleon 那种离散图像词元对文本指标的损害更大。作者猜测，这是因为扩散模型更加高效，模型能够把更多精力放在文本任务上。</p>
+<p>而从图像生成模型的对比上看，Transfusion 比之前多数文生图模型都要好，只是比顶尖文生图模型 SD 3 要差一点。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/9.jpg" alt></p>
+<p>再来看 Show-o 的评测结果。Show-o 在部分文本指标上超过了之前的语言模型。作者也坦言，这些指标仅表明 Show-o 有潜力在文本任务上做到顶尖。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/10.jpg" alt></p>
+<p>Show-o 也展示了图像任务的指标。和 Transfusion 一样，Show-o 展示了表示图像质量的 COCO FID 指标以及评价文本图像匹配度的 GenEval 指标。Show-o 在图像指标上超越了此前多数多模态模型，且超越了 Stable Diffusion 2.1 等图像生成模型。但是其图像指标比 Transfusion 还是差了不少。Show-o 的最大优点是需要的图像训练数据远远少于其他模型。</p>
+<p><img src="/2024/09/13/20240825-trans-diff/11.jpg" alt></p>
+<h2 id="总结与讨论"><a href="#总结与讨论" class="headerlink" title="总结与讨论"></a>总结与讨论</h2><p>此前多模态模型都只是强行把图像变成离散图像词元，再用标准自回归来生成图像词元。为了改进这些多模态模型，无独有偶，Transfusion 和 Show-o 都用到了更先进的图像生成技术。Show-o 将标准自回归改成了更强大的掩码自回归，而 Transfusion 激进地引入了完整的图像扩散模型，并把文本生成和图像生成当成两个相对独立的任务。二者的相同之处如下：</p>
+<ul>
+<li>两个多模态模型都用同一个 Transformer 来处理文本和图像。</li>
+<li>两个模型的 Transformer 都使用了同样的交叉注意力机制。文本词元只能看到此前的图像、文本词元，而图像词元可以看到此前的文本词元和当前所有图像词元。</li>
+</ul>
+<p>二者的不同之处在于：</p>
+<ul>
+<li>Transfusion 使用标准扩散模型实现图像生成，而 Show-o 使用掩码自回归实现图像生成。Show-o 强行将自己的图像生成模型称为「离散扩散模型」，有借扩散模型的名头宣传之嫌。</li>
+<li>Transfusion 没有用特殊词元来区分不同任务。要用 Transfusion 编辑图像，需要在基础模型上用图像编辑数据集微调。Show-o 用特殊词元来区分不同任务，默认支持文本理解、图像生成、图像编辑、多模态生成等多种任务。</li>
+<li>二者在文本、图像指标上都超越了之前的多模态模型。但二者相互对比之下，Transfusion 的表现更好，而 Show-o 需要的训练资源少得多。</li>
+</ul>
+<p>我再来谈一下我看完这两篇文章后的一些感想。此前我对多模态模型很不感兴趣，觉得它们就是在语言模型的基础上，强行加入图像信息，然后加数据、加显卡，大火乱炖，没有太大的创新。而 Transfusion 和 Show-o 的设计令我眼前一亮。我觉得这两篇文章的结果再次表明，图像和文本的处理方法不应该是一致的，不能强行把文本自回归那套方法直接搬到图像任务上。不管是换成 MaskGIT 掩码自回归那一套，还是完全用扩散模型，都比之前的方法要好。</p>
+<p>而究竟是掩码自回归好还是扩散模型更好呢？在我看来，扩散模型是更好的。文本是离散的，而图像是连续的。这种连续性不仅体现在图像的颜色值上，还体现在图像像素间的位置关系上。强行用 Transformer 自回归生成图像，一下子把这两种连续信息都破坏了。而何恺明团队近期的 MAR 工作则试图找回图像在颜色值上的连续性，但依然无法充分利用空间上的连续性。相比之下，扩散模型每步迭代都是对整幅图像做操作，不会破坏图像的连续性。这两个多模态工作也反映了这一点，Transfusion 的表现要比 Show-o 好很多。</p>
+<p>在生成图像时，Transfusion 的行为几乎和 SD 3, FLUX.1 这些文生图模型一样了。两类模型的区别在于，SD 3 它们得用一个预训练的语言处理模型。而 Transfusion 用同一个 Transformer 来处理文本、图像信息。尽管现在 Transfusion 还没有超过 SD 3，但我认为文生图任务本质上是一个多模态任务，这两类模型的后续发展路线很可能会交汇到一起。文生图也应该从多模态中汲取经验。比如我们在 SD 3 的基础上，加入一些语言任务上的学习，说不定能进一步提升文生图时的图文匹配度。</p>
+<p>当然，仅根据我读完这两篇文章后有限的认知，我认为多模态并不是一个值得广大科研人员投入的研究方向，而只适合有足够资源的大公司来做。其根本原因是验证多模态设计的代价太大了。在图像生成领域，要验证一个生成模型好不好，我们拿 ImageNet，甚至拿只有几万张图像的人类数据集训练及评测，都很有说服力。而多模态任务必须在大量文本、图像数据集上训练，评测文本、图像上的多种指标，小一点的团队根本做不来。这样，各种小创新都难以验证。而没有各种各样的小创新，领域也就很难快速发展。所以多模态只能不断从纯语言生成、纯图像生成方向找灵感，很难有仅属于多模态任务的创新。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/09/03/20240829-GameNGen/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1825,148 +1971,6 @@ FID = ||\mu - \mu_w||^2 + tr(\Sigma + \Sigma_w - 2(\Sigma\Sigma_w)^{\frac{1}{2}}
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/03/09/20240228-DiffMorpher/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/03/09/20240228-DiffMorpher/" class="post-title-link" itemprop="url">CVPR 2024 | DiffMorpher：实现两张图像间的平滑变形</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-03-09 22:58:43" itemprop="dateCreated datePublished" datetime="2024-03-09T22:58:43+08:00">2024-03-09</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>相信大家都在网上看过这种「笑容逐渐消失」的表情包：一张图片经过经过平滑的变形，逐渐变成另一张截然不同的图片。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/1.png" alt></p>
-<p>对此，计算机科学中有一种专门描述此应用的任务——图像变形（image morphing）。给定两张图像，图像变形算法会输出一系列合理的插值图像。当按顺序显示这些插值图像时，它们应该能构成一个描述两张输入图像平滑变换的视频。</p>
-<p>图像变形可以广泛运用于创意制作中。比如在做 PPT 时，我们可以在翻页处用图像变形做出炫酷的过渡效果。当然，图像变形也可以用在更严谨的场合。比如在制作游戏中的 2D 人物动画时，可以让画师只画好一系列关键帧，再用图像变形来补足中间帧。可是，这种任务对于中间插值图像的质量有着很高的要求。而传统的基于优化的图像变形算法只能对两张输入图像的像素进行一定程度的变形与混合，难以生成高质量的中间帧。有没有一种更好的图像变形算法呢？</p>
-<p>针对这一需求，我们提出了 DiffMorpher —— 一种基于预训练扩散模型 （Stable Diiffusion）的图像变形算法。该研究由 DragGAN 作者潘新钢教授指导，经清华大学、上海人工智能实验室、南洋理工大学 S-Lab 合作完成。目前，该工作已经被 CVPR 2024 接收。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/2.png" alt></p>
-<p>我们可以借助 DiffMorpher 实现许多应用。最简单的玩法是输入两张人脸，生成人脸的渐变图。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/yifei.gif" alt></p>
-<p>如果输入一系列图片，我们还能制作更长更丰富的渐变图。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/human.gif" alt></p>
-<p>而当输入的两张图片很相似时，我们可以用该工具制作出质量尚可的补间动画。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/anime.gif" alt></p>
-<p>在这篇文章中，让我们来浏览一下 DiffMorpher 的工作原理，并学习如何使用这一工具。学习 DiffMorpher 的一些技术也能为我们开发其他基于扩散模型的编辑工具提供启发。</p>
-<p>项目官网：<a target="_blank" rel="noopener" href="https://kevin-thu.github.io/DiffMorpher_page/">https://kevin-thu.github.io/DiffMorpher_page/</a></p>
-<p>代码仓库：<a target="_blank" rel="noopener" href="https://github.com/Kevin-thu/DiffMorpher">https://github.com/Kevin-thu/DiffMorpher</a></p>
-<h2 id="隐变量插值"><a href="#隐变量插值" class="headerlink" title="隐变量插值"></a>隐变量插值</h2><p>如前所述，图像变形任务在生成插值图像时不仅需要混合输入图像的内容，还需要补充生成一些内容。用预训练的图像生成模型来完成图像变形是再自然不过的想法了。前几年，已经有一些工作探究了如何用 GAN 来完成图像变形。使用 GAN 做图像变形的方法非常直接：在 GAN 中，每张被生成的图片都由一个高维隐变量决定。可以说，隐变量蕴含了生成一张图像所需的所有信息。那么，只要先使用 GAN 反演（inversion）把输入图片变成隐变量，再对隐变量做插值，就能用其生成两张输入图像的一系列中间过渡图像了。</p>
-<blockquote>
-<p>对于隐变量，我们一般使用球面插值（slerp）而不是线性插值。</p>
-</blockquote>
-<p><img src="/2024/03/09/20240228-DiffMorpher/3.png" alt></p>
-<p>然而，GAN 生成的图像往往局限于某一类别，泛用性差。因此，用 GAN 做图像变形时，往往得不到高质量的图像插值结果。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/gan.gif" alt></p>
-<p>而以 Stable Diffusion（SD）为代表的图像生成扩散模型以能生成各式各样的图像而著称。我们可以在 SD 上也用类似的过程来实现图像插值。具体来说，我们需要对 DDIM 反演得到的纯噪声图像（隐变量）进行插值，并对输入文本的嵌入进行插值，最后根据插值结果生成图像。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/4.png" alt></p>
-<p>可是，扩散模型也存在缺陷：扩散模型的隐变量没有 GAN 的那么适合编辑。如下面的动图所示，如果仅使用简单的隐变量插值，会存在着两个问题：1）早期和晚期的中间帧和输入图像非常相近，而中期的中间帧又变化过快，图像的过渡非常突兀；2）中间帧的图像质量较低。这样的结果无法满足实际应用的要求。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/thu_nolora.gif" alt></p>
-<h2 id="LoRA-插值"><a href="#LoRA-插值" class="headerlink" title="LoRA 插值"></a>LoRA 插值</h2><p>扩散模型的隐变量不适合编辑，准确来说是其所在隐空间的性质导致的。模型只能处理隐空间中部分区域的隐变量。如果对隐变量稍加修改，让隐变量「跑」到了一个模型处理不了的区域，那模型就生成不了高质量的结果。而在对两个输入隐变量做插值时，插值的隐变量很可能就位于一个模型处理不了的区域。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/6.png" alt></p>
-<p>想解决此问题，我们需要参考一些其他的工作。为了提升扩散模型的编辑单张图像的能力，一些往期工作会在单张图片上微调预训练扩散模型（即训练集只由同一张图片构成，让模型在单张图片上过拟合）。这样，无论是调整初始的隐变量还是文本输入，模型总是能够生成一些和该图片很相近的图片。比如在 Imagic 工作中，为了编辑输入图片，算法会先在输入图片上微调扩散模型，再用新的文本描述重新生成一次图片。这样，最终生成的图片既和原图很接近（鸟的外观差不多），又符合新的文本描述（鸟张开了翅膀）。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/5.png" alt></p>
-<p>后来，许多工作用 LoRA 代替了全参数微调。LoRA 是一种高效的模型微调技术。在训练 LoRA 时，原来的模型权重不用修改，只需要训练额外引入的少量参数即可。假设原模型的参数为$W$，则 LoRA 参数可以表示为 $\Delta W$，新模型可以表示为$W + \Delta W$，其中 $\Delta W$ 里的参数比 $W$ 要少得多。训练 LoRA 的目的和全参数微调是一样的，只不过 LoRA 相对而言更加高效。</p>
-<p>对单张图片训练 LoRA，其实就是在把整个隐空间都变成一个能生成高质量图像的空间。但付出的代价是，模型只能生成和该图片差不多的图片。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/7.png" alt></p>
-<p>我们能不能把 LoRA 的这种性质放在隐变量插值上呢？我们可以认为，LoRA 的参数 $\Delta W$ 存储了新的隐空间的一些信息。如果我们不仅对两个输入图片的隐变量做插值，还对分别对两个输入图片训练一个 LoRA，得到$\Delta W_1, \Delta W_2$，再对两个 LoRA 的参数进行插值，得到$\Delta W = \alpha \Delta W_1 + (1-\alpha) \Delta W_2$，就能让中间的插值隐变量也能生成有意义的图片，且该图片会保留两个输入图片的性质。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/8.png" alt></p>
-<p>相关实验结果能支撑我们的假设。下图展示了不同 LoRA 配置下，对隐变量做插值得到的结果。第一行和第二行表示分别仅使用左图或右图的 LoRA，第三行表示对 LoRA 也进行插值。可以看出，使用 LoRA 后，所有图片的质量都还不错。固定 LoRA，对隐变量做插值时，图像的风格会随隐变量变化而变化，而图像的语义内容会与训练该 LoRA 的图像相同。而对 LoRA 也进行插值的话，图像的风格、语义都会平滑过渡。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/9.png" alt></p>
-<p>下图是前文那个例子的某些中间帧不使用 LoRA 插值和使用 LoRA 插值的结果。可以看出，使用了 LoRA 后，图像质量提升了很多。而通过对 LoRA 的插值，输出图像也会保留两个输入图像的特征。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/10.png" alt></p>
-<h2 id="自注意力输入的插值与替换"><a href="#自注意力输入的插值与替换" class="headerlink" title="自注意力输入的插值与替换"></a>自注意力输入的插值与替换</h2><p>使用 LoRA 插值后，中间帧的图像质量得到了大幅提升，可是图像变形不连贯的问题还是没有得到解决。要提升图像变换的连贯性，还需要使用到一项和自注意力相关的技术。</p>
-<p>深度学习中常见的注意力运算都可以表示成交叉注意力 $CrossAttn(\mathbf{x}, \mathbf{y})$，它表示数据 $\mathbf{x}$ 从数据 $\mathbf{y}$ 中获取了一次信息。交叉注意力的特例是自注意力 $SelfAttn(\mathbf{x}) = CrossAttn(\mathbf{x}, \mathbf{x})$，它表示数据 $\mathbf{x}$ 自己内部做了一次信息聚合。多数扩散模型的 U-Net 都使用了自注意力层。</p>
-<p>由于自注意力本质上是一种交叉注意力，我们可以把另一个图像的自注意力输入替换某图像的自注意力输入。具体来说，我们可以先生成一张参考图像，将自注意力输入$\mathbf{x’}$缓存下来。再开始生成当前图片，对于原来的自注意力计算 $CrossAttn(\mathbf{x}, \mathbf{x})$，我们把第二个 $\mathbf{x}$ 换成 $\mathbf{x’}$，让计算变成 $CrossAttn(\mathbf{x}, \mathbf{x’})$。这样，在生成当前图片时，当前图片会和参考图片更加相似一些。</p>
-<p>在扩散模型生成图像时，每个去噪时刻的每个自注意力模块的输入都有自己的意义。在替换输入时，我们必须用参考图像当前时刻当前模块的输入来做替换。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/11.png" alt></p>
-<p>这种注意力替换技巧通常用在基于图像扩散模型的视频编辑任务里。一般我们会以输出视频的第一帧为参考图像，让生成后续帧的自注意力模块参考第一帧的信息。这样视频每一帧的风格都会更加一致。</p>
-<p>我们可以把视频编辑任务的这种技巧挪用到图像变形任务里。在图像变形中，每一个中间帧要以一定的混合比例参考两个输入图像。那么，我们也可以先分别生成两个输入图像，缓存它们的自注意力输入$\mathbf{x}_0, \mathbf{x}_1$。在生成混合比例为 $\alpha$ 的中间帧时，我们先混合自注意力输入$\mathbf{x’} = \alpha \mathbf{x}_0 + (1-\alpha) \mathbf{x}_1$，再以 $\mathbf{x’}$ 为自注意力的第二个参数，计算 $CrossAttn(\mathbf{x_{\alpha}}, \mathbf{x’})$。</p>
-<p>下面是不使用/使用自注意力替换的结果。可以看出，不使用注意力替换时，视频中间某帧会出现突变。而使用了注意力替换后，视频平滑了很多。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/cmp_attn.gif" alt></p>
-<p>在实验中我们也发现，直接用 $\mathbf{x’}$ 来替换注意力输入会降低中间帧的质量。为了权衡质量与过渡性，我们会让替换的注意力输入在原输入 $\mathbf{x_{\alpha}}$ 和 $\mathbf{x’}$ 之间做一个混合，即令插入的注意力输入为 $\mathbf{x’} \gets \lambda \mathbf{x’} + (1-\lambda) \mathbf{x_{\alpha}}$。最终实验中我们令 $\lambda=0.6$。</p>
-<h2 id="重调度采样"><a href="#重调度采样" class="headerlink" title="重调度采样"></a>重调度采样</h2><p>通过注意力插值，我们解决了中间帧跳变的问题。然而，视频的变换速度还是不够平均。在开始和结束时，视频的变化速度较慢；而在中间时刻，视频的变化又过快。</p>
-<p>我们使用了一种重新选择混合比例 $\alpha$ 的重调度策略来解决这一问题。之前，我们在选择混合比例时，是均匀地在 0~1 之间采样。比如要生成 10 段过渡，9个中间帧，我们就可以令混合比例为 $[0, 0.1, 0.2, …, 0.9, 1]$。但是，由于不同比例处插值图像的变化率不同，这样选取混合比例会导致每两帧之间变化量不均匀。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/12.png" alt></p>
-<p>上图是一个可能的变化率分布图。图的横坐标是插值的混合比例，或者说视频渐变的时刻，图的纵坐标是图像内容随时间的变化率。每个矩形的面积表示相邻两帧之间的 LPIPS 感知误差。如果等间距采样混合比例的话，由于每个时刻的变化率不同，矩形的面积也不同，图像的变化会时快时慢。</p>
-<p>我们希望重新选择一些采样的横坐标，使得相邻帧构成的矩形的面积尽可能一致。通过使用类似于平均颜色分布的直方图均衡化（histogram equalization）算法，我们可以得到重采样的混合比例 $[0, \alpha_1, \alpha_2, …, \alpha_{n-1}, 1]$，达到下面这种相邻帧变化量几乎相同的结果。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/13.png" alt></p>
-<p>下面是不使用/使用重采样的结果。可以看出，二者生成的中间图像几乎是一致的，但左边的视频在开头和结尾会停顿一会儿，而右边的视频的内容一直都在均匀地变化。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/res_cmp.gif" alt></p>
-<h2 id="在线示例与代码"><a href="#在线示例与代码" class="headerlink" title="在线示例与代码"></a>在线示例与代码</h2><p>看完了该工作的原理，我们来动手使用一下 DiffMorpher。我们先来运行一下在线示例。在线示例可以在 OpenXLab (<a target="_blank" rel="noopener" href="https://openxlab.org.cn/apps/detail/KaiwenZhang/DiffMorpher">https://openxlab.org.cn/apps/detail/KaiwenZhang/DiffMorpher</a> ) 或者 HuggingFace（<a target="_blank" rel="noopener" href="https://huggingface.co/spaces/Kevin-thu/DiffMorpher">https://huggingface.co/spaces/Kevin-thu/DiffMorpher</a> ）上访问。</p>
-<p>使用 WebUI 时，可以直接点击 Run 直接运行示例，或者手动上传两张图片并给定 prompt 再运行。</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/14.png" alt></p>
-<p>如果你对一些细节感兴趣，也可以手动 clone GitHub 仓库。配置环境的过程也很简单，只需要准备一个有 PyTorch 的运行环境，再安装相关 Pip 包即可。注意，该项目用的 Diffusers 版本较旧，最新的 Diffusers 可能无法成功运行，建议直接照着 <code>requirements.txt</code> 里的版本来。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/Kevin-thu/DiffMorpher.git</span><br><span class="line">cd DiffMorpher</span><br><span class="line">pip install -r requirements.txt</span><br></pre></td></tr></table></figure>
-<p>配置好了环境后，可以直接尝试仓库里自带的示例：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">python main.py \</span><br><span class="line">  --image_path_0 ./assets/Trump.jpg --image_path_1 ./assets/Biden.jpg \ </span><br><span class="line">  --prompt_0 &quot;A photo of an American man&quot; --prompt_1 &quot;A photo of an American man&quot; \</span><br><span class="line">  --output_path &quot;./results/Trump_Biden&quot; \</span><br><span class="line">  --use_adain --use_reschedule --save_inter</span><br></pre></td></tr></table></figure>
-<p>运行后，就能得到下面的结果：</p>
-<p><img src="/2024/03/09/20240228-DiffMorpher/biden.gif" alt></p>
-<h2 id="总结与展望"><a href="#总结与展望" class="headerlink" title="总结与展望"></a>总结与展望</h2><p>图像变形任务的目标是在两个有对应关系的图像之间产生一系列合理的过渡帧。传统基于像素变形与混合的方法无法在中间帧里生成新内容。我们希望用包含丰富图像信息的预训练扩散模型来完成图像变形任务。然而，直接对扩散模型的隐变量插值，会出现中间帧质量低、结果不连贯这两个问题。为了解决这两个问题，我们对扩散模型生成两个输入图像时的诸多属性进行了插值，包括 LoRA 插值、自注意力插值，分别解决了中间帧质量与结果连贯性的问题。另外，加入了重调度采样后，输出视频的连贯性得到了进一步的提升。</p>
-<p>受限于图像变形这一任务本身的上限，DiffMorpher 在实际应用中的质量难以比拟专门面向某一任务的方法（比如只做拖拽式编辑，或者只做视频插帧）。这篇工作在科研上的贡献会远大于其在应用上的贡献。方法中一些较为新颖的插值手段或许会帮助到未来的图像编辑工作。</p>
-<p>尽管 DiffMorpher 已经算是一个不错的图像变形工具了，该方法并没有从本质上提升扩散模型的可编辑性。相比 GAN 而言，逐渐对扩散模型的隐变量修改难以产生平滑的输出结果。比如在拖拽式编辑任务中，DragGAN 只需要优化 GAN 的隐变量就能产生合理的编辑效果，而扩散模型中的类似工具（如 DragDiffusion, DragonDiffusion）需要更多设计才能达到同样的结果。从本质上提升扩散模型的可编辑性依然是一个值得研究的问题。</p>
-<p>出于可读性的考虑，本文没有过多探讨技术细节。如果你对相关技术感兴趣，欢迎阅读我之前的文章：</p>
-<p>LoRA 在 Stable Diffusion 中的三种应用：原理讲解与代码示例</p>
-<p>Stable Diffusion 中的自注意力替换技术与 Diffusers 实现</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2036,7 +2040,7 @@ FID = ||\mu - \mu_w||^2 + tr(\Sigma + \Sigma_w - 2(\Sigma\Sigma_w)^{\frac{1}{2}}
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">144</span>
+          <span class="site-state-item-count">145</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

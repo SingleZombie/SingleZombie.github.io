@@ -168,6 +168,217 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/03/DLS-note-summary-1/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》第一阶段总结与第二阶段预览</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-03 20:12:07" itemprop="dateCreated datePublished" datetime="2022-06-03T20:12:07+08:00">2022-06-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>经过前四周的学习，我们已经学完了《深度学习专项》的第一门课程《神经网络与深度学习》。让我们总结一下这几周学的知识，查缺补漏。</p>
+<h1 id="《神经网络与深度学习》知识回顾"><a href="#《神经网络与深度学习》知识回顾" class="headerlink" title="《神经网络与深度学习》知识回顾"></a>《神经网络与深度学习》知识回顾</h1><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>在有监督统计机器学习中，我们会得到一个<strong>训练集</strong>。训练集中的每一条<strong>训练样本</strong>由<strong>输入</strong>和<strong>输出</strong>组成。我们希望构建一个数学模型，使得该模型在学习了训练集中的规律后，能够建立起输入到输出的映射。</p>
+<p>在<strong>深度学习</strong>中，使用的数学模型是深度<strong>神经网络</strong>。</p>
+<p>神经网络一般可以由如下的<strong>计算图</strong>表示：</p>
+<p><img src="/2022/06/03/DLS-note-summary-1/1.jpg" alt></p>
+<p>其中，每一个圆形的计算单元（又称<strong>神经元</strong>）一般表示$g(WX+b)$这一组计算。$W, b$是线性运算的参数，$g$是激活函数。</p>
+<p>为了使神经网络学习到输入和正确输出的映射，我们要定义一个描述网络输出和正确输出之间差距的<strong>损失函数</strong>（即每个样本的网络输出与正确输出的<strong>误差函数</strong>的平均值），并最小化这个损失函数。这样，网络的“学习”就成为了一个优化问题。</p>
+<p>为了对这个优化问题求解，通常的方法是<strong>梯度下降法</strong>，即通过求导，使每一个参数都沿着让损失函数减少最快的方向移动。</p>
+<h2 id="神经网络的结构"><a href="#神经网络的结构" class="headerlink" title="神经网络的结构"></a>神经网络的结构</h2><p>神经网络由<strong>输入层</strong>，<strong>隐藏层</strong>，<strong>输出层</strong>组成。计算神经网络的层数$L$时，我们只考虑隐藏层与输出层。</p>
+<p><img src="/2022/06/03/DLS-note-summary-1/2.jpg" alt></p>
+<p>令$x^{(i)[j]}_k$表示某向量在第$i$个样本第$j$层的第$k$个分量。</p>
+<p>若每层的神经元个数为$n^{[l]}$，特别地，令输入的通道数$n_x=n^{[0]}$，则每层参数的形状满足$W^{[l]}:(n^{[l]}, n^{[l-1]})$，$b^{[l]}:(n^{[l]}, 1)$。</p>
+<p>常见的激活函数有<code>sigmoid, tanh, relu, leaky_relu</code>。一般隐藏层的激活函数$g^{[l]}(l &lt; L)$用<code>relu</code>。对于二分类问题（输出为0或1），输出层的激活函数$g^{[L]}$应用<code>sigmoid</code>。</p>
+<h2 id="神经网络的训练"><a href="#神经网络的训练" class="headerlink" title="神经网络的训练"></a>神经网络的训练</h2><ol>
+<li>初始化参数：随机初始化$W$并使其绝对值较小，用零初始化$b$。</li>
+</ol>
+<p>重复执行以下步骤：</p>
+<ol>
+<li><p><strong>前向传播</strong>：直接运行神经网络，并缓存中间计算结果$A, Z$。</p>
+</li>
+<li><p><strong>反向传播</strong>：倒着“运行”神经网络，根据求导链式法则，由网络输出求得每一个参数的导数。</p>
+</li>
+<li><p><strong>梯度下降</strong>：对于每个参数$p = w^{[l]}  or  b^{[l]}$，用$p := p-\alpha dp$更新参数。其中$\alpha$叫学习率，表示参数更新的速度。</p>
+</li>
+</ol>
+<h2 id="用numpy实现神经网络"><a href="#用numpy实现神经网络" class="headerlink" title="用numpy实现神经网络"></a>用numpy实现神经网络</h2><ol>
+<li>把输入图片进行“压平”操作：</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">images = np.reshape(images, (-<span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<ol>
+<li>初始化参数</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) * <span class="number">0.01</span></span><br><span class="line">b = np.zeros((neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<ol>
+<li>前向传播</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">self.A_cache[<span class="number">0</span>] = A</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">    Z = np.dot(self.W[i], A) + self.b[i]</span><br><span class="line">    A = get_activation_func(self.activation_func[i])(Z)</span><br><span class="line">    <span class="keyword">if</span> train_mode:</span><br><span class="line">        self.Z_cache[i] = Z</span><br><span class="line">        self.A_cache[i + <span class="number">1</span>] = A</span><br></pre></td></tr></table></figure>
+<ol>
+<li>反向传播</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer - <span class="number">1</span>, -<span class="number">1</span>, -<span class="number">1</span>):</span><br><span class="line">    dZ = dA * get_activation_de_func(self.activation_func[i])(</span><br><span class="line">        self.Z_cache[i])</span><br><span class="line">    dW = np.dot(dZ, self.A_cache[i].T) / self.m</span><br><span class="line">    db = np.mean(dZ, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>)</span><br><span class="line">    dA = np.dot(self.W[i].T, dZ)</span><br><span class="line">    self.dW_cache[i] = dW</span><br><span class="line">    self.db_cache[i] = db</span><br></pre></td></tr></table></figure>
+<ol>
+<li>梯度下降</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">    self.W[i] -= learning_rate * self.dW_cache[i]</span><br><span class="line">    self.b[i] -= learning_rate * self.db_cache[i]</span><br></pre></td></tr></table></figure>
+<h1 id="第一阶段学习情况自评"><a href="#第一阶段学习情况自评" class="headerlink" title="第一阶段学习情况自评"></a>第一阶段学习情况自评</h1><p>学了几周，大家可能不太清楚自己现在的水平怎么样了。这里，我给大家提供了一个用于自我评价的标准，大家可以看看自己现在身处第几层。</p>
+<h2 id="Level-1-能谈论深度学习的程度"><a href="#Level-1-能谈论深度学习的程度" class="headerlink" title="Level 1 能谈论深度学习的程度"></a>Level 1 能谈论深度学习的程度</h2><ul>
+<li>知道深度学习能解决计算机视觉、自然语言处理等问题。</li>
+<li>能够说出“训练集”、“神经网络”等专有名词</li>
+</ul>
+<h2 id="Level-2-能调用深度学习框架的程度"><a href="#Level-2-能调用深度学习框架的程度" class="headerlink" title="Level 2 能调用深度学习框架的程度"></a>Level 2 能调用深度学习框架的程度</h2><ul>
+<li>知道正向传播、反向传播、梯度下降的意义。</li>
+<li>虽然现在不会用代码实现学习算法，但通过后面的学习，能够用深度学习框架编写学习算法。</li>
+</ul>
+<h2 id="Level-3-掌握所有知识细节的程度"><a href="#Level-3-掌握所有知识细节的程度" class="headerlink" title="Level 3 掌握所有知识细节的程度"></a>Level 3 掌握所有知识细节的程度</h2><ul>
+<li>反向传播的流程。</li>
+<li>为什么必须使用激活函数。</li>
+<li>为什么要随机初始化参数。</li>
+<li>正向传播时为什么要缓存，缓存的变量在反向传播时是怎么使用的。</li>
+</ul>
+<h2 id="Level-4-能从零开始实现一个分类器的程度"><a href="#Level-4-能从零开始实现一个分类器的程度" class="headerlink" title="Level 4 能从零开始实现一个分类器的程度"></a>Level 4 能从零开始实现一个分类器的程度</h2><blockquote>
+<p>升级语音：别说是用numpy，就算是用纯C++，我也能造一个神经网络！</p>
+</blockquote>
+<ul>
+<li>掌握 numpy 的基本操作。</li>
+<li>能用 Python 编写一个神经网络框架。</li>
+<li>能用 numpy 实现神经网络的计算细节。</li>
+<li>能用 Python 实现读取数据集、输出精度等繁杂的操作。</li>
+</ul>
+<h1 id="第二阶段知识预览"><a href="#第二阶段知识预览" class="headerlink" title="第二阶段知识预览"></a>第二阶段知识预览</h1><p>《深度学习专项》第二门课的标题是《改进深度神经网络：调整超参数、正则化和优化》。从标题中也能看出，这门课会介绍广泛的改进深度神经网络性能的技术。具体来说，在三周的时间里，我们会学习：</p>
+<ul>
+<li>第一周：深度学习的实践层面 <ul>
+<li>训练集/开发集/测试集的划分</li>
+<li>偏差与方差</li>
+<li>机器学习的基础改进流程</li>
+<li>正则化</li>
+<li>输入归一化</li>
+<li>梯度问题与加权初始化</li>
+<li>梯度检查</li>
+</ul>
+</li>
+<li>第二周：优化算法<ul>
+<li>分批梯度下降</li>
+<li>更高级的梯度下降算法</li>
+<li>学习率衰减</li>
+</ul>
+</li>
+<li>第三周：调整超参数、批归一化和编程框架<ul>
+<li>调参策略</li>
+<li>批归一化</li>
+<li>多分类问题</li>
+<li>深度学习框架 TensorFlow</li>
+</ul>
+</li>
+</ul>
+<p>目录还是比较凌乱的，让我们具体看一下每项主要知识点的介绍：</p>
+<ul>
+<li>训练集/开发集/测试集的划分<ul>
+<li>之前我们只把数据集划分成训练集和测试集两个部分。但实际上，我们还需要一个用于调试的“开发集”。</li>
+</ul>
+</li>
+<li>偏差与方差<ul>
+<li>机器学习模型的性能不够好，体现在高偏差和高方差两个方面。前者表示模型的描述能力不足，后者表示模型在训练集上过拟合。</li>
+<li>为了解决过拟合问题，我们要使用添加正则项、dropout等正则化方法。</li>
+</ul>
+</li>
+<li>梯度问题<ul>
+<li>在较深的神经网络中，数值运算结果可能会过大或过小，这会导致梯度爆炸或者梯度弥散。</li>
+<li>加权初始化可以解决这一问题。我们即将认识多种初始化参数的方法。</li>
+</ul>
+</li>
+<li>优化梯度下降<ul>
+<li>使用mini-batch：处理完部分训练数据后就执行梯度下降，而不用等处理完整个训练数据集。</li>
+<li>使用更高级的梯度下降算法，比如让梯度更平滑的momentum优化器，以及结合了多种算法的adam优化器。</li>
+<li>在训练一段时间后，减少学习率也能提高网络的收敛速度。</li>
+</ul>
+</li>
+<li>调参策略<ul>
+<li>在调试神经网络的超参数时，有一些超参数的优先级更高。我们应该按照优先级从高到低的顺序调参。</li>
+<li>在调参时，一种技巧是多次随机选取超参数，观察哪些配置下网络的表现最好。</li>
+</ul>
+</li>
+<li>归一化<ul>
+<li>对输入做归一化能够加速梯度下降。</li>
+<li>除了对输入做归一化外，我们还可以对每一层的输出做批归一化，这项技术能够让我们的网络更加健壮。</li>
+</ul>
+</li>
+<li>多分类问题<ul>
+<li>前几周我们一直关注的是二分类问题。我们将学习如何用类似的公式，把二分类问题推广到多分类问题。</li>
+</ul>
+</li>
+<li>编程框架<ul>
+<li>深度学习编程框架往往带有自动求导的功能，能够极大提升我们的开发效率。学完第二门课后，我们将一直使用TensorFlow来编程。</li>
+<li>我会顺便介绍所有编程任务的 PyTorch 等价实现。</li>
+</ul>
+</li>
+</ul>
+<p>可以看出，第二门课包含的内容非常多。甚至很多知识都只会在课堂上提一两句，得通过阅读原论文才能彻底学会这些知识。但是，这门课的知识都非常重要。学完了第二门课后，我们对于深度学习的理解能提升整整一个台阶。让我们做好准备，迎接下周的学习。</p>
+<hr>
+<p>关注我社交媒体的人，肯定质疑我最近的行为：你最近怎么发文章只注意数量不注意质量啊？怎么一篇文章可以拆开来发好几遍啊？</p>
+<p>这你就不懂了。我最近想看看，这些社交平台究竟有多捞：我提供了这么优质的文字内容，我看你们会不会去认真推广，会不会发掘优质内容。结果，我发现这些平台确实都很捞，根本不去好好推送的。没办法，我只好先写一批质量中等的文章，增加发文的次数。我倒要看看这些平台什么时候能给我符合我文章质量的关注量。文章看的人多，我才有继续创作更优质内容的动力。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/01/20220531-styletransfer/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2328,190 +2539,6 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/02/17/20220216-friend-farewell/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/02/17/20220216-friend-farewell/" class="post-title-link" itemprop="url">朋友·离别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-02-17 00:57:28" itemprop="dateCreated datePublished" datetime="2022-02-17T00:57:28+08:00">2022-02-17</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/%E9%9A%8F%E7%AC%94/" itemprop="url" rel="index"><span itemprop="name">随笔</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>我和大家坐在一起吃饭。</p>
-<p>把“大家”称作“同学们”的话，有点不太恰当，因为其中有些人严格意义上没有和我在同一间教室里一起学习过。倘若把年纪相近，在同一所学校同一段时间的校友都称作同学的话，把大家都叫做同学才算是勉强正确。</p>
-<p>那为什么回到家乡后，第一件事是和大家出来吃饭呢？</p>
-<p>因为在我看来，大家都是“朋友”吗？</p>
-<hr>
-<p>六七年前，同样一批人也是这样坐在一起吃饭。</p>
-<p>但是，和大家在一起交谈时，我并不是很舒心。</p>
-<p>我和有些人并不是很熟，不能像关系特别好的同学一样，自由自在地交流。</p>
-<p>在那时，因为某些原因，我不得不强行找到一些能够交谈的人，以用一层薄纸封住我空虚的内心。</p>
-<p>又因为某些原因，这层薄纸被捅破了。我发现，我的内心没有变得充实，反而日渐腐烂。</p>
-<p>在修补内心的同时，我开始憎恶起这层阻碍我看到真相的纸来。</p>
-<p>什么样的人才可以称得上朋友呢？</p>
-<p>那恐怕只有和我思考水平相当，能够和我发自内心探讨深刻的问题的人吧。不需要花费多余的心思，只要所心所欲地说出自己真实的想法就好了。</p>
-<p>以这个标准看去，我没有几个朋友。</p>
-<p>也好，剩下的人对我来说，怎样都无所谓了。就是他们害得我没有及时发现自己内心的病症。</p>
-<p>果然，如我所愿，我的内心一天天强大起来。只寻找这种意义上的朋友，成了我的信条。</p>
-<hr>
-<p>时至今日，我的想法似乎还是没有怎么改变。</p>
-<p>随着时间的过去，我已经不用再费心思考朋友的定义，能够自然地和人接触了。</p>
-<p>但如果有人问我什么是朋友，我依然会思索一会儿，再给出之前那一模一样的回答。</p>
-<p>如果是在今天之前，还没有和再次大家坐在一起吃饭之前，我肯定是会这样回答。</p>
-<p>现在，在这个饭桌上，之前就没什么共同语言的同学，如今也没有太多的话可以讲。</p>
-<p>现在坐在我旁边，以前曾经玩在一块的同学，也因多年经历上的割裂，而不知道从哪个话题开始聊起。</p>
-<p>大家都只好聊着吃饭之前，下午一起体验的游戏项目。</p>
-<p>最近的共同经历，只有刚才的那几个小时了。再不然，就是中学时的那些事情了。</p>
-<p>几年前，和同一批人相处时，那坐如针毡的感觉再次传了过来。</p>
-<p>可是，我已经不是以前的我了。面对这令人恐惧，仿佛要把我拉回过去的感觉，我选择了抵抗：我要尽快离开这里，远离大家。我不想变回过去那个空虚的自己。</p>
-<p>嗯，如果是真的和朋友一起的话，会有这么令人焦虑吗？</p>
-<hr>
-<p>但是，吃完饭后，大家把我拉到了下一个活动地点。</p>
-<p>顺应着气氛，我和大家正常交流着。</p>
-<p>就和今天下午一样，我们只是说着普通的话。</p>
-<p>就像以前一样，没有深刻的思想，没有刻意的组织言语，我只是和大家说着话而已。</p>
-<p>那不就和以前一样了吗？我仿佛是回到了因为心灵的空虚，而和他人交流的状态。</p>
-<p>我已经不是以前的我了。我应该讨厌这样的情景才对。</p>
-<p>可是，不知道从什么时候开始，我不太想离开这里了。现在的一切，不但不令我讨厌，反而让我觉得怀念。</p>
-<p>正因为我已经改变了太多，能够再次体会到以前相同的感觉，就像是回到了以前一样。就好像这只不过是期末考试过后的一次聚会而已。</p>
-<p>仔细想一想，过去的我的体验真的有那么糟糕吗？为什么我会沉醉于不再能回到的过去呢？</p>
-<p>和不是朋友的人在一起的时光，会令人这么难以割舍吗？</p>
-<hr>
-<p>所有的活动结束后，我和一个同学恰巧在一起坐地铁回家。</p>
-<p>以前，我们好像是经常会聊好玩的游戏。现在的我们，在玩的游戏上，似乎没有什么交集了。</p>
-<p>我逐渐找回了现在的我的状态，主动地找了一些有意义的话题。我向他询问了近来的状态，并试图稍微聊一聊学科、职业这种稍微深刻一点的问题。</p>
-<p>但是，和我预料得一样，谈话很快就以沉默告终。</p>
-<p>有了四五年经历上的差别，我们早已像两束发散的光一样，射向了永远不会再次相交的远方。</p>
-<p>或许从一开始，我们就没有相交过。我们性格之间的差异，本来就不足以支撑长时间的有效对话。</p>
-<p>不过是恰巧，能够在同一时间、同一个教室里上课而已。</p>
-<p>地铁即将来到换乘站，他要下车了。我像是要抓住什么似的，提前祝他新年快乐。</p>
-<p>他笑着说，过几天在祝福也不算迟。</p>
-<p>啊，我都忘了，过几天大家还会出来聚一次会。说新年快乐，还是有机会的啊。</p>
-<p>但是，说再见的机会应该没有多少次了吧。</p>
-<p>他……之前是我的朋友吧？</p>
-<p>那么现在也一定还是我的朋友。</p>
-<hr>
-<p>下了地铁，我走在陌生的街道上。</p>
-<p>说是陌生，只是因为地铁的出口建在了一个比较偏僻的巷子里。毕竟之前是没有地铁的。</p>
-<p>什么嘛，只要走出小巷，还是我熟悉的街道啊。</p>
-<p>说起来，之所以我对这里很熟悉，是因为我曾在附近住过一段时间。</p>
-<p>我还在家乡的时候，换了好几次住处。今天我们跑了好几个地方，恰巧经过了每一片我熟悉的区域。</p>
-<p>我一步一步走着。我努力地看着四周陌生的店铺与熟悉的道路，希望能把这一切的场景都在脑中刻下一丝印记。</p>
-<p>为什么连一草一木也令我感到不舍呢？难道这些没有生命的场景，也是我的朋友吗？</p>
-<p>什么是朋友呢？我又一次问了自己同样的问题。</p>
-<p>能够和我探讨深刻问题的熟人——今天之前的回答是这样。</p>
-<p>能够轻松地交谈的熟人——好像不是所有人都能找到合适的共同话题吧。</p>
-<p>关系不错的人——这不是一般意义上的，对“朋友”两字的详细而无用的描述吗？</p>
-<p>共同拥有一段愉快的时光的人——</p>
-<p>这是我最终得出来的结论。</p>
-<hr>
-<p>离别之际，人为什么会对其他事物感到不舍呢？</p>
-<p>经我的观察发现，人是自私的。</p>
-<p>人自出生之际，就只能体会到自己的感受。人只会为了让自己获得更多的美好的感受，而贪婪地活着。</p>
-<p>反过来说，人并不会主动在意其他事物，除非这些事物能够给自己带来好处。</p>
-<p>或者，这些事物被当成了某个人的所有物。在意这个事物，就像在意自己那样符合道理。</p>
-<p>路边的景色。</p>
-<p>远去的故友。</p>
-<p>这些事物显然不是能直接给我带来好处的东西。</p>
-<p>可是，这些东西怎么也不像是我的所有物啊。</p>
-<p>唯一能解释的就是，人不仅会把有形的事物当成自己的所有物，还会把经历当成自己的一部分。</p>
-<p>对于家乡的风景来说，这里记载了我成长的一幕幕。它是我的经历中的一部分，是我自己的一部分。</p>
-<p>对于人来说也是类似。和他人一起的，令人开心的经历，是我的一部分。</p>
-<p>可是，朋友不是那么简单的一个词。朋友，可是要得到两方的认可才行啊。</p>
-<p>那么，就这样解释好了。我们共同拥有一段愉快的时光。两段蜿蜒而不断延申的人生曲线上，那不起眼的几个交点，是我们人生的一部分，是我们互相视作朋友的证明。</p>
-<p>离别，意味着再也见不到某事物。</p>
-<p>意味着那些时光、那些风景不再会有了。</p>
-<p>意味着人永远损失了一些东西。</p>
-<p>面对不得不经历的损失，自私的人类会感到不舍啊！</p>
-<hr>
-<p>最近在玩“素晴日”，里面有几个话题令我很感兴趣。</p>
-<p>一个是说，我们每个人都有一个自己的世界。</p>
-<p>这个想法不假。人只有感知到了世界，思考并回应着世界，世界对人来说才有意义。</p>
-<p>每个人都触碰了世界的一部分，对世界的交互方式有自己的理解。</p>
-<p>那些东西，正是我们每个人自己的世界。</p>
-<p>在我的想象中，每个人的世界都是外观一个不断的变动着的球。</p>
-<p>说它是球也不算准确。球是三维的，只能和我们能看到的一切一样，记录三维的场景。</p>
-<p>可是，自己的世界不仅有我们认知某一处的场景，还有我们在不同时刻见到的场景。</p>
-<p>自己的世界，还包含着属于自己的经历。经历是有时间这一维度的，所以哪怕说我们的世界是球，那也得是一个不断变动，反映着不同时间的场景的球。</p>
-<p>每个人都有自己的世界，即每个人都有一个属于自己的球。</p>
-<p>总能找到一个时刻，两个球有了重叠的部分。</p>
-<p>所以不用太悲观啊！即使同意了世界是由自己定义的这个观点，也能在自己的世界里找到别人的痕迹。</p>
-<p>还有一个话题是说，人是唯一认识了死亡的生物。</p>
-<p>事实上，死亡是生物永远也达不到的状态。生物死亡，即永远失去了“生物”这一称号。</p>
-<p>所以，其他的生物都安然地活在世界上。</p>
-<p>只有人会畏惧死亡。</p>
-<p>为什么不会体会到的东西，会令人害怕呢？</p>
-<p>我想，这是因为人体会过失去吧。</p>
-<p>咽下去的东西，就再也体会不到它的味道了。</p>
-<p>即使能重复做同样一件快乐的事情，同样的事情带来的乐趣终将令人厌倦。</p>
-<p>只要是人，是有着高级智慧的人，就会意识到失去的存在。</p>
-<p>死亡，意味着失去所有令人快乐的事物。</p>
-<p>所以，人哪怕永远不会见到死亡，也害怕自己的世界被剥夺。</p>
-<p>生活的价值，就是死亡失去的价值。</p>
-<p>那也就是说，正是有了注定的死亡，才会有努力活下去的价值。</p>
-<p>死亡的本质是失去。</p>
-<p>那么，正是离别，赐予了我们朋友的价值。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2581,7 +2608,7 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">144</span>
+          <span class="site-state-item-count">145</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

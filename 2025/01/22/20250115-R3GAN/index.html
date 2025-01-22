@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="最近一篇论文因其吸引眼球的标题而刷屏科技自媒体：”The GAN is dead; long live the GAN!A Modern Baseline GAN (GAN 已死？GAN 万岁！一个现代 GAN 基模)”。我不喜欢这种浮夸的标题，因为真正有价值的论文不必靠标题吸引人。带着怨气通读完论文后，我发现这篇论文果然没有做出特别大的创新。 这篇论文提出了一种叫做 R3GAN （读作 “Re-">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？">
+<meta property="og:url" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="最近一篇论文因其吸引眼球的标题而刷屏科技自媒体：”The GAN is dead; long live the GAN!A Modern Baseline GAN (GAN 已死？GAN 万岁！一个现代 GAN 基模)”。我不喜欢这种浮夸的标题，因为真正有价值的论文不必靠标题吸引人。带着怨气通读完论文后，我发现这篇论文果然没有做出特别大的创新。 这篇论文提出了一种叫做 R3GAN （读作 “Re-">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/13.jpg">
+<meta property="article:published_time" content="2025-01-22T15:30:36.000Z">
+<meta property="article:modified_time" content="2025-01-22T15:30:36.159Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="GAN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2025/01/22/20250115-R3GAN/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2025/01/22/20250115-R3GAN/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？ | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/01/22/20250115-R3GAN/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-01-22 23:30:36" itemprop="dateCreated datePublished" datetime="2025-01-22T23:30:36+08:00">2025-01-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>最近一篇论文因其吸引眼球的标题而刷屏科技自媒体：”The GAN is dead; long live the GAN!<br>A Modern Baseline GAN (GAN 已死？GAN 万岁！一个现代 GAN 基模)”。我不喜欢这种浮夸的标题，因为真正有价值的论文不必靠标题吸引人。带着怨气通读完论文后，我发现这篇论文果然没有做出特别大的创新。</p>
+<p>这篇论文提出了一种叫做 <em>R3GAN</em> （读作 “Re-GAN”）的 GAN 基准模型。R3GAN 综合使用了 RpGAN 损失函数和特殊的梯度惩罚 (Gradient Penalty, GP) 损失函数，并基于前沿卷积网络 ConvNeXt 重新设计了一套 GAN 网络。实验表明 R3GAN 在 FFHQ 和低分辨率 ImageNet 图像生成上有着比肩扩散模型的 FID 分数。该工作主要是在工程实验上做了贡献，没有提出太多科研创新。在这篇博文里，我会简单介绍 R3GAN 的主要实现细节，并为各项细节提供参考文献而不做深入讲解，感兴趣的读者可以查阅文末总结的参考文献。</p>
+<h2 id="GAN-回顾"><a href="#GAN-回顾" class="headerlink" title="GAN 回顾"></a>GAN 回顾</h2><p>在这一小节里，我们会回顾读懂 R3GAN 必备的和生成对抗网络 (GAN) 相关的知识。</p>
+<h3 id="GAN-基础知识"><a href="#GAN-基础知识" class="headerlink" title="GAN 基础知识"></a>GAN 基础知识</h3><p>和其他多数生成模型一样，GAN 的训练目标是建模一个好采样的分布（高斯分布）到一个不好训练的分布（训练数据集）的映射方式。具体来说，GAN 会用一个<strong>生成器 (Generator)</strong> 把来自高斯分布的噪声 $z$ 设法变成图像 $x$。其他生成模型大多有自己的一套理论基础，并根据某理论来设置生成器的学习目标。而 GAN 用另一个神经网络——<strong>判别器 (Discriminator)</strong> 来学习生成器的训练目标。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/1.jpg" alt></p>
+<p>两个模型的学习是通过一种博弈游戏实现的：判别器试图分辨图片是否是「假」的，或者说是否是生成出来的，而生成器通过提升生成图像质量来让判别器无法分辨图片真假。二者共用一套优化目标，但一方希望最小化目标而另一方希望最大化目标。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/2.jpg" alt></p>
+<p>在上面的损失函数中，$f$ 有很多种选取方式。R3GAN 选用了 softplus 函数，如上图所示。</p>
+<h3 id="两大经典结构-DCGAN-和-StyleGAN"><a href="#两大经典结构-DCGAN-和-StyleGAN" class="headerlink" title="两大经典结构 DCGAN 和 StyleGAN"></a>两大经典结构 DCGAN 和 StyleGAN</h3><p>GAN 的开山之作是用全连接网络实现的。在 GAN 的后续发展过程中，有两个经典的网络结构：2016 年 的 DCGAN 和 2019 年的 StyleGAN。 </p>
+<p>DCGAN 是一个生成器基于卷积神经网络 (CNN) 的 GAN。它的特点是对低通道特征逐渐上采样并逐渐减少通道数，直至生成目标大小的三通道图像。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/3.jpg" alt></p>
+<p>StylGAN 是一个训练较稳定且适合做图像编辑的 GAN。和传统 GAN 生成器相比，StyleGAN 从一条「旁路」输入被映射网络 (Mapping Network) 预处理过的噪声 $z$，此处信息注入的方式是风格转换 (Style Transfer) 中的 AdaIN 操作。由于输入噪声的方式变了，原来的低分辨率特征图输入被换成了一个常量。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/4.jpg" alt></p>
+<h3 id="两大难题：难收敛和模式崩溃"><a href="#两大难题：难收敛和模式崩溃" class="headerlink" title="两大难题：难收敛和模式崩溃"></a>两大难题：难收敛和模式崩溃</h3><p>相比其他生成模型，GAN 常被诟病「难训练」。这种难训练体现在难收敛、模式崩溃 (Mode Collapse)。难收敛即意味着模型对数据集拟合效果不佳，我们可以用 FID 来评估模型输出与训练集的相似程度。模式崩溃指的是对于一个多类别数据集，模型只能生成其中少数类别，示意图如下所示（<a target="_blank" rel="noopener" href="https://www.researchgate.net/figure/Generated-images-by-GAN-and-WGAN-models-trained-on-MNIST-after-1-100k-500k-1000k_fig2_329705388">图片来源</a>）。为了检测是否出现模式崩溃，我们既可以让网络随机生成大量图片并用另一个分类网络统计其中出现的类别数，也可以用生成召回率 (recall) 来大致评估模型的采样丰富度。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/5.jpg" alt></p>
+<h2 id="R3GAN-实现方法"><a href="#R3GAN-实现方法" class="headerlink" title="R3GAN 实现方法"></a>R3GAN 实现方法</h2><p>R3GAN 在引言里把 StyleGAN 中的各种提升 GAN 稳定性的小技巧批判了一通，并主张应该使用尽可能简洁的 GAN 生成器。虽然论文是这样写的，但实际上 R3GAN 是在更早的 DCGAN 的基础上，更新了损失函数，并用上了最新的 CNN 结构，和 StyleGAN 结构几乎无关。我们来从这两个方面来学习 R3GAN：损失函数和模型结构。</p>
+<h3 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h3><p>在描述博弈游戏的 GAN 损失上，R3GAN 把标准 GAN 损失换成了 RpGAN (relativistic pairing GAN) 论文中的 GAN 损失。相比之下，RpGAN 损失用一对真假样本的判别器输出之差送入激活函数 $f$，而不是分别把真假样本的判别器输出送入 $f$。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/6.jpg" alt></p>
+<p>根据之前的研究结果，作者从直觉和理论上简单解释了 RpGAN 的好处：</p>
+<ul>
+<li>以前的 GAN 损失只要求判别器区分真假样本，而不要求真假样本之间的距离要尽可能大。通过把一对真假样本的差输入损失函数，RpGAN 损失可以让真假样本之间的差距尽可能大。</li>
+<li>根据之前论文的理论分析，在一些简单的配置下，标准 GAN loss 有数量指数增长的较差局部极小值，而 RpGAN loss 的每个局部极小值都是全局最小值。</li>
+</ul>
+<p>R3GAN 还重新对最佳的梯度惩罚（Gradient Penalty, GP）损失函数做了消融实验。$n$-GP 表示让模型对输入的梯度尽可能靠近实数 $n$，从而使得训练更加稳定。常用的 GP 有 0-GP 和 1-GP：</p>
+<ul>
+<li>0-GP：最优情况下，模型对任意输入都给出完全一样的结果。</li>
+<li>1-GP：最优情况下，模型的输出对输入平滑变动：输入张量的范数变 1，输出张量的范数也变 1。</li>
+</ul>
+<p>作者认为 0-GP 对 GAN 判别器是较好的。因为当生成器的输出完全和训练集一样时，判别器是无法区分任何输入的，对任何输入都会给出一样的输出。</p>
+<p>对判别器的 GP 有 $R_1$ 和 $R_2$ 两种形式，分别表示对真/假数据采取 GP。作者发现同时用 $R_1$ 和 $R_2$ 更好。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/7.jpg" alt></p>
+<p>总结一下，R3GAN 使用的损失函数为 RpGAN + $R_1$ + $R_2$。作者用简单的实验证明这是最优的。如下图所示，在一个有 1000 种类别的简单数据集上，最佳损失配置能够生成所有类别的数据，且有更小的分布距离 $D_{KL}$ （和 FID 指标类似，越小越好）。不用 RpGAN 损失会同时降低输出多样性和收敛度，不用 $R_2$ 会使训练完全无法收敛。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/8.jpg" alt></p>
+<h3 id="现代化的卷积网络"><a href="#现代化的卷积网络" class="headerlink" title="现代化的卷积网络"></a>现代化的卷积网络</h3><p>找出了一个简洁而有效的损失函数后，R3GAN 论文接着探究了更优的卷积网络结构。文中提及了五套配置：</p>
+<ul>
+<li>A：原版 StyleGAN2</li>
+<li>B：把 StyleGAN2 里的绝大多数设计删掉，让模型和 DCGAN 几乎相同。</li>
+<li>C：换用上一节里发现的新损失函数</li>
+<li>D：把类似 VGG 的神经网络加上 ResNet 中的残差连接</li>
+<li>E：用 ConvNeXt 里的模块更新 ResNet</li>
+</ul>
+<p><img src="/2025/01/22/20250115-R3GAN/9.jpg" alt></p>
+<blockquote>
+<p>我不明白作者为什么要强行从 StyleGAN2 开始做实验，然后把 StyleGAN2 中的设计批评一顿，删掉全部设计，再换成一个更早期的 DCGAN。直接用 DCGAN 不是更加简洁吗？我猜测是因为作者用了 StyleGAN2 的代码做开发，花很多精力把 StyleGAN2 删成了 DCGAN。既然代码都改了，不写进论文就太浪费了。</p>
+</blockquote>
+<p>我们跳过配置 A，直接看配置 B 和早期的 DCGAN 有什么区别。经作者总结，配置 B 中比较重要的几项区别有：</p>
+<ul>
+<li>a) 用 $R_1$ 损失。</li>
+<li>b) 用较小的学习率且关闭 Adam 优化器中的动量</li>
+<li>c) 所有网络中均不使用 Normalization 层</li>
+<li>d) 用 bilinear 上采样代替反卷积</li>
+</ul>
+<p>其中，不改 a), b), c) 会使训练失败。d) 是当今神经网络上采样的标准配置，可以防止出现棋盘格 artifact。</p>
+<p>配置 C 中的新损失函数我们已经在上一节中讨论过了。</p>
+<p>包括 StyleGAN 在内，此前 GAN 的神经网络多采用了类 VGG 结构，没有残差块。而配置 D 将标准 ResNet 中的 1-3-1 残差块引入了网络。</p>
+<p>配置 E 则是进一步更新了卷积层的设计。该配置首先引入了 group convolution 操作（将通道分组，同组通道相互连接。group=1 即 depthwise convolution）。由于该操作更加高效，网络能够在总运行时间不变的前提下加入更多参数。此外，配置 E 还用到了 ConvNeXt 中的反瓶颈（inverted bottleneck）块，该模块的设计灵感来自于 Transformer 中的全连接层。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/10.jpg" alt></p>
+<p>我们再看一次各配置的简单消融实验结果。看起来新损失函数并没有多大的提升，最后比较有效的是网络架构的改进。最好的配置 E 模型能够略优于 StyleGAN2。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/9.jpg" alt></p>
+<h2 id="定量实验结果"><a href="#定量实验结果" class="headerlink" title="定量实验结果"></a>定量实验结果</h2><p>最后，我们来看论文中的定量结果。如前所述，我们主要关心 GAN 的两个指标：多样性与收敛度/图像质量。前者能够通过数类别或者召回率反映，后者能够通过与训练集的 FID（以及本文使用的 $D_{KL}）$反映。</p>
+<h3 id="多样性"><a href="#多样性" class="headerlink" title="多样性"></a>多样性</h3><p>在小型多类别数据集上，R3GAN 能够生成出所有类别，且有最好的训练集相似度。而 StyleGAN2 无法生成少数类别。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/11.jpg" alt></p>
+<p>另一个能够反映图像多样性的指标是召回率，它大致表示了训练集有多少内容能够在生成集里找到。论文没有提供表格，只简单说了一下 CIFAR-10 上 StyleGAN-XL 是 0.47，R3GAN 0.57。但总体来看 R3GAN 的召回率总是会低于扩散模型。</p>
+<h3 id="收敛度"><a href="#收敛度" class="headerlink" title="收敛度"></a>收敛度</h3><p>本工作宣传时的一大亮点是它在部分数据集的 FID 分数超过了扩散模型。我们看一下本工作在单一、多样数据集上的 FID 结果。</p>
+<p>先看经典的 FFHQ 人脸数据集。在这种多样性较低的数据集上，GAN 的表现一直很不错。R3GAN 的 FID 好于 StyleGAN2 和多数扩散模型，且只需要一次推理 (NFE=1)。但它的 FID 并没有优于此前最好的 GAN 模型。当然，此前的 GAN 用了一种提升 FID 而不提升图像质量的技巧，R3GAN 没有用。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/12.jpg" alt></p>
+<p>再看类别比较丰富的 CIFAR-10 和 ImageNet 数据集。R3GAN 的表现也比所有扩散模型和大部分 GAN 强。但 R3GAN 没有在更大分辨率的 ImageNet 上测试。现在前沿生成模型一般都会测试 ImageNet-256，而 R3GAN 并没有提供相关实验结果。</p>
+<p><img src="/2025/01/22/20250115-R3GAN/13.jpg" alt></p>
+<h2 id="总结与评论"><a href="#总结与评论" class="headerlink" title="总结与评论"></a>总结与评论</h2><p>R3GAN 是一种现代版的 DCGAN。它从损失函数和模型结构两个方面做了改进。损失函数方面，DCGAN 用了 RpGAN + $R_1$ + $R_2$ 损失函数；模型结构方面，R3GAN 用 ConvNeXt 中的最新卷积结构代替了原来的 VGG 结构。实验表明 R3GAN 在 FFHQ-256 和 ImageNet-64 的 FID 分数上超过了全部扩散模型和多数 GAN，略差于此前最强的 GAN。在生成多样性上，R3GAN 依然没有扩散模型好。</p>
+<p>从科研贡献上来看，这篇文章并没有提出新理论或新想法，完全复用了之前工作提出的方法。这篇文章主要提供了一些工程上的启发，有助于我们去开发更好的基于 CNN 的 GAN。从结果来看，R3GAN 并没有在目前主流指标 ImageNet-256 上测试，没有迹象表明它能好过扩散模型。我们可以从其他数据集上的实验结果推断，R3GAN 的最佳表现和之前的 GAN 差不多，没有对 GAN 作出本质的改进。综上，我认为这篇文章是质量满足顶会要求的平庸之作，被 NIPS 2024 选为 Poster 合情合理。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>DCGAN: Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks</p>
+<p>StyleGAN: A Style-Based Generator Architecture for Generative Adversarial Networks</p>
+<p>StyleGAN2: Analyzing and Improving the Image Quality of StyleGAN</p>
+<p>GP (WGAN-GP): Improved Training of Wasserstein GANs</p>
+<p>RpGAN: The relativistic discriminator: a key element missing from standard GAN</p>
+<p>RpGAN Landscape Explanation: Towards a Better Global Loss Landscape of GANs</p>
+<p>ConvNeXt: A convnet for the 2020s</p>
+<p>ImageNet FID Trick: The role of imagenet classes in fréchet inception distance</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/GAN/" rel="tag"># GAN</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/01/04/20250104-pycco/" rel="prev" title="用 Pycco 为 Python 代码快速创建双列注释网页">
+      <i class="fa fa-chevron-left"></i> 用 Pycco 为 Python 代码快速创建双列注释网页
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#GAN-%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">GAN 回顾</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#GAN-%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">1.1.</span> <span class="nav-text">GAN 基础知识</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%A4%E5%A4%A7%E7%BB%8F%E5%85%B8%E7%BB%93%E6%9E%84-DCGAN-%E5%92%8C-StyleGAN"><span class="nav-number">1.2.</span> <span class="nav-text">两大经典结构 DCGAN 和 StyleGAN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%A4%E5%A4%A7%E9%9A%BE%E9%A2%98%EF%BC%9A%E9%9A%BE%E6%94%B6%E6%95%9B%E5%92%8C%E6%A8%A1%E5%BC%8F%E5%B4%A9%E6%BA%83"><span class="nav-number">1.3.</span> <span class="nav-text">两大难题：难收敛和模式崩溃</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#R3GAN-%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">R3GAN 实现方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">损失函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%B0%E4%BB%A3%E5%8C%96%E7%9A%84%E5%8D%B7%E7%A7%AF%E7%BD%91%E7%BB%9C"><span class="nav-number">2.2.</span> <span class="nav-text">现代化的卷积网络</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E9%87%8F%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">3.</span> <span class="nav-text">定量实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%A0%B7%E6%80%A7"><span class="nav-number">3.1.</span> <span class="nav-text">多样性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B6%E6%95%9B%E5%BA%A6"><span class="nav-number">3.2.</span> <span class="nav-text">收敛度</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E4%B8%8E%E8%AF%84%E8%AE%BA"><span class="nav-number">4.</span> <span class="nav-text">总结与评论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">5.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">145</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
