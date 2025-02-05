@@ -168,6 +168,423 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/11/DLS-note-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/11/DLS-note-5/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记+代码实战（五）：深度学习的实践层面</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-11 15:56:46" itemprop="dateCreated datePublished" datetime="2022-06-11T15:56:46+08:00">2022-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>第二门课的知识点比较分散，开始展示每周的笔记之前，我会先梳理一下每周涉及的知识。</p>
+<p>这一周会先介绍改进机器学习模型的基本方法。为了介绍这项知识，我们会学习两个新的概念：数据集的划分、偏差与方差问题。知道这两个概念后，我们就能够诊断当前机器学习模型存在的问题，进而找出改进的方法。</p>
+<p>之后，我们会针对“高方差问题”，学习一系列解决此问题的方法。这些方法成为“正则化方法”。这周介绍的正则化方法有：添加正则化项、dropout、数据增强、提前停止。</p>
+<p>最后，我们会学习几项和神经网络相关的技术。我们会学习用于加速训练的输入归一化，用于防止梯度计算出现问题的参数带权初始化，以及用于程序调试的梯度检查。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="数据集的划分：训练集-开发集-测试集"><a href="#数据集的划分：训练集-开发集-测试集" class="headerlink" title="数据集的划分：训练集/开发集/测试集"></a>数据集的划分：训练集/开发集/测试集</h2><p>在使用机器学习的数据集时，我们一般把数据集分成三份：训练集、开发集、测试集。</p>
+<blockquote>
+<p>机器学习是比深度学习的父集，表示一个更大的人工智能算法的集合。</p>
+<p>开发集（Development Set）另一种常见的称呼是验证集(Validation Set)，即保留交叉验证（Hold-out Cross Validation)。</p>
+</blockquote>
+<h3 id="三种数据集的定义"><a href="#三种数据集的定义" class="headerlink" title="三种数据集的定义"></a>三种数据集的定义</h3><p>它们三者的区别如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>训练集</th>
+<th>开发集</th>
+<th>测试集</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用于优化参数</td>
+<td>是</td>
+<td>否</td>
+<td>否</td>
+</tr>
+<tr>
+<td>训练时可见？</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr>
+<td>最终测试时可见？</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>训练集就是令模型去拟合的数据。对于神经网络来说，我们把某类数据集输入进网络，之后用反向传播来优化网络的参数。这个过程中用的数据集就是训练集。</p>
+<p>开发集是我们在训练时调整超参数时用到的数据集。我们会测试不同的超参数，看看模型在开发集上的性能，并选择令模型在开发集上最优的一组超参数。</p>
+<p>测试集是我们最终用来评估模型的数据集。当模型在测试集上评测时，我们的模型已经不允许修改了。我们一般把模型在测试集上的评测结果作为模型的性能评估标准。</p>
+<blockquote>
+<p>在我们之前实现的小猫分类项目中，准确来说，我们使用的不叫测试集，而叫做开发集，因为我们是根据那个”testing set”优化网络超参数的。</p>
+<p>有人把训练集比作上课，开发集比作作业，测试集比作考试。如果你理解了这三个数据集的原理，会发现这个比喻还是挺贴切的。事实上，由于测试集不参与训练，一个机器学习项目可以没有测试集，就像我们哪怕不经过考试，也可以学到知识一样。</p>
+<p>人们很容易混淆开发集/测试集。很多论文甚至把开发集作为最终的性能评估结果。但是很多时候审稿人对这些细节并不在意。作为有操守的研究者，应该严肃地区分开发集与测试集。</p>
+</blockquote>
+<h3 id="通过划分数据得到训练-测试集"><a href="#通过划分数据得到训练-测试集" class="headerlink" title="通过划分数据得到训练/测试集"></a>通过划分数据得到训练/测试集</h3><p>在前一个机器学习纪元，人们通常会拿到一批数据，按7:3的比例划分训练集/测试集（对于没有超参数要调的模型），或者按6:2:2的比例划分训练集/开发集/测试集。</p>
+<p>而在深度学习时代，数据量大大增加。实际上，开发集和测试集的目的都是评估模型，而评估模型所需的数据没有训练需要得那么多。所以，当整体的数据规模达到百万级，甚至更多时，我们只需要各取10000组数据作为开发集和测试集即可。</p>
+<h3 id="收集来自不同分布的数据集"><a href="#收集来自不同分布的数据集" class="headerlink" title="收集来自不同分布的数据集"></a>收集来自不同分布的数据集</h3><p>除了从同一批数据中划分出不同的数据集，还有另一种得到训练集、测试集的方式——从不同分布中收集数据集。</p>
+<blockquote>
+<p><strong>分布</strong>是统计学里的概念，这里可以理解成不同来源，内容的“平均值”差别很大的数据。</p>
+</blockquote>
+<p>比如，假如我们要为某个小猫分类器收集小猫的图片，我们的训练图片可以是来自互联网，而开发和验证的数据来自用户用收集拍摄的图片。</p>
+<p>注意，由于开发集和验证集都是用来评估的，它们应该来自同一个分布。</p>
+<h2 id="偏差与方差"><a href="#偏差与方差" class="headerlink" title="偏差与方差"></a>偏差与方差</h2><p>机器学习中，我们的模型会出现高偏差或/和高误差的问题。我们需要设法判断我们的模型是否有这些问题。</p>
+<p>偏差(bias)与方差(variance)是统计学里的概念，前者表示一组数据离期待的平均值的差距，后者表示数据的离散程度。</p>
+<blockquote>
+<p>试想一个射击运动员在打靶。偏差与打靶的总分数有关，因为总分越高，意味着每次射击都很靠近靶心；方差与选手的发挥稳定性有关，比如一个不稳定的选手可能一次9环，一次6环。</p>
+</blockquote>
+<p>高偏差意味着模型总是不能得到很好的结果，高方差意味着模型不能很好地在所有数据集上取得好的结果（即只能在某些特定数据集上表现较好，在其他数据集上都表现较差）。</p>
+<p>我们把高偏差的情况叫做“欠拟合”（可能模型还没有训练完，所以表现不够好），把高方差的情况叫做“过拟合”（模型在训练集上训练过头了，结果模型只能在训练集上有很好的表现，在其他数据集上表现偶读不好）。</p>
+<p>让我们看课件里的一个点集分类的例子：</p>
+<p><img src="/2022/06/11/DLS-note-5/2.jpg" alt></p>
+<p>上图显示了欠拟合、“恰好”、过拟合这三种情况。</p>
+<p>对于欠拟合的情况来说，一条直线并不足以把两类点分开，这个模型的整体表现较差。</p>
+<p>对于过拟合的情况来说，模型过分追求训练集上的正确，结果产生了一条很奇怪的曲线。由于训练数据是有噪声（数据的标签不完全正确）的，这样的模型在真正的测试上可能表现不佳。</p>
+<p>让我们人类来划分的话，最有可能给出的是中间那种划分结果。在这个模型中，虽然有些训练集中的点划分错了，但我们会认为这个模型在绝大多数数据上更合适。当我们用更多的测试数据来测试这个模型时，中间那幅图的测试结果肯定是这三种中最好的。</p>
+<p>要判断机器学习模型是否存在高偏差或高方差的现象，可以去观察模型的训练集误差和开发集误差。以下是一个判断示例：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练集误差</td>
+<td>1%</td>
+<td>15%</td>
+<td>0.5%</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>开发集误差</td>
+<td>11%</td>
+<td>16%</td>
+<td>1%</td>
+<td>30%</td>
+</tr>
+<tr>
+<td>诊断结果</td>
+<td>高方差</td>
+<td>高偏差</td>
+<td>低误差、低方差</td>
+<td>高误差、高方差</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>也就是说，如果开发集和训练集的表现差很多，就说明是高方差；如果训练集上的表现都很差，就是高偏差。</p>
+<blockquote>
+<p>上面这些结论建立在最优误差——贝叶斯误差(Beyas Error)是0%的基础上下的判断。很多时候，仅通过输入数据中的信息，是不足以下判断的。比如告诉一个人是长头发，虽然这个人大概率是女生，但我们没有100%的把握说这是女生。如果我们知道人群中留长发的90%是女生，10%是男生，那么在这个“长头发分辨性别”的任务里的贝叶斯误差就是10%。</p>
+<p>假如上面那个任务的贝叶斯误差是15%，那么我们认为情况2也是一个低误差的情况，因为它几乎做到了最优的准确率。</p>
+</blockquote>
+<h2 id="改进机器学习的基本方法"><a href="#改进机器学习的基本方法" class="headerlink" title="改进机器学习的基本方法"></a>改进机器学习的基本方法</h2><p>通过上一节介绍的看训练误差、测试误差的方式，我们能够诊断出我们的模型当前是否存在高偏差或高误差的问题。这一节我们来讨论如何解决这些问题。</p>
+<p>首先检查高偏差问题。如果模型存在<strong>高偏差</strong>，则应该尝试使用<strong>更复杂的网络</strong>、<strong>更多增加训练时间</strong>。</p>
+<p>确保模型没有高偏差问题后，才应该开始检查模型的方差。如果模型存在<strong>高方差</strong>，则应该<strong>增加数据</strong>或<strong>使用正则化</strong>。</p>
+<p>此外，使用更合理的网络架构，往往对降低误差和方差都有效。</p>
+<h2 id="正则化-Regularization"><a href="#正则化-Regularization" class="headerlink" title="正则化 (Regularization)"></a>正则化 (Regularization)</h2><p>其实正则化的意思就是“为防止过拟合而添加额外信息的过程”。在机器学习中，一种正则化方法是给损失函数添加一些<strong>与参数有关的额外项</strong>，以调整参数在梯度下降中的更新过程。正则化的数学原理我们会在下一节里学习，这一节先认识一下正则化是怎么操作的。</p>
+<p>先看一下，对于简单的逻辑回归，我们应该怎么加正则化项。</p>
+<p>原来，逻辑回归的损失函数是:</p>
+<script type="math/tex; mode=display">
+J(w, b) = \frac{1}{m}\Sigma_{i=1}^{m}L(\hat{y}, y)</script><p>现在我们给它加一个和参数$w$有关的项</p>
+<script type="math/tex; mode=display">
+J(w, b) = \frac{1}{m}\Sigma_{i=1}^{m}L(\hat{y}, y) + \frac{\lambda}{2m}||w^2||_2</script><p>最右边那个 $\frac{\lambda}{2m}||w||^2_2$ 就是额外加进来的正则项。其中$\lambda$是一个可调的超参数，$||w||^2_2$表示计算向量$w$的l2范数，即:</p>
+<script type="math/tex; mode=display">
+||w||^2_2 = \Sigma_{j=1}^{n_x}w_j^2</script><p>也就是说，某向量的l2范数就是它所有分量平方再求和。</p>
+<p>类似地，其实向量也有1范数，也可以用来做正则化：</p>
+<script type="math/tex; mode=display">
+||w||_1 = \Sigma_{j=1}^{n_x}|w_j|</script><p>1范数就是向量所有分量取绝对值再求和。</p>
+<p>使用1范数做正则化会导致参数中出现很多0。人们还是倾向使用l2范数做正则化。</p>
+<p>看到这里，大家或许会有问题：$b$也是逻辑回归的参数，为什么$w$有正则项，$b$就没有？实际上，要给$b$加正则项也可以。但是在大多数情况下，参数$w$的数量远多于$b$, 和$b$相关的正则项几乎不会影响到最终的损失函数。为了让整个过程更简洁一些，$b$的正则项就被省略了。（其实就是程序员们偷懒了，顺便让计算机也偷个懒）</p>
+<p>当情况推广到神经网络时，添加正则项的方法是类似的，只不过参数$W$变成了矩阵而已。对应的正则项如下：</p>
+<script type="math/tex; mode=display">
+\frac{\lambda}{2m}\Sigma_{l=1}^{L}||W^{[l]}||_F^2</script><p>其中,</p>
+<script type="math/tex; mode=display">
+||W^{[l]}||_F^2 = \Sigma_{i=1}^{n^{[l]}}\Sigma_{j=1}^{n^{[l-1]}}(W_{ij}^{[l]})^2</script><p>这种矩阵范数叫做Frobenius范数，叫它F-范数就行了。</p>
+<p>如之前的文章所述，对于梯度下降算法来说，定义损失函数的根本目的是为了对参数求导。当参数$W$在损失函数里多了一项后，它的导数会有怎样的变化呢？</p>
+<p>对于某参数向量$w$来说，其实它的导数就多了一项：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+& (\frac{\lambda}{2m}w^2)' \\
+=& \frac{\lambda}{m}w
+\end{align*}</script><blockquote>
+<p>大家知道为什么正则项分母里有一个2了吗？没错，这是为了让求出来的导数更简洁一点。反正有超参数$\lambda$，分母多个2少个2没有任何区别。</p>
+</blockquote>
+<p>最终，参数向量$w$会按如下的方式更新：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+w &:= w - \alpha (dw +\frac{\lambda}{m}w) \\
+\Rightarrow w &:=(1-\frac{\alpha\lambda}{m})w-\alpha dw
+\end{align*}</script><p>仔细一看，其实相较之前的梯度更新公式，只是$w$的系数从$1$变成了$1-\frac{\alpha\lambda}{m}$。因此，用l2范数做正则化的方法会被称为 <strong>“权重衰减(Weight Decay)”</strong> ,$\lambda$在某些编程框架中直接就被叫做<code>weight decay</code>。</p>
+<h2 id="为什么正则项能减少方差"><a href="#为什么正则项能减少方差" class="headerlink" title="为什么正则项能减少方差"></a>为什么正则项能减少方差</h2><p>回忆前面见过的“高方差”的拟合曲线：</p>
+<p><img src="/2022/06/11/DLS-note-5/3.jpg" alt></p>
+<p>这个曲线之所以能够那么精确地过拟合，是因为这个曲线的参数过多。如果这个曲线的参数少一点，那么它就不会有那么复杂的形状，过拟合现象也会得到缓解。</p>
+<p>也就是说，如果神经网络简单一点，每个参数对网络的影响小一点，那么网络就更难去过拟合那些极端的数据。</p>
+<p>添加了正则项后，网络的参数都受到了一定的“惩罚”。因此，参数会倾向于变得更小，从而产生刚刚提到的减轻过拟合的效果。</p>
+<h2 id="Dropout-失活"><a href="#Dropout-失活" class="headerlink" title="Dropout (失活)"></a>Dropout (失活)</h2><blockquote>
+<p>Dropout 怎么翻译都不好听，直接保持英文吧。</p>
+</blockquote>
+<p>还有一种常用的正则化方法叫做 dropout，即随机使神经网络中的一些神经元“失活”。如下图所示：</p>
+<p><img src="/2022/06/11/DLS-note-5/4.jpg" alt></p>
+<p>我们可以令所有神经元<strong>在每轮训练中</strong>有50%的几率失活。在某轮训练中，神经网络的失活情况可能会像上图中下半部分所示：那些打叉的神经元不参与计算和，整个神经网络变得简单了许多。</p>
+<p>在实现时，我们常常使用一种叫做”Inverted dropout”的实现方法。Inverted dropout 的思想是：<strong>对于神经网络的每一层</strong>，生成一个表示有哪些神经元失活的“失活矩阵”，再用这个矩阵去乘上这一层的激活输出（做乘法即令没有失效的激活保持原值，失效的激活取0）</p>
+<p>其实现代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">d = np.random.rand(a.shape[<span class="number">0</span>], a.shape[<span class="number">1</span>]) &lt; keep_prob</span><br><span class="line">a = a * d</span><br><span class="line">a /= keep_prob</span><br></pre></td></tr></table></figure>
+<p>这段代码中，<code>d</code>是失活矩阵。该矩阵通过一个随机数矩阵和一个保留概率<code>keep_prob</code>做小于运算生成。<code>np.random.rand</code>可以生成一个矩阵，其中矩阵中每个数都会均匀地随机出现在0~1之间。这样，每个数小于<code>keep_prob</code>的概率都是<code>keep_prob</code>。比如<code>keep_prob=0.8</code>,那么每个神经元都有80%的几率得到保留，20%的几率被丢弃。</p>
+<p>做完小于运算后，<code>d</code>其实是一个bool值矩阵。拿bool矩阵和一个普通矩阵做逐对乘法，就等于bool矩阵为True的地方取普通矩阵的原值，bool矩阵为False的地方取0。</p>
+<p>最后，得到了丢弃掉某些神经元的激活输出a后，我们还要做一个操作<code>a /= keep_prob</code>。可以想象，如果我们丢掉了一些神经元，那么整个激活输出的“总和”的期望会变小。比如<code>keep_prob</code>为0.8，那么整个输出的大小都近似会变为原来的0.8倍。为了让输出的期望不变，我们要把激活输出除以<code>keep_prob</code>。</p>
+<p>如前文所强调的，dropout一次是对一层而言的。也就是说，每一层可以有不同的<code>keep_prob</code>。</p>
+<p>dropout可能对损失函数变化曲线产生影响。一般调试时，如果损失函数一直在降，就说明训练算法没什么问题。但是，加入dropout后，由于每次优化的参数不太一样了，损失函数可能不会单调递减。因此，为了调试神经网络，可以先关闭dropout。确定损失函数确实在下降后，再开启它。</p>
+<blockquote>
+<p>由于在CV（计算机视觉）中，图像的输入规模都很大，数据不足而引起过拟合是一件常见的事。因此，dropout在CV中被广泛应用。</p>
+</blockquote>
+<p>注意，dropout是一种训练策略。在测试的时候，不需要使用dropout。</p>
+<p>和刚才一样，我们再来探讨一下为什么dropout能够生效。有了dropout，意味着神经网络的权重不能集中在部分神经元上，因为某个神经元随时都可能会失效。因此，神经网络的权重会更加平均。更加平均，意味着计算参数平方的l2范数会更小。也就是说，dropout令参数更平均，起到了和刚刚添加l2正则类似的效果。</p>
+<h2 id="其他正则化方法"><a href="#其他正则化方法" class="headerlink" title="其他正则化方法"></a>其他正则化方法</h2><ol>
+<li>数据增强</li>
+</ol>
+<p><img src="/2022/06/11/DLS-note-5/5.jpg" alt></p>
+<p>比如对于一幅图片，我们可以翻转、旋转、缩进，以生成“更多”的训练数据。</p>
+<ol>
+<li>提前停止 (early stopping)</li>
+</ol>
+<p><img src="/2022/06/11/DLS-note-5/6.jpg" alt></p>
+<p>随着训练的进行，网络的损失函数可能越来越小，但开发集上的精度会越来越高。只是因为训练得越久，参数就会越来越大，即越来越倾向于过拟合。提早结束训练，能够让参数取到一个合适的值。</p>
+<p>提前中止也有一些不好的地方。在机器学习中，训练模型可以分成两部分：让损失函数更小、防止模型过拟合。我们通常会对这两部分独立地进行优化，即控制优化方法不变，改变正则化方法；或者改变减小梯度的算法，保证模型不进行任何正则化操作。而提前中止实际上混淆了减小损失函数和防止模型过拟合这两件事，不利于采取更多的调试策略。</p>
+<blockquote>
+<p>独立地看待问题的两个变量，这种方法叫做 <strong>“正交化”</strong>。这种控制变量的思想在科研、编程，甚至是处理人生中各种各样的问题时都很适用。</p>
+</blockquote>
+<h2 id="输入归一化-Normalization"><a href="#输入归一化-Normalization" class="headerlink" title="输入归一化(Normalization)"></a>输入归一化(Normalization)</h2><blockquote>
+<p>参考网上的翻译，我把 Normalization 翻译为归一化，Standardization 翻译成标准化。其实这两个中文翻译经常会混着用，翻译上的区别不用太在意。</p>
+</blockquote>
+<p>我们应该尽可能让输入向量的每一个分量都满足标准正态分布。如果你对数学不熟，我们可以来看一个例子:</p>
+<p><img src="/2022/06/11/DLS-note-5/7.jpg" alt></p>
+<p>假设我们每个输出张量长度为2，即有两个分量:$x_1, x_2$。我们可以认为每个输入向量就是一个二维平面上的点。统计完了所有样本，我们或许可以发现所有样本的$x_1$位于[0, 5]这个区间，$x_2$位于[0, 3]这个区间，两个区间长度不一。而且，数据在$x_1$上比较分散,$x_2$上比较靠拢。这个训练样本显得非常凌乱。</p>
+<p>如果我们让输入归一化，使输入向量的每一个分量都满足了正态分布，难么这些数据可能会长得这样:</p>
+<p><img src="/2022/06/11/DLS-note-5/8.jpg" alt></p>
+<p>这样，数据分布的区间不仅长度相同，而且离散的程度也相同了。</p>
+<p>归一化可以通过以下方式实现：</p>
+<script type="math/tex; mode=display">
+\mu=\frac{1}{m}\Sigma_{i=1}^{m}x^{(i)} \\
+x := (x - \mu) \\
+\sigma^2=\frac{1}{m}\Sigma_{i=1}^{m}(x^{(i)})^2 \\
+x := x / \sigma</script><blockquote>
+<p>注意，上式中我们计算方差时没有减均值，这是因为第二步更新的时候均值已经被减掉了。</p>
+</blockquote>
+<p>简单概括这个数学公式，就是“减均值，除方差”。</p>
+<p>如果输入数据在各个分量上更加均匀，梯度下降的优化会更加便捷。</p>
+<blockquote>
+<p>这里直接记住这个结论，不用过于在意它的数学原理。一种比较直观的解释是：如果分量大小不一，则参数w的每个分量的“作用”也会大小不一。如果w的每个分量都按差不多的“步伐”进行更新，那些“影响力更大”的w分量就会更新得过头，而“影响力更小”的w分量就更新得不足。这样，梯度下降法要耗费更多步才能找到最优值。<br><img src="/2022/06/11/DLS-note-5/9.jpg" alt></p>
+</blockquote>
+<h2 id="梯度爆炸-弥散"><a href="#梯度爆炸-弥散" class="headerlink" title="梯度爆炸/弥散"></a>梯度爆炸/弥散</h2><p>如果一个神经网络的层数过深，可能会出现梯度极大或极小的情况，让我们看看这是怎么回事。</p>
+<p><img src="/2022/06/11/DLS-note-5/10.jpg" alt></p>
+<p>假设我们有上图这样一个“很深”的神经网络。我们取消所有的激活函数（即$g(x)=x$），取消所有参数$b$（即$b=0$），那么这个网络的公式就是</p>
+<script type="math/tex; mode=display">
+\hat{Y}=A=W^W^NaN...W^1X</script><p>其中$W^NaN…W^1$都是2x2的矩阵。我们不妨假设它们都是同样的矩阵，那么上式可以写成</p>
+<script type="math/tex; mode=display">
+\hat{Y}=A=W^(W')^{L-1}X</script><p>如果$W’$长这个样子：</p>
+<script type="math/tex; mode=display">
+W'=\left[
+  \begin{matrix}
+  &1.5  &0 \\
+  &0  &1.5 \\
+  \end{matrix}
+\right]</script><p>那么经过$L-1$次矩阵乘法后，这个矩阵就变成这个样子：</p>
+<script type="math/tex; mode=display">
+W'^{L-1}=\left[
+  \begin{matrix}
+  &1.5^{L-1}  &0 \\
+  &0  &1.5^{L-1}  \\
+  \end{matrix}
+\right]</script><p>由于这里的数值是随着$L$成指数增长的，$L$稍微取一个大一点的值，最后算出来的$A$就会特别大。回顾一下前面的知识，最后一层的$dZ=A-Y$，而$dW$又是和$dZ$相关的。最后的$A$很大，会导致所有算出来的梯度都很大。</p>
+<blockquote>
+<p>这里要批评一下这门课。课堂里有一个地方讲得不够清楚：为什么$A$很大，参数的梯度$dW$就很大。课堂里只是带了一句，说可以用类似的方法得出$dW$的增长规律和$A$类似。但这里漏了一条逻辑链：算梯度的时候，$A$和$dW$有关联性（$dZ$和$A$有关，$dW$和$dZ$有关）。直观上来看，$A$很大，不能推出梯度就很大。中间还是欠缺了一步逻辑推理的。学东西和看东西一定要养成批判性思维，考据每一步推理的合理性。</p>
+</blockquote>
+<p>同理，如果矩阵里的数不是1.5，而是0.5，那么整个公式的数值就会指数级下降，从而导致梯度近乎“消失”。</p>
+<h2 id="梯度问题的解决方法——加权初始化"><a href="#梯度问题的解决方法——加权初始化" class="headerlink" title="梯度问题的解决方法——加权初始化"></a>梯度问题的解决方法——加权初始化</h2><blockquote>
+<p>推荐一篇讲这个知识点的英文文章：<a target="_blank" rel="noopener" href="https://towardsdatascience.com/weight-initialization-in-neural-networks-a-journey-from-the-basics-to-kaiming-954fb9b47c79">https://towardsdatascience.com/weight-initialization-in-neural-networks-a-journey-from-the-basics-to-kaiming-954fb9b47c79</a>.</p>
+</blockquote>
+<p>刚刚我们讲到，梯度会爆炸或者弥散，本质原因是矩阵$W$的“大小”大于了1或者小于了1，从而使最后的计算结果过大或过小。但反过来想，如果我们令每一层的输出$A^{[l]}$的“大小”都在1附近，那么是不是就不会有梯度指数级变化的问题了呢？</p>
+<p>让我们来看看该如何让每层输出$A^{[l]}$都保持一个合适的值。我们考察</p>
+<script type="math/tex; mode=display">Z=w_1x_1+w_2x_2...+w_nx_n</script><p>这个简单的网络。从直觉上看，如果$n$越大，则公式里的项越多，$Z$也越大。事实上，用统计学知识计算过后，能知道：若$w_i$都是满足标准正态分布的，则$Z$的方差是$n$。我们不希望$Z$的值太大或太小，希望能通过修改$w_i$的大小，让$Z$的方差尽可能等于1。</p>
+<p>为了做到这一点，我们可以在$w$的初始化方法上做一点文章。我们可以改变$w$的方差，以改变$Z$的方差。其实，我们只要令$w$的方差为$\frac{1}{n}$就行了。用代码表示就是这样的:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W_l = np.random.randn(shape) * np.sqrt(<span class="number">1</span> / n[l-<span class="number">1</span>])</span><br></pre></td></tr></table></figure>
+<p>别忘了哦，这里<code>n[l-1]</code>是第l层参数矩阵<code>W_l</code>的长度，即每个参数向量$w$的长度。</p>
+<p>但由于每一层的输入不是$Z$，而是$A=g(Z)$，我们在算方差时还要考虑到激活函数$g$的影响。</p>
+<p>经 Kaiming He 等人的研究，使用 Relu 时，初始化的权重用<code>np.sqrt(2/ n[l-1])</code>比较好，即用下面的代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">W_l = np.random.randn(shape) * np.sqrt(<span class="number">2</span> / n[l-<span class="number">1</span>])</span><br></pre></td></tr></table></figure>
+<p>对于 tanh 函数，令权重为 <code>np.sqrt(1 / n[l-1])</code>就行，这叫做 Xavier Initialization。还有研究表明用 <code>np.sqrt(2 / (n[l-1]+n[l]))</code>也行。</p>
+<p>总结一下，为了<strong>缓解</strong>梯度爆炸或梯度弥散的问题，可以对参数使用加权初始化。只需要初始化时多乘一个小系数，这个问题就能很大程度上有所缓解。</p>
+<h2 id="梯度检查"><a href="#梯度检查" class="headerlink" title="梯度检查"></a>梯度检查</h2><p>进行深度学习编程时，梯度计算是比较容易出BUG的地方。我们可以用一种简单的方法来<strong>近似估计</strong>一个函数的导数，并将其与我们算出来的导数做一个对比，看看我们的导数计算函数有没有写错。</p>
+<p>导数估计公式如下：</p>
+<script type="math/tex; mode=display">
+f'(\theta) \approx \frac{f(\theta+\epsilon)-f(\theta+\epsilon)}{2\epsilon}</script><p>这个式子随$\epsilon$收敛得较块，准确来说:</p>
+<script type="math/tex; mode=display">
+\begin{align}
+f(\theta+\epsilon)&\approx f(\theta)+\epsilon f'(\theta)+\frac{1}{2}\epsilon^2f''(\theta) + \frac{1}{6}\epsilon^3f'''(\theta)+... \\
+\frac{f(\theta+\epsilon)-f(\theta)}{\epsilon} &\approx  f'(\theta)+\frac{1}{2}\epsilon f''(\theta) \\
+\frac{f(\theta+\epsilon)-f(\theta-\epsilon)}{2\epsilon} &\approx  f'(\theta)+\frac{1}{6}\epsilon^2 f'''(\theta)
+\end{align}</script><p>当$lim_{\epsilon \to 0}$时，上面(2)式的收敛速度是$O(\epsilon)$，(3)式的收敛速度是$O(\epsilon^2)$。选用(3)式估计导数是一个更好的选择。</p>
+<p>我们可以利用上面的公式调试深度学习中的梯度计算。其步骤如下：</p>
+<ol>
+<li>把所有参数$W^{[1]}, b^{[1]}…$ reshape 成向量，再把所有向量拼接(concatenate) 成一个新向量$\theta$。</li>
+<li>现在，我们有损失函数$J(\theta)$和导数$d\theta$。</li>
+<li>对于某一个参数$\theta_i$，计算其导数估计值：</li>
+</ol>
+<script type="math/tex; mode=display">
+\hat{d_{\theta_i}}=\frac{J(\theta_0, ..., \theta_i+\epsilon, ...)-J(\theta_0, ..., \theta_i-\epsilon, ...)}{2\epsilon}</script><ol>
+<li>比较$\hat{d_{\theta_i}}, d_{\theta_i}$，计算误差值：</li>
+</ol>
+<script type="math/tex; mode=display">
+error=\frac{||\hat{d_{\theta_i}}-d_{\theta_i}||_2}{||\hat{d_{\theta_i}}||_2\cdot||d_{\theta_i}||_2}</script><ol>
+<li>遍历所有$\theta_i$，做这个检查。</li>
+</ol>
+<p>一般可以令$\epsilon=10^{-7}$。如果error在$10^{-7}$这个量级，则说明导数计算得没什么问题。$10^{-5}$可能要注意一下，而$10^{-3}$则大概率说明这里的导数算得有问题。</p>
+<p>使用此梯度检查法时，有一些小提示：</p>
+<ul>
+<li>不要每次训练的都用，只在训练前调试用。</li>
+</ul>
+<blockquote>
+<p>梯度检查确实很慢，计算复杂度是$\Omega(|\theta|^2)$（这里没有用大O标记，因为复杂度的下界是那个值，而不是上界）（这个复杂度是$|\theta|$乘上算一遍推理的运算量得来的。推理至少遍历每个参数一遍，所以推理的复杂度是$\Omega(|\theta|)$）。</p>
+</blockquote>
+<ul>
+<li><p>如果梯度检查出现了问题，尝试debug具体出错的参数。</p>
+</li>
+<li><p>别忘记损失函数中的正则化项。</p>
+</li>
+<li><p>无法调试 dropout.</p>
+</li>
+<li><p>有时候，当$W, b$过大时导数的计算才会出现较大的误差。可以尝试先训练几轮网络，等参数大了，再做一次梯度检查。</p>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这堂课的信息量十分大。让我们总结一下：</p>
+<ul>
+<li>数据集划分<ul>
+<li>训练集/开发集/测试集的意义</li>
+<li>怎么去根据数据规模划分不同的数据集</li>
+</ul>
+</li>
+<li>偏差与方差<ul>
+<li>如何分辨高偏差与高方差问题</li>
+<li>高偏差与高方差问题的一般解决思路</li>
+</ul>
+</li>
+<li>正则化<ul>
+<li>权重衰减</li>
+<li>dropout</li>
+<li>数据增强</li>
+<li>提前停止</li>
+</ul>
+</li>
+<li>梯度问题<ul>
+<li>梯度问题的产生原因</li>
+<li>缓解梯度问题的方法</li>
+</ul>
+</li>
+<li>梯度检查的实现</li>
+</ul>
+<p>这堂课中，<strong>正则化</strong>和<strong>参数带权初始化</strong>是两个很重要的话题，展开来的话有很多东西要学。过段时间，我会在课堂内容的基础上，对这些知识进行拓展介绍。</p>
+<h1 id="代码实战"><a href="#代码实战" class="headerlink" title="代码实战"></a>代码实战</h1><p>在本周的代码实战中，我们将继续以点集分类任务为例，完成<strong>参数初始化</strong>和<strong>正则化</strong>两项任务。</p>
+<h2 id="参数初始化"><a href="#参数初始化" class="headerlink" title="参数初始化"></a>参数初始化</h2><p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/Initialization">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/Initialization</a></p>
+<p>在参数初始化问题中，我们要探究不同初始化方法对梯度更新的影响。假设我们有下面这样一个点集分类数据集：</p>
+<p><img src="/2022/06/11/DLS-note-5/11.jpg" alt></p>
+<p>我们分别用下面三种方法去初始化参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> initialization == <span class="string">&#x27;zeros&#x27;</span>:</span><br><span class="line">    self.W.append(np.zeros((neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i])))</span><br><span class="line"><span class="keyword">elif</span> initialization == <span class="string">&#x27;random&#x27;</span>:</span><br><span class="line">    self.W.append(</span><br><span class="line">        np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) * <span class="number">5</span>)</span><br><span class="line"><span class="keyword">elif</span> initialization == <span class="string">&#x27;he&#x27;</span>:</span><br><span class="line">    self.W.append(</span><br><span class="line">        np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) *</span><br><span class="line">        np.sqrt(<span class="number">2</span> / neuron_cnt[i]))</span><br><span class="line">self.b.append(np.zeros((neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>)))</span><br></pre></td></tr></table></figure>
+<p>如果使用0初始化的话，就会出现之前学过的“参数对称性”问题。这个网络几乎学不到任何东西：</p>
+<p><img src="/2022/06/11/DLS-note-5/12.jpg" alt></p>
+<p>如果用比较大的值初始化的话，网络的梯度一直会很高，半天降不下来，学习速度极慢：</p>
+<p><img src="/2022/06/11/DLS-note-5/13.jpg" alt></p>
+<p>最后，我们使用比较高端的He Initialization.网络能够顺利学到东西了。</p>
+<p><img src="/2022/06/11/DLS-note-5/14.jpg" alt></p>
+<h2 id="正则化"><a href="#正则化" class="headerlink" title="正则化"></a>正则化</h2><p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/Regularization">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/Regularization</a></p>
+<p>正则化要解决的是过拟合。为了“迫使”网络产生过拟合，我“精心”构造一个点集分类数据集：</p>
+<p><img src="/2022/06/11/DLS-note-5/15.jpg" alt></p>
+<p>在这个分类任务中，比较理想的分类结果是一条直线。但是，由于表示噪声的蓝点比较多，网络可能会过拟合训练数据。</p>
+<p>在这项实验中，我们将分别测试在“不使用正则化”、“使用正则项”、“使用dropout”这三种配置下网络的表现情况。</p>
+<p>如我们所预计地，不使用正则化策略的网络会过拟合训练数据：</p>
+<p><img src="/2022/06/11/DLS-note-5/16.jpg" alt></p>
+<p>之后，我们按照公式，尝试给网络添加正则化项：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span>(<span class="params">self, learning_rate</span>):</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">        <span class="keyword">if</span> self.weight_decay:</span><br><span class="line">            LAMBDA = <span class="number">4</span></span><br><span class="line">            self.W[i] = (<span class="number">1</span> - learning_rate * LAMBDA / self.m</span><br><span class="line">                          ) * self.W[i] - learning_rate * self.dW_cache[i]</span><br><span class="line">            self.b[i] -= learning_rate * self.db_cache[i]</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.W[i] -= learning_rate * self.dW_cache[i]</span><br><span class="line">            self.b[i] -= learning_rate * self.db_cache[i]</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">self, Y: np.ndarray, Y_hat: np.ndarray</span>) -&gt; np.ndarray:</span></span><br><span class="line">    <span class="keyword">if</span> self.weight_decay:</span><br><span class="line">        LAMBDA = <span class="number">4</span></span><br><span class="line">        tot = np.mean(-(Y * np.log(Y_hat) + (<span class="number">1</span> - Y) * np.log(<span class="number">1</span> - Y_hat)))</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">            tot += np.<span class="built_in">sum</span>(self.W[i] * self.W[i]) * LAMBDA / <span class="number">2</span> / self.m</span><br><span class="line">        <span class="keyword">return</span> tot</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> np.mean(-(Y * np.log(Y_hat) + (<span class="number">1</span> - Y) * np.log(<span class="number">1</span> - Y_hat)))</span><br></pre></td></tr></table></figure>
+<p>网络成功规避了过拟合。</p>
+<p><img src="/2022/06/11/DLS-note-5/17.jpg" alt></p>
+<p>接下来，我们来尝试使用dropout策略。在训练时，我们每层有50%的概率丢掉训练结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, X, train_mode=<span class="literal">True</span></span>):</span></span><br><span class="line">    <span class="keyword">if</span> train_mode:</span><br><span class="line">        self.m = X.shape[<span class="number">1</span>]</span><br><span class="line">    A = X</span><br><span class="line">    self.A_cache[<span class="number">0</span>] = A</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">        Z = np.dot(self.W[i], A) + self.b[i]</span><br><span class="line">        <span class="keyword">if</span> i == self.num_layer - <span class="number">1</span>:</span><br><span class="line">            A = sigmoid(Z)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            A = get_activation_func(self.activation_func[i])(Z)</span><br><span class="line">        <span class="keyword">if</span> train_mode <span class="keyword">and</span> self.dropout <span class="keyword">and</span> i &lt; self.num_layer - <span class="number">1</span>:</span><br><span class="line">            keep_prob = <span class="number">0.5</span></span><br><span class="line">            d = np.random.rand(*A.shape) &lt; keep_prob</span><br><span class="line">            A = A * d / keep_prob</span><br><span class="line">        <span class="keyword">if</span> train_mode:</span><br><span class="line">            self.Z_cache[i] = Z</span><br><span class="line">            self.A_cache[i + <span class="number">1</span>] = A</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> A</span><br></pre></td></tr></table></figure>
+<p>同样，使用dropout后，我们也得到了一个比较满意的分类结果：</p>
+<p><img src="/2022/06/11/DLS-note-5/18.jpg" alt></p>
+<p>欢迎大家自行调试这两个项目~</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2398,147 +2815,6 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/03/04/20220303-Singapore-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/03/04/20220303-Singapore-1/" class="post-title-link" itemprop="url">《新加坡2022》游戏攻略（一）：凌晨四点的香港</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-03-04 01:13:40" itemprop="dateCreated datePublished" datetime="2022-03-04T01:13:40+08:00">2022-03-04</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>今天不吹牛、不搞笑、不乱用第一人称叙述，好好写一篇正经点的文章。</p>
-<h1 id="《新加坡2022》游戏攻略（一）：凌晨四点的香港"><a href="#《新加坡2022》游戏攻略（一）：凌晨四点的香港" class="headerlink" title="《新加坡2022》游戏攻略（一）：凌晨四点的香港"></a>《新加坡2022》游戏攻略（一）：凌晨四点的香港</h1><p>你认为出国是一件有趣的事吗？我想，大部分人的答案都是肯定的。出国嘛，在新鲜的地方，碰到新鲜的事物，想必是充满乐趣的。可是，一出国我才发现，出国，尤其是出国居住一段时间而不是出国旅游，是一个充满挑战的过程。你需要克服沟通上的障碍，了解当地的生活方式，迅速把国内的生活经验迁移到新的国家里。又正逢全球疫情，严格的防疫政策更是令适应新生活的难度大增。对我来说，这几天的出国体验与其说是游玩，不如说是攻克一款角色扮演游戏。接下来，我将按时间顺序分享一下持S-Pass（新加坡的一种工作签证）在疫情尚未结束的2022年在新加坡安顿、生活的经历。希望这篇文章能给即将出国却没有出过国的人一些启发，同时也能让大部分人看得有趣。</p>
-<h2 id="冒冒失失地启程"><a href="#冒冒失失地启程" class="headerlink" title="冒冒失失地启程"></a>冒冒失失地启程</h2><p>如何用一段文字来描述上海地铁的拥挤呢？</p>
-<p>一般人肯定会去描写上班高峰期上海地铁的“盛况”：地铁像浸满了水的海绵一样，再用它来吸水的话，能把水滴吸进去，同时也会把一些水漏出来。</p>
-<p>但我不会这么写。我会写道：九点半，上班高峰期已过，通往徐家汇的地铁上依然挤得水泄不通。</p>
-<p>要问我为什么会知道这件事？没办法，出国前最后一天，我还是起了个早（相对而言），被迫体验了一次上班期的上海地铁。为了完成任务：<strong>获取核酸检测报告</strong>，我不得不在早上前往离宾馆较远的一个医院。</p>
-<blockquote>
-<p>任务名：获取核酸检测报告</p>
-<p>任务背景：我是在头一天晚上先在香港中转，第二天下午4点抵达新加坡。入境香港和新加坡时，需提交入境时前48小时内的核酸检测报告。</p>
-<p>任务目标：</p>
-<ul>
-<li>获得时间合适的核酸检测报告</li>
-<li>核酸检测报告必须是英文</li>
-</ul>
-</blockquote>
-<p>如上所述，我在出发第二天下午入境新加坡，最早要在出发前一天下午4点做核酸检测。考虑到医院的服务时间、入境时间与飞机抵达时间的时间差，我打算出发当日上午做核酸检测。由于核酸报告必须是英文，我保险起见挑了家只出双语检测报告的医院（我不想打广告，就不说医院名了，可以轻松地在网上搜到）。于是乎，我只好一大早挤地铁赶往那家离我的宾馆较远的医院了。</p>
-<p>仔细一想，这么早起来挤地铁，完全是转机害的。要是能够直飞过去，就没这么多麻烦了。可是，从香港转机到新加坡，只要2000多元，其他的转机方案都7000起步，从上海直飞更是10000起步。不过也托了是住在上海的福，能有从香港转机的选择，国内其他地方似乎连这个实惠的选择都没有。为了省点钱，踩着时间点去做核酸检测这点苦头还是得吃的。</p>
-<p>我9:50到的医院，酒店12点退房，医院到酒店的交通时间是半小时，时间并没有那么赶。但是，登记检测信息时，工作人员热心地告诉我，我没有在个人信息中上传护照信息，打印的报告里不会有我的护照号码，建议我登记了护照信息再做检测。同时，他还告诉我只有在上午11点前完成检测，报告才能在下午4点时得到，否则报告得第二天才出来。我的护照还在宾馆里。这样一看，时间非常紧迫。我算了下，现在回宾馆，最早也是10:50回到医院，太赶了。同时我还回忆起来，新加坡仅要求核酸检测报告上有证明身份的信息，除了护照号外，出生日期也算是一种身份证明。相比于报告上没有护照号，在规定的时间里得不到检测报告更成问题。于是，在0.03秒内，我完成了回忆与利弊分析，没有选择回去，而是直接做了核酸检测。</p>
-<p>出发的一大早，我就碰到了一项需要决策的挑战。虽然略显冒失，但我还算是成功了。没想到，这次的挑战仅仅是个开始……</p>
-<h2 id="上海机场"><a href="#上海机场" class="headerlink" title="上海机场"></a>上海机场</h2><p>做完核酸检测，我在时间充裕的情况下整理好了行李，在宾馆退了房。我身背沉甸甸的登山包，一只手推装了Switch、PS5、书、衣服的旅行箱，另一只手把杂物袋按在旅行箱上辅助推行，就这样踏上了旅程。</p>
-<p>刚才的核酸检测任务还没有结束。报告是4点钟给出，但我4点钟的时候必须要赶到机场了。报告是电子版的，我不可能去医院要一份纸质报告，只能在机场打印。还好上海浦东机场是有打印服务的。我按照网上的信息，在T2航站楼2楼星巴克对面找到了打印处，花6元打印了一张纸的报告。至此，获取核酸检测报告任务正式完成。</p>
-<p>我还预约了携程的取外币服务，在A号值机口附近成功以1:4.9的高价换到了一点新加坡元（正常的汇率是1:4.6），就当是花一点小钱体会一下为什么贪官的资产不好转移到国外吧。</p>
-<p>正当我悠哉游哉地准备去托运行李时，猛然看见“充电宝禁止托运”这一信息。我的充电宝塞在大旅行箱里。为了避免未来的大麻烦，我强忍着麻烦，打开了旅行箱，从衣服堆中挖出了充电宝。果然，我碰到了意料之内的麻烦——行李被打乱后，旅行箱关不上了，这可太麻烦了。我只好把最厚的棉袄从旅行箱里拿出来，这才解除了麻烦。没想到，这件棉袄在后面还帮到了我，正所谓麻烦反被麻烦误啊。</p>
-<p>国际航班的值机处的服务非常到位。工作人员细心地帮我检查文件，还叮嘱我要提前下好一个填新加坡入境信息的APP。国际航班的安检处人也很少，总算不用排老长的队了。我刚想多夸几句国际航班的好处，就被安检给刁难到了。安检时，不仅要脱外套，带金属的皮带还得脱——唉，脱就脱，反正是男生嘛。什么？螺丝刀、剪刀都不能带？唉，扔就扔吧，亏我当时特意从房间里翻出来的。怎么书包检查了好几次还要检查？书包里电线太多了？为什么叫我们拿出电子设备的时候不叫我们把电线也拿出来啊。真没想到做飞机安检的时间能超过安检排队的时间。</p>
-<p>我向来是讨厌提前到火车站或机场的。但今天我特意在起飞前提早了3个半小时到机场，时间还将将够用。感觉机场的主线任务也不算好做啊。</p>
-<h2 id="第一趟飞机"><a href="#第一趟飞机" class="headerlink" title="第一趟飞机"></a>第一趟飞机</h2><p>上了飞机，整趟旅途最舒服的时间到来了。</p>
-<p>我第一次坐上了两列过道，一排8个座位的大飞机，第一次在飞机上看到可以自己选择节目的机载电视。飞机上的电影都挺新，我本来兴致勃勃地播放起了柯南最新剧场版，却偶然看到隔壁大哥正用耳机连着电视，又一看电视只支持USB的耳机口，我没有能接USB的耳机，因为不能享受到最完美的体验，一气之下关掉了电视。</p>
-<p>还好我是电脑不离身的人。我反手就掏出电脑玩起了不吃资源的小型游戏。飞机上微凉，我正好披上棉袄，不冷不热刚刚好。就这样，我在娱乐、就餐与瞌睡中，度过了舒适的机上时光。</p>
-<p>没想到啊，飞机上我不仅享受的是最后的晚餐，还是最后的睡眠。</p>
-<h2 id="折磨人的过夜转机"><a href="#折磨人的过夜转机" class="headerlink" title="折磨人的过夜转机"></a>折磨人的过夜转机</h2><p>在香港转机，钱是少花了，可麻烦事一点也不少。我必须在香港机场停留，直到去新加坡的航班启航。我得从晚上9点多停留到第二天约中午12点，在机场候机室过夜是免不了的了。</p>
-<blockquote>
-<p>任务名：香港机场过夜</p>
-<p>任务背景：在去新加坡的航班抵达之前，我必须一直待在香港机场候机室。</p>
-<p>任务目标：</p>
-<ul>
-<li>熬过这段时间</li>
-</ul>
-</blockquote>
-<p>在订票的时候，我就已经做好了在机场过夜的准备了。我看了下别人的攻略，得知可以躺在三连坐的座位上睡觉过夜。但我也做好了最坏的打算，反正早上6点抵达上海的绿皮火车我都熬过来了，随便找个地方靠一靠，一晚上睡不好也没什么问题。</p>
-<p>办完第二天新加坡航班的登机牌后，我找好一个有插座的座位，搭起了一个临时个人领地。这个有插座的座位是二连坐，躺不下来，果然事情没有那么顺利。幸好我准备了后手——我在出发前，买了三包装的抽纸，这些抽纸放在我手提的杂物袋里。我在到上海机场之前的那个午休时，恰好发现放在行李箱上的杂物袋里的抽纸可以做为我坐躺时的侧面靠枕。实验表明这个靠枕睡起来还挺舒服的。我本来准备把这个天然靠枕装置做为香港机场过夜的杀手锏，却猛然发现我的行李箱早就拿去托运了。看来我的准备还是有一些漏洞啊。</p>
-<p>没关系啊，我也不亏，有无限电量的电脑，就可以通宵玩游戏了。在机场转机，就省了几千块钱。等于说我通宵玩游戏一晚赚了几千块钱。这么一想我不仅不亏，反而赚大了。</p>
-<p>小玩了一会儿，我想起还有个新任务要做：</p>
-<blockquote>
-<p>任务名：新加坡租房</p>
-<p>任务背景：我要在新加坡有一个临时的居住地，离学校尽可能近，不能太贵。</p>
-<p>任务目标：</p>
-<ul>
-<li>获取足够房源</li>
-<li>成功解决居住问题</li>
-</ul>
-</blockquote>
-<p>我之前就计划在过夜的时候来搜集新加坡房源信息。出发之前，我总会觉得时间还早，而且不能看房，搜集信息没什么意义。在有充足时间，且事情愈加紧急的情况下，搜集房源是最高效的。</p>
-<p>之前我租房都受到了帮助，因此没花太大功夫。这次，对租房方式的不熟悉加上对国外的不熟悉，令搜索房源成了件对我而言极其困难的事。还好这晚时间有多，加上我过人的智力与游戏装备购买比较经验，我迅速掌握了新加坡租房网站（propertyguru）的用法，了解了学校附近租房的普遍价位。当然，实话实说，并不是我搜集信息的能力很强，而是学校附近的房子都太贵了，在我预算之内的房子根本就没几间。若是加上整租这一需求，满足条件的房子中仅剩下了一所公寓。这下也好了，没得选择，等于不用选择，等于选择完毕。很早之前我就了解过这所公寓，条件和价格都没什么大问题，到时候直接去住就行了。</p>
-<p>想到这里，我心中的一大重担总算落地，心情瞬间愉悦起来。接近凌晨两点，机场笼罩着昏昏沉沉的气氛，只有我一个人大幅度地摆着手，在机场里兴奋地踱步，想象着之后的美好生活。</p>
-<p>可惜，大脑和胃部同时向我发出了警告，我只好老老实实地回到座位上，以低功耗模式思考起来。我啃起了早就准备好的巧克力，令大脑可以持久地工作。</p>
-<p>夜还很长，该干些什么呢？机场灯火通明，施工人员在最不会打扰到旅客、最恰当的时间里轰轰隆隆地进行着机场设施的修建，过夜的旅客们则瘫倒着勉强地休息着。这令人讽刺的对比太过于强烈了，我忽然灵感涌上心头，想动键盘写下一些东西。可惜灵感和情感到位了，大脑的运算能力不够了。我望着机场的天花板——香港机场的天花板，由三角形的金属板拼接而成。拱形的屋顶连接着候机室的两侧，由长廊的尽头延申而来，犹如巨龙的鳞片一般。机场内灯火通明，可黑夜中的天空却从屋顶金属板间的缝隙间透了进来，提醒着人们这是凌晨两点的候机室……我大概是想这样动笔，从景物写到在机场睡觉的人，讲一讲机场的不人性化，感慨下大伙儿转机的不易。但我的大脑当时太困了，空有思路，想了好久也没想好该怎样把天花板的模样描写清楚。</p>
-<p>我意识到自己困了，开始准备睡觉，可机场恶劣的环境又令人难以入睡。我只好选了一个令我最容易入睡的方法：我找了个提供桌椅的办公区，以最接近上课时的坐姿趴在桌上，一边想象着老师讲课的场景，一边催自己入睡。果然，还是上课时的睡眠最香，我很快就睡着了。顺带一提，我是披着棉袄睡的，棉袄在制冷系统完美运行的香港机场又帮了我一次。</p>
-<p>天亮了，为了时刻关注登机的信息，我回到了离其他人很近的原来的座位上。我靠在座椅上，第一次觉得薄而硬的座位是那么适合睡觉，惊醒后又立刻贪婪地入睡是多么令人满足。加上巧克力的能量续航，我在没有饿死也没有困死的情况下熬到了抵达新加坡的一刻。——前往新加坡的航班并没有提供饮食，对我而言坐飞机只是让睡觉的椅子变得软了一点而已。</p>
-<h2 id="Hello-Singapore"><a href="#Hello-Singapore" class="headerlink" title="Hello Singapore"></a>Hello Singapore</h2><p>到了新加坡，我看到软绵绵的床和香喷喷的美食已经在向我招手了，肚子反倒不饿了，精神也抖擞了起来。</p>
-<p>在入境处，我提供了以下材料：</p>
-<ul>
-<li>IPA（入境基本证书）</li>
-<li>核酸检测报告</li>
-<li>疫苗报告（是用微信小程序防疫健康码国际版生成的）</li>
-<li>护照</li>
-</ul>
-<p>此外，在之前的两个机场除了提供这些材料外，也有若干信息要填。上海机场出境前要填什么海关信息，填去往香港的健康签名；在香港机场要填去新加坡的健康签名，还要填什么ICA表格。反正主要是打好疫苗，准备好核酸检测报告就行。剩下的资料工作人员都会帮忙指导。我算是比较幸运，在新加坡入境处花的时间少于上海和香港办理值机的时间。</p>
-<p>按照之前的计划，我本来是要在机场买好手机卡和交通卡的。但我糊里糊涂跟着同行的旅伴走到了打车处，他告诉我没做完核酸检测前是坐不了公共交通的。我也没心思去思考他这段话是什么意思，只是想快点打上车，把行李放到宾馆里。</p>
-<p>的士来了，司机是一位黄种老人，头发花白，却精神地帮我搬着行李，用老绅士来形容再贴切不过了。上了车，我说道:”I want to go to this place （我想去这个地方）.” Meanwhile I show the destination on the cell phone to the driver. 啊，不对，是我同时还给司机看了手机上标出来的目的地。</p>
-<p>我这才发现，随着离国内越来越远，生活的方式变得越来越陌生。而我，得去主动适应这全新的环境……</p>
-<h1 id="2022年3月博客广告"><a href="#2022年3月博客广告" class="headerlink" title="2022年3月博客广告"></a>2022年3月博客广告</h1><p>最近我可以在毫无压力的情况下放假了。我准备写一堆文章出来。敬请期待。不过现在肯定没有人会天天盯着我的博客，大概看的时候我已经把所有文章都写完了。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2608,7 +2884,7 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">145</span>
+          <span class="site-state-item-count">146</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

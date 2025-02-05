@@ -168,6 +168,116 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/11/28/20241128-diffusion-forcing/" class="post-title-link" itemprop="url">论文速览 | Diffusion Forcing：给视频扩散模型的每一帧添加不同强度的噪声</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-11-28 22:58:06" itemprop="dateCreated datePublished" datetime="2024-11-28T22:58:06+08:00">2024-11-28</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="论文速览"><a href="#论文速览" class="headerlink" title="论文速览"></a>论文速览</h2><p>平时我自己读新论文时，往往简单看一下摘要和图表就能差不多明白文章的大意。而要用一篇博文来详细介绍新论文的设计动机、实现方法，需要花多得多的时间来写作。为了能分享更多的新论文，并且让我自己能够更好地整理论文间的关系，从这篇文章开始，我会不定期发表「论文速览」类文章，以简明扼要的文字来帮助计算机视觉的同行们快速了解新论文。</p>
+<p>和发文频繁的自媒体相比，我的论文速览文章几乎不会展示论文的结果，仅会从科研角度介绍文章的贡献及方法，并给出我的批判性分析。和我之前的论文详解文章相比，这个新系列的文章会用更少的文字介绍背景，几乎不介绍方法细节，力求用更少的文字来表达关键信息，提升文字沟通效率。不过另一方面，我会花更多心思在介绍新论文与过往论文的关系上，为不熟悉某些背景知识的读者提供学习途径，以填补背景介绍上的空缺。</p>
+<h2 id="Diffusion-Forcing"><a href="#Diffusion-Forcing" class="headerlink" title="Diffusion Forcing"></a>Diffusion Forcing</h2><p>视频扩散模型普遍存在视频质量随着视频长度增加不断下降的问题。为此，论文作者提出了 Diffusion Forcing 这一建模任何<strong>序列生成</strong>问题的新范式：在训练该扩散模型时，序列中的每个元素会<strong>独立地</strong>添加不同强度的噪声。作者在简单视频生成、决策 (decision-making) 任务上验证了这种生成范式的有效性。我将主要从视频生成的角度介绍本工作。</p>
+<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>稍后我们会了解到，Diffusion Forcing 与此前两种主流序列生成范式密切相关：自回归生成与全序列扩散模型。</p>
+<p>在序列的自回归生成中，模型会不断根据序列前 $n-1$ 个元素，预测下一个元素（第 $n$ 个元素）。自回归生成在 NLP 中最为常见，RNN、Transformer 用的都是这种生成方法。</p>
+<p>扩散模型可以直接生成任何形状的数据。如果我们不把视频视为一种由图像组成的序列数据，而是将其视为一种「三维图像」，那么我们可以直接将 2D 图像扩散模型简单地拓展成 3D 视频扩散模型。这种做法在这篇论文中被称为「全序列扩散模型」。使用这一方法的早期工作有 DDPM 的作者提出的 <em>Video Diffusion Models</em>。Stable Diffusion 的作者也基于 LDM 提出类似的 <em>Align your Latents: High-Resolution Video Synthesis with Latent Diffusion Models</em>（Video LDM）工作。</p>
+<p>全序列扩散模型仅能生成固定长度的视频。为了将其拓展到长视频生成，还是得将其和自回归结合起来。但是，自回归视频生成存在着生成质量与训练集质量不匹配的问题。Stable Video Diffusion 等工作参考 Cascaded Diffusion Models 的做法，通过给约束图像/视频帧加噪声缓解此问题。</p>
+<p><em>AR-Diffusion: Auto-Regressive Diffusion Model for Text Generation</em> 进一步探讨了自回归生成与全序列扩散模型的结合方法：在生成文本时，不同时刻的文本噪声不同，越早的文本上的噪声越少。无独有偶，<em>FIFO-Diffusion: Generating Infinite Videos from Text without Training</em> 提到了如何在预训练视频扩散模型上，以不同的噪声强度来生成不同的视频帧。或许是受到这些工作的启发，Diffusion Forcing 系统探讨了如何在训练时独立地给序列元素添加噪声。</p>
+<h2 id="科研动机"><a href="#科研动机" class="headerlink" title="科研动机"></a>科研动机</h2><p>本工作的作者发现了自回归与全序列扩散模型的不足之处，并认为这两种生成范式是互补的：</p>
+<ul>
+<li>自回归不能在推理时加入新的优化目标，且存在着前述的训练采样质量不匹配导致的降质问题。</li>
+<li>全序列扩散模型不能生成变长的序列。</li>
+</ul>
+<p>反过来讲：</p>
+<ul>
+<li>全序列扩散模型可以在推理加入 Classifier-guidance，且在固定序列长度内几乎不存在降质。</li>
+<li>自回归可以生成变长序列。</li>
+</ul>
+<p>那能不能把二者结合起来呢？在推理时，我们希望序列是按时间顺序先后生成的。同时，从噪声强度这一维度上，我们希望每个元素能够从完全带噪到完全清晰逐渐生成。结合二者的方法是：在采样时，较早的元素有较少的噪声，较新的元素有较多的噪声，不同噪声强度的元素在序列中同时生成。比如采样分3步完成，共生成3帧，那么一步去噪会让$[x_1^{1/3\cdot T}, x_2^{2/3\cdot T}, x_3^{T}]$变成$[x_1^0, x_2^{1/3\cdot T}, x_3^{2/3\cdot T}]$。</p>
+<p>为了实现这样的采样，我们在训练时就要让每一元素能够在其他元素和自己的噪声强度不同时也能顺利去噪。和以往的工作不同，本工作的作者发现，训练时我们不必和推理时一样固定每一元素的噪声强度，而是可以<strong>独立地</strong>对每帧随机采样噪声强度。</p>
+<h2 id="简单视频生成模型"><a href="#简单视频生成模型" class="headerlink" title="简单视频生成模型"></a>简单视频生成模型</h2><p>本文的想法十分简洁，只需要在 DDPM 序列生成模型上把训练和推理时的噪声强度换掉即可。为了进一步了解本工作的方法，我们来看一下论文中有关视频模型的方法与实验。</p>
+<p>整体上看，训练时，方法和 $\epsilon$ 预测的普通 DDPM 一样，只是不同帧噪声强度不一样。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/1.png" alt></p>
+<p>在帧间关系上，Diffusion Forcing 用因果（causal）关系建模，即当前帧只能看到之前帧的信息。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/2.png" alt></p>
+<p>具体来说，本工作用 RNN （准确来说是 GRU）的隐变量来建模之前帧传过来的信息。加入了 RNN 后，论文把本来很简单的公式变得无比复杂，不建议读者深究论文中有关 RNN 的内容。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/3.png" alt></p>
+<p>在采样时，由于不同帧的噪声强度不同，现在我们需要定义一个二维的噪声强度表，表示每一帧在不同位置及不同去噪时刻的噪声强度。为了让每一时刻的噪声强度不同，一开始较新帧的去噪时刻会停留在原地。作者在附录中介绍了同时刻去噪的详细设计。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/4.png" alt></p>
+<p>作者发现，Diffusion Forcing 的这种序列生成方式可以自然地推广到无限长度的视频生成上：在生成下一个片段时，<strong>不用滑动窗口</strong>，直接把 RNN 的初始隐变量初始化为上一个片段的隐变量输出。</p>
+<p>作者用同样的 RNN 结构训练了两个基准模型：一个自回归模型，一个全序列<strong>因果</strong>扩散模型。定性结果表明，不管是在预定视频长度内，还是超出原本长度的长视频生成，Diffusion Forcing 的结果均好于基准方法。结果可以在官方项目网站上查看：</p>
+<p><a target="_blank" rel="noopener" href="https://boyuan.space/diffusion-forcing/">https://boyuan.space/diffusion-forcing/</a></p>
+<h2 id="批判性分析"><a href="#批判性分析" class="headerlink" title="批判性分析"></a>批判性分析</h2><p>论文开头说自回归模型在推理时缺少添加约束的方法。但这对视频生成来说并不致命，因为一般可以在训练时加入约束，推理时用 Classifier-free Guidance 就行了。</p>
+<p>作者说出于简洁，他们在论文中用 RNN 实现了 Diffusion Forcing。但很明显 3D U-Net 才应该是直观上最简单实用的实现方法，毕竟最早期的视频扩散模型就是拿 3D U-Net 做的。在官方仓库中，有本科生帮他们实现了一个 3D U-Net 加时间注意力的模型，比原来视频模型效果要好。</p>
+<p>我认为本文的视频生成基准方法设置过低。对于自回归视频生成/图生成视频，现在大家都会参照 Cascaded Diffusion, 对约束图像加噪并把噪声强度做为额外约束传入当前帧的生成模型。这种设计和 Diffusion Forcing 原理相似。为了体现新方法的好处，有必要跟这个更加强大的基准自回归方法做对比。</p>
+<p>作者对于全序列视频扩散模型的设计也很奇怪。全序列视频扩散模型的初衷就是把视频当成 3D 图像来看待，允许帧间两两交换信息，只保证预定长度内的视频是连贯的。作者现在用 RNN 实现了一个因果版全序列视频模型，这个模型的表现肯定是不如非因果版的。虽然作者说 Diffusion Forcing 在因果视频生成上总是比全序列扩散模型更加连贯，我很怀疑去掉了因果这个条件后 Diffusion Forcing 还能否比得过。</p>
+<p>Diffusion Forcing 在视频生成的主要好处应该体现在超出预定长度的长视频生成。因此，哪怕在预定长度内比不过全序列扩散模型，也没有关系。作者应该比较结合自回归和全序列扩散模型的方法，比如用 Stable Video Diffusion 这种图生视频模型，把上一个视频的末帧当作下一个视频的首帧约束，证明 Diffusion Forcing 在长视频生成上的优越性。</p>
+<p>综上，我认为作者在视频生成任务上的实验是不够充分的。也的确，这篇论文有一半篇幅是在决策任务上，没有只讲视频生成任务。我相信 Diffusion Forcing 的设计会在长视频生成上缓解降质问题，这需要后续大公司的工作来跟进。但是，长视频的根本问题是记忆缺失，这一本质问题是 Diffusion Forcing 这种方法难以做好的。</p>
+<p>这篇工作对我最大的启发是，我们一直把视频当成完整的 3D 数据来看待，却忘了视频可以被看成是图像序列。如果把视频当成 3D 数据的话，不同帧只能通过时序注意力看到其他帧在当前去噪时刻的信息；而对于序列数据，我们可以在不同帧的依赖关系上做更多设计，比如这篇工作的不同去噪强度。我很早前就在构思一种依赖更加强的序列生成范式：我们可不可以把序列中其他元素的<strong>所有去噪时刻</strong>的<strong>所有信息</strong>（包括中间去噪结果及去噪网络的中间变量）做为当前元素的约束呢？这种强约束序列模型可能对多视角生成、视频片段生成等任务的一致性有很大帮助。由于生成是约束于另一个去噪过程的，我们对此去噪过程做的任何编辑，都可以自然地传播到当前元素上。比如在视频生成中，如果整个视频约束于首帧的去噪过程，那么我们用任意基于扩散模型的图像编辑方法来编辑首帧，都可以自然地修改后续帧。当然，我只是提供一个大致的想法，暂时没有考虑细节，欢迎大家往这个方向思考。</p>
+<p>有人肯定也会想到能否把 Diffusion Forcing 拓展到图像像素间关系上。我认为要实现训练是完全没有问题的，问题出在推理上：Diffusion Forcing 在推理时需要预定义不同元素间的去噪强度。对于视频这种有先后顺序的数据，我们很自然地可以让越早的帧噪声强度越低。但是，对于图像来说，如何定义不同像素在不同去噪步数时的去噪强度并不是一个易解的问题。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/09/13/20240825-trans-diff/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1838,139 +1948,6 @@ z_t = x_0 + b_t \epsilon</script><p>由于整流最后学习出来的生成路�
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/04/04/20240221-TorchEval-FID/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/04/04/20240221-TorchEval-FID/" class="post-title-link" itemprop="url">FID 指标简介与修正 TorchEval FID 计算接口经历分享</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-04-04 14:08:44" itemprop="dateCreated datePublished" datetime="2024-04-04T14:08:44+08:00">2024-04-04</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>FID 是一种衡量图像生成模型质量的指标。对于这种常见的指标，一般都能找到好用的 PyTorch 计算接口。然而，当我用 PyTorch 的官方库 TorchEval 来算 FID 指标时，却发现它的结果和多数非官方库无法对齐。我花了不少时间，总算把 TorchEval 的 FID 计算接口修好了。在这篇文章中，我将分享有关 FID 计算的知识以及我调试 TorchEval 的经历，并总结用 pytorch-fid, torch-fidelity, TorchEval 算 FID 的方法。文章最后，我还会分享一个偶然发现的用于反映模型训练时的当前 FID 的方法。</p>
-<h2 id="FID-指标简介"><a href="#FID-指标简介" class="headerlink" title="FID 指标简介"></a>FID 指标简介</h2><p>FID 的全称是 Fréchet Inception Distance，它用于衡量两个图像分布之间的差距。如果令一个图像分布是训练集，再用生成模型输出的图像构成另一个分布，那么 FID 指标就表示了生成出来的图片和训练集整体上的相似度，也就间接反映了模型对训练集的拟合程度。FID 名字中的 Fréchet Distance 是一种描述两个样本分布的距离的指标，其定位和 KL 散度一样，但某些情况下会比 KL 散度更加合适。FID 用来算 Fréchet Distance 的样本来自预训练 InceptionV3 模型，它名称中的 Inception 由此而来。</p>
-<p>计算 FID 的过程如下：</p>
-<ol>
-<li>准备两个图片文件夹。一般一个是训练集，另一个存储了生成模型随机生成的图片。 </li>
-<li>用预训练的 InceptionV3 模型把每个输入图片转换成一个 2048 维的向量。</li>
-<li>计算训练集、生成集上输出向量的均值、协方差。</li>
-<li>把均值、协方差代入进下面这个算 Fréchet Distance 的公式，就得到了 FID。</li>
-</ol>
-<script type="math/tex; mode=display">
-FID = ||\mu - \mu_w||^2 + tr(\Sigma + \Sigma_w - 2(\Sigma\Sigma_w)^{\frac{1}{2}})</script><p>实际上，在用 FID 的时候我们完全不用管它的原理，只要知道它的值越小就越好，并且会调用相关接口即可。需注意的是，由于 FID 是一种和集合相关的指标，算 FID 时一定要给足图片。在构建自己模型的输出集合时，至少得有 10000 张图片，推荐生成 50000 张。否则 FID 的结果会不准确。</p>
-<h2 id="用-PyTorch-计算-FID-的第三方库"><a href="#用-PyTorch-计算-FID-的第三方库" class="headerlink" title="用 PyTorch 计算 FID 的第三方库"></a>用 PyTorch 计算 FID 的第三方库</h2><p>由于 FID 的计算需要用到一个预训练的 InceptionV3 模型，只有在模型实现完全一致的情况下，FID 的输出结果才是可比的。因此，所有论文汇报的 FID 都基于提出 FID 的作者的官方实现。这份官方实现是用 TensorFlow 写的，后来也有完全等价的 PyTorch 实现。在这一节里，我们就来学习如何用这些基于 PyTorch 的库算 FID。</p>
-<p>GitHub 上点赞最多的 PyTorch FID 库是 <code>pytorch-fid</code>。这个库被 FID 官方仓库推荐，且 Stable Diffusion 论文也用了这个库，结果绝对可靠。使用该库的方法很简单，只需要先安装它。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pytorch-fid</span><br></pre></td></tr></table></figure>
-<p>再准备好两个用于计算 FID 的文件夹，将文件夹路径传给脚本即可。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -m pytorch_fid path/to/dataset1 path/to/dataset2</span><br></pre></td></tr></table></figure>
-<p>另一个较为常见的用 PyTorch 算指标的库叫做 <code>torch-fidelity</code>。它用起来和 <code>pytorch-fid</code> 一样简单。一开始，需要用 pip 安装它。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torch-fidelity</span><br></pre></td></tr></table></figure>
-<p>之后，同样是准备好两个图片文件夹，将文件夹路径传给脚本。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fidelity --gpu <span class="number">0</span> --fid --input1 path/to/dataset1 --input2 path/to/dataset2</span><br></pre></td></tr></table></figure>
-<p>除了命令行脚本外，<code>torch-fidelity</code> 还提供了 Python API。我们可以在 Python 脚本里加入算 FID 的代码。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch_fidelity</span><br><span class="line"></span><br><span class="line">metrics_dict = torch_fidelity.calculate_metrics(</span><br><span class="line">    input1=<span class="string">&#x27;path1&#x27;</span>,</span><br><span class="line">    input2=<span class="string">&#x27;path2&#x27;</span>,</span><br><span class="line">    fid=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(metrics_dict)</span><br></pre></td></tr></table></figure>
-<p><code>torch-fidelity</code> 还提供了其他便捷的功能。比如直接以某个生成模型为 API 的输入 <code>input1</code>，而不是先把图像生成到一个文件夹里，再把文件夹路径传给 <code>input1</code>。同时，<code>torch-fidelity</code> 还支持计算其他指标，我们只需要在命令行脚本或者 API 里多加几个参数就行了。</p>
-<h2 id="修正-TorchEval-里的-FID-计算接口"><a href="#修正-TorchEval-里的-FID-计算接口" class="headerlink" title="修正 TorchEval 里的 FID 计算接口"></a>修正 TorchEval 里的 FID 计算接口</h2><p>尽管这些第三方库已经足够好用了，我还是想用 PyTorch 官方近年来推出的指标计算库 TorchEval 来算 FID 指标。原因有两点：</p>
-<ol>
-<li>我的项目其他地方都是用 PyTorch 官方库实现的 （<code>torch</code> 以及 <code>torchvision</code>），算指标也用官方库会让整体代码风格更加统一。我已经用 TorchEval 算了 PSNR、SSIM，使用体验还可以。</li>
-<li>目前，似乎只有 TorchEval 支持在线更新指标的值。也就是说，我可以先生成一部分图片，储存算 FID 需要的中间结果；再生成一部分图片，最终计算此前所有图片与训练集的 FID。这种计算方法的好处我会在文章后面介绍。</li>
-</ol>
-<p>以前我都是用 pytorch-fid 来算 FID。而当我换成用 TorchEval 后，却发现结果对不齐。于是，漫长的调试之路开始了。</p>
-<p>当你有两块时间不一样的手表时，应该怎样确认时间呢？答案是，再找到第三块表。如果三块表中能有两块表时间一样，那么它们的时间就是正确的。一开始，我并不能确定是哪个库写错了，所以我又测试了 torch-fidelity 的结果。实验发现，torch-fidelity 和 pytorch-fid 的结果是一致的。并且我去确认了 Stable Diffusion 的论文，其中用来计算 FID 的库也是 pytorch-fid。看来，是 TorchEval 结果不对。</p>
-<p>像 FID 这么常见的指标，大家的中间计算过程肯定都没错，就是一些细微的预处理不太一样。抱着这样的想法，我随意地比对了一下二者的代码，很快就发现 TorchEval 把输入尺寸调成 <code>[299, 299]</code> 了，而 pytorch-fid 没做。可删掉这段代码，程序直接报错了。我深入阅读了 pytorch-fid 的代码，发现它的写法和 TorchEval 不一样，把调整尺寸为 <code>[299, 299]</code> 写到了另一个地方。且通过调查发现，InceptionV3 网络的输入尺寸必须是 <code>[299, 299]</code> 的，是我孤陋寡闻了。唉，看来这次的调试不能太随意啊。</p>
-<p>我准备拿出我的真实实力来调 bug。我认真整理了一下算 FID 的步骤，将其主要过程总结为以下几步：</p>
-<ol>
-<li>用预训练权重初始化 InceptionV3</li>
-<li>用 InceptionV3 算两个数据集输出的均值、协方差</li>
-<li>根据均值、协方差算距离</li>
-</ol>
-<p>最后那个算距离的过程不涉及任何神经网络，输出该是什么就是什么。这一块是最不容易出错，且最容易调试的。于是，我决定先排除第三步是否对齐。我把 TorchEval 得到的均值、协方差存下来，用 pytorch-fid 算距离。发现结果和原 TorchEval 的输出差不多。看来算距离这一步没有问题。</p>
-<p>接下来，我很自然地想到是不是均值和协方差算错了。我存下了两个库得到的均值、协方差，算了两个库输出之间的误差。结果发现，均值的误差在 0.09 左右，协方差的误差在 0.0002 左右。图像的数据范围在 0~1 之间，0.09 算是一个很大的误差了。可见，第一步和第二步一定存在着无法对齐的部分。</p>
-<p>模型输出不同，最容易想到的是模型权重不同。于是，我尝试交换使用二者的模型权重，再比较输出的 FID。两个库的模型定义不太一样，不能直接换模型文件名。我用强大的代码魔改实力强行让新权重分别都跑起来了。结果非常神奇，算上之前的两个 FID，我一共得到了 4 个不一样的 FID 结果。也就是说，A 库 A 模型、B 库 B 模型、A 库 B 模型，B 库 A 模型，结果均不一样。</p>
-<p>我被这两个库气得不行，决定认真研究对比二者的模型定义。眼尖的我发现初始化 pytorch-fid 的 InceptionV3 时有一个参数叫 <code>use_fid_inception</code>。作者对此的注释写道：「如果设置为 true，则用 TensorFlow 版 FID 实现；否则，用 torchvision 版 Inception 模型。TensorFlow 的 FID Inception 模型和 torchvision 的在权重和结构上有细微的差别。如果你要计算 FID，强烈推荐将此值设置为 true，以得到和其他论文可比的结果。」总结来说，TorchEval 用的是 torchvision 里的标准 PyTorch 版 InceptionV3，而 pytorch-fid 在标准 PyTorch 版 InceptionV3 外又封装了一层，改了一些模块的定义。为什么要改这些东西呢？这是因为原来的 FID Inception 模型是在 TensorFlow 里实现的，需要改一些结构来将 PyTorch 模型对齐过去。除了模型结构外，二者的权重也有一定差别。大家都是用 TensorFlow 版模型算 FID，一切都应该以 pytorch-fid 的为准。这个 TorchEval 太离谱了，我也懒得认真修改了，直接注释掉 TorchEval 里原 <code>FIDInceptionV3</code> 的定义，然后大笔一挥：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pytorch_fid.inception <span class="keyword">import</span> \</span><br><span class="line">    InceptionV3 <span class="keyword">as</span> FIDInceptionV3</span><br></pre></td></tr></table></figure>
-<p>按理说，这下权重和模型结构都对齐了。FID 计算的第一、第二步绝对不会有错。而开始的结果表明，FID 计算的第三步也没有错。那么，两个库就应该对齐了。我激动地又测了 TorchEval 的结果，发现结果还是无法对齐！</p>
-<p>这不应该啊？难道哪步测错了？人生就是在不断自我怀疑中度过的。而怀疑自我，首先会怀疑最久远的自我。所以，我感觉是最早测第三步的时候有问题。之前我是把 TorchEval 的均值、协方差放到 pytorch-fid 里，结果与 TorchEval 自己的输出一致。这次我反过来，把 pytorch-fid 的均值、协方差放到 TorchEval 的算距离函数里算。这次，我第一次见到 TorchEval 输出了正确的 FID。由此可见，第三步没错。难道是均值和协方差又没对齐了？</p>
-<p>自我怀疑开始进一步推进，我开始怀疑第二步输出的均值、协方差还是没有对齐。我再次计算了 pytorch-fid 和 TorchEval 的输出之间的误差，发现误差这次仅有 1e-16，可以认为没有区别。我花了很多时间复习协方差的计算，想找出 TorchEval 里的 bug。可是越学习，越觉得 TorchEval 写得很对。这一回，我找不到错误了。</p>
-<p>调试代码，不怕到处有错，而怕「没错却有错」。「没错」，指的是每一步中间步骤都找不到错误；「有错」，指的是最终结果还是错了。没有错误，就得创造错误。我开启了随机乱调模式，希望能触发一个错误。回忆一下，算 FID 要用到两个数据集，一般一个是训练集，一个是模型输出的集合。在 TorchEval 最后一步算距离时，我乱改代码，让一个集合的均值、协方差不变，即来自原 TorchEval 的 Inception 模型的输出；而让另一个的集合的均值、协方差来自 pytorch-fid。理论上说，如果两个库的均值、协方差是对齐的，那么这次输出的 FID 也应该是正确的。欸，这回代码报错了，运行不了。报错说数据精度不统一。原来，TorchEval 的输出精度是 float32，而 pytorch-fid 的输出精度是 float64。之前测试距离计算函数时，数据要么全来自 TorchEval，要么全来自 pytorch-fid，所以没报过这个错。可是这个错只是一个运行上的错误，稍微改改就好了。</p>
-<p>我把 pytorch-fid 相关数据的精度统一成了 float32。这下代码跑起来了，可 FID 不对了。调试过程中，如果上一次成功，而这一次失败，则应该想办法把代码退回上一次的，再次测试。因此，我又修改了最后用 TorchEval 计算距离的数据来源，让所有数据都来自 pytorch-fid。可是，修改后，FID 输出没变，还是错的。</p>
-<p>为什么两轮测试之前，我全用 pytorch-fid 的输出、TorchEval 的距离计算函数没有错，这次却错了？到底是哪里不同？当测试两份差不多的代码后，一份对了，一份错了，那么错误就可以定位到两份代码的差异处。仔细回顾一下我的调试经历，相信你可以推理出 bug 出自哪了。</p>
-<p>没错！我仔细比对了当前代码和我记忆中两轮测试前的代码，仅发现了一处不同——我把 pytorch-fid 的输出数据的精度改成了 float32。把精度改回 float64 就对了。同样，如果把 TorchEval 的输出数据的精度改成 float64，再扔进 TorchEval 的距离计算函数里算，结果也是对的。问题出在 TorchEval 的距离计算函数的数据精度上。</p>
-<p>定位到了 bug 的位置，再找出 bug 的原因就很简单了。对比 pytorch-fid 的距离计算函数和 TorchEval 的，可以发现二者描述的计算公式完全相同。然而，pytorch-fid 是用 NumPy 算的，而 TorchEval 是用 PyTorch 算的。算 FID 的距离时，会涉及矩阵特征值等较为复杂的运算，它们对数据精度要求较高。像 NumPy 这种久经考验的库应该会自动把数据变成高精度再计算，而 PyTorch 就没做这么多细腻的处理了。</p>
-<p>汇总一下我调试的结论。TorchEval 在权重初始化、模型计算、距离计算这三步中均有错误。前两步没有让 InceptionV3 模型和普遍使用的 TensorFlow 版对齐，最后一步没有考虑输入精度，用了不够稳定的 PyTorch API 来做复杂矩阵运算。要用 TorchEval 算出正确的 FID，需要做以下修改：</p>
-<ul>
-<li>安装 pytorch-fid 和 TorchEval</li>
-<li>打开 torcheval/metrics/image/fid.py</li>
-<li>注释掉 <code>FIDInceptionV3</code> 类，在文件开头加上 <code>from pytorch_fid.inception import InceptionV3 as FIDInceptionV3</code></li>
-<li>在 <code>FrechetInceptionDistance</code> 类的构造函数中，在定义所有浮点数据时加上 <code>dtype=torch.float64</code></li>
-</ul>
-<p>这里点名批评 TorchEval。开源的时候吹得天花乱坠，结果根本没人用，这么简单的有关 FID 的 bug 也发现不了。我发了一个修正此 bug 的相关 issue <code>https://github.com/pytorch/torcheval/issues/192</code>，截至目前还是没有官方人员回复。这个库的开发水平实在太逆天了，希望他们能尽快维护好。</p>
-<h2 id="在线计算-FID"><a href="#在线计算-FID" class="headerlink" title="在线计算 FID"></a>在线计算 FID</h2><p>前文提到，我用 TorchEval 的原因是它支持在线计算 FID。具体来说，可以建立一个 FID 管理类，之后用 <code>update</code> 方法来不断往某个集合加入新图片，并随时使用 <code>compute</code> 方法算出当前所有图片的 FID。我之前写代码忘了清空旧图片的中间结果时发现了一个相关应用。经我使用下来，这种应用非常有用，我们可以用它高效估计训练时的当前 FID。</p>
-<p>回顾一下，要得到准确的 FID 值，一般需要 50000 张图片。而训练图像生成模型时，如果每次验证都要生成这么多图片，则大部分时间都会消耗在验证上了。为了加快 FID 的验证，我发现可以用一种 「全局 FID」来近似表示当前的模型拟合情况。具体来说，我先用训练集的所有图片初始化 FID 的集合 1 的中间结果，再在模型训练中每次验证时随机生成 500 张图片，将其中间结果加到 FID 的集合 2 中，并输出一次当前 FID。这样，随着训练不断推进，算 FID 的图片的数量会逐渐满足 50000 张的要求，但是这些图片并不是来自同一个模型，而是来自不同训练程度的模型。这样得到的 FID 仅能大致反映当前的真实 FID 值，有时偏高、有时偏低。但经我测试发现，这种全局 FID 的相对关系很能反映最终的真实 FID 的相对关系。训练两个不同超参的模型时，如果一个全局 FID 较大，那它最终的 FID 一般也会较大。同时，如果训练一切正常，则全局 FID 会随验证轮数单调递减（因为图片数量变多，且拟合情况不会变差）。如果某一次验证时全局 FID 增加了，则模型也一定在这段时间里变差了。通过这种验证方式，我们能够大致评估模型在训练中的拟合情况。这应该是一种很容易想到的工程技巧，但由于分享自己训练生成模型的经验帖较少，且重要性不足以写进论文，我没有在任何地方看到有人介绍这种技巧。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>FID 是评估图像生成模型的重要指标。通过 pytorch-fid 等库，我们能轻松地用 PyTorch 计算两个图像分布间的 FID。而通过计算输出分布和训练分布之间的 FID，我们就能评估当前模型的拟合情况。</p>
-<p>FID 的计算本身是很简单的。所以在介绍 FID 的计算方法之外，我分享了我调试 TorchEval 的漫长过程。这段经历很有意思，我学到了不少调 bug 的新知识。此前我从来没想到过数据精度竟然会大幅影响某个值的结果。这段经历启示我们，做一些复杂运算时，不要用 PyTorch 算，最好拿 NumPy 等更稳定的库来计算。如果你调 bug 的经验不足，这段经历也能给你许多参考。</p>
-<p>文章最后我分享了一种算全局 FID 的方法。它可以高效反映生成模型在训练时的拟合情况。该功能很容易实现，感兴趣的话可以自己尝试一下。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2040,7 +2017,7 @@ FID = ||\mu - \mu_w||^2 + tr(\Sigma + \Sigma_w - 2(\Sigma\Sigma_w)^{\frac{1}{2}}
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">145</span>
+          <span class="site-state-item-count">146</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

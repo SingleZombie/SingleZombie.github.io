@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Transformer 中平方复杂度的注意力运算一直是其性能瓶颈，该问题在序列长度极大的视觉生成任务中尤为明显。为了缓解此问题，并生成分辨率高至 4K (4096x4096) 的图像，英伟达近期推出了文生图模型 Sana。Sana 不仅使用了线性注意力的 Transformer，还通过增加 VAE 压缩比等方式，极大提升了超高分辨率图像生成的性能。 Sana 论文示意图如下，生成的图像看起来还不错">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文速览 | Sana：用线性 Transformer 高效率生成 4K 图片">
+<meta property="og:url" content="https://zhouyifan.net/2025/02/05/20250203-sana/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="Transformer 中平方复杂度的注意力运算一直是其性能瓶颈，该问题在序列长度极大的视觉生成任务中尤为明显。为了缓解此问题，并生成分辨率高至 4K (4096x4096) 的图像，英伟达近期推出了文生图模型 Sana。Sana 不仅使用了线性注意力的 Transformer，还通过增加 VAE 压缩比等方式，极大提升了超高分辨率图像生成的性能。 Sana 论文示意图如下，生成的图像看起来还不错">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/6.jpg">
+<meta property="article:published_time" content="2025-02-04T17:13:42.000Z">
+<meta property="article:modified_time" content="2025-02-04T17:13:42.790Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta property="article:tag" content="论文速览">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2025/02/05/20250203-sana/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>论文速览 | Sana：用线性 Transformer 高效率生成 4K 图片 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/02/05/20250203-sana/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          论文速览 | Sana：用线性 Transformer 高效率生成 4K 图片
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-02-05 01:13:42" itemprop="dateCreated datePublished" datetime="2025-02-05T01:13:42+08:00">2025-02-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Transformer 中平方复杂度的注意力运算一直是其性能瓶颈，该问题在序列长度极大的视觉生成任务中尤为明显。为了缓解此问题，并生成分辨率高至 4K (4096x4096) 的图像，英伟达近期推出了文生图模型 Sana。Sana 不仅使用了线性注意力的 Transformer，还通过增加 VAE 压缩比等方式，极大提升了超高分辨率图像生成的性能。</p>
+<p>Sana 论文示意图如下，生成的图像看起来还不错。值得注意的是，在 1K 图像生成上，Sana-0.6B 的生成速度是 FLUX-Dev 的 25 倍。由于采用了线性注意力机制，这一速度优势会随着图像尺寸增加而越发明显。 </p>
+<p><img src="/2025/02/05/20250203-sana/1.jpg" alt></p>
+<p>在这篇博文里，我们来着重学习 Sana 相较标准 DiT 文生图模型 (SD3, FLUX.1) 做了哪些提升性能的改进。</p>
+<blockquote>
+<p>本文中，计算机术语「性能」表示运行速度。</p>
+</blockquote>
+<h2 id="线性注意力真的是「免费午餐」吗？"><a href="#线性注意力真的是「免费午餐」吗？" class="headerlink" title="线性注意力真的是「免费午餐」吗？"></a>线性注意力真的是「免费午餐」吗？</h2><p>在看完论文摘要后，我的第一反应不是去细读论文，而是立刻去网上搜索社区用户对于 Sana 的评价。我一直坚持一个观点：「天下没有免费的午餐」。线性注意力比标准注意力快了那么多，那么它的质量一定会有所下降，不然所有人都会立刻把标准注意力换成线性注意力。</p>
+<p>有网友在 Reddit 上分享了 Sana 的生成结果并对此开展了讨论：<a target="_blank" rel="noopener" href="https://www.reddit.com/r/StableDiffusion/comments/1hzxeb7/it_is_now_possible_to_generate_16_megapixel/">https://www.reddit.com/r/StableDiffusion/comments/1hzxeb7/it_is_now_possible_to_generate_16_megapixel/</a> 。有关图像质量的讨论有：</p>
+<ul>
+<li>楼主：「Sana 的 4K 模型生成出的图片没有 2K 的真实」。</li>
+<li>社区用户：「生成结果看起来更靠近抽象艺术，但这些效果已经能够通过 SD 1.5 + 超分辨率达到了。能否用 Sana 生成照片级图片？」楼主：「它不太擅长生成照片级图片。」</li>
+<li>社区用户：「4K 图片质量太差了，没有比 1K 图片更多的细节。许多上采样算法的结果会比这个更好。论文应该宣传其生成速度而不是丢人的 4K 图像质量。」</li>
+<li>楼主：「手画得不是很好。」</li>
+</ul>
+<p>另一个帖子 （<a target="_blank" rel="noopener" href="https://www.reddit.com/r/StableDiffusion/comments/1h5xujr/sana_nvidia_image_generation_model_is_finally_out/">https://www.reddit.com/r/StableDiffusion/comments/1h5xujr/sana_nvidia_image_generation_model_is_finally_out/</a> ）里的评论有：</p>
+<ul>
+<li>「考虑模型大小和速度的话，它的效果非常惊人。第一感看起来艺术感比 FLUX 好，但文本生成能力不太行。」</li>
+<li>「有 SD 1.5 的质量，但很快。再训练它可以达到 SDXL 的质量。」同楼里另一个用户则认为，Sana 质量在 SDXL 基础版和 FLUX 之间。</li>
+</ul>
+<p>简单看下来，根据社区用户的反馈，Sana 的质量没有显著好于 SDXL。它的 4K 图像生成效果跟先生成较低分辨率再使用超分辨率算法的结果差不多。我们应该着重关注 Sana 的加速方式而不是其生成质量。</p>
+<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><h3 id="潜扩散模型（Latent-Diffusion-Models）"><a href="#潜扩散模型（Latent-Diffusion-Models）" class="headerlink" title="潜扩散模型（Latent Diffusion Models）"></a>潜扩散模型（Latent Diffusion Models）</h3><p>扩散模型能够在多次迭代中生成高质量图像。而有研究发现，扩散模型在生成时早早就生成完了图像结构，后续时间都浪费在完善图像细节上。为此，潜扩散模型 （Latent Diffusion Models, LDM）使用了一个两阶段方法来提升扩散模型的性能：</p>
+<ul>
+<li>先用一个自编码器 VAE 把图像压缩成尺寸更小、信息更丰富的潜图像 (latent images)。</li>
+<li>用标准扩散模型生成潜图像。</li>
+</ul>
+<p>目前主流的扩散模型几乎都属于 LDM。其中，最经典的 LDM 是 LDM 论文作者实现的 Stable Diffusion (SD)。根据 LDM 论文的实验结果，令 VAE 的压缩比 f 为 4 或 8 比较好。SD 采用了 f=8 的 VAE。后续多数 LDM 都使用了这样的压缩比。</p>
+<h3 id="Diffusion-Transformers"><a href="#Diffusion-Transformers" class="headerlink" title="Diffusion Transformers"></a>Diffusion Transformers</h3><p>早期扩散模型是用 U-Net 实现的，而后来大家逐渐把 U-Net 替换成了 DiT (Diffusion Transformers)。基于 DiT 的著名文生图模型有 SD3, FLUX。这些模型的核心仍是标准 Transformer 中的多头注意力运算。</p>
+<h3 id="线性注意力"><a href="#线性注意力" class="headerlink" title="线性注意力"></a>线性注意力</h3><p>设矩阵 $Q \in \mathbb{R}^{n \times d}, K \in \mathbb{R}^{n \times d}, V \in \mathbb{R}^{n \times d}$，其中 $n$ 为序列长度，$d$ 为特征长度，则注意力操作可以简写成：</p>
+<script type="math/tex; mode=display">
+Attn(Q, K, V) = softmax(QK^T)V</script><p>对于矩阵 $A \in \mathbb{R}^{a \times b}, B \in \mathbb{R}^{b \times c}$，不做加速的前提下，朴素的矩阵乘法 $A B$ 的复杂度是 $O(a \cdot b \cdot c)$。</p>
+<p>根据这个结论，注意力操作的复杂度为 $O(n^2d)$。这是因为 $Q \in \mathbb{R}^{n \times d}, K^T \in \mathbb{R}^{d \times n}$，第一步 $QK^T$ 的复杂度是 $O(n^2d)$。类似地，后一步矩阵乘法也是同样的复杂度。总复杂度不变，仍是 $O(n^2d)$。</p>
+<p>由于模型特征长度 $d$ 是常数，我们只考虑序列长度 $n$ 的变化，所以可以认为标准注意力操作的复杂度是 $O(n^2)$。</p>
+<p>但假如注意力运算中没有 softmax 操作的话，注意力运算就是两次矩阵乘法。</p>
+<script type="math/tex; mode=display">
+Attn(Q, K, V) = QK^TV</script><p>由于矩阵乘法满足结合律，通过改变矩阵乘法的顺序，我们能够神奇地改变注意力运算的计算复杂度。</p>
+<script type="math/tex; mode=display">
+Attn(Q, K, V) = QK^TV = Q(K^TV)</script><p>由于 $K^T \in \mathbb{R}^{d \times n}, V \in \mathbb{R}^{n \times d}$，$K^TV$ 操作的复杂度是 $O(nd^2)$。由于 $Q \in \mathbb{R}^{n \times d}, K^TV \in \mathbb{R}^{d \times d}$，第二步矩阵乘法的复杂度还是 $O(nd^2)$。因此，总复杂度变为 $O(nd^2)$。不考虑 $d$ 的增长的话，这种注意力运算就是线性复杂度的。</p>
+<p>我们再回头看去掉 softmax 对注意力运算有什么影响。softmax 函数同时做了两件事：1）保证 QK 的输出非负，以表示相似度；2）保证对于一个 query，它对所有 key 的相似度权重之和为 1，使得输出向量的范数（向量的「大小」）几乎不变。所以，线性注意力都会设置一个非负相似度函数 $sim(q, k)$，并用下面的注意力公式保证权重归一化。</p>
+<script type="math/tex; mode=display">
+Attn(Q_i, K, V) = \frac{\sum_{j=1}^{n}sim(Q_i, K_j)V_j}{\sum_{j=1}^{n}sim(Q_i, K_j)}</script><p>根据 NLP 社区的反馈，线性注意力的效果比不过标准注意力。</p>
+<p>相比之下，CV 社区对线性注意力的探索没有那么多。Sana 主要参考的早期工作为 Efficientvit: Lightweight multi-scale attention for high-resolution dense prediction。</p>
+<h2 id="Sana-模型架构改进"><a href="#Sana-模型架构改进" class="headerlink" title="Sana 模型架构改进"></a>Sana 模型架构改进</h2><p>在模型架构上，Sana 主要做了三大改进：增加 VAE 压缩比、使用线性注意力、使用轻量级文本编码器。</p>
+<h3 id="深度压缩-VAE"><a href="#深度压缩-VAE" class="headerlink" title="深度压缩 VAE"></a>深度压缩 VAE</h3><p>在基于 LDM 的 DiT 中，和图块数（参与 Transformer 计算的元素个数，类似于 NLP 的 token）相关的超参数有：</p>
+<ul>
+<li>VAE 压缩比例 <code>f</code></li>
+<li>DiT 图块化 (patchify) 比例 <code>p</code></li>
+</ul>
+<p>此外，VAE 输出的潜图像通道数 <code>c</code> 决定了重建质量与学习难度：<code>c</code> 越大，自编码器的重建效果越好，但扩散模型的学习难度也变大。</p>
+<p>经过 VAE 后，图像会从 $H \times W \times 3$ 压缩成 $\frac{H}{f} \times \frac{W}{f} \times C$。又经过图块化操作后，图像大小会变成 $\frac{H}{fp} \times \frac{W}{fp} \times d$，其中 $d$ 是 Transformer 的特征长度。决定 Transformer 运算量的是图像尺寸 $\frac{H}{fp} \times \frac{W}{fp}$。标准 Transformer 一般至多处理 $64 \times 64$ 大小的图像。</p>
+<p>此前的文生图 DiT 一般采用 <code>f8 c4 p2</code> 或 <code>f8 c16 p2</code> 的配置。而 Sana 直接把 <code>f</code> 设置成了 <code>32</code>，实现了一个 <code>f32 c32</code> 的 VAE。</p>
+<p>其实，LDM 论文尝试用过一个 <code>f32 c64</code> 的 VAE，但生成效果并不好。为什么这次 Sana 的 VAE 就好了不少呢？论文对此没有做深入分析，只是简单列举了一些 Sana 的 VAE 做出的改进：</p>
+<ul>
+<li>从模型设计与训练策略上：此前 <code>f32</code> VAE 效果不好的一大原因是模型没有充分收敛。为此，Sana VAE 将模型中的标准自注意力换成了线性注意力。另外，为了提升在高分辨率图像上的生成效果，Sana VAE 先在低分辨率上训练，之后在 1K 图像上微调。</li>
+<li>从通道数上：作者比较了 <code>f=32</code> 时 <code>c=16, 32, 64</code> 的实验结果，发现将 <code>c=32</code> 改成 <code>c=64</code> 会显著提升扩散模型收敛速度。</li>
+</ul>
+<blockquote>
+<p>尽管 VAE 是卷积网络，里面还是包含了自注意力运算。</p>
+</blockquote>
+<p><img src="/2025/02/05/20250203-sana/2.jpg" alt></p>
+<p>除了调整 <code>f, c</code> 外，作者还认为 <code>p=1</code>，即不使用图块化操作，是最好的。论文展示了总压缩比 <code>fp</code> 不变的前提下， <code>p</code> 提升、 <code>f</code>下降后扩散模型的学习进度。结果发现，不用图块化而让 VAE 全权负责压缩是最好的。</p>
+<p><img src="/2025/02/05/20250203-sana/3.jpg" alt></p>
+<h3 id="线性-Transformer-块"><a href="#线性-Transformer-块" class="headerlink" title="线性 Transformer 块"></a>线性 Transformer 块</h3><p>为了降低注意力操作的复杂度以提升性能，Sana 使用了线性注意力操作。如前所述，线性注意力会去掉 softmax 并通过矩阵乘法的结合律来降低计算复杂度，但需要通过额外设计一个相似度指标。</p>
+<p>Sana 对线性注意力的定义如下：</p>
+<p><img src="/2025/02/05/20250203-sana/4.jpg" alt></p>
+<p>其中，$O_i$ 是某一条 query $Q_i$ 的输出。这其实是让相似度函数为：</p>
+<script type="math/tex; mode=display">
+sim(q, k) = ReLU(q)ReLU(k)</script><p>ReLU 函数用于让相似度非负。</p>
+<p>在上面的线性注意力公式中，不管是分子还是分母，都可以通过结合律来优化计算复杂度。此处细节可参见原论文。</p>
+<p>根据之前的经验，线性注意力会降低注意力运算的效果。为了弥补这一点，Sana 参考 EfficientViT，把前馈网络 (FFN) 从 MLP （即 1x1 卷积网络）换成了带 3x3 逐深度卷积的网络。这个小卷积网络不仅提升了整个 Transformer 块的拟合能力，还省去了位置编码——由于卷积网络天然能够建模相对位置关系并打破 Transformer 的对称性，不需要再加入位置编码了。</p>
+<p><img src="/2025/02/05/20250203-sana/5.jpg" alt></p>
+<h3 id="轻量级文本编码器"><a href="#轻量级文本编码器" class="headerlink" title="轻量级文本编码器"></a>轻量级文本编码器</h3><p>之前的 SD3 和 FLUX 都用 T5 作为文本编码器，但 Sana 为了提升模型性能，使用了速度为 T5-XXL 6 倍的 Gemma-2-2B。</p>
+<h2 id="定量实验"><a href="#定量实验" class="headerlink" title="定量实验"></a>定量实验</h2><p>最后，我们简单看一下论文的主要实验结果。论文用到的实验数据集为 MJHQ-30K，包含三万张 Midjourney 生成的图像。</p>
+<p>从定量指标上看，Sana 确实好过不少此前的文生图模型。但是，这些指标无法如实反映人类的审美偏好。如前文所述，社区用户认为 Sana 并没有明显好于 SDXL，但指标无法反映这一点。这些指标参考价值不大的另一个证据是 FLUX-dev 和 FLUX-schnell 的比较结果——作为一个被进一步蒸馏出来的模型，schnell 显然是比 dev 的生成质量更差的，但它的 FID, GenEval, DPG 竟然比 dev 还好。因此，在比较文生图模型质量时，我个人建议不要参考文生图的定量指标，而是去参考社区用户的反馈。</p>
+<p>另外，虽然 Sana-1.6B 比 FLUX-dev 快了很多，但它比 FLUX-schnell 只快了一倍。或许 Sana 也可以通过蒸馏获得进一步的推理加速。</p>
+<p><img src="/2025/02/05/20250203-sana/6.jpg" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Sana 是一个以降低运算开销为主要目标的高分辨率文生图模型。它主要通过增加 VAE 压缩比例、使用线性注意力来提升 DiT 的效率。为了弥补线性注意力的能力损失，Sana 将 FFN 改成了 3x3 卷积网络，在提升模型能力的同时免去了位置编码。除了这两大主要设计外，Sana 还通过使用轻量级文本编码器等诸多细节改进提升了模型的训练与推理效率。整体上看，这个工作主要在工程上作出了贡献，线性注意力的设计几乎照搬了之前的工作，没有使用比较新颖的模块设计。</p>
+<p>从生成效果上看，尽管 Sana 论文给出的定量指标还不错，但这些指标是否能如实反映文生图质量还存疑。据社区用户反映，Sana 的质量没有明显好于 SDXL。另外，虽然论文一开头就宣称 Sana 能够生成 4096x4096 的图片，但这种图片的细节很差，和 1024x1024 的差不多。这是因为不管是 VAE 还是 DiT 都只在 1024x1024 上训练过。在加大生成尺寸后，图像的清晰程度没有变，只是看起来像素变多了。这篇论文真正应该强调的是生成 4K 图像的速度会更快，而不应该去强调 4K 图像的质量有多高。</p>
+<p>从生成速度上来看，Sana 确实比最强开源文生图模型 Flux-Dev 要快很多。但尴尬的是，在 1024x1024 图像生成上，Sana 的速度仅仅是精心蒸馏的 Flux-schnell 的两倍。当然这个对比可能不是很公平，因为 Sana 还没有经过蒸馏。但就目前来看社区用户在生成 1024x1024 的图像时难以感受到 Sana 性能优势。</p>
+<p>这篇文章很好地指明了 DiT 的一个发展方向：我们能不能将线性注意力更好地引入 DiT 呢？按我目前的理解，线性注意力就是通过牺牲自注意力全局依赖关系来提升模型计算速度。它的本质和 MAR (Autoregressive Image Generation without Vector Quantization)、VAR (Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction) 很像，都是通过减少计算像素间的依赖关系来提升速度。这个假设在视觉任务中是很合理的：在确定了图像的主要结构后，理解细节只需要局部像素信息。然而，这些加速方法都不可避免地降低模型的能力。在完全不用和完全使用全局信息之间，我们或许要找到一个平衡点，来使 DiT 具有最佳性能和效果。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+              <a href="/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/" rel="tag"># 论文速览</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/01/22/20250115-R3GAN/" rel="prev" title="高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？">
+      <i class="fa fa-chevron-left"></i> 高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E6%80%A7%E6%B3%A8%E6%84%8F%E5%8A%9B%E7%9C%9F%E7%9A%84%E6%98%AF%E3%80%8C%E5%85%8D%E8%B4%B9%E5%8D%88%E9%A4%90%E3%80%8D%E5%90%97%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">线性注意力真的是「免费午餐」吗？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%BE%80%E5%B7%A5%E4%BD%9C"><span class="nav-number">2.</span> <span class="nav-text">以往工作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BD%9C%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%EF%BC%88Latent-Diffusion-Models%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">潜扩散模型（Latent Diffusion Models）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Diffusion-Transformers"><span class="nav-number">2.2.</span> <span class="nav-text">Diffusion Transformers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E6%80%A7%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">2.3.</span> <span class="nav-text">线性注意力</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sana-%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84%E6%94%B9%E8%BF%9B"><span class="nav-number">3.</span> <span class="nav-text">Sana 模型架构改进</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B1%E5%BA%A6%E5%8E%8B%E7%BC%A9-VAE"><span class="nav-number">3.1.</span> <span class="nav-text">深度压缩 VAE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E6%80%A7-Transformer-%E5%9D%97"><span class="nav-number">3.2.</span> <span class="nav-text">线性 Transformer 块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%BB%E9%87%8F%E7%BA%A7%E6%96%87%E6%9C%AC%E7%BC%96%E7%A0%81%E5%99%A8"><span class="nav-number">3.3.</span> <span class="nav-text">轻量级文本编码器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E9%87%8F%E5%AE%9E%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">定量实验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">146</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
