@@ -168,6 +168,227 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/26/DLS-note-12/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/26/DLS-note-12/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（十二）：目标检测与语义分割简介 (YOLO, U-Net)</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-26 21:00:00" itemprop="dateCreated datePublished" datetime="2022-07-26T21:00:00+08:00">2022-07-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>这节课中，我们要学习计算机视觉中最重要的任务之一——目标检测任务。我们会先认识目标定位和关键点检测这两个比较简单的任务，慢慢过度到目标检测任务。之后，我们会详细学习目标检测的经典算法YOLO。最后，我们会稍微认识一下语义分割任务及适用于此问题的U-Net架构。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="目标定位"><a href="#目标定位" class="headerlink" title="目标定位"></a>目标定位</h2><p>在<strong>图像分类问题</strong>中，给定一幅图片，我们只要说出图片里的物体是什么就行了。在这堂课要讨论的任务中，我们还要多做一件事——定位。我们要先用边框圈出图中的物体，再说出框里的物体是什么。这叫做<strong>带定位(localization)的分类问题</strong>。更进一步，如果我们不再是只讨论一个物体，而是要把图片中所有物体都框出来，并标出每一个物体的类别，这就是<strong>目标检测</strong>问题，</p>
+<p><img src="/2022/07/26/DLS-note-12/1.jpg" alt></p>
+<p>我们对分类任务的神经网络结构已经很熟悉了。那么，带定位的分类该使用怎样的网络呢？实际上，一个边框可以用边框中心和边框宽高这四个量表示。除了softmax出来的分类结果外，我们只要让网络再多输出四个数就行了。如下图所示：</p>
+<p><img src="/2022/07/26/DLS-note-12/2.jpg" alt></p>
+<p>这里，要统一一下对于边框的定义。我们用$b_x, b_y$表示边框的中心坐标，$b_h, b_w$表示边框的高、宽。</p>
+<p>来看一下标签$y$的具体写法。假设一共有四类物体：行人、汽车、摩托车、背景（没有物体）。那么，标签$y$应该用$y=[p_c, b_x, b_y, b_h, b_w, c_1, c_2, c_3]^T$表示。其中，$p_c$表示图中有没有物体。若$p_c=1$，则$c_1, c_2, c_3$分别表示物体属于除背景外的哪一类；若$p_c=0$，则其他值无意义。</p>
+<p>这样，在算误差时，也需要分类讨论。若$p_c=1$，则算估计值与标签8个分量两两之间的均方误差；若$p_c=0$，只算$p_c$的均方误差，不用管其他量。</p>
+<p><img src="/2022/07/26/DLS-note-12/3.jpg" alt></p>
+<p>只要更换一下神经网络的输出格式，我们就能得到一个完成目标定位问题的网络。</p>
+<h2 id="关键点检测"><a href="#关键点检测" class="headerlink" title="关键点检测"></a>关键点检测</h2><p>我们刚刚学了用2个点表示一个边框。其实，拓展一下边框检测，就是一个关键点（英文有时叫做”landmark”，是“地标”的意思）检测问题。</p>
+<p>比如，在人脸关键点检测中，我们可以定义一堆关键点，分别表示眼睛、鼻子、嘴巴……的位置。我们还是让网络先输出一个数，表示图中有没有人脸；再输出2n个数，表示n个人脸关键点。这样，网络就能学习怎么标出人脸关键点了。</p>
+<p><img src="/2022/07/26/DLS-note-12/4.jpg" alt></p>
+<p>很多应用都基于人脸关键点检测技术。比如我们检测到了眼睛周围的关键点后，就可以给人“戴上”墨镜。</p>
+<p>总之，通过这一节的学习，我们要知道，目标定位中输出2个坐标只是关键点检测的一个特例。只要训练数据按照某种规律标出了关键点，不管这些关键点是表示一个框，还是人脸上各器官的位置，网络都能学习这种规律。</p>
+<h2 id="目标检测"><a href="#目标检测" class="headerlink" title="目标检测"></a>目标检测</h2><p>有了之前的知识储备，现在我们来正式学习目标检测。目标检测可以用一种叫做“滑动窗口”的技术实现。</p>
+<p>假设我们要构建一个汽车的目标检测系统。我们可以先构造一个汽车分类数据集——数据集的x是一些等大的图片，y表示图片里是不是有汽车。如果图片里有汽车，汽车应该占据图片的大部分位置。</p>
+<p><img src="/2022/07/26/DLS-note-12/5.jpg" alt></p>
+<p>通过学习，网络就能够判断一个框里的物体是不是汽车了。这样，我们可以用一个边框框出图片的一部分，裁剪下来，让网络看看图片的这一部分是不是汽车。只要我们尝试的次数够多，总能找出图中的汽车。</p>
+<p><img src="/2022/07/26/DLS-note-12/6.jpg" alt></p>
+<p>在遍历边框时，我们是通过“滑动”的方法：遍历边框的大小，选择好大小后把框放到左上角，先往右移，再往下移。所以这种方法叫做“滑动窗口”。</p>
+<p>滑动窗口算法有一个缺点：如果我们移动窗口的步伐过小，则运行分类器的次数会很多；如果移动窗口的步伐过大，则算法的精度会受到影响。在深度学习时代之前，分类器都是一些简单的线性函数，能够快速算完，多遍历一些滑动窗口没有问题。而使用了深度CNN后，遍历滑动窗口的代价就很大了。</p>
+<p>幸好，滑动窗口也可以通过卷积来生成，而不一定要遍历出来。让我们看下去。</p>
+<h2 id="基于卷积的滑动窗口"><a href="#基于卷积的滑动窗口" class="headerlink" title="基于卷积的滑动窗口"></a>基于卷积的滑动窗口</h2><p>滑动窗口其实可以通过执行巧妙的卷积来生成。在那之前，我们先学一门前置技能：怎么把全连接层变成卷积层。</p>
+<p>前两周学习CNN时，我们学过，卷积结束后，卷积的输出会被喂入全连接层中。实际上，我们可以用卷积来等价实现全连接层。比如下图中，一个$5 \times 5 \times 16$的体积块想变成一个长度为400的向量，可以通过执行400个$5 \times 5$的卷积来实现。</p>
+<p><img src="/2022/07/26/DLS-note-12/7.jpg" alt></p>
+<p>知道了这一点后，我们就可以利用卷积来快速实现滑动窗口了。</p>
+<p>假设我们按照上一节的算法，先实现了对$14 \times 14$的小图片进行分类的分类器。之后，我们输入了一张$16 \times 16$的大图片。我们遍历滑动窗口，令步幅为2。这样，理论上，有4个合法的滑动窗口，应该执行4次分类器的运算，如下图所示：</p>
+<p><img src="/2022/07/26/DLS-note-12/8-2.jpg" alt></p>
+<p>可是，仔细一想，在执行4次分类器的过程中，有很多重复的运算。比如，对于4个滑动窗口中间那共有的$12 \times 12$个像素，它们的卷积结果被算了4次。理想情况下，只需要对它们做一次卷积就行了。这该怎么优化呢？</p>
+<p>其实，很简单，我们可以利用卷积本身的特性来优化。卷积层只定义了卷积核，而没有规定输入图像的大小。我们可以拿出之前在$14 \times 14$的图像上训练好的卷积层，把它们用在$16 \times 16$的图片的卷积上。经过相同的网络，$16 \times 16$的图片会生成一个$2 \times 2$大小的分类结果，而不是$1 \times 1$的。这$2 \times 2$个分类结果，恰好就是那4个滑动窗口的分类结果。通过这样巧妙地利用卷积操作，我们规避了遍历滑动窗口带来的重复计算。</p>
+<p><img src="/2022/07/26/DLS-note-12/8.jpg" alt></p>
+<p>不过，这个方法还是有一些缺陷的。在刚才那个例子中，$16 \times 16$的图片其实可以放下9个$14 \times 14$大小的边框。但是，由于分类网络中max pool的存在，我们只能生成4个分类结果，也就是步幅为2的滑动窗口的分类结果。同时，最准确的检测框也不一定是正方形的，而可能是长方形的。为了让生成的滑动窗口更准确一些，我们要用到其他方法。</p>
+<h2 id="预测边框"><a href="#预测边框" class="headerlink" title="预测边框"></a>预测边框</h2><p>在这一节，我们要使用YOLO(You Only Look Once)算法解决上一节中碰到的问题。还记得这周课开头学的目标定位问题吗？我们可以把滑动窗口和目标定位结合一下。</p>
+<p>给定一幅图像，我们可以把图像分成$3 \times 3$个格子。训练模型前，我们要对训练数据做预处理。根据每个训练样本中物体的中心点所在的格子，我们把物体分配到每一个格子中。也就是说，不管一个物体的边框跨越了几个格子，它的中心点在哪，它就属于哪个格子。比如对于下图的训练样本，右边那辆车就属于橙色的格子。之后，我们给每个格子标上标签$y$。这个标签$y$就是目标定位中那个表示图片中是否有物体、物体的边框、物体的类别的标签向量。对于这个$3 \times 3$的格子，有9个标签向量，整个标签张量的形状是$3 \times 3 \times 8$。</p>
+<p><img src="/2022/07/26/DLS-note-12/9.jpg" alt></p>
+<p>这样，每一幅图像的输出和标签一样，也是一个$3 \times 3 \times 8$的张量了。输入一幅图片后，我们利用上一节学的卷积滑动窗口，同时预测出每个格子里的物体边框。</p>
+<p>另外，这里要详细讨论一下$b_x, b_y, b_h, b_w$的表示方法。由于我们只关心框相对于格子的位置，因此我们可以把规定一个格子的边长为1。这样，就满足$0 \leq b_x, b_y \leq 1$了。不过，由于物体的边框可以超出小框，$b_h, b_w &gt; 1$是很有可能的。</p>
+<p>看到这，大家可能会有一些疑问：如果一个格子里有多个物体呢？的确，这个算法无法输出一个格子里的多个物体。一种解决方法是，我们可以把格子分得更细一点，比如$19 \times 19$个格子。这样，可以被检测到物体会多一些。但是，增加格子数又会引入一个新的问题——多个格子检测到了同一个物体。下面的两节里我们会尝试解决这个新的问题。</p>
+<blockquote>
+<p>吴恩达老师说，YOLO这篇论文很难读懂，他和其他几个资深研究者都花了很大的功夫才读懂这篇论文。</p>
+</blockquote>
+<h2 id="IoU-交并比"><a href="#IoU-交并比" class="headerlink" title="IoU(交并比)"></a>IoU(交并比)</h2><p>在目标检测中，有一个微妙的问题：框出一个物体的边框有无数个，想精确框出标签的边框是不可能的。怎么判定一个输出结果和标签里的边框“差不多”呢？这就要用到<strong>IoU(Intersection over Union，交并比)</strong> 这个概念。</p>
+<p>IoU，顾名思义，二者的交集比上二者的并集，很好理解。比如下图中，网络的输出是紫框，真值是红框。二者的并集是绿色区域，交集是橙色区域。则IoU就是橙色比绿色。</p>
+<p><img src="/2022/07/26/DLS-note-12/10.jpg" alt></p>
+<p>依照惯例，如果IoU$\geq 0.5$，我们就认为网络的输出是正确的。当然，想更严格一点，0.6,0.7也是可以的。</p>
+<blockquote>
+<p>IOU 也是 “I owe you(我欠了你的钱)”的缩写，哈哈哈。</p>
+</blockquote>
+<h2 id="NMS-非极大值抑制"><a href="#NMS-非极大值抑制" class="headerlink" title="NMS(非极大值抑制)"></a>NMS(非极大值抑制)</h2><p>假设在YOLO中，我们用$19 \times 19$个小格来检测物体。可是，由于小格子太多了，算法得到了多个重复的检测框（以及每个框中有物体的概率）。这该怎么办呢？</p>
+<p><img src="/2022/07/26/DLS-note-12/11.jpg" alt></p>
+<p>NMS(Non-Maximum Suppresion，非极大值抑制)就是解决这个问题的算法。这个算法的名字听起来很奇怪，但大家理解了这个算法的实现后，就知道这个“抑制”是什么意思了。</p>
+<blockquote>
+<p>讲起算法我就不困了。我会抛弃视频中的讲解思路，用我自己的逻辑讲一遍。讲算法，千万不能一上来就讲算法的步骤，一定要先讲清楚算法的思路。</p>
+</blockquote>
+<p>在学NMS之前，我们先动动脑，看看在去掉重复的框时，我们期望得到怎样的去重输出结果。</p>
+<p>首先，既然是去重，那么就不能出现两个框过度重合的情况。其次，我们希望留下来的框的预测概率尽可能大。</p>
+<p>在这两个要求下，我们来看看上面那幅图的输出应该是怎样的。<br>我们一眼就能看出，对于左边那辆车，我们应该保留0.8的框；对于右边那辆车，我们应该保留0.9的框。</p>
+<p>为什么我们能“一眼看出”呢？这是因为左边两个框、右边三个框恰好都分别表示了一辆车。我们能够快速地把这些框分成两类。但是，在情况比较复杂时，我们就难以快速找出最好的框了。比如下面这种情况中，两辆车很近，有些框甚至同时标出了两辆车：</p>
+<p><img src="/2022/07/26/DLS-note-12/11-2.jpg" alt></p>
+<p>为了处理这种复杂的情况，我们必须想出一种万全的算法，以筛选出那些概率比较大的框。</p>
+<p>稍微思考一下，其实这样的算法非常简单：找出最大的框，去掉所有和它过度重合的框；在剩下的框中，找出最大的框，去掉所有和它过度重合的框；……。一直重复直到没有未处理的框为止。这就是NMS算法。</p>
+<p>还是让我们来看看刚刚那个例子。使用NMS时，我们会先找到0.9这个框，“抑制”掉右边0.6和0.7的框。在剩下的框中，最大的是0.8这个框，它会“抑制”掉左边那个0.7的框。</p>
+<p><img src="/2022/07/26/DLS-note-12/11-3.jpg" alt></p>
+<p>接下来，让我们来严格描述一下这个算法。假设我们有$19 \times 19=361$个输出结果，每个输出结果是一个长度为5的向量$[p_c, b_x, b_y, b_h, b_w]$，分别表示有物体的概率、边框的中心和高宽（我们先不管检测多个物体的情况。事实上，当推广到多个物体时，只要往这个输出结果里多加几个概率就行了）。我们要用NMS输出应该保留的检测结果。“过度重合”，就是两个框的IoU大于0.5。</p>
+<p>首先，先做一步初筛，扔掉概率$p_c$小于0.6的结果。</p>
+<p>之后，对于没有遍历的框，重复执行：找出概率最大的框，把它加入输出结果；去掉所有和它IoU大于0.5的框。</p>
+<p>这个过程用伪代码表示如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Input and preprocessing</span></span><br><span class="line"><span class="built_in">input</span> predicts of size [<span class="number">19</span>, <span class="number">19</span>, <span class="number">5</span>]</span><br><span class="line">resize predicts to [<span class="number">361</span>, <span class="number">5</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># Filter predicts with low probability</span></span><br><span class="line">filtered_predicts = []</span><br><span class="line"><span class="keyword">for</span> predict <span class="keyword">in</span> predicts:</span><br><span class="line">    <span class="comment"># drop p_c &lt; 0.6</span></span><br><span class="line">    <span class="keyword">if</span> predict[<span class="number">0</span>] &gt;= <span class="number">0.6</span>:  </span><br><span class="line">        filtered_predicts.append(predict)</span><br><span class="line"></span><br><span class="line"><span class="comment"># NMS</span></span><br><span class="line">n_remainder  = <span class="built_in">len</span>(filtered_predicts)</span><br><span class="line">vis = [<span class="literal">False</span>] * n_remainder <span class="comment"># False for unvisited item</span></span><br><span class="line">output_predicts = []</span><br><span class="line"><span class="keyword">while</span> n_remainder &gt; <span class="number">0</span>:</span><br><span class="line">    max_pro = -<span class="number">1</span></span><br><span class="line">    max_index = <span class="number">0</span></span><br><span class="line">    <span class="comment"># Find argmax</span></span><br><span class="line">    <span class="keyword">for</span> i, p <span class="keyword">in</span> <span class="built_in">enumerate</span>(filtered_predicts):</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> vis[i]:</span><br><span class="line">            <span class="keyword">if</span> max_pro &lt; p[<span class="number">0</span>]:</span><br><span class="line">                max_index = i</span><br><span class="line">                max_pro = p[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Append output</span></span><br><span class="line">    max_p = filtered_predicts[max_index]</span><br><span class="line">    output_predicts.append(max_p)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Suppress</span></span><br><span class="line">    <span class="keyword">for</span> i, p <span class="keyword">in</span> <span class="built_in">enumerate</span>(filtered_predicts):</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> vis[i] <span class="keyword">and</span> i != max_index:</span><br><span class="line">            <span class="keyword">if</span> get_IoU(p[<span class="number">1</span>:<span class="number">5</span>], max_p[<span class="number">1</span>:<span class="number">5</span>]) &gt; <span class="number">0.5</span>:</span><br><span class="line">                vis[i] = <span class="literal">True</span></span><br><span class="line">                n_remainder -= <span class="number">1</span></span><br><span class="line">    vis[max_index] = <span class="literal">True</span></span><br><span class="line">    n_remainder -= <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>假设进NMS的框有$N$个。算法里求当前最大框那一步可以用优先队列来优化，这一步复杂度是$O(logN)$。但是“抑制”那一步必须要遍历一遍剩下的框，还是有一个$O(N)$复杂度（我暂时想不出朴素的低复杂度的算法）。因此，不用优先队列优化也差不多。算上外层的循环，整个算法的复杂度是$O(N^2)$。在实际的应用中，送入NMS的结果没那么多，不会超过10000个。而且，随着框被不断过滤，外层循环的次数会减少不少。这个算法的性能瓶颈不在输入数$N$上，而在于求IoU实现的细节上。</p>
+</blockquote>
+<h2 id="锚框（Anchor-Boxes"><a href="#锚框（Anchor-Boxes" class="headerlink" title="锚框（Anchor Boxes)"></a>锚框（Anchor Boxes)</h2><p>为了让一个格子能够检测到多个物体，YOLO论文还提出了一种叫做锚框(Anchor Boxes)的技术。</p>
+<p>假设一个格子里同时包含了两个物体：一个“竖着”的人和一个“横着”的车。那么，我们可以以这个格子的中心点为“锚”，画一个竖的框和横的框，让每个格子可以检测到两个物体。这样，人和车都能被检测了。</p>
+<p><img src="/2022/07/26/DLS-note-12/12.jpg" alt></p>
+<p>严谨地描述，锚框技术是这样做改进的：</p>
+<ul>
+<li>之前，每一个格子只能包含<strong>一个</strong>样本。训练数据中每一个标签框会被分配到<strong>它中点所在</strong>的<strong>格子</strong>。</li>
+<li>现在，每一个格子能包含<strong>多个</strong>样本。每个格子都会预定义几个不同形状的锚框，有几个锚框，就最多能检测到几个物体。训练数据的每一个标签框会被分配到<strong>和它交并比最大的</strong>的<strong>锚框</strong>。</li>
+</ul>
+<p>注意，之前的最小单元是格子，现在是锚框，所以说现在每个样本被分配到锚框上而不是格子上。可以看下面这两个样本的例子，第一个例子是两个物体都检测到了，第二个是只有锚框2里有物体。和之前一样，如果有某个锚框里没有物体，则除了$p_c$外全填问号即可。</p>
+<p><img src="/2022/07/26/DLS-note-12/13.jpg" alt></p>
+<p>锚框技术实际上只是对训练数据做了一个约束，改变了训练数据的格式。检测算法本身没有什么改变。</p>
+<h2 id="YOLO-算法总结"><a href="#YOLO-算法总结" class="headerlink" title="YOLO 算法总结"></a>YOLO 算法总结</h2><p>让我们把前几节的内容总结一下，看一下YOLO算法的全貌。</p>
+<p>在训练前，我们要对数据做预处理。首先，我们要指定以下超参数：图片切分成多大的格子、每个格子里有多少个锚框。之后，根据这些信息，我们可以得到每一个训练标签张量的形状。比如$3 \times 3 \times 2 \times 8$的一个训练标签，表示图片被切成了$3 \times 3$的格子，每个格子有两个锚框。这是一个三分类问题，对于每一个检测出来的物体，都可以用一个长度为$8$的向量表示。其中，$p_c$表示这个锚框里有没有物体, $(b_x, b_y), (b_h, b_w)$分别表示中心点坐标、框的高宽，$c_1, c_2, c_3$分别表示是否为该类物体。</p>
+<p>有了预处理好的训练数据，就可以训练一个CNN了。</p>
+<p><img src="/2022/07/26/DLS-note-12/14.jpg" alt></p>
+<p>在网络给出了输出后，由于输出的框往往多于标签中的框，还要对输出结果进行筛选。筛选的过程如前文所述，先去掉概率过小的框，再分别对每一类物体的框做NMS。</p>
+<blockquote>
+<p>课堂上没有介绍loss。loss的组成比较复杂，建议阅读原论文。</p>
+</blockquote>
+<h2 id="区域提案"><a href="#区域提案" class="headerlink" title="区域提案"></a>区域提案</h2><p>YOLO算法是在一堆固定的框里找物体。实际上，我们还可以用神经网络来找出候选框，再在这些框里详细检测。这种技术就叫做区域提案(region proposal)，相关的网络叫做R-CNN(Region with CNN)。</p>
+<p>R-CNN 系列网络有多个改进版本：</p>
+<ul>
+<li>R-CNN: 使用区域提案，但是每次只对一个区域里的物体做分类。</li>
+<li>Fast R-CNN: 使用区域提案，并使用基于卷积的滑动窗口加速各区域里物体的分类。</li>
+<li>Faster R-CNN: 前两个算法都是用传统方法提案区域，Faster R-CNN用CNN来提案区域，进一步令算法加速。</li>
+</ul>
+<p>吴恩达老师认为，虽然区域提案的方法很酷，但把目标检测分两步来完成还是太麻烦了，一步到位的YOLO系列算法已经挺方便了。</p>
+<h2 id="基于U-Net的语义分割"><a href="#基于U-Net的语义分割" class="headerlink" title="基于U-Net的语义分割"></a>基于U-Net的语义分割</h2><blockquote>
+<p>最早这门课是没有这一节的，估计U-Net的架构太常用了，吴恩达老师把基于U-Net的语义分割加入了这周的课中。</p>
+</blockquote>
+<p>语义分割也是应用非常广泛的一项CV任务。相较于只把物体框出来的目标检测，语义分割会把每一类物体的每个像素都精确地标出来。如下图的示例所示，输入一张图片，语义分割会把每一类物体准确地用同一种颜色表示。</p>
+<p><img src="/2022/07/26/DLS-note-12/15.jpg" alt></p>
+<p>具体来说，语义分割的输出是一个单通道图片。图片的数字表示此处像素的类别。</p>
+<p><img src="/2022/07/26/DLS-note-12/16.jpg" alt></p>
+<p>在分类模型中，图像会越卷越小，最后压平放进全连接层并输出多个类别的分类概率。而在语义分割模型中，由于模型的输出也是一幅图像，在输入图像被卷小了以后，应该还有一个放大的过程。</p>
+<p><img src="/2022/07/26/DLS-note-12/17.jpg" alt></p>
+<p>目前，我们还没有学过带学习参数的可以放大图像分辨率的结构。下一节介绍的反卷积能够完成这件事。</p>
+<h2 id="反卷积"><a href="#反卷积" class="headerlink" title="反卷积"></a>反卷积</h2><p><img src="/2022/07/26/DLS-note-12/1.gif" alt></p>
+<p>反卷积和卷积的输入输出大小彻底相反。让我们看看反卷积的形状是怎么计算的。</p>
+<p><img src="/2022/07/26/DLS-note-12/18.jpg" alt></p>
+<p>如上图所示，反卷积也有卷积核大小、步幅、填充这些参数。不过这些参数都是在输出图像上做的。也就是说，我们会在输出图像上做填充，并且每次在输出图像上一步一步移动。我们把正卷积的输出大小计算公式套到反卷积上的输出上，就能算出反卷积的输入的大小。</p>
+<p>在卷积时，我们是把卷积核与图像对应位置的数字乘起来，再求和，算出一个输出值；反卷积则是反了过来，把一个输入值乘到卷积核的每个位置上，再把乘法结果放再输出的对应位置上。一趟反卷积计算如下图所示：</p>
+<p><img src="/2022/07/26/DLS-note-12/19.jpg" alt></p>
+<p>这里我们只需要知道反卷积可以做上采样就行了，不需要纠结底层实现细节。</p>
+<blockquote>
+<p>本课对反卷积的介绍甚少。实际上，反卷积可以通过正卷积来实现。我扫了一圈没看到讲解得比较好的相关文章，有兴趣的可以自行查找资料。</p>
+</blockquote>
+<h2 id="U-Net-架构"><a href="#U-Net-架构" class="headerlink" title="U-Net 架构"></a>U-Net 架构</h2><p>学完了反卷积，可以来看U-Net的结构了。</p>
+<p>U-Net除了对图像使用了先缩小再放大的卷积外，还使用了一种跳连（不是ResNet中残差连接的跳连，而是把两份输入拼接在了一起）。这样，在反卷积层中，不仅有来自上一层的输入，还有来自前面相同大小的正卷积的结果。这样做的好处是，后半部分的网络既能获得前一个卷积的抽象、高级（比如类别）的输入，又能获得前半部分网络中具体，低级的特征（比如形状）。这样，后面的层能够更好地生成输出。</p>
+<p><img src="/2022/07/26/DLS-note-12/20.jpg" alt></p>
+<p>U-Net具体的结构如下：</p>
+<p><img src="/2022/07/26/DLS-note-12/21.jpg" alt></p>
+<p>这幅图中，做运算的图像张量被表示成了一个二维矩形，矩形的高度是图像的宽高，矩形的宽度是通道数。U-Net的前半部分和常见的CNN一样，缩小图像大小，增大图像通道数。而在后半部分中，每次上采样时，一半的通道来自上一层的输出，另一半的通道来自于网络前半部分。</p>
+<p>从图中能看出，U-Net的结构图是一个“U”型，因此它才被叫做U-Net。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我们主要学习了以下内容：</p>
+<ul>
+<li>任务定义与输出格式<ul>
+<li>目标定位</li>
+<li>关键点检测</li>
+<li>目标检测</li>
+<li>语义分割</li>
+</ul>
+</li>
+<li>YOLO<ul>
+<li>用卷积实现全连接</li>
+<li>用卷积实现滑动窗口</li>
+<li>锚框</li>
+<li>IoU</li>
+<li>NMS</li>
+<li>YOLO算法</li>
+</ul>
+</li>
+<li>U-Net<ul>
+<li>反卷积</li>
+<li>U-Net架构</li>
+</ul>
+</li>
+</ul>
+<p>这周的代码实战中，我会详细讲解NMS的实现。时间允许的话，我还会展示一下如何在COCO上训练YOLO。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/20220717-chinese-internet/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1609,209 +1830,6 @@ a^{[l+2]}&=a^{[l]}. \\
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/07/08/20220707-ZeroDCE/" class="post-title-link" itemprop="url">Zero-DCE 论文解读 | 无需参考数据的实时低光照增强算法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-07-08 00:06:31" itemprop="dateCreated datePublished" datetime="2022-07-08T00:06:31+08:00">2022-07-08</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>拍照时，我们可能辛辛苦苦地找了个角度，却忘记了调整光线，拍出了黑乎乎的照片：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/1.jpg" alt></p>
-<p>这种情况下，最常见的补救方法是P图。打开PhotoShop，按下”ctrl+m”，就能够打开调整图像亮度的界面：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/2.jpg" alt></p>
-<p>这个界面中间灰色的区域表示图像的亮度分布。坐标轴横轴表示亮度，纵轴表示对应亮度的像素的数量。可以看出，整幅图片非常暗，亮度低的像素占了大多数。</p>
-<p>为了提亮图片，我们可以调整中间那条曲线。这条曲线表示如何把某一种亮度映射到另一种亮度上。初始情况下，曲线是$y=x$，也就是不改变原图片的亮度。由于低亮度的像素占比较多，我打算构造一个对低亮度像素进行较大增强，而尽可能保持高亮度像素的曲线。其运行结果如下：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/3.jpg" alt></p>
-<p>嗯，不错。看起来图像确实变亮了不少。但感觉图片看上去还不够自然。有没有一种自动帮我们提亮图像的工具呢？</p>
-<p>Zero-DCE就是一个利用深度学习自动调亮图片的算法。让我们看看它的运行结果：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/4.jpg" alt></p>
-<p>哇！这也太强了。除了效果好之外，Zero-DCE还有许多亮点：</p>
-<ul>
-<li>不需要带标注的数据，甚至不需要参考数据（这里的参考数据指一张暗图对应的亮图）！</li>
-<li>训练数据少，训练时间短，只需约30分钟。</li>
-<li>推理速度极快。在手机上也能实时运行。</li>
-</ul>
-<p>让我们来读一下Zero-DCE的论文，看看这个算法是怎么实现的。看完论文后，我还会解读一下官方的PyTorch代码实现。</p>
-<h1 id="Zero-DCE-论文解读"><a href="#Zero-DCE-论文解读" class="headerlink" title="Zero-DCE 论文解读"></a>Zero-DCE 论文解读</h1><h2 id="核心思想"><a href="#核心思想" class="headerlink" title="核心思想"></a>核心思想</h2><p>自从CNN（卷积神经网络）火了以后，很多图像问题都可以用CNN来解决：把图像输入进CNN，乱卷一通，最后根据任务的需要，输出分类的概率（图像分类）、检测框和类别（目标检测）或另一幅图像（超分辨率）。</p>
-<p>同时，对于输出也是一幅图像的问题，人们会利用GAN（生成对抗网络）能生成图像的特性，尝试用GAN来解决问题。比如在超分辨率任务中，GAN就得到了广泛的使用。</p>
-<p>而图像提亮问题恰好就是一个输入、输出都是图像的问题。在此之前，既有基于CNN的方法，也有基于GAN的方法。人们尝试构造更精巧的网络，希望网络能输出亮度更合适的图像。</p>
-<p>可是，Zero-DCE别出心裁，返璞归真地用了一种更简单的方式来生成亮度更合适的图像。还记得本文开头提到的，PhotoShop里的那个亮度映射曲线吗？实际上，我们只需要一条简简单单的曲线，把不同亮度的像素映射到一个新的亮度上，就足以产生亮度恰好合适的图像了。Zero-DCE就是用神经网络来拟合一条亮度映射曲线，再根据曲线和原图像生成提亮图像。整个计算过程是可导的，可以轻松地用梯度下降法优化神经网络。</p>
-<p>另外，与其他一些任务不同，「亮度」是一个很贴近数学的属性。对于物品的种类、文字的意思这种抽象信息，我们很难用数字来表达。而亮度用一个数字来表示就行了。因此，在图像提亮问题中，我们不一定需要带标签的训练数据，而是可以根据图像本身的某些性质，自动判断出一幅图像是不是“亮度合理”的。</p>
-<p>为了让计算机自动判断生成图像的亮度、与原图像的相似度等和图像质量相关的属性，Zero-DCE在训练中使用了一些新颖的误差函数。通过用这些误差函数约束优化过程，算法既能保证生成出来的图片亮度合理，又能保证图片较为真实、贴近原图像。</p>
-<p>拟合亮度映射的曲线、不需要标签的误差函数，这两项精巧的设计共同决定了Zero-DCE算法的优势。原论文总结了该工作的三条贡献：</p>
-<ol>
-<li>这是第一个不需要参考结果的低光照增强网络，直接避免了统计学习中的过拟合问题。算法能够适应不同光照条件下的图片。</li>
-<li>该工作设计了一种随输入图像而变的映射曲线。该曲线是高阶的。每个像素有一条单独的曲线。曲线能高效地完成映射过程。</li>
-<li>本作的方法表明，在缺乏参考图像时，可以设计一个与任务相关而与参考图像无关的误差，以完成深度图像增强模型的训练。</li>
-</ol>
-<p>除了学术上的贡献外，算法也十分易用。算法的提亮效果优于其他方法，训练速度和推理速度更是冠绝一方。</p>
-<p>接下来，让我们详细探究一下亮度映射曲线、误差函数这两大亮点究竟是怎么设计的。</p>
-<h2 id="提亮曲线"><a href="#提亮曲线" class="headerlink" title="提亮曲线"></a>提亮曲线</h2><p>本文使用的亮度映射曲线被称作<strong>提亮曲线(Light-Enhancement Curve, LE-curve)</strong>。设计该曲线时，应满足几个原则：</p>
-<ol>
-<li>由于亮度值落在区间$[0, 1]$，为保证亮度值的值域不变，曲线在0处值要为0，在1处值要为1。</li>
-<li>曲线必须是单调递增的。不然可能会出现图像中原本较亮的地方反而变暗。</li>
-<li>曲线公式必须简单，以保证可导。</li>
-</ol>
-<p>因此，本作使用了如下的公式描述曲线：</p>
-<script type="math/tex; mode=display">
-LE(I(\mathbf{x}); \alpha)=I(\mathbf{x})+\alpha I(\mathbf{x})(1-I(\mathbf{x}))</script><p>其中，$\mathbf{x}$是像素坐标，$\alpha \in [-1, 1]$是可学习参数，$LE(I(\mathbf{x}); \alpha)$是输入$I(\mathbf{x})$的增强图像（三个颜色通道分别处理）。这个函数非常巧妙，大家可以验证一下它是不是满足刚刚那三条原则。</p>
-<p>$\alpha$是公式里唯一一个可变参数。我们来看看不同的$\alpha$能产生怎样的曲线；</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/5.jpg" alt></p>
-<p>可以看出，$\alpha$虽然能够上下调节曲线，但由于曲线本质上是一个二次函数，曲线的变化还不够丰富。为了拟合更复杂的曲线，本作<strong>迭代</strong>嵌套了这个函数。也就是说：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-LE_1(\mathbf{x})&=I(\mathbf{x})+\alpha_1 I(\mathbf{x})(1-I(\mathbf{x})) \\
-LE_2(\mathbf{x})&=LE_1(\mathbf{x})+\alpha_2 LE_1(\mathbf{x})(1-LE_1(\mathbf{x})) \\
-......
-\end{aligned}</script><p>一般地，</p>
-<script type="math/tex; mode=display">
-LE_n(\mathbf{x})=LE_{n-1}(\mathbf{x})+\alpha_n LE_{n-1}(\mathbf{x})(1-LE_{n-1}(\mathbf{x})) \\</script><p>迭代嵌套开始那个二次函数，就能够表示一个更高次的函数了。每一轮迭代，都有一个新的参数$\alpha_n$。本作令最大的$n$为8，即调用二次函数8次，拟合某个$2^8$次函数。</p>
-<p>但是，我们不希望每个像素都用同样的提亮函数。比如如果图像中某个地方亮着灯，那么这个地方的像素值就不用改变。因此，每个像素应该有独立的$\alpha$。最终的提亮函数为：</p>
-<script type="math/tex; mode=display">
-LE_n(\mathbf{x})=LE_{n-1}(\mathbf{x})+A_n(\mathbf{x}) LE_{n-1}(\mathbf{x})(1-LE_{n-1}(\mathbf{x}))</script><p>这一改动还是很有必要的。下图显示了某输入图片在不同像素处的$\alpha$的绝对值：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/6.jpg" alt></p>
-<p>可以看出，在较亮的地方，图像没有变化，$\alpha$几乎为0；而在较暗的地方，$\alpha$的数值也较大。</p>
-<p>知道了要拟合的目标曲线的公式，下面我们来看看拟合该曲线的神经网络长什么样。</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/7.jpg" alt></p>
-<p>由于要拟合的数据不是很复杂，本作使用到的网络DCE-Net非常简单。它一共有7层（6个隐藏层，1个输出层）。所有层都是普通的3x3等长(stride=1)卷积层。为保持相邻像素间的联系，卷积层后不使用Batch Normalization。隐藏层激活函数为ReLU，由于输出落在$[-1, 1]$，输出层的激活函数是tanh。如图所示，6个隐藏层使用了和U-Net类似的对称跳连。3、4层的输出会拼接到一起再送入第5层，2、5层输出拼接送入第6层，1、6层输出拼接送入第7层。经过输出层后，每个像素有24个通道——有RGB 3个颜色通道，每个通道有8个参数。</p>
-<blockquote>
-<p>似乎开源代码里没有去掉Batch Normalization。</p>
-</blockquote>
-<p>看完了网络结构与其输出的意义，我们继续看一下误差函数是怎么设置的。</p>
-<h2 id="无需参考的误差函数"><a href="#无需参考的误差函数" class="headerlink" title="无需参考的误差函数"></a>无需参考的误差函数</h2><p>为了能不使用参考数据，本作精心设计了四个误差函数，以从不同的角度约束增强后的图像。</p>
-<h3 id="空间一致误差-Spatial-Consistency-Loss"><a href="#空间一致误差-Spatial-Consistency-Loss" class="headerlink" title="空间一致误差(Spatial Consistency Loss)"></a>空间一致误差(Spatial Consistency Loss)</h3><p>图像增强后，我们肯定不希望图像的内容发生改变。更准确一点描述，我们不希望某像素的值和其相邻像素的值的差发生过大的改变。因此，我们可以设置下述误差：</p>
-<script type="math/tex; mode=display">
-L_{spa}=\frac{1}{K}\Sigma_{i=1}^{K}\Sigma_{j\in \Omega(i)}(|Y_i-Y_j|-|I_i-I_j|)^2</script><p>，其中$K$是像素数，$i$是对像素的遍历。$\Omega(i)$是第$i$个像素的4邻域。$Y, I$分别是增强图像和输入图像。</p>
-<p>但实际上，我们的要求不必那么苛刻，不用要求每个像素和周围像素的相对值都不改变。在实现中，$i$其实是一个$4 \times 4$的一个“大像素”区域，每个大像素的值是其中所有像素值的平均值。在实现时，大像素可以通过平均池化来求得。因此，上式中的$K$其实指的是大像素的数量，$Y, I$分别是增强图像和输入图像经池化后得到的图像。</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/9.jpg" alt></p>
-<h3 id="曝光控制误差-Exposure-Control-Loss"><a href="#曝光控制误差-Exposure-Control-Loss" class="headerlink" title="曝光控制误差(Exposure Control Loss)"></a>曝光控制误差(Exposure Control Loss)</h3><p>为了不让某些地方过暗，某些地方过亮，我们可以让极端亮度更少，即让每个像素的亮度更靠近某个中间值。这个约束可以用如下的误差函数表达：</p>
-<script type="math/tex; mode=display">
-L_{exp}=\frac{1}{M}\Sigma_{k=1}^{M}|Y_k-E|</script><p>，其中常数$E$描述了亮度的中间值，根据经验可以取0.6。和之前的$Y$类似，这里的$Y$也是一个大像素区域中亮度的平均值。大像素宽度可调，文中使用的宽度是16。$M$是大像素的总个数。</p>
-<h3 id="颜色恒定误差-Color-Constancy-Loss"><a href="#颜色恒定误差-Color-Constancy-Loss" class="headerlink" title="颜色恒定误差(Color Constancy Loss)"></a>颜色恒定误差(Color Constancy Loss)</h3><p>根据前人研究中的某些结论，图像某一颜色通道的数值不应显著超出其他通道。因此，有如下误差：</p>
-<script type="math/tex; mode=display">
-L_{col}=\Sigma_{\forall(p, q)\in\epsilon}(J_p-J_q)^2, \epsilon=\lbrace(R, G), (R, B), (G, B)\rbrace</script><p>，这里，$(p, q)$遍历了三个颜色通道中所有两两组合，$J_p$表示颜色通道$p$的亮度平均值。</p>
-<h3 id="光照平滑误差-Illumination-Smoothness-Loss"><a href="#光照平滑误差-Illumination-Smoothness-Loss" class="headerlink" title="光照平滑误差(Illumination Smoothness Loss)"></a>光照平滑误差(Illumination Smoothness Loss)</h3><p>为了保持相邻像素的单调关系，即让相邻像素之间的亮度改变不是那么显著，我们需要让相邻像素间的参数$\alpha \in A$更相近一点。这种要求可以这样表示：</p>
-<script type="math/tex; mode=display">
-L_{tv_A}=\frac{1}{M}\Sigma_{n=1}^N\Sigma_{c\in \xi}(|\nabla_x A_n^c|+|\nabla_y A_n^c|)^2,\xi=\lbrace R, G, B\rbrace</script><p>，其中，$N$是迭代次数，$\nabla_x, \nabla_y$分别是水平和垂直的梯度算子。对于图像，水平梯度和垂直梯度就是和左方、上方相邻像素之间的数值的差。</p>
-<blockquote>
-<p>网上公开出来的论文中，这个公式少了一个左绝对值号。</p>
-</blockquote>
-<h3 id="总误差"><a href="#总误差" class="headerlink" title="总误差"></a>总误差</h3><p>总误差即上述四个误差的加权和：</p>
-<script type="math/tex; mode=display">
-L_{total}=W_1L_{spa}+W_2L_{exp}+W_3L_{col}+W_4L_{tv_A}</script><blockquote>
-<p>理论上，描述4个量的相对加权关系至少要3个权重（默认剩下一个权重为1）。但是，原论文只写了两个权重。而代码里却有3个权重。我认为是论文没写清楚。</p>
-</blockquote>
-<p>在开源代码中，上述四个权重分别为$W_1=1, W_2=10, W_3=5, W_4=200$。</p>
-<p>这四个误差中，有几个误差的作用十分重要。大家可以看看去掉某项误差后，网络的复原效果：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/8.jpg" alt></p>
-<p>去掉$L_{spa}$后，生成出来的图像勉强还行。剩下的误差，哪怕去掉任何一个，生成图像的效果都会很差劲。</p>
-<h2 id="Zero-DCE"><a href="#Zero-DCE" class="headerlink" title="Zero-DCE++"></a>Zero-DCE++</h2><p>Zero-DCE是发表在CVPR会议上的。之后，Zero-DCE的拓展版Zero-DCE++发到了TPAMI期刊上。期刊版版面足够，原论文中一些来不及讲清的地方（比如空间一致误差）在期刊版中都有更详尽的说明。大家如果想读论文，建议直接读期刊版本的。论文层层递进，逻辑非常清楚，非常适合从头到尾读一遍。</p>
-<p>Zero-DCE++在方法上主要是对性能上进行了一些增强，而没有改进原作的核心思想。拓展点有：</p>
-<ol>
-<li>和MobileNet类似，把普通卷积替换成更快的逐通道可分卷积(depthwise separable convolution)。</li>
-<li>经研究，8次迭代中，每次的参数$\alpha$都差不多。因此，可以让网络只输出3个值，而不是24个值。</li>
-<li>由于该任务对图像尺寸不敏感，为了减小卷积开销，可以一开始对图像下采样，最后再上采样回来。</li>
-</ol>
-<p>经优化后，参数量减少8倍，运算量在一般大小的图像上减少上百倍，训练只需20分钟。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Zero-DCE是一个简单优美的低光照增强算法。该算法巧妙地建模了光照增强问题，并创造性地使用了和参考数据无关的误差，竟然让基于深度学习的低光照增强算法做到了训练块、性能高、对数据要求低。希望这篇文章用到的思想也能启发其他图像任务。</p>
-<p>然而，本文的第一作者在指导我们时说道：“低光图片增强问题要解决两件事：图像去模糊和亮度增强。而Zero-DCE只能完成后者。同时，低光图片的特例也非常多。现在想做一个低光照增强的商业应用是很困难的。”是啊，想让低光照增强落地，用手机瞬间点亮拍暗了的照片，任重而道远啊。</p>
-<h1 id="Zero-DCE-开源代码的使用"><a href="#Zero-DCE-开源代码的使用" class="headerlink" title="Zero-DCE 开源代码的使用"></a>Zero-DCE 开源代码的使用</h1><p>代码可以在 <a target="_blank" rel="noopener" href="https://github.com/Li-Chongyi/Zero-DCE">https://github.com/Li-Chongyi/Zero-DCE</a> 里找到。</p>
-<p>由于算法没那么复杂，实现所需的代码并不多。同时，这份代码也写得比较工整清楚。整份代码读起来还是非常轻松的。</p>
-<h2 id="安装与使用"><a href="#安装与使用" class="headerlink" title="安装与使用"></a>安装与使用</h2><p>直接clone仓库：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone git@github.com:Li-Chongyi/Zero-DCE.git</span><br></pre></td></tr></table></figure>
-<p>之后，切到内侧的文件夹：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd Zero-DCE/Zero-DCE_code</span><br></pre></td></tr></table></figure>
-<p>直接运行脚本就行了：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python lowlight_test.py </span><br></pre></td></tr></table></figure>
-<p>注意！！这份代码对Windows不太友好，有一处路径操作写得不好。在<code>lowlight_test.py</code>这份文件中，有一坨完成<code>os.makedirs()</code>的代码，建议改成：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dir</span>, fn = os.path.split(result_path)</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(<span class="built_in">dir</span>):</span><br><span class="line">    os.makedirs(<span class="built_in">dir</span>)</span><br></pre></td></tr></table></figure>
-<p>同时，代码用VSCode打开后编辑，会出现莫名其妙的缩进不对齐问题。建议拿个格式化工具修一下。为了编辑这份代码，我不得不把所有缩进重新调了一遍。</p>
-<p>这是我跑的一个结果，效果很不错：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/10.jpg" alt></p>
-<h2 id="代码选读"><a href="#代码选读" class="headerlink" title="代码选读"></a>代码选读</h2><p>代码实现中有一些可以讲一讲的地方。</p>
-<p>看一下神经网络的实现：</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/11.jpg" alt></p>
-<p>整个神经网络部分还是很简明的。</p>
-<p>那个求第一个误差空间一致误差<code>L_spa</code>的代码是很炫酷的。让我们忽略掉那个合成大像素的操作，直接看一下这里和相邻像素的差是怎么实现的。</p>
-<p>首先，这里定义了一堆“参数”。</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/12.jpg" alt></p>
-<p>之后，这些参数被扔进了卷积里，用来卷原图像和增强图像。这是在干什么呢？</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/13.jpg" alt></p>
-<p>原来啊，在深度学习时代之前，卷积本来就是图像处理里的一个普普通通的操作。开始那张图定义的不是参数，而是<code>3x3</code>常量卷积核。用那几个卷积核卷积图像，可以得到图像和上下左右之间的差。</p>
-<p>这种写法很帅，但是增加了很多计算量。文件里有很多没删干净的代码，不知道是不是本来还有其他设计。</p>
-<p>在第四个误差<code>L_TV</code>里，也有一个要算和相邻像素之间的差的梯度计算。这份实现就写得老实多了。</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/14.jpg" alt></p>
-<p>这份代码中就是这里有一点难看懂，其他地方都是非常基础的PyTorch调用，非常适合初学者用来学习PyTorch。</p>
-<h1 id="彩蛋"><a href="#彩蛋" class="headerlink" title="彩蛋"></a>彩蛋</h1><p>其实我的头像一开始也拍得很暗。我是拿PS把这张照片提亮的。</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/15.jpg" alt></p>
-<p>非常凑巧，我在提亮这张照片时，也是用PS里的那个曲线迭代了几次。每次的曲线也恰巧都是一个二次函数。其实现过程和这篇工作如出一辙。</p>
-<p>那么，让Zero-DCE来增强这幅图像，能达到怎样的效果呢？</p>
-<p><img src="/2022/07/08/20220707-ZeroDCE/15_res.jpg" alt></p>
-<p>看来，这个算法还是不太行啊。脸部的光照过于均匀，以至于失去了真实性。头发也白了。比我自己P的差多了。而且，我根本不会用PS，只是随手调了一下，P得也不是很好。AI想战胜人类，还是早了一万年啊。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1881,7 +1899,7 @@ L_{total}=W_1L_{spa}+W_2L_{exp}+W_3L_{col}+W_4L_{tv_A}</script><blockquote>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">146</span>
+          <span class="site-state-item-count">147</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1894,7 +1912,7 @@ L_{total}=W_1L_{spa}+W_2L_{exp}+W_3L_{col}+W_4L_{tv_A}</script><blockquote>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-count">62</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

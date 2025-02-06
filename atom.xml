@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2025-02-04T17:13:42.790Z</updated>
+  <updated>2025-02-06T13:40:30.326Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,35 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>哭着看完了 Ave Mujica 第五集</title>
+    <link href="https://zhouyifan.net/2025/02/06/20250202-mujica-05/"/>
+    <id>https://zhouyifan.net/2025/02/06/20250202-mujica-05/</id>
+    <published>2025-02-06T13:40:30.000Z</published>
+    <updated>2025-02-06T13:40:30.326Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;Ave Mujica</summary>
+        
+      
+    
+    
+    
+    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    <category term="作品赏析" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E4%BD%9C%E5%93%81%E8%B5%8F%E6%9E%90/"/>
+    
+    
+    <category term="艺术" scheme="https://zhouyifan.net/tags/%E8%89%BA%E6%9C%AF/"/>
+    
+    <category term="BanG Dream" scheme="https://zhouyifan.net/tags/BanG-Dream/"/>
+    
+  </entry>
   
   <entry>
     <title>论文速览 | Sana：用线性 Transformer 高效率生成 4K 图片</title>
@@ -603,35 +632,6 @@
     <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
     
     <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Stable Video Diffusion 结构浅析与论文速览</title>
-    <link href="https://zhouyifan.net/2024/06/05/20240405-SVD/"/>
-    <id>https://zhouyifan.net/2024/06/05/20240405-SVD/</id>
-    <published>2024-06-05T07:52:11.000Z</published>
-    <updated>2024-12-27T16:06:28.574Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;近期，各个科技公司纷纷展示了自己在视频生成模型上的最新成果。虽然不少模型的演示效果都非常惊艳，但其中可供学术界研究的开源模型却少之又少。Stable Video Diffusion (SVD)</summary>
-        
-      
-    
-    
-    
-    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
     
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
