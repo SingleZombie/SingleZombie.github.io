@@ -168,6 +168,404 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/03/04/20250215-inference-time/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/03/04/20250215-inference-time/" class="post-title-link" itemprop="url">扩散模型的推理时优化：分享近期几篇噪声搜索类论文</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-03-04 16:13:20" itemprop="dateCreated datePublished" datetime="2025-03-04T16:13:20+08:00">2025-03-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>大语言模型（LLM）社区近期的一大热点研究课题是推理时扩展 (Inference-time scaling)，这一热点也逐渐传播到了以扩散模型技术为代表的图像生成社区。相比以往扩散模型图像编辑方法，这类新方法不是那么追求应用的实时性，反而更关注图像生成质量能否随着推理时间增加而提升。那么，在扩散模型中，该怎么实现推理时扩展呢？</p>
+<p>虽然扩散模型天生就有采样步数这一灵活的采样参数——采样步数越长，生成效果越好，但有实验表明，一旦采样步数多于一个值后，再扩增采样步数对生成质量的影响微乎其微。而近期不少工作从另一个角度挖掘了扩散模型的推理时扩展能力：既然扩散模型采样的开始和中间过程都受某些随机噪声影响，那么<strong>搜索</strong>更好的噪声，是不是就能带来更好的生成结果呢？如下图所示，谷歌近期的一篇论文表明，同样是增加函数调用次数（number of function evaluations， NFE），增加噪声搜索量比增加去噪步数的收益更显著。</p>
+<p><img src="/2025/03/04/20250215-inference-time/1.jpg" alt></p>
+<p>在这篇博文中，我会分享我这几天学习的几篇有关扩散模型噪声搜索的论文。具体来说，我会分享 “Golden Noise” [1] 这篇直接输出最优噪声的论文，以及使用噪声搜索的 <em>Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps</em> [2] 和 <em>Inference-Time Text-to-Video Alignment with Diffusion Latent Beam Search</em> [3] 论文。我会介绍这些论文的主要设计思想和重要实验结果，并分享一些个人科研观点。由于我也是刚开始学习，暂时不能理解论文里的所有公式，叙述时也可能会有一些纰漏。欢迎大家讨论与补充。</p>
+<h2 id="知识回顾"><a href="#知识回顾" class="headerlink" title="知识回顾"></a>知识回顾</h2><h3 id="扩散模型简述"><a href="#扩散模型简述" class="headerlink" title="扩散模型简述"></a>扩散模型简述</h3><p>扩散模型定义了加噪过程和去噪过程：加噪过程中，训练图像 $x_0$ 会加噪 $T$ 次，最后变成纯高斯噪声 $x_T$；去噪过程中，纯噪声 $x_T$ 会被去噪 $T$ 次，最后变成生成图像 $x_0$ 。去噪过程即图像生成过程。为了让模型学习去噪，我们要通过加噪过程为模型提供训练样本。</p>
+<p>对于同一个训练好的去噪模型，我们可以用不同的数学模型建模其去噪过程：使用随机微分方程（SDE）建模时，每一步去噪都会受到某随机噪声的扰动；用常微分方程（ODE）建模时，每一步去噪都是决定性的，或者说无随机性的。从随机性的角度看两种建模方式，SDE 在采样初始噪声 $x_T$ 和中间每一步采样时都有随机性，而 ODE 仅在采样初始噪声时有随机性。</p>
+<p>如果我们又想用 ODE 采样，又想在采样时加入随机性，该怎么办呢？这时，我们可以利用扩散模型定义好的加噪过程：比如当前采样到了 $x_t$，我们用加噪过程给它随机加噪两步，得到 $x_{t+2}$，再用 ODE 去噪三步，得到 $x_{t-1}$。这样，我们能在正常去噪的同时，通过加噪过程中的随机噪声引入随机性。</p>
+<p><img src="/2025/03/04/20250215-inference-time/2.jpg" alt></p>
+<p>得益于 ODE 的确定性，我们可以使用 ODE 反演 (Inversion) 来把真实图像 $x_0$ 重新变回噪声 $x_T$。相比加噪过程，由于这个反演过程没有任何随机性，我们可以保证再次对 $x_T$ 做 ODE 采样得到的重建图像 $\hat{x}_0$ 和原图像 $x_0$ 非常相似。重建图像的误差大小取决于反演算法的精确度。</p>
+<p>在去噪时，我们可以启用 CFG (Classifier-free Guidance) 功能，让输出图像更符合某一约束信息。比如，我们可以用 CFG 让输出图像更符合文本提示词。具体来说，对于一个约束于文本信息 $c$ 的网络 $\epsilon_\theta(x_t, t, c)$，我们让它输出 $\epsilon_\theta(x_t, t, c)$, $\epsilon_\theta(x_t, t, \emptyset)$ 两个值，再令这一轮的最终输出为 $(w - 1)(\epsilon_\theta(x_t, t, c) - \epsilon_\theta(x_t, t, \emptyset)) + \epsilon_\theta(x_t, t, c)$，其中 $w$ 为 CFG 强度。直观上看，当 $w &gt; 1$ 时，这一操作相当于是在原输出 $\epsilon_\theta(x_t, t, c)$ 的基础上，让输出更加远离空约束的输出，更加贴近有约束的输出。</p>
+<p>在本文中，除非特别指明，否则默认扩散模型使用 ODE 采样。</p>
+<h3 id="搜索算法"><a href="#搜索算法" class="headerlink" title="搜索算法"></a>搜索算法</h3><p>搜索算法用于从某数据集合中搜索出最符合要求的数据项。一个最简单的场景是数据库搜索：我们输入某数据，将它与数据库中所有数据逐个比对，以判断它在数据库中是否存在。这个算法可以写成：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> query</span><br><span class="line"><span class="keyword">for</span> key <span class="keyword">in</span> database:</span><br><span class="line">  <span class="keyword">if</span> key == query:</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">True</span></span><br><span class="line"><span class="keyword">return</span> <span class="literal">False</span></span><br></pre></td></tr></table></figure>
+<p>我们可以从两个角度拓展这个算法。第一，我们要搜索的数据集合可能是由某个规则指定的搜索空间，而不是一个具体的数据库里的数据。比如，我们要搜索长度为 10 的由小写字母组成的单词，那么尽管我们没有提前存下所有的单词，我们也知道搜索空间里可能的单词有 $26^{10}$ 种。这种数据的搜索空间往往较大，我们通常不能用算法在较短的时间里搜索出最优解，只能用某些启发式算法搜索出一个较优解。</p>
+<p>第二，我们不一定要让搜索成功的条件为「完全匹配」，而是可以设置一个评估函数，并从最终搜索中返回价值最大的那个数据项。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> query, evaluator</span><br><span class="line"></span><br><span class="line">best_score = -INF</span><br><span class="line">best_data = <span class="literal">None</span></span><br><span class="line"><span class="keyword">for</span> data <span class="keyword">in</span> data_space:</span><br><span class="line">  score = evaluator(data)</span><br><span class="line">  <span class="keyword">if</span> score &gt; best_score:</span><br><span class="line">    best_data = data</span><br><span class="line"><span class="keyword">return</span> best_data</span><br></pre></td></tr></table></figure>
+<p>根据这个算法结构，在阅读这篇博文时，我们可以从以下几个角度整理每篇论文：</p>
+<ol>
+<li>噪声的搜索空间是什么？（是只有开始的噪声可以修改，还是中间每一步去噪也有随机噪声？）</li>
+<li>搜索算法是什么？</li>
+<li>评估函数是什么？</li>
+</ol>
+<h2 id="噪声搜索的早期尝试"><a href="#噪声搜索的早期尝试" class="headerlink" title="噪声搜索的早期尝试"></a>噪声搜索的早期尝试</h2><p>如前所述，在扩散模型时，我们会先从高斯分布中采样，得到一个纯噪声图像 $x_T \sim N(0, \textbf{I})$，再逐步对其去噪，得到 $x_{T-\Delta t}, x_{T-2\Delta t}, …$，最后得到清晰图像 $x_0$。在各种图像编辑应用中，由于最开始的纯噪声 $x_T$ 信息过少，我们一般会对中间每一步的带噪图像 $x_{T-i\Delta t}$ 都做编辑。经典的 Classifier Guidance 和 Classifier-free Guidance 都是按照这种方式改进生成图像。</p>
+<p>随后，有研究发现，仅优化初始噪声 $x_T$ 也能提升生成质量。较早研究这一性质的论文是 CVPR 2024 的 INITNO [4]。该论文发现，对于同样的提示词，有一些「有效」噪声对应的输出更符合提示词。</p>
+<p><img src="/2025/03/04/20250215-inference-time/3.jpg" alt></p>
+<p>基于这个观察，INITNO 使用如下算法搜索最优噪声：</p>
+<ol>
+<li>对于当前某个随机噪声 $x_T$，令它每一轮优化后的值为 $\mu + \sigma x_T$。</li>
+<li>每一轮优化中，将 $\mu + \sigma x_T$ 输入进去噪网络中。根据某个来自于去噪网络的可微评价指标，用梯度下降更新 $\mu$, $\sigma$。</li>
+<li>将最后的噪声 $\mu + \sigma x_T$ 加入噪声池。</li>
+<li>多次采样初始噪声 $x_T$ ，执行上述步骤，以扩充噪声池。</li>
+<li>最后，再次根据评价指标，选出噪声池里的最优噪声。</li>
+</ol>
+<p>这篇论文选用的评价指标为去噪网络注意力模块响应程度，这种设计受到了 Attend-and-excite [5] 论文的启发。由于该指标的原理与本文主要介绍的内容无关，此处不对其做深入探讨。我们只需知道 INITNO 使用了一个两步噪声搜索算法：1）优化某个随机噪声；2）多次获取优化后噪声，再次选取一个全局最优噪声。评价噪声好坏的标准是其去噪过程中去噪网络注意力块的中间输出，这是因为这些中间输出与文本匹配度密切相关。</p>
+<p>稍晚一些的工作 “Not All Noises Are Created Equally” [6] 也汇报了类似的观察：并非所有噪声本质相同，有些噪声的生成质量更高。这个工作实现了两类搜索算法：</p>
+<p>1) 噪声选取：从多个随机噪声中直接选取指标最优的那一个。<br>2) 噪声优化：从当前噪声开始，根据优化指标用梯度下降优化当前噪声。</p>
+<p><img src="/2025/03/04/20250215-inference-time/4.jpg" alt></p>
+<p>从搜索算法上看，这个工作相当于把 INITNO 里的两步搜索算法拆成了两种算法。</p>
+<p>这个工作用了一种有趣的评价指标。对于噪声 $x_T$，我们求它先生成，再 DDIM 反演 (DDIM Inversion) 得到重建噪声 $\x’_T$。之后，我们令重建稳定性为 $x_T$ 和 $\x’_T$ 的 cos 相似度。论文指出，重建稳定性更好的噪声具有更高的生成质量。尽管作者并没有严谨地分析这个指标，但实验表明这种指标确实有效。我们在后文中会看到，该团队的后续工作对这个指标的原理进行了一定的解释。</p>
+<h2 id="Golden-Noise-直接输出临近最优噪声"><a href="#Golden-Noise-直接输出临近最优噪声" class="headerlink" title="Golden Noise: 直接输出临近最优噪声"></a>Golden Noise: 直接输出临近最优噪声</h2><p>“Not All Noises Are Created Equally” 的研究团队后续推出了其改进版 <em>Golden Noise for Diffusion Models: A Learning Framework</em> [1]。这篇论文最大的亮点是不直接使用噪声搜索，而是先用噪声优化方法得到「差噪声-好噪声」这样的数据对作为训练样本，再用一个小网络学习差噪声到好噪声的映射。在阅读这篇论文时，我们主要关注两件事：1）如何为差噪声找到对应的好噪声？2）噪声优化网络有何亮点？</p>
+<p>在构建训练样本时，Golden Noise 并没有用噪声搜索技术，而是用规则直接得到更好的噪声。和前作”Not All Noises Are Created Equally” 一样，这篇论文把噪声 $x_T$ 先去噪再 DDIM 反演的重建噪声当成一个更好的噪声。稍有不同的是，这篇文章明确指出，去噪时使用的 CFG 强度大于 1，而反演的时候 CFG 强度等于 1。这样得到的重建噪声 $x’_T$ 能够更加贴近约束文本的描述。</p>
+<p>作者用公式推导介绍了这项技术的原理。通过合并去噪和 DDIM 反演的公式，我们能够用下面的式子描述原噪声 $x_T$ 和反演噪声 $x’_T$ 的关系。我们可以忽略多数参数，只看后面 $\epsilon$ 做差的那一项。前面的系数 $w_l - w_w$ 表示去噪 CFG 强度 $w_l$ 减去重建 CFG 强度 $w_w$。可以发现，这个式子和 CFG 类似，也是写成了带约束输出 $\epsilon(\cdot, c)$ 减去无约束输出 $\epsilon(\cdot, \emptyset)$ 的形式。那么，它的作用也和 CFG 类似，可以把噪声「推向」更靠近文本描述的方向。</p>
+<p><img src="/2025/03/04/20250215-inference-time/6.jpg" alt></p>
+<p>该团队的同期工作 Zigzag Diffusion Sampling [7] 用了更多示意图来直观解释这项技术的原理。从语义贴合度的角度看，使用 CFG &gt; 1 的强度做去噪会提升噪声的语义贴合度，而使用 CFG = 1 的强度做反演几乎不会改变噪声的语义贴合度。因此，只要反复执行去噪-反演过程，就能让噪声的语义贴合度逐渐提升。</p>
+<p><img src="/2025/03/04/20250215-inference-time/7.jpg" alt></p>
+<p>先去噪再反演只能提升噪声的语义贴合度，而不能保证图像的质量提升。因此，在构建好噪声时，Golden Noise 还使用了一种拒绝采样策略，以确保找到的「好噪声」确实能生成高质量图片。具体来说，Golden Noise 用一个基于神经网络的图像质量评估器和原噪声 $x_T$ 对应图像 $x_0$ 和新噪声 $x’_T$ 对应图像 $x’_0$ 分布打分。只有 $x’_0$ 的分数比 $x_0$ 高出一点时，才把 $(x_T, x’_T)$ 加入训练集。</p>
+<p><img src="/2025/03/04/20250215-inference-time/5.jpg" alt></p>
+<p>我们再简单看一下噪声预测网络的设计。这个网络会根据输入的差噪声 $x_T$ 输出语义贴合度高且质量更高的噪声 $x’_T$。作者发现，每对噪声的 SVD (奇异值分解) 结果非常相似。因此，Golden Noise 设计了一个两路网络：一个网络根据输入噪声，输出预测噪声的大致 SVD，它决定了最终噪声的主要内容；另一个网络根据输入噪声和文本嵌入，输出一个残差噪声，用于补充细节。</p>
+<p><img src="/2025/03/04/20250215-inference-time/8.jpg" alt></p>
+<h2 id="一套完整的噪声搜索基础框架"><a href="#一套完整的噪声搜索基础框架" class="headerlink" title="一套完整的噪声搜索基础框架"></a>一套完整的噪声搜索基础框架</h2><p>2025 年 1 月，谷歌谢赛宁团队公布了论文 <em>Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps</em>。这篇论文依然是从搜索更优的初始噪声或中间噪声的角度来提升扩散模型采样质量。但相比之前的工作，这个工作作出了两大贡献：</p>
+<ul>
+<li>从推理时扩展 (Inference-time scaling) 的角度认识噪声搜索，研究采样计算量与图像指标的关系。</li>
+<li>提出了一套系统性的噪声搜索框架，指明了框架的两个设计维度：评估图像质量的评估函数和搜索时使用的算法。这篇博文对搜索算法的建模方式主要参考自这一框架。</li>
+</ul>
+<p>下图是论文中的第一张示意图。彩色的线是增加噪声搜索量的结果，灰色的线是增加采样步数的结果。可以看出，不管是哪个评价指标，增加噪声搜索量对图像质量的提升都更加明显。</p>
+<p><img src="/2025/03/04/20250215-inference-time/9.jpg" alt></p>
+<p>这篇论文的叙述逻辑十分流畅。让我们按照论文的叙述顺序，看看这个工作用到了哪些搜索算法与图像质量评价指标。</p>
+<h3 id="早期验证"><a href="#早期验证" class="headerlink" title="早期验证"></a>早期验证</h3><p>为了简单验证是否可以通过增加噪声搜索量来提升图像质量，这篇论文开展了一个简单的验证实验：使用在 ImageNet-256 上训练的 SiT [8] 模型，使用较简单的搜索算法和最直接的评估指标，观察模型<strong>按类别</strong>生成（额外输入一个类别标签）质量随搜索量的变化趋势。</p>
+<p>具体来说，在搜索算法上，作者采用了「随机搜索」(random research) 算法：和 “Not All Noises Are Created Equally” 中的噪声选取一样，算法随机采样大量噪声，然后选择效果最好的那个噪声。在评估函数上，作者采用了简单粗暴的「面向答案」策略：如果最终的测试指标是 Inception Score，就选取 Inception V3 网络的对输入类别的分类概率最大的噪声；同理，如果最终测试指标是 FID，就贪心地选取让 FID 尽可能小的噪声。由于实际应用中，我们不能用这种「作弊」的方法提前知道评测指标，因此这种评估函数仅供概念验证使用。</p>
+<p>以下是早期验证实验的结果。由图可知，提升计算量能够明显提升图像质量。比如，左侧 FID 结果中，对于 CFG=1 的曲线，不使用噪声搜索（NFE 最少的那个点）的结果很差；然而，增加噪声搜索量后，CFG=1 的 FID 分数甚至能超过 CFG=1.5 的。</p>
+<p><img src="/2025/03/04/20250215-inference-time/10.jpg" alt></p>
+<p>之后，论文测试了两个更加合理的评估函数：使用 CLIP 和 DINO 分类器。和前面的 Inception V3 网络一样，评估函数会找出分类概率最大的输出。</p>
+<blockquote>
+<p>用 CLIP 做类别分类器时，需要把类别转换成文本。</p>
+</blockquote>
+<p>使用更合理的评估函数后，依然能观察到图像 Inception Score 随搜索量增长的现象。</p>
+<p><img src="/2025/03/04/20250215-inference-time/11.jpg" alt></p>
+<h3 id="其他搜索算法"><a href="#其他搜索算法" class="headerlink" title="其他搜索算法"></a>其他搜索算法</h3><p>随机搜索算法虽然表现不错，但这个算法会导致验证器欺骗 (verifier hacking)：算法快速在整个高斯噪声空间中找到了那些验证分数更高的噪声。但是，验证器总是存在偏见的，验证器高分不总是代表图像质量高。因此，验证器欺骗会导致输出图像分数虚高，且多样性下降。</p>
+<p>为了缓解这个问题，论文尝试了其他搜索算法。论文先尝试了零阶搜索（Zero-Order Search, ZO）算法 ：对于某个输入噪声，仅在其小邻域里搜索更好的噪声。搜索时，我们随机从邻域里取一些噪声，然后选评估分数最高的那一个噪声。之所以把这个算法称为「零阶」，是因为先有一阶搜索算法：让评估函数对噪声求梯度，沿着令评估分数更好的梯度方向优化。但作者发现，一阶搜索算法需要反向传播梯度，速度太慢了，相较零阶搜索并没有明显优势。</p>
+<blockquote>
+<p>“Not All Noises Are Created Equally” 的噪声优化算法是一种一阶搜索算法。</p>
+</blockquote>
+<p>另外，论文还尝试了沿路径搜索（Search over Paths）算法。在这个算法中，作者把原来的 ODE 采样改成了 ODE-重加噪采样：每次去噪几步，稍微加噪几步，又去噪几步。这样，就可以在采样过程中也引入随机噪声。沿路径搜索希望找到一条最优的生成路径，这个路径既涉及初始噪声，也涉及中间噪声。</p>
+<p>在搜索时，沿路径搜索采用了 beam search 的策略：维护一个大小为 $N$ 的当前最优带噪图像。每一步，对每个带噪图像（也就是每条采样路径）采样 $M$ 个噪声，得到 $NM$ 个可能的下一轮带噪图像。最后，使用评估函数，从 $NM$ 个图像中挑选最优的 $N$ 个。 </p>
+<p>在前两种搜索算法中，我们都是得到了最终的生成图片 $x_0$，再用评估函数来评估 $x_0$ 的质量。但在沿路径搜索中，我们在采样过程中途就要决定当前带噪图像 $x_t$ 的质量。为了高效评测 $x_t$ 的质量，沿路径搜索会先对 $x_t$ 执行一步去噪，再根据扩散模型公式算出一个临时预估的 $x_0$，最后评估该 $x_0$ 的质量。</p>
+<p>如下图所示，这两个新搜索算法也是有效的。各项实验的详细参数请参考原论文。</p>
+<p><img src="/2025/03/04/20250215-inference-time/12.jpg" alt></p>
+<h3 id="文生图模型实验"><a href="#文生图模型实验" class="headerlink" title="文生图模型实验"></a>文生图模型实验</h3><p>在较为简单的按类别图像生成任务上验证了想法的有效性后，论文展示了文生图任务上噪声搜索的效果。</p>
+<p>将任务拓展成文生图后，不需要重新设计搜索算法，只需要更新评估方法。论文选用的评估方法包括 ASP (Aesthetic Score Predictor), CLIPScore, ImageReward。它们的评估标准如下：</p>
+<ul>
+<li>ASP 模型为输入图像预测一个美学分数。</li>
+<li>CLIPScore 表示 CLIP 输出的图文匹配程度。</li>
+<li>ImageReward 能够从图文匹配度、美学质量、无害度等多个角度评估图像。</li>
+</ul>
+<p>除了单独使用上述某个评估方法外，还能够将所有评估方法组合成一个集成（ensemble），更综合地评估图像。</p>
+<p>在测试时，论文使用了同样的指标。但是，为了确保对比的公平性，我们应该忽略评估方法和测试指标完全相同时的结果。另外，论文还汇报了多模态大语言模型 (MLLM) 的打分结果，作为补充测试指标。</p>
+<p>下图展示了在 FLUX.1-dev 上使用上述评估方法做噪声搜索的实验结果。第一行的实验是不使用噪声搜索，只用 30 次 NFE 做去噪的实验结果。后面的实验都是用了 2880 次 NFE 在搜索上。相比之前 ImageNet 上的 FID 实验，此处指标提升得并不明显。</p>
+<p><img src="/2025/03/04/20250215-inference-time/13.jpg" alt></p>
+<p>论文还展示定性实验结果。每一行前三张图像是增加去噪 NFE 的结果，从第四张图像开始是增加搜索 NFE 的结果。</p>
+<p><img src="/2025/03/04/20250215-inference-time/14.jpg" alt></p>
+<h3 id="与偏好微调结合"><a href="#与偏好微调结合" class="headerlink" title="与偏好微调结合"></a>与偏好微调结合</h3><p>现在 LLM 普遍采用了根据奖励函数微调模型的策略，比如直接偏好优化（Direct Preference Optimization，DPO）。这些微调技术也被用到了扩散模型中，比如 Diffusion-DPO [9]。而噪声搜索的做法和这些微调方法很像，都是基于某一个奖励函数，让模型的输出更符合人类的偏好。那么，对于微调过的模型，噪声搜索还有用吗？</p>
+<p>论文展示了在 Diffusion-DPO 中的 SDXL-DPO 上应用噪声搜索的实验结果。可以看出，噪声搜索同样兼容偏好微调模型。</p>
+<p><img src="/2025/03/04/20250215-inference-time/15.jpg" alt></p>
+<h2 id="视频扩散模型中的-Beam-Search"><a href="#视频扩散模型中的-Beam-Search" class="headerlink" title="视频扩散模型中的 Beam Search"></a>视频扩散模型中的 Beam Search</h2><p>最后，我们来简单浏览近期另一篇使用噪声搜索技术的论文： <em>Inference-Time Text-to-Video Alignment with Diffusion Latent Beam Search</em> [3]。相比前几篇论文，这篇论文主要是把噪声技术拓展到了视频模型上。阅读这篇论文时，我们会简单看一下论文的搜索算法和视频评估函数，并讨论论文中的部分理论推导。</p>
+<h3 id="Beam-Search-噪声搜索"><a href="#Beam-Search-噪声搜索" class="headerlink" title="Beam Search 噪声搜索"></a>Beam Search 噪声搜索</h3><p>这篇论文用到的搜索策略和上文中的沿路径搜索完全相同。即一轮去噪中，我们维护 $N$ 个最优带噪视频，并从 $NM$ 个下一轮带噪视频中选取最优的 $N$ 个。一个 $N=2, M=2$ 的示意图如下所示：</p>
+<p><img src="/2025/03/04/20250215-inference-time/16.jpg" alt></p>
+<p>同样，在这个搜索算法中，我们无法提前获取清晰视频 $x_0$，需要用某种方法即时评估带噪视频 $x_t$。上一篇论文通过一步去噪并提前获取预测 $x_0$ 的方式实现了在线评估。而这篇论文采取了另一种类似的策略：对当前带噪视频执行一个步数极少（2~3）步的 DDIM 采样，以快速预测当前 $x_t$ 对应的 $x_0$，再评估预测的 $x_0$ 的质量。</p>
+<h3 id="视频评估指标"><a href="#视频评估指标" class="headerlink" title="视频评估指标"></a>视频评估指标</h3><p>这篇论文将 MLLM 的打分结果作为最终优化目标。但由于此评估方法过于耗时，在搜索时，该论文还是用了一些更高效的评价指标，包括：</p>
+<ul>
+<li>主体一致性：用帧间 DINO 特征的相似度表示</li>
+<li>运动平滑性：借助视频插帧网络提取视频运动特征</li>
+<li>运动程度：用光流表示</li>
+<li>美学质量：用 LAION 美学预测器评估</li>
+<li>图像质量：用一个能够检测图片是否过曝、模糊的 low-level 质量评估网络评估</li>
+<li>文本-视频一致性：用一个视频版 CLIP 评估</li>
+</ul>
+<p>论文以上述 6 个指标的线性组合为最终评估指标。为了获取最优的线性组合权重，论文暴力尝试了若干组参数，并根据 MLLM 的打分结果选取最优线性组合。</p>
+<h3 id="理论推导"><a href="#理论推导" class="headerlink" title="理论推导"></a>理论推导</h3><p>尽管这篇论文最后还是使用了简单粗暴的噪声搜索技术来优化扩散模型生成质量，但论文为这种做法提供了一些理论解释。作者借助了随机最优控制 （stochastic optimal control）中的相关技术，把让采样结果更符合某个奖励函数这一问题，转化成先求奖励函数对带噪图像梯度，再把该梯度加入去噪公式。这一技术和 Classifier Guidance 的思想非常相似：如下图所示，在 Classifier Guidance 中，我们可以对网络输出加上一个对 $x_t$ 求梯度的项，使得 $x_t$ 往某个奖励函数 （此处的奖励函数是一个分类网络，用于让图像更像某类物体）的方向靠近。</p>
+<p><img src="/2025/03/04/20250215-inference-time/17.jpg" alt></p>
+<p>但是，求梯度太耗时了。而求梯度的一种高效近似就是零阶搜索：随机搜索附近的一些 $x_t$，找到值最优的那个 $x_t$。所以，我们可以把噪声搜索看成是 Classifier Guidance 的一种近似操作。</p>
+<h2 id="总结与评价"><a href="#总结与评价" class="headerlink" title="总结与评价"></a>总结与评价</h2><p>噪声搜索是扩散模型采样过程中一种通过选取最优初始、中间噪声来提升图像质量的技术。在这篇博文中，我们主要学习了早期利用扩散模型自身性质搜索噪声的 INITNO 和 <em>Not All Noises Are Created Equally</em>，直接用神经网络预测更优噪声的 Golden Noise，系统性建模噪声搜索的 <em>Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps</em>，以及将噪声搜索应用到视频生成的 <em>Inference-Time Text-to-Video Alignment with Diffusion Latent Beam Search</em>。我们可以从是否搜索中间噪声、搜索算法、评估函数三个维度描述一个噪声搜索方法。本文的方法可以总结如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>搜索中间噪声？</th>
+<th>搜索算法</th>
+<th>评估函数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>INITNO</td>
+<td>否</td>
+<td>局部一阶搜索+全局随机搜索</td>
+<td>扩散模型注意力输出</td>
+</tr>
+<tr>
+<td>No All Noise</td>
+<td>否</td>
+<td>全局随机搜索/局部一阶搜索</td>
+<td>去噪-反演稳定性</td>
+</tr>
+<tr>
+<td>Golden Noise</td>
+<td>否</td>
+<td>神经网络预测</td>
+<td>去噪-反演稳定性+图像质量</td>
+</tr>
+<tr>
+<td>beyond Scaling Denoising Steps</td>
+<td>仅在沿路径搜索中</td>
+<td>全局随机搜索/局部零阶搜索/沿路径零阶 beam search</td>
+<td>分类器最大概率/美学打分器/ImageReward</td>
+</tr>
+<tr>
+<td>Inference-Time Text-to-Video Alignment</td>
+<td>是</td>
+<td>沿路径零阶 beam search</td>
+<td>主体一致性/运动平滑性/运动程度/美学质量/图像质量</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>从任务目标来看，噪声搜索希望模型输出能够满足某个奖励函数，尤其是满足人类偏好的奖励函数。它和相关技术的对比如下：</p>
+<ul>
+<li>Classifier Guidance: 用奖励函数一阶导数指导生成。</li>
+<li>噪声搜索：使用零阶搜索时，可以看成 Classifier Guidance 的高效近似版。</li>
+<li>偏好优化 finetune：用奖励函数微调模型参数。</li>
+</ul>
+<p>我认为这项技术并不是一个很好的科研方向，原因有：</p>
+<ul>
+<li>噪声搜索的做法太简单暴力了。使用过 AI 绘画的用户，应该都尝试过随机生成大量图片，然后从中挑选自己满意的图片。所谓噪声搜索只不过把这个过程自动化了而已。所有这些方法中只有 Golden Noise 的直接预测噪声看起来比较新奇。</li>
+<li>不同噪声对应的图像质量不同是一个有趣的观察。但是，这些论文并没有深入分析这个问题的原因，只是用实验去证明哪些做法可以缓解这个问题。从科研上，我们更希望有文章能够深入解释某一个现有问题。</li>
+<li>虽然有文章宣称噪声搜索是一种推理时扩展，但仔细浏览实验表格，噪声搜索带来的提升太有限了：网络运算次数从 30 增大到了 2880，是原来运行时间的 96 倍，换来的只是一点微小的指标提升。还不能排除文章中展示的定性图片是精挑细选的结果。</li>
+</ul>
+<p>我猜测不同噪声的本质不同在于，当前扩散模型的初始噪声是放在一个二维像素网格里的。在随机采样完成后，像素间的某些关联性就被确定下来了。无论在后续采样过程中怎么干预，一开始的图像结构都难以改变。但我们更希望一开始噪声的每个维度都互相解耦合的，这样噪声的生成质量的方差或许会更小一点。要让噪声的每个维度一开始互相独立，我们可能需要设计一种新的图像表示方法，而不用二维像素结构。</p>
+<p>我认为扩散模型的推理时扩展确实是一个有价值的研究方向。但就目前来看，噪声搜索显然不是实现这个目标的最优解。</p>
+<h2 id="部分参考文献"><a href="#部分参考文献" class="headerlink" title="部分参考文献"></a>部分参考文献</h2><p>对于某些经典论文 (如 CLIP, Classifier Guidance)，可以直接通过搜索关键词找到论文。其他一些较新的论文有：</p>
+<p>[1] Golden Noise for Diffusion Models: A Learning Framework</p>
+<p>[2] Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps</p>
+<p>[3] Inference-Time Text-to-Video Alignment with Diffusion Latent Beam Search</p>
+<p>[4] INITNO: Boosting Text-to-Image Diffusion Models via Initial Noise Optimization</p>
+<p>[5] Attend-and-excite: Attention-based semantic guidance for text-to-image diffusion models</p>
+<p>[6] Not All Noises Are Created Equally: Diffusion Noise Selection and Optimization Zipeng</p>
+<p>[7] Zigzag Diffusion Sampling: Diffusion Models Can Self-Improve via Self-Reflection</p>
+<p>[8] Sit: Exploring flow and diffusion-based generative models with scalable interpolant transformers.</p>
+<p>[9] Diffusion model alignment using direct preference optimization.</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/02/13/20250212-not-all-noise/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/02/13/20250212-not-all-noise/" class="post-title-link" itemprop="url">一个有趣却撤稿 ICLR 2025 的工作：并非所有扩散模型噪声本质相同</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-02-13 18:38:08" itemprop="dateCreated datePublished" datetime="2025-02-13T18:38:08+08:00">2025-02-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>自从 ChatGPT o1 在 2024 年 9 月发布后，人们逐渐把研究重点放在了推理时扩展 (Inference-time scaling) 上。对于扩散模型而言，除了在推理时增加步数外，谷歌今年 1 月的研究 <em>Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps</em> 表明，搜索更好的扩散模型噪声也能提升图像质量。但实际上，选取更好的噪声这一想法早在 2024 年 6 月的论文 <em>Not All Noises Are Created Equally:Diffusion Noise Selection and Optimization</em> 中就已提出。可惜的是，这篇论文最后在 ICLR 上被主动撤稿了，详情可参考 OpenReview：<a target="_blank" rel="noopener" href="https://openreview.net/forum?id=R5xozf2ZoP">https://openreview.net/forum?id=R5xozf2ZoP</a> 。</p>
+<p>在这篇博文中，我会简单介绍「并非所有噪声本质相同」这篇论文。之后，我们来尝试批判性分析这篇论文及其审稿意见，并反思该如何做出高质量的工作。</p>
+<h2 id="知识准备"><a href="#知识准备" class="headerlink" title="知识准备"></a>知识准备</h2><p>想读懂这篇论文，只需了解 DDPM 和 DDIM 这两篇扩散模型经典论文。</p>
+<p>DDPM 定义了加噪过程和去噪过程：加噪过程中，训练图像 $x_0$ 会加噪 $T$ 次，最后变成纯噪声 $x_T$；去噪过程中，纯噪声 $x_T$ 会被去噪 $T$ 次，最后变成生成图像 $x_0$ 。</p>
+<p>DDIM 修改了 DDPM 中的部分假设，让扩散模型在去噪时不再有随机性，而唯一的随机性来自于随机噪声 $x_T$ 的采样。保证了去噪过程不再有随机性后，我们就可以通过公式反演 (inversion)，找出某个真实图像  $x_0$ 对应的 $x_T$。当然，这个反演过程存在误差。</p>
+<h2 id="核心思想：更好的噪声带来更高的图像质量"><a href="#核心思想：更好的噪声带来更高的图像质量" class="headerlink" title="核心思想：更好的噪声带来更高的图像质量"></a>核心思想：更好的噪声带来更高的图像质量</h2><p>作者认为，过去的工作仅通过优化网络结构或参数来提升扩散模型生成质量，却忽视了噪声的重要性。作者从两个方向探索了噪声空间（即所有可能的噪声构成的集合）：能否用某种定量指标选取更好的噪声？能否优化某一现有噪声？这两个方向的应用如下所示。噪声选取能够提升模型在同一个文本提示下的随机生成质量，而噪声优化能够提升现有某噪声对应图像的质量。</p>
+<p><img src="/2025/02/13/20250212-not-all-noise/1.jpg" alt></p>
+<h2 id="用反演稳定度反映噪声质量"><a href="#用反演稳定度反映噪声质量" class="headerlink" title="用反演稳定度反映噪声质量"></a>用反演稳定度反映噪声质量</h2><p>根据以上设计思想，这个工作的重点就落在了噪声质量的评估指标上。只要有了一个这样的指标，我们就能用简单的算法实现噪声选取和噪声优化：</p>
+<ul>
+<li>噪声选取：随机采样大量噪声，然后根据指标选出最好的那一个。</li>
+<li>噪声优化：把指标变成损失函数，用损失函数优化给定噪声。</li>
+</ul>
+<p>作者认为，函数不动点具有某些良好性质。因此，如果一个噪声在做完一轮生成-反演（去噪-加噪）后变化越小，那么这个噪声的质量越好。</p>
+<blockquote>
+<p>所谓不动点，就是令函数 $f$ 满足 $x=f(x)$ 的输入 $x$。这里作者把函数 $f$ 定义成先生成再反演这一整个过程，把 $x$ 定义成某个高斯噪声。</p>
+</blockquote>
+<p>具体来说，作者用 cos 相似度来反映噪声的「变化幅度小」，即对于噪声 $\epsilon$ 和其生成-反演结果 $\epsilon’$，反演过程的稳定度，或者说噪声的质量，等于 $cos(\epsilon, \epsilon’)$。</p>
+<p>有了这样一个指标后，我们可以用下面伪代码所示算法实现噪声选取和噪声采样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> number of samples K, denoising model M</span><br><span class="line">eps_list = sample_noise(K)</span><br><span class="line">stability_list = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">    eps = eps_list[i]</span><br><span class="line">    img = generate(M, eps)</span><br><span class="line">    eps_inversion = inversion(M, img)</span><br><span class="line">    stability = cos(eps, eps_inversion)</span><br><span class="line">    stability_list.append(stability)</span><br><span class="line">best_idx = argmax(stability_list)</span><br><span class="line">output eps_list[best_idx]</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> denoising model M, optimization steps n, noise eps</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">    img = generate(M, eps)</span><br><span class="line">    eps_inversion = inversion(M, img)</span><br><span class="line">    loss = <span class="number">1</span> - cos(eps, eps_inversion)</span><br><span class="line">    eps = gradient_descent(loss, eps)</span><br><span class="line">output eps</span><br></pre></td></tr></table></figure>
+<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><h3 id="实验配置"><a href="#实验配置" class="headerlink" title="实验配置"></a>实验配置</h3><p>本工作用 SDXL 和 SDXL-turbo 模型做实验。去噪步数分别为 10, 4。</p>
+<p>本工作在测试时只需要设置提示词。提示词来自于 Pick-a-pic, DrawBench, GenEval 这三个数据集。</p>
+<ul>
+<li>Pick-a-Pic 收集了真实文生图应用中用户的输入提示词及相同提示词下不同输出的偏好程度。每项数据包含提示词、一对图像、一个表示用户偏好哪个图像的标签。</li>
+<li>Drawbench 的每项数据包含提示词、一对图像、一个反映图像质量的偏好标签、一个反映提示词对齐度的偏好标签。这些提示词能从颜色、物体数量等多个角度测试模型生成属性。</li>
+<li>GenEval 提供了能从单个物体、两个物体、物体数量、颜色、位置等多个角度测试模型的提示词。</li>
+</ul>
+<p>为了对比生成图像质量，本工作用了 HPS v2, AES，PickScore, ImageReward 指标。除 AES 只考虑美学分数外，其他几个指标都是通过训练一个匹配人类偏好的模型来评估图像质量。除了给出这些指标的值外，论文还展示了方法的胜率——在同样的提示词下，比较使用/不使用新方法的定量结果，统计使用新方法胜利的频率。</p>
+<h3 id="定性定量结果"><a href="#定性定量结果" class="headerlink" title="定性定量结果"></a>定性定量结果</h3><p>以下是噪声选取的实验结果。</p>
+<p><img src="/2025/02/13/20250212-not-all-noise/2.jpg" alt></p>
+<p>以下是噪声优化的实验结果。</p>
+<p><img src="/2025/02/13/20250212-not-all-noise/3.jpg" alt></p>
+<p>从定量结果中可以看出，本文的方法一定程度上确实是有效的。但是，这些数值上的提升真的总能反映在视觉效果上吗？这些数值上的提升足够大吗？由于缺乏同类方法的比较，这些实验还是欠缺说服力。</p>
+<p>博文开头已经展示了本文的定性结果，这里就不再重复展示了。值得一提的是，本文的方法可以拓展到其他模型上，比如生成 3D 模型的 SV3D。以下是 3D 模型上的可视化结果。</p>
+<p><img src="/2025/02/13/20250212-not-all-noise/4.jpg" alt></p>
+<h2 id="审稿意见分析"><a href="#审稿意见分析" class="headerlink" title="审稿意见分析"></a>审稿意见分析</h2><p>在看 ICLR 2025 官方审稿人意见之前，我先给出我的一份简单审稿意见。我把本文的主要内容都在这篇博文里写出来了，读者也可以在阅读下面内容之前尝试给该论文打分。如果读者想着重提升审稿能力，可以先去把这篇论文细读一遍，再去 OpenReview 上审视其他审稿人的意见。</p>
+<p>这篇文章发现了并非所有扩散噪声生成质量相同这一问题，并设计了反演稳定度这一衡量噪声质量的指标。定性和定量实验表明该方法确实能提升图像质量。</p>
+<p>本文的优点在于新问题的发现：确实之前多数研究者只考虑如何优化模型，而忽视了噪声也是影响图像的重要因素。</p>
+<p>本文在叙述和论证上均存在缺陷：</p>
+<ul>
+<li>在为何要使用反演稳定性这件事上，作者说是受到了不动点理论的启发。但作者完全没有深入分析反演稳定性的原理，本质上是通过实验来直接验证假设的合理性。哪怕不好从数学原理上解释，作者也应该通过列出相关工作，并补充部分探究原理的实验，来巩固该指标的合理性。</li>
+<li>本文的技术贡献并不多：优化噪声是一个非常常见的策略。</li>
+<li>在实验中，作者没有和其他方法对比，完全看不出这个方法是否具有优越性。找出一个基准方法其实并不难：将 CFG (classifier-free guidance) 分别设置成 1 和 7.5 就是一个非常容易实现的基准方法。</li>
+</ul>
+<p>如果是现在已经知道了优化噪声是一个有潜力的方向，我可能会给这篇论文一个位于接收临界线上的分数。但如果是去年的话，很可能给的是低于临界线的分数。</p>
+<p>我们来简单看看官方审稿人的评价。</p>
+<p>审稿人 A 给了明确的差评。文章的主要缺陷有：</p>
+<ul>
+<li>虽然作者宣称这是首次研究噪声空间的论文，但实际上之前已经至少有三篇工作做过类似研究。因此，文章的创新性是有限的。</li>
+<li>DDIM 反演稳定性差一部分是因为反演算法不够好导致的，而和扩散模型无关。最好能够展示更好反演算法下的结果。</li>
+<li>评估不充分：这篇文章没有展示任何和其他方法的比较。另外，最好能展示诸如 FID，IS 等其他指标。文中的指标提升看起来微不足道，仅有约 1%，感觉不到明显的进步。</li>
+<li>每次评估都需要执行一次加噪-去噪过程，方法性能较低。</li>
+</ul>
+<p>审稿人 A 是这个方向的专家，他用已有的噪声空间优化工作来质疑本文的创新性。我简单看了一下该审稿人引用的工作，确实已经有不少往期工作做了类似的事，但实现方法还是比本文的方法更复杂一点。所以，不能说这篇论文一点创新也没有，作者必须严谨地比较这篇论文和之前的论文，并强调出创新点在哪。</p>
+<p>审稿人 B 给了一份评价略低于临界线的短评。他认为这篇论文提出的「反演稳定性」及其实验结果还是非常合理的。他认为论文的主要缺陷是方法质量受到反演算法的影响，并希望作者给出不同反演策略下的结果。</p>
+<p>审稿人 C 也给出了略低于临界线的评价。他认为这种使用反演稳定性来评估噪声质量的想法有新颖性，且实验的设置比较合理。在 3D 上的应用或许很有潜力。但他也列出了几条主要缺陷：</p>
+<ul>
+<li>作者认为反演质量与生成质量强相关。但这个假设只是通过一个具体示例来验证，而缺少理论分析或者系统性的研究。一个可能的分析方法是：测试10万个样本，计算图像质量和反演稳定性的相关性。</li>
+<li>和上面两个审稿人一样，审稿人 C 也提到了 DDIM 反演本身就不够好的问题。</li>
+<li>噪声选取和噪声优化都需要大量计算资源。</li>
+</ul>
+<p>审稿人 D 也给出了略低于临界线的评价。他同样认为反演稳定性是一种新颖的指标，作者对于方法设计动机阐述得十分清晰。他提到的主要缺陷有：</p>
+<ul>
+<li>研究反演中的不同点并不是一个新颖的想法，之前至少有三篇工作从迭代优化来寻找反演不动点的文章。这篇文章没有与这些工作做对比。</li>
+<li>从 K=100 个样本里选取噪声的方法太简单直接了。之前有类似工作用一种更深入的方式选取噪声。</li>
+<li>缺乏和其他噪声优化论文的比较。</li>
+<li>计算效率太低。</li>
+</ul>
+<h2 id="总结与反思"><a href="#总结与反思" class="headerlink" title="总结与反思"></a>总结与反思</h2><p>本工作明确指出了扩散模型不同初始噪声质量不同这一设计动机。为了找出更好的噪声，本工作用一种听起来比较有趣的「反演稳定性」来评估噪声质量。基于这个指标，本工作设计了噪声选取和噪声优化两个算法，用于两类生成任务。</p>
+<p>多数审稿人都认可该工作的方法有一定的新颖性，但其论文有着诸多缺陷：</p>
+<ul>
+<li>没有深入分析反演稳定性的原理，且没有考虑是否应该用更好的反演算法。</li>
+<li>噪声优化是一种常见的策略。没有与相关工作做对比。</li>
+<li>指标提升的说服力不足。</li>
+<li>每次评估反演稳定性都需要执行去噪和加噪过程，运算效率过低。</li>
+</ul>
+<p>当然，在目前的眼光看来，如果生成质量足够高，增加推理时间也是可以接受的。但是，论文的前几个缺陷是实实在在的，被评价为低于接收临界线合情合理。作者最后也没有 rebuttal，直接撤稿了。我感觉这篇论文还是比较可惜的，毕竟它的研究方向比较有潜力。</p>
+<p>从这篇论文以及最近做推理时扩展的论文可以看出，哪怕对于同一项技术，改变看待问题的角度也算创新。比如同样是更换扩散模型噪声，如果是从推理时扩展的角度来看，那么运算时间长就不是缺陷了；但与之相对，我们需要证明随着运算时间的增加，生成质量会按某种规律逐渐变好，表明花更多的时间是有意义的。</p>
+<p>从这篇论文投稿失败的教训中，我们也可以总结出顶会论文应该满足哪些最基本的要求。当论文的方法和之前方法非常相似时，一定要与之前的方法对比，并明确写出本文的创新点在哪。另外，虽然很多时候我们是先有了实验结果再去补充说明方法中的假设，但我们依然可以在论文里尝试解释我们这样做的原因。这种解释可以是通过原理上的推导，也可以是通过解释性实验。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/02/06/20250202-mujica-05/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1229,368 +1627,6 @@ p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/12/15/20241209-Laplacian-DM/" class="post-title-link" itemprop="url">论文速览 | Laplacian Diffusion Models：将图像拆成不同频率分量并分别生成</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-12-15 21:55:03" itemprop="dateCreated datePublished" datetime="2024-12-15T21:55:03+08:00">2024-12-15</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>受到经典图像表示方法拉普拉斯金字塔（Laplacian Pyramid）的启发，英伟达最近公布了一种叫做 Laplacian Diffusion Model （拉普拉斯扩散模型，后文简称 LaDM）的新型<strong>像素空间</strong>扩散模型，并用这种架构实现了文生图、超分辨率、ControlNet 等多种任务。在这篇博文里，我们来着重学习一下这种新型扩散模型的设计思想。</p>
-<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>扩散模型奠基之作 DDPM 及其升级版 ADM (<em>Diffusion Models Beat GANs on Image Synthesis</em>) 都是像素空间里的扩散模型。相比 LDM (隐扩散模型，即 Stable Diffusion)，这类扩散模型不需要额外的自编码器来压缩图像，避免了编码解码带来的精度损失。</p>
-<p>将图像从分辨率的维度拆解是一种很常见的思想。比如 Cascaded Diffusion Models 就是一种先生成低分辨率图像，再不断超分的扩散模型。今年比较有名的 VAR（<em>Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction</em>）也是一种按分辨率自回归的生成模型。</p>
-<p>和这篇工作非常相关的早期工作是苹果在 2022 发表的 <em>f-DM: A Multi-stage Diffusion Model via Progressive Signal Transformation</em>。f-DM 将扩散模型的加噪推广到了降采样、模糊等其他退化策略上。降采样版的 f-DM 有非常多的设计和本工作很像。苹果该团队次年发表的 <em>Matryoshka Diffusion Models</em> 也用到了按分辨率逐次生成的设计。</p>
-<h2 id="将拉普拉斯金字塔融入扩散模型"><a href="#将拉普拉斯金字塔融入扩散模型" class="headerlink" title="将拉普拉斯金字塔融入扩散模型"></a>将拉普拉斯金字塔融入扩散模型</h2><p>拉普拉斯金字塔是一种图像表示方法，它把图像按频率成分拆成几张分辨率不同的图像，分辨率越低的图像表示频率越低的图像成分。我们直接通过下面的例子学习它的原理。假如 <code>x</code> 是原图，那么 <code>x(3)=down(down(x))</code>，<code>x(2)=down(x)-up(x(3))</code>, <code>x(1)=x-up(down(x))</code>。对 <code>x(1), x(2), x(3)</code> 求加权和就可以还原输入图像。</p>
-<p><img src="https://files.mdnice.com/user/32105/77511764-0811-43a3-bb35-a47167e3c6e8.png" alt></p>
-<p>受此启发，LaDM 将扩散模型的训练过程也用类似的方法分解：设 $\mathcal{X}$ 为训练图片集合，$\mathcal{X}^{(1)},\mathcal{X}^{(2)}, \mathcal{X}^{(3)}$ 分别是拉普拉斯金字塔不同成分构成的集合，那么我们在 $\mathcal{X}^{(3)}$, $\mathcal{X}^{(3)} \cup \mathcal{X}^{(2)}$，$\mathcal{X}$ 上分别训练三个去噪模型。也就是说，不同分辨率的模型生成不同层级的拉普拉斯金字塔复原结果。</p>
-<p>根据经验，扩散模型早期（加噪后期）生成低频内容，后期（加噪前期）生成高频内容，所以训练时我们让不同分辨率的输入图像随噪声的衰退速度也不同。图像所代表的频率越低，衰减速度越慢，越需要从早期开始去噪。这样，在生成时，我们能生成到中途后再逐渐加上高频细节。</p>
-<p><img src="https://files.mdnice.com/user/32105/c52677ed-e078-44ba-94a1-7de05ebc959f.png" alt></p>
-<p>在采样过程中，我们按照下图所示的路线从低频到高频生成图像。有了该分辨率的初始图像后，按正常 DDPM 采样的步骤就可以生成当前分辨率的图像了。问题在于某分辨率的初始图像怎么从上一个分辨率过渡而来。</p>
-<p>在切换当前带噪图像的分辨率时，我们既要放大其中的清晰图像（信号），也要放大其中的噪声。观察上一张图和下面的图，在分辨率切换时，新的高频成分（上图中的$\mathbf{x}^{(2)}$在时刻 3 及 $\mathbf{x}^{(2)}$ 在时刻 2）是一张纯黑图，新信号为零，所以对于信号的部分我们可以直接放大。而放大噪声时，我们要做一些噪声强度上的修改，保证放大后信噪比不变。这部分的细节详见论文。</p>
-<p><img src="https://files.mdnice.com/user/32105/dcba9b54-b812-4060-98ea-080dabb8ec1c.png" alt></p>
-<h2 id="1K-图像生成"><a href="#1K-图像生成" class="headerlink" title="1K 图像生成"></a>1K 图像生成</h2><p>为了生成 $1024 \times 1024$ 分辨率的图像，LaDM 采用了两阶段 Cascaded Diffusion Model 的设计，让生成高分辨率的图像约束于低分辨率图像。另外，由于注意力操作的时间复杂度很高，一般的像素扩散模型只能做到 $256 \times 256$ 大小。为了解决此问题，LaDM 依然用一个 $256 \times 256$ 的去噪模型来生成 1K 图片，但输入前后用小波变换来压缩/复原图像。</p>
-<p><img src="https://files.mdnice.com/user/32105/acdf00af-0ff3-406f-a182-97a03c888469.png" alt></p>
-<h2 id="批判性分析与总结"><a href="#批判性分析与总结" class="headerlink" title="批判性分析与总结"></a>批判性分析与总结</h2><p>这篇文章是一篇由公司发表的技术报告，展示了很多可视化结果，却没有任何定量结果，代码也没有开源，不知道它的生成能力和其他模型比起来如何。</p>
-<p>这篇文章提出的模型虽然是像素空间扩散模型，但是其拉普拉斯金字塔的设计与模型是像素空间模型还是隐空间模型无关。我们完全可以把这套设计搬到隐空间上。VAR 已经向我们证明了对隐空间图像做拉普拉斯分解是可行的。另外，这篇文章的主干网络是 U-Net 而不是 DiT。想对这个工作做一点简单的改进的话，可以弄一个 LDM + DiT 版本的。</p>
-<p>LaDM 设计最巧妙的点是其加噪过程，频率越高的成分越早变成纯噪声。这样的话我们可以在图像生成到一半的时候再直接把高频成分加上。如果高频成分一直在的话，我们还需要额外的设计在切换分辨率时把缺少的高频加上。</p>
-<p>有工作证明神经网络不擅长拟合高频信息。因此，在图像任务中，手动将输入图像拆成不同频率成分可能有助于网络的学习。我们可能可以沿着这个思路去改进之前多种图像任务的输入。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/12/09/20241208-Context-Window-Extension/" class="post-title-link" itemprop="url">让预训练 Transformer 生成更长的文本/图像：位置编码长度外推技术</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-12-09 02:15:32" itemprop="dateCreated datePublished" datetime="2024-12-09T02:15:32+08:00">2024-12-09</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>随着视觉主干模型不断向 Transformer 靠拢，和 Transformer 配套的一些技术也从 NLP 社区涌入了 CV 社区。比如 Stable Diffusion 3 还在用标准 Transformer 那一套正弦位置编码，而其升级版 FLUX.1 就用上了旋转位置编码 (RoPE) , Lumina-T2X 模型甚至把 RoPE 的长度外推技术也从 NLP 社区搬了过来。在这篇博文中，我将站在一个对 NLP 技术了解不深的 CV 研究者的视角，较为详细地介绍一下 NLP 中 RoPE 相关的位置编码知识、RoPE 长度外推技术以及它们在 CV 里的应用。</p>
-<p>长度外推，指的是使用在短序列上预训练的 Transformer 模型直接生成超出训练长度的长序列。类比到图像生成中，长度外推可以看成对模型所建模的图像分布做了一次超分辨率：比如模型训练时只见过 $256 \times 256$ 的图像，我们想直接用它生成 $512 \times 512$ 且同样清晰的图像。</p>
-<p>推荐大家在阅读本文前先熟悉位置编码的基本原理，强烈推荐阅读 RoPE 提出者苏剑林的系列文章。</p>
-<p>位置编码设计原则与 RoPE 的首次提出：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/8130">https://kexue.fm/archives/8130</a></p>
-<p>详细介绍 RoPE：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/8265">https://kexue.fm/archives/8265</a></p>
-<p>介绍长度外推的一项关键改进 (NTK-aware)：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/9675">https://kexue.fm/archives/9675</a> <a target="_blank" rel="noopener" href="https://kexue.fm/archives/9706">https://kexue.fm/archives/9706</a> <a target="_blank" rel="noopener" href="https://kexue.fm/archives/9948">https://kexue.fm/archives/9948</a></p>
-<p>和这篇博文相关的两篇学术论文是：</p>
-<p>YaRN，一种公认效果较好的长度外推技术：<em>YaRN: Efficient Context Window Extension of Large Language Models</em> (<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.00071">https://arxiv.org/abs/2309.00071</a>)</p>
-<p>Lumina-Next，前沿扩散 Transformer (Diffusion Transformer, DIT) 模型，采用了长度外推技术：<em>Lumina-Next : Making Lumina-T2X Stronger and Faster with Next-DiT</em> (<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2406.18583">https://arxiv.org/abs/2406.18583</a>)</p>
-<h2 id="位置编码知识回顾"><a href="#位置编码知识回顾" class="headerlink" title="位置编码知识回顾"></a>位置编码知识回顾</h2><h3 id="Transformer-中的位置编码"><a href="#Transformer-中的位置编码" class="headerlink" title="Transformer 中的位置编码"></a>Transformer 中的位置编码</h3><p>相比于此前流行的 CNN、RNN 模型，Transformer 的一大特点是其输出与输入次序无关。比如我们用 Transformer 建模文本的概率，那么模型会把「上海」和「海上」当成概率一样的词语。这也就是说 Transformer 无法从输入词元 (token) 的位置关系中获取信息。</p>
-<blockquote>
-<p>如果让 Transformer 不输出信息聚合后的概率，还是保留输入词元的结构的话，那么打乱输入词元顺序就会同样地打乱输出词元顺序。模型依然无法获取输入词元间的位置关系。</p>
-</blockquote>
-<p>为了把 <code>1, 2, 3, 4</code> 这样的位置信息输入进模型，标准 Tranformer 的做法是给不同位置的输入加上不同的位置编码。假设模型的中间变量都是二维向量，那么在句子中位置为 $k$ 的词元的位置编码是：</p>
-<script type="math/tex; mode=display">
-[\sin(k), \cos(k)]</script><p>如果模型的中间变量都是 $d$ 维向量 （为了方便不妨认为 $d$ 是偶数），我们只需要把 $d$ 拆成 $d/2$ 组，每组用不同频率的三角函数即可。这样，长度为 $d$ 的词元在位置 $k$ 的位置编码是：</p>
-<script type="math/tex; mode=display">
-[\sin(k/10000^{2\cdot 0/d}), \cos(k/10000^{2\cdot 0/d}), ..., \sin(k/10000^{2\cdot i/d}), \cos(k/10000^{2\cdot i/d}) , ...]</script><p>直观上来看，随着中间变量的维度越来越长，位置编码中对应的三角函数的频率不断变低，从一开始的 $1$ 逐渐靠向 $1/10000$。</p>
-<blockquote>
-<p>上述公式来自论文，代码实现时要注意更多细节。比如有些代码中 $i$ 是从 $0$ 开始计数的。由于指数的分子的范围是从$0$到$d-2$，代码会把指数的分母也改成 $d-2$，保证最后一组三角函数的频率是 $1/10000$。</p>
-</blockquote>
-<p>算出一个和输入词元向量等长的位置编码后，该编码会直接加到输入向量上。由于这种编码用了正弦函数，所以它被后续工作称为正弦位置编码。</p>
-<h3 id="相对位置编码与-RoPE"><a href="#相对位置编码与-RoPE" class="headerlink" title="相对位置编码与 RoPE"></a>相对位置编码与 RoPE</h3><p>在设计位置编码时，最好能让编码传达词元的<strong>绝对位置</strong>和<strong>相对位置</strong>信息。比如句号会出现在文本结尾而不是文本开头，这一规律来自绝对位置信息；而每几个词元会组成固定的词组，与它们在整段文本中的位置无关，这反映了相对位置信息的意义。</p>
-<p>正弦位置编码同时满足了这两个性质。首先，正弦位置编码的输入只有绝对位置，它本质上就是一种绝对编码。另外，根据三角函数和角公式，假设偏移 $\Delta k$ 是常数，那么$sin(\alpha-\Delta k)$可以由含 $\alpha$ 的三角函数的线性组合表示。这说明模型能够从正弦编码中部分了解到一些相对位置的信息。</p>
-<p>作为绝对位置编码，正弦编码虽然能够表达一些相对信息，但是这些信息太隐晦了。并且，该编码只在输入时加入，可能在网络运算中途这些信息就消失了。我们能不能更加显式地用某种绝对位置编码建模相对位置关系呢？</p>
-<p>在 Transformer 中，不同位置的词元仅会在注意力操作时做信息交互。观察下面的注意力计算公式，更具体一点来说，信息交互发生在注意力的 QK 内积时。我们可以在每次注意力操作前都给 $Q$, $K$ 里各个向量加上位置编码，保证相对位置信息能反映在注意力计算里。</p>
-<script type="math/tex; mode=display">
-Attn(Q, K, V) = softmax(\frac{QK^T}{\sqrt{d}})V</script><p>苏剑林设计了一种新的位置编码：考虑 $Q$ 里位置为 $m$ 的向量 $\mathbf{q}_m$ 和 $K$ 里位置为 $n$ 的向量 $\mathbf{k}_n$，给位置为 $j$ 的向量右乘上复数 $e^{ij\theta}$，其中 $i$ 是虚数单位， $\theta$ 是一个角度。这样，复数下的 QK 内积结果为：</p>
-<script type="math/tex; mode=display">
-\langle \mathbf{q}_me^{im\theta}, \mathbf{k}_ne^{in\theta} \rangle=Re[\mathbf{q}_m\mathbf{k}_n^*e^{i(m-n)\theta}]</script><p>其中，$Re[]$是取实部，$*$ 为共轭复数。可以发现，内积结果也出现了位置编码 $e^{i(m-n)\theta}$，且编码的值仅取决于相对位置 $(m-n)$。因此，这种编码能够更加显式地在注意力运算里建模相对位置。</p>
-<p>由于最终结果取了实部，所以上述所有运算都可以转换成实数域的操作。假设 $\mathbf{q}_m = (q_0, q_1)$ 只是一个二维向量，那么上述右乘位置编码的操作可以写成：</p>
-<script type="math/tex; mode=display">
-\begin{bmatrix}
-& \cos m \theta & -\sin m \theta & \\
-& \sin m \theta &  \cos m \theta & \\
-\end{bmatrix}
-\begin{bmatrix}
-\begin{aligned}
-q_0 \\
-q_1 \\
-\end{aligned}
-\end{bmatrix}</script><p>从几何意义上讲，这个操作其实是二维向量旋转。因此，这种位置编码被称为<strong>旋转位置编码</strong>(RoPE)。</p>
-<p>和正弦编码类似，要把二维中间变量拓展成 $d$ 维时，只要分组讨论，改变每组的频率（这里的频率是角度 $\theta$）就行了。</p>
-<script type="math/tex; mode=display">
-\begin{bmatrix}
-& \cos m\theta_0 & -\sin m\theta_0 & 0 & 0 & \cdots & 0 & 0  \\
-& \sin m\theta_0 & \cos m\theta_0 & 0 & 0 & \cdots & 0 & 0\\
-& 0 & 0 & \cos m\theta_1 & -\sin m\theta_1 & \cdots & 0 & 0\\
-& 0 & 0 & \sin m\theta_1 & \cos m\theta_1 & \cdots & 0 & 0 \\
-&\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
-& 0 & 0 & 0 & 0 & \cdots & \cos m\theta_{d/2-1} & -\sin m\theta_{d/2-1} \\
-& 0 & 0 & 0 & 0 & \cdots & \sin m\theta_{d/2-1} & \cos m\theta_{d/2-1}
-\end{bmatrix}
-\begin{bmatrix}
-q_0 \\
-q_1 \\
-q_2 \\
-q_3 \\
-\vdots \\
-q_{d-2} \\
-q_{d-1}
-\end{bmatrix}</script><p>角度 $\theta$ 的设计可以参考 Transformer 的正弦编码：对于第 $i$ 组，我们令 $\theta_i=1/10000^{2i/d}$</p>
-<p>RoPE 和正弦编码有同有异。相同之处在于：</p>
-<ul>
-<li>二者都是绝对位置编码，并通过编码公式的某些设计间接传递了相对位置信息。</li>
-<li>二者用了同样的正弦编码方式：随着变量通道数的增大，对应位置编码的正弦函数的频率不断指数衰减。</li>
-</ul>
-<p>不同之处在于：</p>
-<ul>
-<li>正弦编码仅在模型输入时施加一次，RoPE 在所有自注意力计算时都施加。</li>
-<li>正弦编码会生成一组编码向量，加到输入上。而 RoPE 是一种操作，它的几何意义是把注意力输入向量旋转一个角度。</li>
-</ul>
-<h2 id="用-RoPE-实现长度外推"><a href="#用-RoPE-实现长度外推" class="headerlink" title="用 RoPE 实现长度外推"></a>用 RoPE 实现长度外推</h2><p>现在，我们正式进入本文的正题：长度外推。长度外推严格来说是一类任务，并不一定要用外推的做法。它似乎最早出自论文 ALiBi (<em>Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation</em>)。正如论文标题所示，该任务的目的就是「短训练，长推理」：在短序列上训练后，不经额外训练或只需少量微调，让模型生成长文本。后来这种任务也被称为「上下文窗口拓展」(Context Window Extension)，目的依旧是用已经训好的模型来生成更大的文本，只是不强调方法是外推。为了称呼方便，我们在这篇博文里将该任务统称为「长度外推」。</p>
-<p>我们想一想，假设模型训练时最大文本长度是 $L$，现在要生成长度为 $L’$ 的句子 ($L’&gt;L$)，我们需要做什么呢？其实我们只要把代码写好，除了生成长度以外啥也不改就行了。</p>
-<p>这样的话，模型在运行时究竟哪里发生了变化呢？根据我们之前的分析，Transformer 是不知道位置信息的，只有位置编码传递了位置信息。因此，增加了生成句子长度后，原本只见过位置在 $L$ 之内的位置编码，现在要尝试解读位置为 $L, L+1, …, L’ - 1$ 的位置编码。因此，如果除了修改生成长度外什么也不做，其实就是让模型把学到的位置编码知识外推。但很可惜，由于没学过这些训练集之外的位置关系，这种外推法效果很差。</p>
-<p>我们在接下来的几节里会讨论一些更加强大的长度外推策略。这里先补充介绍一点东西。看了对长度外推任务的基本介绍，读者或许会疑惑：长度外推似乎只要考虑位置编号就行了，不是非得和 RoPE 绑定起来？其实，长度外推真正要考虑的是位置编码的形式而不是只考虑编号。我们稍后的分析其实对所有类正弦编码都有效。但现在大家都是基于 RoPE 讨论，用基于 RoPE 的模型做实验，可能是因为 RoPE 更加直接、全面地建模了词元间的交互关系，只要调整了 RoPE 的公式，其效果立刻就能反映出来。相比之下，正弦位置编码只是在输入时提供了位置信息，修改位置编码的细节不能全面地影响模型的输出。</p>
-<h2 id="位置内插"><a href="#位置内插" class="headerlink" title="位置内插"></a>位置内插</h2><p>既然超出 $L$ 的位置没有被训练过，那么在 $L$ 之内多选一些位置为分数的点不就行了？位置内插（Positional Interpolation, PI）就是这样的一种长度外推方法，它把长度为 $0$~$L’$ 的位置线性压缩到 $0$~$L$ 内。也就是说，对于位置$m$，将其的位置编号修改为：</p>
-<script type="math/tex; mode=display">
-m := \frac{L}{L'}m</script><p>由于位置编号会被送进正弦函数里，所以编号哪怕是分数也没关系。通过这种简单的线性内插方法，我们就能在已经学好的编号范围内多选一些位置，实现长度外推。</p>
-<p>内插确实比外推的效果要好得多。后续所有长度外推方法实际上都是在研究如何更好的求插值位置编码。很快，有人就从频率分析的角度提出了线性内插的一个改进。</p>
-<h2 id="改变正弦函数基础频率：NTK-aware-Scaled-RoPE"><a href="#改变正弦函数基础频率：NTK-aware-Scaled-RoPE" class="headerlink" title="改变正弦函数基础频率：NTK-aware Scaled RoPE"></a>改变正弦函数基础频率：NTK-aware Scaled RoPE</h2><h3 id="直观认识"><a href="#直观认识" class="headerlink" title="直观认识"></a>直观认识</h3><p>就在位置内插提出不久，就有研究者在社区 (<a target="_blank" rel="noopener" href="https://www.reddit.com/r/LocalLLaMA/comments/14lz7j5/ntkaware_scaled_rope_allows_llama_models_to_have/">https://www.reddit.com/r/LocalLLaMA/comments/14lz7j5/ntkaware_scaled_rope_allows_llama_models_to_have/</a>) 提出了一种效果更好，完全不需要微调的长度外推技术：NTK-aware Scaled RoPE （后文简称为”NTK-aware RoPE”）。该研究者后续将此方法进一步整理优化，发表了论文 <em>YaRN: Efficient Context Window Extension of Large Language Models</em>。我们先看一下 NTK-aware RoPE。</p>
-<p>NTK-aware RoPE 的改动非常简洁，但它改动的地方却很出人意料：原来，总长度为 $d$ 的向量的第 $i$ 组位置编码的频率为：</p>
-<script type="math/tex; mode=display">
-\theta_i=1/10000^{2i/d}</script><p>现在，我们把 $10000$ 改掉，公式变为：</p>
-<script type="math/tex; mode=display">
-\theta_i^{NTK-aware}=(10000 \cdot (\frac{L'}{L})^{d/(d-2)} )^{-2i/d}</script><p>使用这种新长度外推方法，在上下文窗口大小为 2048 的 LLaMA 模型上，模型生成长文本的误差远低于之前的方法。</p>
-<p><img src="https://files.mdnice.com/user/32105/57c1010e-f74d-440c-9eb7-2fdf0f851bff.png" alt></p>
-<p>为什么这么简洁而奇怪的修改这么有效呢？在深入理解其原理之前，我们先直观地看一看这个方法具体修改了公式里的哪些参数。</p>
-<p>先看新位置编码向量 $\sin m\theta_i^{NTK-aware}$ 的第二组（假设 $i$ 从 $0$ 开始计数），也就是含参频率最大的这一组。它现在是：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\sin m\theta_i^{NTK-aware} &= \sin(m \cdot (10000 \cdot (\frac{L'}{L})^{d/(d-2)} )^{-2/d}) \\
-&=\sin(m \cdot 10000^{-2/d} \cdot (\frac{L'}{L})^{-2/(d-2)} )
-\end{aligned}</script><p>$\frac{L’}{L}$ 表示新长度是训练长度的几倍，它是一个大于 $1$ 的数。$d$ 在 LLaMA 里是 $128$，所以我们可以认为 $(d-2)$ 远大于 $2$。所以，$(\frac{L’}{L})^{(-2)/(d-2)}$ 这一项略小于 $1$。整体上看，这一改动差不多就是给三角函数的频率乘上了一个略小于 $1$ 的常数，几乎没变。</p>
-<p>再看频率最小的 $i=d/2-1$ 项。它现在是：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\sin m\theta_i^{NTK-aware} &= \sin(m \cdot (10000 \cdot (\frac{L'}{L})^{d/(d-2)} )^{-(d-2)/d}) \\
-&=\sin(m \cdot 10000^{-2 (d/2-1)/d} \cdot \frac{L}{L'} )
-\end{aligned}</script><p>而在线性内插中，我们直接把所有 $m$ 替换成了 $\frac{L}{L’}m$。所以，频率最小的项的公式和线性内插时的公式完全相同。</p>
-<blockquote>
-<p>这里要澄清一下「外推」和「内插」的概念，这两个词的意义在很多博客和论文里并没有讲清楚。「内插」指的是通过像前面的线性位置内插一样，修改位置编号，使其<strong>恰好</strong>落在训练长度内。然而，一旦这个内插不够彻底，那么新位置编号就可能会超出训练长度，形成位置「外推」。我们本文讨论的所有方案，都是让不同频率的项在完全内插（恰好长度适合）和完全外推直接找一个平衡。一旦内插不彻底，就可以称为外推。所以很多文章里的「外推」，有的时候指的是不完全的内插。根据这样的术语定义，NTK-aware RoPE 的行为可以称为：最低频内插，其他频率外推。</p>
-</blockquote>
-<p>从上面的分析可以看出，NTK-aware RoPE 还是沿用位置线性内插的思路，但是它对 RoPE 的影响更加平滑：对于位置编码高频项，公式几乎不变；对于最低频项，公式完全等于线性内插时的公式。</p>
-<p>那么，NTK-aware RoPE 为什么有效呢？它又是怎么被想出来的呢？说起来，这个一直出现的 “NTK” 又是什么意思？NTK 其实是和神经网络相关的一种理论。NTK-aware RoPE 的提出者在构思这些公式时受到了 NTK 的启发，但他后续在论文里解释此方法时完全没有从严谨的理论入手，而只是讲了一些直觉的观察。在之后的两小节中，我将先从 NTK 理论的角度试图还原提出者的心路历程，再从一个广为人知、更易理解的角度来介绍 NTK-aware RoPE。</p>
-<h3 id="从-NTK-角度的解释"><a href="#从-NTK-角度的解释" class="headerlink" title="从 NTK 角度的解释"></a>从 NTK 角度的解释</h3><p>近几年和 NTK 理论比较相关的论文叫做 <em>Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains</em>。这篇论文用 NTK 理论分析了 NeRF 这种以位置坐标为输入的 MLP 需要位置编码的原因，并将这类位置编码归纳为「傅里叶特征」。</p>
-<p><img src="https://files.mdnice.com/user/32105/522a0160-e00f-4988-9dc2-54d1fd28d96d.png" alt></p>
-<p>这篇论文最大的一个发现是：在形式为 $[\sin \theta_i x, \cos \theta_i x]$ 这样的傅里叶特征中，最重要的是决定最大频率。最大频率越大，MLP 拟合高频信息的能力越强。</p>
-<p>由于 RoPE 的公式来自于正弦位置编码，而正弦编码又可以看成一种特殊的傅里叶特征，所以 NTK-aware RoPE 的提出者也试图将傅里叶特征中的规律套用在 RoPE 上。他可能观察到了应用线性内插后 RoPE 公式（正弦编码公式）的频率变化。原来编码第 $i$ 项为：</p>
-<script type="math/tex; mode=display">
-\sin(m\theta_i)</script><p>应用线性内插后，公式为：</p>
-<script type="math/tex; mode=display">
-\sin(\frac{L}{L'} \cdot m\theta_i)</script><p>这里 $\frac{L}{L’}$ 是一个小于 $1$ 的数。所以，加上线性内插后，所有项的频率都变小了。自然，公式能表达的最大频率也变小了，拟合高频信息的能力下降了。</p>
-<p>我们可以把线性内插类比到 NeRF 这类任务中。如果我们增加输入坐标的密度，确实可以让图片/3D 模型的输出分辨率变大。但是，根据信号处理的知识，这种分辨率变大并不能超出原有的频率，所以变大后的图片/3D 模型会看起来很模糊。「模糊」在文本任务中的体现可能就是误差指标上升。</p>
-<p>出于这些原因，NTK-aware RoPE 的策略是尽可能不动高频项的频率，仅动低频项的频率。当然，按照这种设计思路，我们其实可以提出各种各样的方案。NTK-aware RoPE 选了实现起来最方便的一种：修改频率基底，让它在最低频时和线性内插对齐（读者感兴趣可以设方程自行推导频率基底的修改值，把我们刚刚有关最低频项的分析倒过来）。这样，自然就有高频项几乎不变，低频项向线性内插靠拢，也就是我们在上一小节中的观察。</p>
-<p>根据我的理解，傅里叶特征本身就只是稍微用到 NTK 相关的理论（参见我有关<a href="https://zhouyifan.net/2024/12/05/20241202-fourier-feature/">傅里叶特征的博文</a>）。而 NTK-aware RoPE 的作者貌似仅是受到了傅里叶特征的某些启发，完全没有严谨地用 NTK 理论来推导 NTK-aware RoPE 的形式。所以，我认为，要学习 NTK-aware RoPE，完全不用学习 NTK 理论。</p>
-<p>NTK-aware RoPE 的提出者在互联网上和 YaRN 论文中用了一些更好理解的方式解释 NTK-aware RoPE。类似地，从进制转换的角度，苏剑林也发表了两篇一针见血的解读博文：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/9675">https://kexue.fm/archives/9675</a> <a target="_blank" rel="noopener" href="https://kexue.fm/archives/9706">https://kexue.fm/archives/9706</a> 。我建议从这些角度来学习 NTK-aware RoPE，然后忘掉 NTK 这个词。我们在下一节里就从这个角度重新认识一遍位置编码。</p>
-<h3 id="从进制的角度解释"><a href="#从进制的角度解释" class="headerlink" title="从进制的角度解释"></a>从进制的角度解释</h3><p>其实几乎每个人都理解位置编码。</p>
-<p>不信？我来问个问题：看到 $1234$ 后，你看到了几个数？</p>
-<p>确实，这只是一个数。但是，我们人在看到这个数的时候，其实是看到了 $4$ 个十进制数字。通过把不同位置的数字组合，我们才理解了这个数究竟是多少。真正的数是一个概念，我们可以把两个东西这一概念，表示成汉字「二」，阿拉伯数字「2」，或者是二进制下的 $10$。我们常见的十进制只是表达数的一种方式。</p>
-<p>而进制表示其实就是一种表达数的位置编码。想象一个十进制计时器，它的数字从 $0, 1, …$ 开始不断增长。每隔 1 次，个位变一次；每隔 10 次，十位变一次；每隔 100 次，百位变一次……。也就是说，个位是频率最高的，位数越高频率越低。是不是这和正弦位置编码很像？正弦位置编码和进制表示的区别在于，进制用求余体现周期性，正弦位置编码用正弦函数体现周期性。</p>
-<p>长度外推，就好像一个只见过 0-999 的模型，突然要处理 1000 以上的数一样。为了只用三位数来表达更大的数，一种简单的做法是进制转换。比如我们直接把十进制变成十六进制，那么可以表达的数就从 $10^3$ 变成了 $16^3$。</p>
-<p>回到正弦编码的公式里，进制这个概念体现在哪呢？进制的底数又是什么呢？</p>
-<script type="math/tex; mode=display">
-\theta_i=1/10000^{2i/d}</script><p>在十进制里，不同位表示十、百、千……每算一个更高的位的值，就要多除以一次 $10$。所以，在正弦编码里，我们需要关注哪个被除以的量在做指数运算。通过观察发现，正弦编码的底数是 $10000^{2/d}$。</p>
-<p>知道了我们想把句子长度拓展几倍，我们就可以精确地算出新底数。通过这种方式，我们就能推导出 NTK-aware RoPE。也就是说，NTK-aware RoPE 修改频率基底其实就是对正弦函数做进制转换。这部分推荐大家去阅读前面提到的苏剑林的博文。</p>
-<p>基于数字进制，我们可以把位置编码类比成表示时间的时钟，便于后续概念的理解。这是因为：</p>
-<ul>
-<li>正弦函数本身就可以用周期旋转来解释。</li>
-<li>相比数字的进制，时间的进制的底数是不同的：1 天有 24 个小时，而一小时有 60 分钟。这提示我们：我们不一定要对每种频率做同样的处理。</li>
-</ul>
-<p>利用这个时钟的比喻，NTK-aware RoPE 的提出者在社区解释了不应该像线性内插一样修改最高频率的原因：就像我们用秒针来区分最精确的时间一样，神经网络用最高频的正弦编码区分相对位置关系，且只能看清 1 秒以上的偏差。使用线性内插后，最小的时间偏差是 0.5 秒，神经网络就不能很好地处理最高频的那块信息了。而 NTK-aware RoPE 不会修改一秒的定义，只会在分钟、小时等更低频的分量上多插值一点，神经网络依然能区分最精细的时间。</p>
-<h2 id="改进-NTK-aware-RoPE：分部-NTK"><a href="#改进-NTK-aware-RoPE：分部-NTK" class="headerlink" title="改进 NTK-aware RoPE：分部 NTK"></a>改进 NTK-aware RoPE：分部 NTK</h2><p>我们在上一节中学到，NTK-aware RoPE 的设计思想是高频不动（或理解成高频外推），只对低频内插。只改频率基底虽然做法简洁，但不见得是最优的做法。高频不动这部分应该没什么问题，我们把目光放在 RoPE 的低频分量上。</p>
-<p>还是从十进制的角度看待位置编码。假设训练集的位置只有 $0$~$2800$，那么在千位上，模型只见过 $0, 1, 2$ 三个数字。由于在千位上模型没有完整见过 $0$~$9$ 的循环，模型不能推测出其他几个数字的意义。因此，在千位上做长度外推时，一定要用内插把位置编号正确缩放到已学习的范围内。</p>
-<p>这套分析怎么迁移到正弦编码上呢？对于十进制数字，我们能很快判断出某一位是否走完了一个周期。比如要把千位上的 $0$~$9$ 都走一遍，就至少得要一万个数。怎么找出正弦编码每个频率走一个周期需要的距离呢？</p>
-<p>在正弦函数中，我们可以用 $2 \pi$ 除以频率，得到波长。正弦位置编码某一项的波长表示当训练上下文长度至少为多少时，这一项会「转」完一个周期。比如时钟上，秒针 60 秒转一圈，分针 3600 秒转一圈。 </p>
-<blockquote>
-<p>$2 \pi$ 除以频率明明算出的是周期，周期乘上速度才是波长。但 YaRN 的作者就是在论文里把这个量定义成了周长。可能他们认为波长的单位是长度，上下文窗口大小也是长度，两个单位是匹配的。我认为这个名字取得很糟糕，就应该叫做周期的，只不过周期的单位也是长度而已。</p>
-</blockquote>
-<p>根据这个定义出来的波长，我们可以对正弦位置编码的不同位置分类讨论：</p>
-<ul>
-<li>如果波长过大，大于了训练时的文本长度，那么就用普通的线性内插，保证不在这些维度上外推。设它们的内插程度为 $1$。相比之下， NTK-aware RoPE 只对最低频项做了完整内插，而没有考虑其他波长过大的项也应该完整内插。</li>
-<li>如果波长过小，说明频率很高，不应该做任何修改。设它们的内插程度为 $0$。</li>
-<li>对于其他位置，根据它们的波长，线性选择内插程度。</li>
-</ul>
-<p>这里波长过大、过小的阈值用超参数来决定，每个模型都需要手动调整。</p>
-<p>总之，NTK-aware RoPE 只是模糊地定义了高频分量应该尽可能不变，低频分量应该尽可能像线性内插。而分部 NTK 则允许我们显式对各个频率分量做分类讨论。最终的位置编码方案 YaRN 在分部 NTK 的基础上还做了少许修改，对此感兴趣的读者可以去阅读论文。</p>
-<h2 id="图像生成中的-RoPE-与长度外推"><a href="#图像生成中的-RoPE-与长度外推" class="headerlink" title="图像生成中的 RoPE 与长度外推"></a>图像生成中的 RoPE 与长度外推</h2><p>了解了近年来 NLP 社区的位置编码技术，我们来以 Lumina-T2X 为例，再看一下这些技术是怎么用到视觉生成任务上的。</p>
-<h3 id="多维-RoPE"><a href="#多维-RoPE" class="headerlink" title="多维 RoPE"></a>多维 RoPE</h3><p>RoPE 本来是设计给 1D 的文本数据的。而在视觉任务中，图像是二维的，视频是三维的，我们需要设计更高维的位置编码。</p>
-<p>回顾 RoPE 的形式：</p>
-<script type="math/tex; mode=display">
-\begin{bmatrix}
-& \cos m\theta_0 & -\sin m\theta_0 & 0 & 0 & \cdots & 0 & 0  \\
-& \sin m\theta_0 & \cos m\theta_0 & 0 & 0 & \cdots & 0 & 0\\
-& 0 & 0 & \cos m\theta_1 & -\sin m\theta_1 & \cdots & 0 & 0\\
-& 0 & 0 & \sin m\theta_1 & \cos m\theta_1 & \cdots & 0 & 0 \\
-&\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
-& 0 & 0 & 0 & 0 & \cdots & \cos m\theta_{d/2-1} & -\sin m\theta_{d/2-1} \\
-& 0 & 0 & 0 & 0 & \cdots & \sin m\theta_{d/2-1} & \cos m\theta_{d/2-1}
-\end{bmatrix}
-\begin{bmatrix}
-q_0 \\
-q_1 \\
-q_2 \\
-q_3 \\
-\vdots \\
-q_{d-2} \\
-q_{d-1}
-\end{bmatrix}</script><p>要把它拓展成高维很简单。比如要拓展成 3D RoPE，只要把上面的公式复制两份，放到原公式的下面就行。也就是说，我们把向量拆成三份分别处理，每一部分和 1D RoPE 一样。</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\begin{bmatrix}
-& \cos m\theta_0 & -\sin m\theta_0 \\
-& \sin m\theta_0 & \cos m\theta_0
-\end{bmatrix}
-\begin{bmatrix}
-q_0 \\
-q_1 \\
-\end{bmatrix} \\
-\begin{bmatrix}
-& \cos m\theta_0 & -\sin m\theta_0 \\
-& \sin m\theta_0 & \cos m\theta_0
-\end{bmatrix}
-\begin{bmatrix}
-q_2 \\
-q_3 \\
-\end{bmatrix} \\
-\begin{bmatrix}
-& \cos m\theta_0 & -\sin m\theta_0 \\
-& \sin m\theta_0 & \cos m\theta_0
-\end{bmatrix}
-\begin{bmatrix}
-q_4 \\
-q_5 \\
-\end{bmatrix}
-\end{aligned}</script><p>在这种设计下，模型所有中间向量的不同维度有了不同的意义，它们可能负责了视频宽度、高度或长度上的信息处理。我们也可以根据实际需要，让负责不同视频维度的向量长度不同。</p>
-<h3 id="视觉扩散模型中-RoPE-的长度外推设计"><a href="#视觉扩散模型中-RoPE-的长度外推设计" class="headerlink" title="视觉扩散模型中 RoPE 的长度外推设计"></a>视觉扩散模型中 RoPE 的长度外推设计</h3><p>为了生成比训练分辨率更大的图像，Lumina-T2X 也参考了 NTK-aware RoPE，提出了一些和图像相关的 RoPE 改进策略。</p>
-<p>首先，和分布 NTK 策略一样，Lumina-T2X 提出了频率感知 RoPE。在这种策略下，波长大于等于训练长度的位置编码项完全使用线性内推，剩下的项使用 NTK-aware RoPE。</p>
-<p>另外，Lumina-T2X 还提出了时刻感知 RoPE。这个「时刻」指的是扩散模型里的加噪/去噪时刻。根据实验结果，Lumina-T2X 的作者发现线性内插会保持图像整体结构，但是图像局部质量下降；NTK-aware 策略提升了局部质量，却会出现内容重复现象，也就是全局关系不合理。能不能在某一方面结合二者呢？根据之前使用扩散模型的经验，扩散模型在去噪初期只生成低频信息，也就是全局信息，后期才会生成高频细节。受此启发，Lumina-T2X 提出了时刻感知 RoPE，该策略会在去噪早期仅使用线性内插，后续慢慢过渡到频率感知 RoPE。</p>
-<p>以下是论文展示的在各种长度外推策略下生成 2K 图片的效果图。最左侧的 1K 图片供参考。</p>
-<p><img src="https://files.mdnice.com/user/32105/adf72101-248f-4967-b46a-efbada316b30.png" alt></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>长度外推是生成任务中的一项重要技术，它让我们在不大规模重新训练模型的前提下提升输出内容的长度/大小。而 Transformer 本身是一种无法获取输入元素位置信息的生成模型，需要靠额外的位置编码来感知位置。那么正好，只要我们能够适当地修改位置编码的推理行为，就能想办法让模型生成更长的内容。目前长度外推的方案都和修改 RoPE——一种给 Transformer 显式提供相对位置信息的位置编码——有关。我们主要学习了 NTK-aware RoPE 的设计原理，并通过深入的分析学习了其改进版分部 NTK RoPE。基于这些知识，我们简单认识了 RoPE 长度外推在视觉生成中的应用，其中比较有趣的一项设计是做长度外推时考虑扩散模型的去噪时刻。</p>
-<p>说白了，本文所有长度外推设计都是在从两个维度上排列组合：RoPE 可以看成是由多个频率项组成的正弦编码；外推方案可以从位置编号线性内插过渡到位置编号不变（即位置外推）。一般的设计策略是：对于没有学满一个完整周期的频率项，采用完全线性内插；对于其余频率项，按一定比例执行线性内插。加上了扩散模型的去噪时刻这一设计维度后，我们可以按同样的设计思路，早期更关注低频，晚期更关注高频。</p>
-<p>我觉得长度外推技术的能力是有上限的。我们完全可以从信号处理或者信息论的角度来思考这一问题，因为它的本质和从频域对图像做超分辨率很像。在较短的序列中，模型只能学到这种长度的序列所能表示的最大频率的信息。强行用它来生成更长的序列，只会出现两种情况：要么序列局部不够清晰，要么每个局部很清晰但是没有很好的全局依赖关系。根据信息论，模型就是不能从短序列中学到长序列蕴含的一些规律。从 Lumina-T2X 展示的结果里，我感觉 NTK-aware RoPE 的做法某种程度上就像是把全图做超分辨率变成拆成几个小图，每个小图在原来的训练长度上分别做超分辨率。这样最后图像每一块都很清晰，但合起来看就有问题。可能对于一些文本任务来说，只要局部质量高就行了，长距离依赖没那么重要。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1660,7 +1696,7 @@ q_5 \\
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">147</span>
+          <span class="site-state-item-count">149</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1673,7 +1709,7 @@ q_5 \\
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">62</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

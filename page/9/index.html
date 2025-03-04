@@ -168,6 +168,468 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/27/DLS-note-7-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/27/DLS-note-7-2/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》代码实战（七）：Windows/Linux安装TensorFlow并实现多分类任务</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-27 16:22:23" itemprop="dateCreated datePublished" datetime="2022-06-27T16:22:23+08:00">2022-06-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="安装Tensorflow"><a href="#安装Tensorflow" class="headerlink" title="安装Tensorflow"></a>安装Tensorflow</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>配编程环境考察的是利用搜索引擎的能力。在配环境时，应该多参考几篇文章。有英文阅读能力的应该去参考官方给的配置教程。出了问题把问题的出错信息放到搜索引擎上去查。一般多踩几次坑，多花点时间，环境总能配好。</p>
+<p>本文只能给出一个大概率可行的指导，不能覆盖所有情况。如果在执行本文的安装步骤时出了问题，请灵活使用搜索引擎。</p>
+<p>配置深度学习编程框架时，强烈推荐配置GPU版本。本文会介绍TensorFlow GPU版本的配置。如果只想用CPU版本的话，跳过“CUDA与cuDNN”一节即可。</p>
+<p>本文会同时介绍Windows和Linux下的安装方法。二者操作有区别的地方本文会特别强调，若没有强调则默认二者处理方法一致。</p>
+<h2 id="CUDA与cuDNN"><a href="#CUDA与cuDNN" class="headerlink" title="CUDA与cuDNN"></a>CUDA与cuDNN</h2><p>CUDA是NVIDIA显卡的GPU编程语言。cuDNN是基于CUDA编写的GPU深度学习编程库。在使用深度学习编程框架时，我们一般都要装好CUDA和cuDNN。</p>
+<p>这个安装步骤主要分三步：</p>
+<ol>
+<li>装显卡驱动</li>
+<li>装CUDA</li>
+<li>装cuDNN</li>
+</ol>
+<p>其中，显卡驱动一般不需要手动安装，尤其是在自带了NVIDIA显卡的Windows电脑上。</p>
+<h3 id="显卡驱动"><a href="#显卡驱动" class="headerlink" title="显卡驱动"></a>显卡驱动</h3><p>用<code>nvidia-smi</code>查看电脑的CUDA驱动最高支持版本。下图标出了命令运行成功后该信息所在位置：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/2.jpg" alt></p>
+<p>如果命令能成功运行，记住这个信息。</p>
+<p>如果这个命令失败了，就说明电脑需要重新安装显卡驱动。现在（2022年）CUDA的主流版本都是11.x，如果你发现驱动支持的最高版本偏低，也可以按照下面的步骤重新安装显卡驱动。</p>
+<p>访问NVIDIA驱动官网：<a target="_blank" rel="noopener" href="https://www.nvidia.cn/geforce/drivers/">https://www.nvidia.cn/geforce/drivers/</a>  。在网站上，输入显卡型号和操作系统等信息，即可找到对应的驱动安装程序。</p>
+<p>对于Windows，下载的是一个有GUI的安装器；对于Linux，下载的是一个shell脚本。如果你用的是Linux服务器，没有图形接口，可以先复制好下载链接，之后用<code>wget</code>下载脚本。</p>
+<p>之后，运行安装器，按照指引即可完成驱动的安装。</p>
+<p>注意，如果是带图形界面的Linux系统，可能要关闭图像界面再安装驱动。比如对于Ubuntu，一般要关闭nouveau再重启。请参考 <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/59618999">https://zhuanlan.zhihu.com/p/59618999</a> 等专门介绍Ubuntu显卡驱动安装的文章。</p>
+<p>能够执行<code>nvidia-smi</code>后，执行该命令，找到驱动支持的最高CUDA版本。</p>
+<h3 id="CUDA"><a href="#CUDA" class="headerlink" title="CUDA"></a>CUDA</h3><p>首先，我们要定一个CUDA安装版本。</p>
+<p>CUDA安装版本的第一个限制是，该版本不能大于刚刚在<code>nvidia-smi</code>中获取的最高CUDA版本。</p>
+<p>第二个限制是，TensorFlow版本必须支持当前CUDA版本。在 <a target="_blank" rel="noopener" href="https://www.tensorflow.org/install/source#gpu">https://www.tensorflow.org/install/source#gpu</a> 中，可以找到TensorFlow与CUDA、cuDNN的版本对应表。这个表格仅表示了经过测试的CUDA版本，不代表其他CUDA版本就一定不行。</p>
+<p>由于开发环境中可能会安装多个编程框架（TensorFlow，PyTorch），建议先安装一个比较常用、版本较高的CUDA，比如CUDA 11.1,11.2之类的。之后，让编程框架向CUDA版本妥协。</p>
+<p>如果之后安装TensorFlow后发现CUDA版本不对应，可以尝试升级TensorFlow版本。如果TensorFlow实在是支持不了当前的CUDA版本，最后再考虑降级当前的CUDA版本。</p>
+<p>选好了CUDA版本后，去 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/cuda-toolkit-archive">https://developer.nvidia.com/cuda-toolkit-archive</a> 上下载CUDA安装器。同样，Windows和Linux分别会得到GUI安装器和shell脚本。</p>
+<p>装完CUDA后，再控制台上输入<code>nvcc -V</code>。<code>nvcc</code>是CUDA专用的编译器，<code>-V</code>用于查询版本。如果这个命令能够运行，就说明CUDA已经装好了。以下是<code>nvcc -V</code>的输出：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/3.jpg" alt></p>
+<h3 id="cuDNN"><a href="#cuDNN" class="headerlink" title="cuDNN"></a>cuDNN</h3><p>打开下载网站 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/rdp/cudnn-download">https://developer.nvidia.com/rdp/cudnn-download</a> （最新版本） 或 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/rdp/cudnn-archive">https://developer.nvidia.com/rdp/cudnn-archive</a> （历史版本）。注册账号并登录。</p>
+<p>根据CUDA版本，找到合适版本的cuDNN。<a target="_blank" rel="noopener" href="https://docs.nvidia.com/deeplearning/cudnn/archives/index.html">https://docs.nvidia.com/deeplearning/cudnn/archives/index.html</a> 这个网站列出了每个cuDNN版本支持的CUDA版本(Support Matrix)。一般来说，可以去找最新的cuDNN，看它是否兼容当前的CUDA版本。如果不行，再考虑降级cuDNN。一般来说，CUDA 11.x 的兼容性都很好。</p>
+<p>选好了cuDNN版本后，去上面的下载网站上下载最新或某个历史版本的cuDNN。注意，应该下载一个压缩文件，而不应该下载一个可执行文件。比如对于所有的Linux系统，都应该下载”xxx for Linux x86_64 (Tar)”</p>
+<p>装CUDA和cuDNN，主要的目的是把它们的动态库放进环境变量里，把头文件放到系统头文件目录变量里。因此，下一步，我们要把cuDNN的文件放到系统能够找到的地方。由于CUDA的库目录、包含目录都会在安装时自动设置好，一种简单的配置方法是把cuDNN的文件放到CUDA的对应目录里。</p>
+<p>对于Windows，我们要找到CUDA的安装目录，比如<code>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2</code>。再找到刚刚cuDNN解压后的目录，比如<code>D:\Download\cudnn-11.1-windows-x64-v8.0.4.30\cuda</code>。把cuDNN目录下bin、include、lib里的文件分别复制到CUDA目录的对应文件夹中。</p>
+<p>对于Linux，CUDA的安装目录一般是<code>/usr/local/cuda</code>。再找到cuDNN的解压目录，比如<code>~/Downloads/cudnn-linux-x86_64-8.4.0.27_cuda11.6-archive</code>。切换到cuDNN的根目录下，输入类似下面的命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo cp include/* /usr/local/cuda/include</span><br><span class="line">sudo cp lib/lib* /usr/local/cuda/lib64</span><br><span class="line">sudo chmod a+r /usr/local/cuda/include/*</span><br><span class="line">sudo chmod a+r /usr/local/cuda/lib64/lib*</span><br></pre></td></tr></table></figure>
+<p>该命令用于把所有cuDNN的相关文件暴力复制到cuda的对应目录下，并修改它们的访问权限。一定要注意一下该命令中的路径，如果路径不对应的话要修改上述命令，比如有些cuDNN的库目录不叫<code>lib</code>而叫<code>lib64</code>。</p>
+<p>如果大家对操作系统熟悉的话，可以灵活地把复制改为剪切或者软链接。</p>
+<h2 id="Anaconda"><a href="#Anaconda" class="headerlink" title="Anaconda"></a>Anaconda</h2><p>Anaconda可以让用户更好地管理Python包。反正大家都在用，我也一直在用。</p>
+<p>无论是什么操作系统，都可以在这里下Anaconda：<br><a target="_blank" rel="noopener" href="https://www.anaconda.com/products/individual#Downloads">https://www.anaconda.com/products/individual#Downloads</a> </p>
+<p>同样，Windows和Linux分别会得到GUI安装器和shell脚本。</p>
+<p>下好了安装器后，按照默认配置安装即可。</p>
+<p>安装完成后，下一步是打开有Anaconda环境的控制台。</p>
+<p>在Windows下，点击任务栏中的搜索框，搜索Anaconda，打开<code>Anaconda Powershell Prompt (Anaconda)</code>或者<code>Anaconda Prompt (Anaconda)</code>。</p>
+<p>在Linux下，新建一个命令行即可。</p>
+<p>如果在命令行里看到了<code>(base)</code>，就说明安装成功了。</p>
+<p>之后，要创建<strong>某个Python版本</strong>的虚拟环境，专门放我们用来做深度学习的Python库。该命令如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda create --name &#123;env_name&#125; python=&#123;version&#125;</span><br></pre></td></tr></table></figure>
+<p>比如我要创建一个名字叫<code>pt</code>，Python版本3.7的虚拟环境：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda create --name pt python=3.7</span><br></pre></td></tr></table></figure>
+<p>创建完成后，使用下面的命令进入虚拟环境：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda activate &#123;env_name&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我的命令是：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda activate pt</span><br></pre></td></tr></table></figure></p>
+<p>如果在命令行前面看到了<code>(&#123;env_name&#125;)</code>，就算是成功了：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/1.jpg" alt></p>
+<blockquote>
+<p>完成上述步骤后，在VSCode里用<code>ctrl+shift+p</code>打开命令面板，输入<code>select interpreter</code>，找到<code>Python: Select Interpreter</code>这个选项，选择刚刚新建好的虚拟环境中的Python解释器。这样，新建VSCode的控制台时，控制台就能自动进入到conda虚拟环境里了。</p>
+</blockquote>
+<h2 id="TensorFlow"><a href="#TensorFlow" class="headerlink" title="TensorFlow"></a>TensorFlow</h2><p>无论是GPU版还是CPU版，只需要在对应的虚拟环境中输入下面的命令即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install tensorflow</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如果下载速度较慢，请更换conda和pip的下载源。可参考的教程很多，比如 <a target="_blank" rel="noopener" href="https://blog.csdn.net/u011935830/article/details/10307">https://blog.csdn.net/u011935830/article/details/10307</a> 95。</p>
+</blockquote>
+<p>如果显卡驱动和conda都装好了，执行完上面的命令后，GPU版TensorFlow也就装好了。打开Python，执行下面的命令（或者写一个<code>.py</code>文件再运行），即可验证GPU版安装是否成功。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">tf.config.list_physical_devices(<span class="string">&#x27;GPU&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>如果最后输出了一大堆信息，最后一行是</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[PhysicalDevice(name=&#x27;/physical_device:GPU:0&#x27;, device_type=&#x27;GPU&#x27;)]</span><br></pre></td></tr></table></figure>
+<p>，那么就说明GPU版的TensorFlow安装成功了。</p>
+<h2 id="VSCode代码补全"><a href="#VSCode代码补全" class="headerlink" title="VSCode代码补全"></a>VSCode代码补全</h2><p>TensorFlow.keras在VSCode中无法生成代码补全，编程体验极差，不知道维护者在干什么东西。有人在issue中提出了解决方法。</p>
+<p>打开<code>tensorflow/__init__.py</code>，添加以下内容：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> _typing.TYPE_CHECKING:</span><br><span class="line">  <span class="keyword">from</span> tensorflow_estimator.python.estimator.api._v2 <span class="keyword">import</span> estimator <span class="keyword">as</span> estimator</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2 <span class="keyword">import</span> keras</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> losses</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> metrics</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> optimizers</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> initializers</span><br></pre></td></tr></table></figure></p>
+<h1 id="用TensorFlow实现多分类任务"><a href="#用TensorFlow实现多分类任务" class="headerlink" title="用TensorFlow实现多分类任务"></a>用TensorFlow实现多分类任务</h1><p>每当学习一门新的编程技术时，程序员们都会完成一个”Hello World”项目。让我们完成一个简单的点集多分类任务，作为TensorFlow的入门项目。这个项目只会用到比较底层的函数，而不会使用框架的高级特性，可以轻松地翻译成纯NumPy或者其他框架的实现。</p>
+<p>在这个项目中，我们会学到以下和TensorFlow有关的知识：</p>
+<ul>
+<li>TensorFlow与NumPy的相互转换</li>
+<li>TensorFlow的常量与变量</li>
+<li>TensorFlow的常见运算（矩阵乘法、激活函数、误差）</li>
+<li>TensorFlow的初始化器</li>
+<li>TensorFlow的优化器</li>
+<li>TensorFlow保存梯度中间结果的方法</li>
+<li>one-hot与标签的相互转换</li>
+</ul>
+<p>我们将按照程序运行的逻辑顺序，看看这个多分类器是怎么实现的。</p>
+<p>如果你看过我前几周的代码实战文章，欢迎比较一下这周和之前的代码，看看相比NumPy，TensorFlow节约了多少代码。</p>
+<p>欢迎在GitHub上面访问<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/MulticlassClassification">本项目</a>。</p>
+<h2 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h2><p>这周，我们要用到一个平面点数据集。在平面上，有三种颜色不同的点。我们希望用TensorFlow编写的神经网络能够区分这三种点。</p>
+<p><img src="/2022/06/27/DLS-note-7-2/r1.jpg" alt></p>
+<p>在项目中，我已经写好了生成数据集的函数。<code>generate_points</code>能根据数据集大小生成一个平面点数据集。<code>generate_plot_set</code>能生成最终测试平面上每一个“像素”的测试集。使用这两个函数，得到的<code>X</code>的形状为<code>[2, m]</code>（因为是平面点，所以只有两个通道），<code>Y</code>的形状为<code>[1, m]</code>。<code>Y</code>的元素是0-2的标签，分别表示红、绿、蓝三种颜色的点。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">train_X, train_Y = generate_points(<span class="number">400</span>)</span><br><span class="line">plot_X = generate_plot_set()</span><br><span class="line"></span><br><span class="line"><span class="comment"># X: [2, m]</span></span><br><span class="line"><span class="comment"># Y: [1, m]</span></span><br></pre></td></tr></table></figure>
+<h2 id="数据预处理与TensorFlow转换"><a href="#数据预处理与TensorFlow转换" class="headerlink" title="数据预处理与TensorFlow转换"></a>数据预处理与TensorFlow转换</h2><p>我们刚刚得到的<code>X, Y</code>都是NumPy数组，我们要把它们转换成TensorFlow认识的数据结构。</p>
+<p>TensorFlow用起来和C++很像，我们要决定一个数据是变量还是常量。由于<code>X</code>是不可变的训练数据，它应该属于常量。因此，我们用下面的语句把它转换成TensorFlow的常量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">train_X_tf = tf.constant(train_X, dtype=tf.float32)</span><br></pre></td></tr></table></figure>
+<p>TensorFlow常量的类型名叫做<code>tf.Tensor</code>，也就是说<code>train_X_tf</code>是一个<code>tf.Tensor</code>。</p>
+<p>而在使用<code>Y</code>时，我们要加一步转换到one-hot编码的步骤。回忆<a href>本周笔记中</a>有关多分类loss的知识，这里的<code>Y</code>是一个整型数组，表示每个数据的类别。而在loss的计算中，我们需要把每个整数转换成一个one-hot向量，得到一个one-hot向量的向量。</p>
+<p>因此，我们可以用下面的代码把<code>Y</code>预处理并转换成TensorFlow的数据结构：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">train_Y_tf = tf.transpose(tf.one_hot(train_Y.squeeze(<span class="number">0</span>), <span class="number">3</span>))</span><br></pre></td></tr></table></figure>
+<p><code>tf.one_hot()</code>用于生成one-hot编码，其第二个参数为总类别数。我们的数据集有3种点，因此取3。<code>tf.one_hot()</code>的输出是一个<code>[m, 3]</code>形状的张量，我们要把它<code>tf.transpose</code>转置一下，得到与其他代码相匹配的<code>[3, m]</code>张量。</p>
+<p>顺带一提，由于<code>tf.one_hot</code>是一个TensorFlow的运算，如果输入是一个numpy数组，输出会被自动转换成一个TensorFlow的常量<code>tf.Tensor</code>。所以，<code>Y</code>的类型也是<code>tf.Tensor</code>。</p>
+<p>经过上述操作，<code>X, Y</code>再被送入TensorFlow模型之前的形状是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># X: [2, m]</span></span><br><span class="line"><span class="comment"># Y: [3, m]</span></span><br></pre></td></tr></table></figure>
+<h2 id="TensorFlow多分类模型"><a href="#TensorFlow多分类模型" class="headerlink" title="TensorFlow多分类模型"></a>TensorFlow多分类模型</h2><p>处理完了数据，接下来，我们就要定义神经网络了。在神经网络中，我们要实现初始化、正向传播、误差、评估这四个方法。</p>
+<h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MulticlassClassificationNet</span>():</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, neuron_cnt: <span class="type">List</span>[<span class="built_in">int</span>]</span>):</span></span><br><span class="line">        self.num_layer = <span class="built_in">len</span>(neuron_cnt) - <span class="number">1</span></span><br><span class="line">        self.neuron_cnt = neuron_cnt</span><br><span class="line">        self.W = []</span><br><span class="line">        self.b = []</span><br><span class="line">        initializer = tf.keras.initializers.HeNormal(seed=<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">            self.W.append(</span><br><span class="line">                tf.Variable(</span><br><span class="line">                    initializer(shape=(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]))))</span><br><span class="line">            self.b.append(</span><br><span class="line">                tf.Variable(initializer(shape=(neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>))))</span><br><span class="line">        self.trainable_vars = self.W + self.b</span><br></pre></td></tr></table></figure>
+<p>和之前一样，我们通过<code>neuron_cnt</code>指定神经网络包含输出层在内每一层的神经元数。之后，根据每一层的神经元数，我们就可以初始化参数<code>W</code>和<code>b</code>了。</p>
+<p>使用TensorFlow，我们可以方便地完成一些高级初始化操作。比如我们要使用He Initialization，我们可以用<code>tf.keras.initializers.HeNormal(seed=1)</code>生成一个初始化器<code>initializer</code>，再用这个工具生成每一个初始化后的变量。</p>
+<p>使用<code>initializer(*shape)</code>即可生成某形状的参数。由于参数是需要被优化更新的，我们需要用<code>tf.Variable</code>来把参数转换成可以优化的变量。</p>
+<p>最后，我们用<code>self.trainable_vars = self.W + self.b</code>记录一下所有待优化变量，为之后的优化算法做准备。</p>
+<h3 id="正向传播"><a href="#正向传播" class="headerlink" title="正向传播"></a>正向传播</h3><p>正向传播的写法很简单，只要在每层算一个矩阵乘法和一次加法，再经过激活函数即可（在这个神经网络中，隐藏层的激活函数默认使用ReLU）：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, X</span>):</span></span><br><span class="line">    A = X</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">        Z = tf.matmul(self.W[i], A) + self.b[i]</span><br><span class="line">        <span class="keyword">if</span> i == self.num_layer - <span class="number">1</span>:</span><br><span class="line">            A = tf.keras.activations.softmax(Z)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            A = tf.keras.activations.relu(Z)</span><br></pre></td></tr></table></figure><br>在这份代码中,<code>tf.matmul</code>用于执行矩阵乘法，等价于<code>np.dot</code>。和NumPy里的张量一样，TensorFlow里的张量也可以直接用运算符<code>+</code>来完成加法。</p>
+<p>做完了线性层的运算后，我们可以方便地调用<code>tf.keras.activations</code>里的激活函数完成激活操作。</p>
+<p>值得一提的是，TensorFlow会自动帮我们计算导数。因此，之前我们在正向传播里保存中间运算结果的代码全都可以删掉。我们也不用再编写反向传播函数了。</p>
+<h3 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h3><p>使用下面的代码可以在一行内算完损失函数：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">self, Y, Y_hat</span>):</span></span><br><span class="line">    <span class="keyword">return</span> tf.reduce_mean(</span><br><span class="line">        tf.keras.losses.categorical_crossentropy(</span><br><span class="line">            tf.transpose(Y),tf.transpose(Y_hat)))</span><br></pre></td></tr></table></figure><br><code>tf.keras.losses.categorical_crossentropy</code>就是多分类使用的交叉熵误差。由于这个函数要求输入的形状为<code>[num_samples, num_classes]</code>，和我们的定义相反，我们要把两个输入都转置一下。算完误差后，我们用<code>tf.reduce_mean</code>算误差的平均数以得到最终的损失函数。这个函数等价于NumPy里用<code>mean</code>时令<code>keepdims=False</code>。</p>
+<h3 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h3><p>为了监控网络的运行结果，我们可以手写一个评估网络正确率和误差的函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">evaluate</span>(<span class="params">self, X, Y, return_loss=<span class="literal">False</span></span>):</span></span><br><span class="line">    Y_hat = self.forward(X)</span><br><span class="line">    Y_predict = tf.argmax(Y, <span class="number">0</span>)</span><br><span class="line">    Y_hat_predict = tf.argmax(Y_hat, <span class="number">0</span>)</span><br><span class="line">    res = tf.cast(Y_predict == Y_hat_predict, tf.float32)</span><br><span class="line">    accuracy = tf.reduce_mean(res)</span><br><span class="line">    <span class="keyword">if</span> return_loss:</span><br><span class="line">        loss = self.loss(Y, Y_hat)</span><br><span class="line">        <span class="keyword">return</span> accuracy, loss</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> accuracy</span><br></pre></td></tr></table></figure>
+<p>首先，我们使用<code>Y_hat = self.forward(X)</code>，根据<code>X</code>算出估计值<code>Y_hat</code>。之后我们就要对<code>Y</code>和<code>Y_hat</code>进行比较了。</p>
+<p><code>Y</code>和<code>Y_hat</code>都不是整数标签，而是用向量代表了标签。为了方便比较，我们要把它们转换回用整数表示的标签。这个转换函数是<code>tf.argmax</code>。</p>
+<p>和数学里的定义一样，<code>tf.argmax</code>返回令函数最大的参数值。而对于数组来说，就是返回数组里值最大的下标值。<code>tf.argmax</code>的第一个参数是参与运算的张量，第二个参数是参与运算的维度。<code>Y</code>和<code>Y_hat</code>的形状是<code>[3, m]</code>，我们要把长度为3的向量转换回标签向量，因此应该对第一维进行运算（即维度0）。</p>
+<p>得到了<code>Y_predict, Y_hat_predict</code>后，我们要比对它们以计算准确率。这时，我们可以用<code>res = Y_predict == Y_hat_predict</code>得到一个bool值的比对结果。TensorFlow的类型非常严格，bool值是无法参与普通运算的，我们要用<code>tf.cast</code>强制类型转换。由于最终的准确率是一个浮点数，我们要转换成<code>tf.float32</code>浮点类型。</p>
+<p>最后，用<code>accuracy = tf.reduce_mean(res)</code>就可以得到准确率了。</p>
+<p>由于我们前面写好了<code>loss</code>方法，计算loss时直接调用方法就行了。</p>
+<h2 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h2><p>写完了模型，该训练模型了。下面是模型训练的主要代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train</span>(<span class="params">model: MulticlassClassificationNet,</span></span></span><br><span class="line"><span class="params"><span class="function">          X,</span></span></span><br><span class="line"><span class="params"><span class="function">          Y,</span></span></span><br><span class="line"><span class="params"><span class="function">          step,</span></span></span><br><span class="line"><span class="params"><span class="function">          learning_rate,</span></span></span><br><span class="line"><span class="params"><span class="function">          print_interval=<span class="number">100</span></span>):</span></span><br><span class="line">    optimizer = tf.keras.optimizers.Adam(learning_rate)</span><br><span class="line">    <span class="keyword">for</span> s <span class="keyword">in</span> <span class="built_in">range</span>(step):</span><br><span class="line">        <span class="keyword">with</span> tf.GradientTape() <span class="keyword">as</span> tape:</span><br><span class="line">            Y_hat = model.forward(X)</span><br><span class="line">            cost = model.loss(Y, Y_hat)</span><br><span class="line">        grads = tape.gradient(cost, model.trainable_vars)</span><br><span class="line">        optimizer.apply_gradients(<span class="built_in">zip</span>(grads, model.trainable_vars))</span><br></pre></td></tr></table></figure>
+<p>TensorFlow使用一系列的优化器来维护梯度下降的过程。我们只需要用<code>tf.keras.optimizers.Adam(learning_rate)</code>即可获取一个Adam优化器。</p>
+<p>接下来，我们看<code>for s in range(step):</code>里每一步更新参数的过程。</p>
+<p>在TensorFlow里，为了计算梯度，我们要使用一个上下文<code>with tf.GradientTape() as tape:</code>。在这个上下文中，执行完运算后，所有<code>Variable</code>的求导中间结果都会被记录下来。因此，我们应该调用网络的前向传播和损失函数，完成整套的计算过程。</p>
+<p>计算出损失函数后，我们用<code>grads = tape.gradient(cost, model.trainable_vars)</code>算出最终的梯度，并调用<code>optimizer.apply_gradients(zip(grads, model.trainable_vars))</code>更新参数。</p>
+<p>可以看出，相比完全用NumPy实现，TensorFlow用起来十分方便。只要我们用心定义好了前向传播函数和损失函数，维护梯度和优化参数都可以交给编程框架来完成。</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>做完了所有准备后，我们用下面的代码初始化模型并调用训练函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">n_x = <span class="number">2</span></span><br><span class="line">neuron_list = [n_x, <span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>]</span><br><span class="line">model = MulticlassClassificationNet(neuron_list)</span><br><span class="line">train(model, train_X_tf, train_Y_tf, <span class="number">5000</span>, <span class="number">0.001</span>, <span class="number">1000</span>)</span><br></pre></td></tr></table></figure><br>这里要注意一下，由于数据有三种类别，神经网络最后一层必须是3个神经元。</p>
+<p>网络训练完成后，我们用下面的代码把网络推理结果转换成可视化要用的NumPy结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">plot_result = model.forward(plot_X)</span><br><span class="line">plot_result = tf.argmax(plot_result, <span class="number">0</span>).numpy()</span><br><span class="line">plot_result = np.expand_dims(plot_result, <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>运行完<code>plot_result = model.forward(plot_X)</code>后，我们得到的是一个<code>[3, m]</code>的概率t矩阵。我们要用<code>tf.argmax(plot_result, 0)</code>把它转换回整型标签。</p>
+<p>之后，我们对TensorFlow的张量调用<code>.numpy()</code>，即可使用我们熟悉的NumPy张量了。为了对齐可视化API的格式，我用<code>expand_dims</code>把最终的标签转换成了<code>[1, m]</code>的形状。</p>
+<p>完成了转换，只需调用我写的可视化函数即可看出模型是怎样对二维平面分类的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">visualize(train_X, train_Y, plot_result)</span><br></pre></td></tr></table></figure>
+<p>我的一个运行结果如下：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/r2.jpg" alt></p>
+<p>只能说，神经网络实在太强啦。</p>
+<h2 id="附录：TensorFlow的GPU版本"><a href="#附录：TensorFlow的GPU版本" class="headerlink" title="附录：TensorFlow的GPU版本"></a>附录：TensorFlow的GPU版本</h2><p>在使用TensorFlow时，我唯一发现它比PyTorch更便捷的地方，就是TensorFlow能够自动选择运算时的设备。如果电脑按上面的流程装好了驱动、CUDA和cuDNN，TensorFlow就会很主动地把张量放到GPU上运算。而如果没有检测到GPU，TensorFlow也会用CPU计算。</p>
+<p>如果想要手动管理张量的运算设备，可以参考下面的代码。当我想在CPU上初始化张量时：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.device(<span class="string">&#x27;/CPU:0&#x27;</span>):</span><br><span class="line">    a = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>], [<span class="number">4.0</span>, <span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br><span class="line">    b = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>], [<span class="number">3.0</span>, <span class="number">4.0</span>], [<span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br></pre></td></tr></table></figure><br>想初始化多个GPU中的某个GPU上的张量：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.device(<span class="string">&#x27;/device:GPU:2&#x27;</span>):</span><br><span class="line">    a = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>], [<span class="number">4.0</span>, <span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br><span class="line">    b = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>], [<span class="number">3.0</span>, <span class="number">4.0</span>], [<span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br></pre></td></tr></table></figure><br>这里GPU的名称可以用我们之前见过的<code>tf.config.list_physical_devices(&#39;GPU&#39;)</code>来查找：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; tf.config.list_physical_devices(<span class="string">&#x27;GPU&#x27;</span>)</span></span><br><span class="line">[PhysicalDevice(name=&#x27;/physical_device:GPU:0&#x27;, device_type=&#x27;GPU&#x27;)]</span><br></pre></td></tr></table></figure>
+<p>有趣的是，这个项目的代码用TensorFlow在GPU上运行，比我之前的NumPy项目用CPU运行还慢。感觉是这个项目的计算过于简单，GPU无法发挥性能上的优势。GPU计算的一些其他开销盖过了运算时间的减少。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>在这篇笔记中，我介绍了TensorFlow在Windows/Linux下的从零安装方法，并且介绍了一个简单的TensorFlow多分类项目。希望大家能通过这篇笔记，成功上手TensorFlow。</p>
+<p>项目链接：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/MulticlassClassification">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/MulticlassClassification</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/21/DLS-note-7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/21/DLS-note-7/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（七）：调参、批归一化、多分类任务、编程框架</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-21 13:47:43" itemprop="dateCreated datePublished" datetime="2022-06-21T13:47:43+08:00">2022-06-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>这周的知识点也十分分散，主要包含四项内容：调参、批归一化、多分类任务、编程框架。</p>
+<p>通过在之前的编程项目里调整学习率，我们能够体会到超参数对模型效果的重要影响。实际上，选择超参数不是一个撞运气的过程。我们应该有一套系统的方法来快速找到合适的超参数。</p>
+<p>两周前，我们学习了输入归一化。类似地，如果对网络的每一层都使用归一化，也能提升网络的整体表现。这样一种常用的归一化方法叫做批归一化。</p>
+<p>之前，我们一直都在讨论二分类问题。而只要稍微修改一下网络结构和激活函数，我们就能把二分类问题的算法拓展到多分类问题上。</p>
+<p>为了提升编程的效率，从这周开始，我们要学习深度学习编程框架。编程框架往往能够帮助我们完成求导的功能，我们可以把精力集中在编写模型的正向传播上。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="调参"><a href="#调参" class="headerlink" title="调参"></a>调参</h2><blockquote>
+<p>调参的英文动词叫做tune，这个单词作动词时大部分情况下是指调音。这样一看，把调参叫做“调整参数”或“调试参数”都显得很“粗鲁”。理想情况下，调参应该是一个系统性的过程，就像你去给乐器调音一样。乱调可是行不通的。</p>
+</blockquote>
+<h3 id="超参数优先级"><a href="#超参数优先级" class="headerlink" title="超参数优先级"></a>超参数优先级</h3><p>回顾一下，我们接触过的超参数有：</p>
+<ul>
+<li>学习率 $\alpha$</li>
+<li>momentum $\beta$</li>
+<li>adam $\beta_1, \beta_2, \epsilon$</li>
+<li>隐藏层神经元数</li>
+<li>层数</li>
+<li>学习率递减率</li>
+<li>mini-batch size</li>
+</ul>
+<p>其中，优先级最高的是学习率。吴恩达老师建议大家调完学习率后，再去调$\beta$、隐藏层神经元数、mini-batch size。如果使用adam，则它的三个参数基本不用调。</p>
+<h3 id="超参数采样策略"><a href="#超参数采样策略" class="headerlink" title="超参数采样策略"></a>超参数采样策略</h3><p>在尝试各种超参数时，不要按“网格”选参数（如下图左半所示），最好随机选参数（如下图右半所示）：</p>
+<p><img src="/2022/06/21/DLS-note-7/1.jpg" alt></p>
+<p>如果用网格采样法的话，你可能试了25组参数，每个参数只试了5个不同的值。而实际上，你试的两个参数中只有一个参数对结果的影响较大，另一个参数几乎不影响结果。最终，你尝试的25次中只有5次是有效的。</p>
+<p>而采用随机采样法试参数的话，你能保证每个参数在每次尝试时都取不同值。这样试参数的效率会更高一点。</p>
+<p>另外，调参时还有一个“由粗至精”的过程。如下图所示：</p>
+<p><img src="/2022/06/21/DLS-note-7/2.jpg" alt></p>
+<p>当我们发现某几个参数的结果比较优秀时，我们可以缩小搜索范围，仅在这几个参数附近进行搜索。</p>
+<h3 id="超参数搜索尺度"><a href="#超参数搜索尺度" class="headerlink" title="超参数搜索尺度"></a>超参数搜索尺度</h3><p>搜索参数时，要注意搜索的尺度。如果搜索的尺度不够恰当，我们大部分的调参尝试可能都是无用功。</p>
+<p>比如当搜索学习率时，我们应该按<code>0.0001, 0.001, 0.01, 0.1, 1</code>这样指数增长的方式去搜索，而不应该按<code>0.2, 0.4, 0.6, 0.8, 1</code>这种均匀采样的方式搜索。这是因为学习率是以乘法形式参与计算，取<code>0.4, 0.6, 0.8</code>得到的结果可能差不多，按这种方式采样的话，大部分的尝试都是浪费的。而以<code>0.001, 0.01, 0.1</code>这种方式取学习率的话，每次的运行结果就会差距较大，每次尝试都是有意义的。</p>
+<p>除了搜索学习率时用到的指数采样，还有其他的采样方式。让我们看调整momentum项$\beta$的情况。回忆一下，$\beta$取0.9，表示近10项的平均数；$\beta$取0.99，表示近100项的平均数。也就是说，$\beta$表示$\frac{1}{1-\beta}$项的平均数。我们可以对$\frac{1}{1-\beta}$进行指数均匀采样。</p>
+<p>当然，有些参数是可以均匀采样的。比如隐藏层的个数，我们可以从[2, 3, 4]里面挑一个；比如每个隐藏层的神经元数，我们也可以直接均匀采样。</p>
+<p>总结一下，我们在搜索超参数的时候，应该从超参数所产生的影响出发，考虑应该在哪个指标上均匀采样，再反推超参数的采样公式，而不一定要对超参数本身均匀采样。</p>
+<p>当然了，如果我们不确定应该从哪个尺度对超参数采样，可以先默认使用均匀采样。因为我们会遵循由粗至精的搜索原则，尝试几轮后我们就能够观察出超参数的取值规律，从而在正确的尺度上对超参数进行搜索。</p>
+<h2 id="批归一化-Batch-Normalization"><a href="#批归一化-Batch-Normalization" class="headerlink" title="批归一化(Batch Normalization)"></a>批归一化(Batch Normalization)</h2><p>在<a href>第五篇笔记中</a>，我们曾学习了<strong>输入归一化</strong>。其计算公式如下：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\mu&=\frac{1}{m}\Sigma_{i=1}^{m}x^{(i)} \\
+x &:= (x - \mu) \\
+\sigma^2&=\frac{1}{m}\Sigma_{i=1}^{m}(x^{(i)})^2 \\
+x &:= x / \sigma
+\end{aligned}</script><p>通过归一化，神经网络第一层的输入更加规整，模型的训练速度能得到有效提升。</p>
+<p><img src="/2022/06/21/DLS-note-7/3.jpg" alt></p>
+<p>我们知道，神经网络的输入可以看成是第零层（输入层）的激活输出。一个很自然的想法是：我们能不能把神经网络每一个隐藏层的激活输出也进行归一化，让神经网络更深的隐藏层也能享受到归一化的加速？</p>
+<p><strong>批归一化</strong>(Batch Normalization)就是这样一种归一化神经网络每一个隐藏层输出的算法。准确来说，我们归一化的对象不是每一层的激活输出$a^{[l]}$，而是激活前的计算结果$z^{[l]}$。让我们看看对于某一层的激活前输出$z=z^{[l]}$，我们该怎么进行批归一化。</p>
+<p>首先，还是先获取符合标准正态分布的归一化结果$z^{(i)}_{norm}$：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+& Input \ z^{(1)}, z^{(2)}, ...z^{(m)} \\
+& \mu=\frac{1}{m}\Sigma_i^{m}z^{(i)} \\
+& \sigma^2=\frac{1}{m}\Sigma_i^{m}(z^{(i)}- \mu)^2\\
+& z^{(i)}_{norm}=\frac{z^{(i)}-\mu}{\sigma}
+\end{aligned}</script><p>我们不希望每一层的输出都固定为标准正态分布，而是希望网络能够自己选择最恰当的分布。因此，我们可以用下式计算最终的批归一化结果：</p>
+<script type="math/tex; mode=display">
+\tilde{z}^{(i)}=\gamma z^{(i)}_{norm} + \beta</script><p>其中$\tilde{z}^{(i)}$是最终的批归一化结果，$\gamma, \beta$都是可学习参数，分别影响新分布的方差与均值。</p>
+<blockquote>
+<p>为什么我们不希望数据的分布总是标准正态分布呢？可以考察一个即将送入sigmoid的$z$。sigmoid在[-1, 1]这段区间内近乎是一个线性函数，为了利用该激活函数的非线性区域，我们应该让$z$的取值范围更大一点，即让$z$的方差大于1。</p>
+<p>这里的$\beta$和梯度下降算法里的$\beta$不是同一回事，只是这几个算法的原论文里都使用了$\beta$这个符号。</p>
+</blockquote>
+<p>使用批归一化后，原来的神经网络计算公式需要做出一些调整。之前，$z^{(i)}$的计算公式如下：</p>
+<script type="math/tex; mode=display">
+z^{(i)}=Wa^{(i)}+b</script><p>现在，我们会把$z^{(i)}$的均值归一化到0。因此，$+b$成为了一个冗余的操作。使用了批归一化后，$z^{(i)}$应该按下面的方法计算：</p>
+<script type="math/tex; mode=display">
+z^{(i)}=Wa^{(i)}</script><p>总结一下，加入批归一化后，神经网络的计算过程如下所示：</p>
+<script type="math/tex; mode=display">
+X \to Z^{[1]}(use \ W^{[1]}) \to \tilde{Z}^{[1]}(use \ \beta^{[1]}, \gamma^{[1]}) \to A^{[1]} \to ...</script><p>注意，使用向量化计算后，$\tilde{Z}^{[l]}$的计算公式应该如下：</p>
+<script type="math/tex; mode=display">
+\tilde{Z}^{[l]}=\gamma^{[l]} \ast Z_{norm}^{[l]} + \beta^{[l]}</script><p>其中$\gamma^{[l]}$和$\beta^{[l]}$的形状都是$(n^{[l]}, 1)$</p>
+<blockquote>
+<p>课堂里没有介绍批归一化的求导公式。这里补充一下：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+d\beta &= \frac{1}{m}dA \\
+d\gamma &= \frac{1}{m}dA \ast Z_{norm}^{[l]} 
+\end{aligned}</script></blockquote>
+<p>使用批归一化后，常见优化算法（mini-batch, momentum, adam, …）仍能照常使用。</p>
+<h3 id="直观理解批归一化的作用"><a href="#直观理解批归一化的作用" class="headerlink" title="直观理解批归一化的作用"></a>直观理解批归一化的作用</h3><p>对于神经网络中较深的层，它们只能“看到”来自上一层的激活输出，而不知道较浅的层的存在。如下图所示，对于第3层，它只知道第2层的激活输出$A^{[2]}$。</p>
+<p><img src="/2022/06/21/DLS-note-7/4.jpg" alt></p>
+<p>这样，经过一段时间的训练后，网络的第3层和第4层知道了如何较好地把$A^{[2]}$映射成$\hat{y}$。</p>
+<p>可是，$A^{[2]}$并不是神经网络的真实输入。神经网络真正的结构如下：</p>
+<p><img src="/2022/06/21/DLS-note-7/5.jpg" alt></p>
+<p>$A^{[2]}$其实还受到神经网络前2层参数的影响。一旦前2层的参数更新，$A^{[2]}$的分布也会随之改变，第3层和第4层可能要从头学习$A^{[2]}$到$\hat{y}$的映射关系。</p>
+<p>与之相比，使用了批归一化后，神经网络每一层的输出都会落在一个类似的分布里。这样，浅层和深层之间就没有那么强的依赖关系，较深的层能够更快完成学习。</p>
+<p>顺带一提，当我们用批归一化的同时，如果还使用了mini-batch，则批归一化还能稍微起到一点正则化的作用。这是因为在mini-batch上每层批归一化用到的方差和均值是不准确的，这种“带噪音”的批归一化能够起到和dropout类似的作用，防止神经网络以较大的权重依赖于少数神经元。</p>
+<h3 id="测试时的批归一化"><a href="#测试时的批归一化" class="headerlink" title="测试时的批归一化"></a>测试时的批归一化</h3><p>我们刚刚学习的批归一化操作，其实都是针对训练而言的。在训练时，我们有大批的数据，可以轻松算出每一层中间结果$Z^{[l]}$的均值和方差。但是，在测试时，我们可能只会对一项输入进行计算。对一项输入计算均值和方差是没有意义的。因此，我们要想办法决定测试时$Z^{[l]}\to Z_{norm}^{[l]}$用到的均值和方差。</p>
+<p>我们可以用每一个mini-batch的均值和方差的指数加权移动平均数作为测试时的均值和方差。</p>
+<h2 id="Softmax-与多分类问题"><a href="#Softmax-与多分类问题" class="headerlink" title="Softmax 与多分类问题"></a>Softmax 与多分类问题</h2><p>之前我们一直都在讨论二分类问题。比如，辨别一张图片是不是小猫。当我们把二分类问题拓展到多分类问题时，问题的数学模型会发生哪些变化呢？</p>
+<p>首先，我们来看一下多分类问题的定义。在多分类问题中，我们要要判断一个输入是属于$C$种类型中的哪一种。比如我们希望判断一张图片里的生物是属于小猫、小狗、小鸡、其他这$C=4$类中的哪一种。</p>
+<p>在二分类问题中，我们用1表示“是某一类”，0表示“不是某一类”。我们只需要计算$P(\hat{y}=1|x)$这一个概率。而多分类问题中，我们用一个数字表示一种类别，比如0表示“其他”，1表示“小猫”，2表示“小狗”，3表示“小鸡”。这样，我们就应该计算多个概率，比如$P(\hat{y}=0|x), P(\hat{y}=1|x), P(\hat{y}=2|x), P(\hat{y}=3|x)$这四个概率。</p>
+<p>多分类问题的示意图和一个可能的多分类神经网络如下图所示（注意，该网络有4个输出）：</p>
+<p><img src="/2022/06/21/DLS-note-7/6.jpg" alt></p>
+<p>接着，我们来看看多分类问题带来了哪些新的困难。在二分类问题中，我们得到了最后一层的计算结果$z^{[L]}$，我们要用sigmoid把它映射到表示概率的[0, 1]上。而多分类问题中，同理，我们要把神经网络最后一层的计算结果$z^{[L]}$映射成一些有实际意义的概率值。具体而言，我们应让所有分类概率之和为1，即$\Sigma_{i=1}^CP(\hat{y}=i|x)=1$。为了达到这个目的，我们要引入一个激活函数——softmax。</p>
+<p>和其他定义在一个实数上的激活函数不同，softmax定义在一个向量上，其计算方式为：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&Input \ z^{[L]} \\
+&output \ a^{[L]} \\
+&t =  e^{z^{[L]}} \\
+&a^{[L]} = \frac{t}{\Sigma_{i=1}^Ct_i}
+\end{aligned}</script><p>注意，上式中所有运算都是逐元素运算。比如在上面提到的有四个类别的分类问题中，$z^{[L]}$是一个形状为$(4, 1)$的张量，经过逐元素运算后，$t, a^{[L]}$都是形状为$(4, 1)$的张量。</p>
+<p>上述描述可能比较抽象，让我们看课件里的一个具体例子：</p>
+<p><img src="/2022/06/21/DLS-note-7/7.jpg" alt></p>
+<p>假设$z^{[L]}=[5, 2, -1, 3]$，则$t=[e^5, e^2, e^{-1}, e^3], \Sigma_{j=1}^4t_j\approx176.3,a^{[L]}_1\approx0.842,a^{[L]}_2\approx0.042,a^{[L]}_3\approx0.002,a^{[L]}_4\approx0.114$。</p>
+<p>softmax的计算方法可以总结为：求指数，归一化。本质上来说，softmax就是把向量每个分量的自然指数作为一个新的标准，在这个标准上进行标准归一化操作。</p>
+<blockquote>
+<p>为什么要使用向量每个分量的自然指数作为归一化的变量，而不直接对原向量做标准归一化呢？可以考虑[1, 2], [10, 20]这两个向量。如果直接对这两个量进行进行归一化，算出来的概率都是[0.33, 0.67]。而实际上，第一个向量可能对应一幅比较模糊的输入，第二个向量可能对应一幅比较清楚的输入。显然，在更清晰的输入上，我们更有把握说我们的分类结果是正确的。通过使用softmax，我们可以放大数值的影响，[10, 20]相比[1, 2]，我们更有把握说输入是属于第二个类别的。该解释参考自<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/17187507/why-use-softmax-as-opposed-to-standard-normalization">https://stackoverflow.com/questions/17187507/why-use-softmax-as-opposed-to-standard-normalization</a></p>
+<p>在C=2时，softmax会退化成sigmoid。也就是说，softmax是sigmoid在多分类任务上的推广。</p>
+<p>softmax这个名字，其实衍生自hardmax这个词。使用hardmax时，输入会被映射成[1, 0, 0, 0]这样一个one-hot向量。这种最大值太严格（hard）了，所以有相对来说比较宽松（soft）的最大值计算方法softmax。</p>
+</blockquote>
+<p>使用了softmax后，还需要调整的是网络的loss。推广到多分类后，我们要使用的loss是</p>
+<script type="math/tex; mode=display">
+L(y, \hat{y}) = -\Sigma_{i=1}^Cy_ilog\hat{y_i}</script><p>，其中$y_i$不是一个表示类别的整数，而是一个one-hot编码的向量。比如在一共有4类时，标签2的one-hot编码是：</p>
+<script type="math/tex; mode=display">
+
+\left[
+  \begin{aligned}
+  0 \\ 0 \\ 1 \\ 0
+  \end{aligned}
+\right]</script><p>假设整个标签数据集为$[0, 1, 3, 2]$，则参与网络运算时用到的$Y$应该是：</p>
+<script type="math/tex; mode=display">
+\left[
+  \begin{aligned}
+  1 \ 0 \ 0 \ 0\\ 
+  0 \ 1 \ 0 \ 0\\ 
+  0 \ 0 \ 0 \ 1\\ 
+  0 \ 0 \ 1 \ 0
+  \end{aligned}
+\right]</script><p>在编程时，数据集一般只会提供用整数表示的标签。为了正确使用loss，我们需要多加一步转换到one-hot编码的步骤。</p>
+<p>和逻辑回归类似，计算梯度时，$dZ^{[L]}=\hat{Y}-Y$这个等式依然成立，我们可以用它跳一个算梯度的步骤。</p>
+<h2 id="编程框架"><a href="#编程框架" class="headerlink" title="编程框架"></a>编程框架</h2><p>由于深度学习的开发者越来越多，许多开源深度学习编程框架相继推出，比如：</p>
+<ul>
+<li>Caffe/Caffe2</li>
+<li>Torch</li>
+<li>TensorFlow</li>
+<li>Keras</li>
+<li>mxnet</li>
+<li>PaddlePaddle</li>
+<li>CNTK</li>
+<li>DL4J</li>
+<li>Lasagne</li>
+<li>Theano</li>
+</ul>
+<p>这些编程框架不仅封装了常见的深度学习数学函数，如sigmoid、softmax、卷积，还支持自动求导的功能——这是深度学习编程框架最吸引人的一点。在使用编程框架时，我们只需要编写前向传播的过程，框架就会自动执行梯度计算，以辅助我们完成反向传播。</p>
+<blockquote>
+<p>目前，学术界最常用的是Torch的Python版PyTorch。第二常用的是TensorFlow。</p>
+</blockquote>
+<p>在选择编程框架时，我们要考虑以下几点：</p>
+<ul>
+<li>易用性（能否快速开发与部署）</li>
+<li>运行性能</li>
+<li>是否真正开源</li>
+</ul>
+<p>前两点注意事项毋庸置疑。框架之于编程语言，就像高级语言之于汇编语言一样。我们选择编程框架而不去从零编程，最主要的原因就是开发效率。使用框架能够节约大量的开发时间，有助于项目的迭代。而使用统一的框架，往往会损失一些效率，这些损失的效率不能太多。</p>
+<p>第三点要着重强调一下。很多框架打着开源的名号，实际上却是某个公司在维护。如果这个公司哪天不想维护了，放弃继续开源，那么你的开发就会受到很大的影响。</p>
+<blockquote>
+<p>这周的课还介绍了TensorFlow的用法，我会在编程实战中补充这方面的知识。</p>
+</blockquote>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这堂课的知识点有：</p>
+<ul>
+<li>调参<ul>
+<li>优先级</li>
+<li>采样策略</li>
+<li>搜索尺度</li>
+</ul>
+</li>
+<li>批归一化<ul>
+<li>在网络中的位置</li>
+<li>作用（归一化、<strong>新分布</strong>）</li>
+<li><strong>超参数</strong>与公式</li>
+<li>测试时的处理方式</li>
+</ul>
+</li>
+<li>多分类问题<ul>
+<li>softmax</li>
+<li>loss</li>
+</ul>
+</li>
+<li>编程框架<ul>
+<li>了解常见的编程框架</li>
+<li>选择编程框架的角度</li>
+</ul>
+</li>
+</ul>
+<p>通过这三周的学习，我们掌握了深度学习各方面的知识，能够用多种方式提升我们深度学习项目的性能了。</p>
+<p>这周的编程要用到TensorFlow。我将另开一篇文章介绍本周的代码实战项目。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/15/DLS-note-6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2754,332 +3216,6 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/03/18/20220315-custom-op/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/03/18/20220315-custom-op/" class="post-title-link" itemprop="url">PyTorch Custom OP （自定义算子） 教程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-03-18 15:28:41" itemprop="dateCreated datePublished" datetime="2022-03-18T15:28:41+08:00">2022-03-18</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="PyTorch-自定义算子教程：两种方法实现加法算子（附LibTorch-Windows环境配置教程）"><a href="#PyTorch-自定义算子教程：两种方法实现加法算子（附LibTorch-Windows环境配置教程）" class="headerlink" title="PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）"></a>PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）</h1><p>我们都知道，PyTorch做卷积等底层运算时，都是用C++实现的。有时，我们再怎么去调用PyTorch定义好的算子，也无法满足我们的需求。这时，我们就要考虑用C++自定义一个PyTorch的算子了。</p>
-<p>PyTorch提供了两种添加C++算子的方法：编译动态库并嵌入<code>TorchScript</code><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html">[1]</a>、用PyTorch的C++拓展接口<a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/cpp_extension.html">[2]</a>。前者适合导入独立的C++项目，后者需要用PyTorch的API设置编译信息，只适合小型C++项目，更适合于把新算子共享给他人的情况。由于我还没有用过torch的C++接口，这里先用第一种方法写一套独立的算子实现示例，跑通整个流程，再基于同一份代码，用第二种方法实现一次，以全方位地介绍PyTorch自定义算子的方法。</p>
-<p><strong>前置准备：</strong></p>
-<ul>
-<li>装好了CMake</li>
-<li>装好了PyTorch</li>
-<li>装好了OpenCV</li>
-<li>看得懂C++、Python</li>
-</ul>
-<p><strong>知识点预览：</strong></p>
-<ul>
-<li>如何配置LibTorch</li>
-<li>第一个Torch C++程序</li>
-<li>如何自己写简单的CMake</li>
-<li>如何用Visual Studio写CMake项目</li>
-<li>如何编译使用简单的动态库</li>
-<li>如何用两种方法实现PyTorch自定义算子</li>
-<li>如何用setuptools自动编译C++源代码</li>
-</ul>
-<p>（以上是我写这篇文章之前还不会的东西。）</p>
-<ul>
-<li>如何用PyTest做单元测试</li>
-</ul>
-<p><strong>参考教程</strong>：</p>
-<p>[1] 添加<code>TorchScript</code>拓展 <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html">https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html</a></p>
-<p>[2] PyTorch的C++拓展 <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/cpp_extension.html">https://pytorch.org/tutorials/advanced/cpp_extension.html</a></p>
-<p>[3] 安装LibTorch <a target="_blank" rel="noopener" href="https://pytorch.org/cppdocs/installing.html">https://pytorch.org/cppdocs/installing.html</a></p>
-<p>[4] VS CMake <a target="_blank" rel="noopener" href="https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019">https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019</a></p>
-<h2 id="配置-LibTorch-开发环境"><a href="#配置-LibTorch-开发环境" class="headerlink" title="配置 LibTorch 开发环境"></a>配置 LibTorch 开发环境</h2><p>我们这个项目是使用CMake开发的，理论上任何平台都能使用。我是在Windows上测试的，理论上Windows上碰到的毛病会多一些，Linux上可能直接用就没问题了。</p>
-<p>对于我们这个CMake项目来说，成功添加路径，使得<code>find_package（Torch)</code>（找到Torch的CMake配置）不报错就算配置环境成功。当然，貌似由于Torch依赖于OpenCV，找OpenCV包也得成功才行。</p>
-<p>参考教程是<a target="_blank" rel="noopener" href="https://pytorch.org/cppdocs/installing.html">[3]</a>，但对于像我一样什么都不懂的新手来说，由于CMake有些东西要配置，这篇官方教程还不太够用。</p>
-<h3 id="下载-LibTorch"><a href="#下载-LibTorch" class="headerlink" title="下载 LibTorch"></a>下载 LibTorch</h3><p>想用PyTorch的C++相关内容的话，要先去下载LibTorch库。</p>
-<p>在获取PyTorch的Python版本下载命令处，可以找到LibTorch的安装链接：</p>
-<p><img src="/2022/03/18/20220315-custom-op/1.jpg" alt></p>
-<p>和装PyTorch Python版的时候类似，选好自己的版本，之后点击某个链接下载就行。第一个链接是Release版，第二个是Debug版。由于我是编程高手，不要调试，所以直接选择了Release版。建议大家去下Debug版方便随时调试。</p>
-<h3 id="添加环境变量"><a href="#添加环境变量" class="headerlink" title="添加环境变量"></a>添加环境变量</h3><p>下一步要把LibTorch的动态库所在目录加入环境变量中，以使程序运行时能够找得到依赖的动态库（编译是没问题的）。</p>
-<p>把<code>xxxxxxxx\libtorch\lib</code>这个目录添加进环境变量即可。</p>
-<p>如果是在Windows上，添加环境变量时有一个细节要注意：</p>
-<p><img src="/2022/03/18/20220315-custom-op/2.jpg" alt></p>
-<p>相信90%的人装PyTorch前都是把Cuda装好了的。在添加LibTorch的动态库目录时一定要注意，要把这个路径移到Cuda路径的上面。详细原因见<strong>FAQ</strong>。</p>
-<h3 id="Hello-LibTorch"><a href="#Hello-LibTorch" class="headerlink" title="Hello LibTorch"></a>Hello LibTorch</h3><p>接下来我们要用一个能调试CMake程序的环境来完成第一个C++ LibTorch程序。</p>
-<p>创建一个崭新的文件夹，在里面添加一个<code>CMakeLists.txt</code>:</p>
-<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.1</span> FATAL_ERROR)</span><br><span class="line"><span class="keyword">project</span>(equi_conv)</span><br><span class="line"></span><br><span class="line"><span class="keyword">find_package</span>(Torch REQUIRED)</span><br><span class="line"><span class="keyword">find_package</span>(OpenCV REQUIRED)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(equi_conv op.cpp)</span><br><span class="line"><span class="keyword">target_compile_features</span>(equi_conv PRIVATE cxx_std_14)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv <span class="string">&quot;$&#123;TORCH_LIBRARIES&#125;&quot;</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv opencv_core opencv_imgproc)</span><br></pre></td></tr></table></figure>
-<p>里面的<code>equi_conv</code>可以换成你喜欢的项目名。我使用的项目名是<code>equi_conv</code>，这个名称会在后面多次出现。理论上我显示<code>equi_conv</code>的地方显示的应该是你自己的项目名。</p>
-<p><strong>注意！</strong> 一般情况下CMake是找不到Torch和OpenCV的，要手动设置CMake Configure附加命令中的<code>Torch_DIR</code>和<code>OpenCV_DIR</code>这两个参数，比如我的附加命令是</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-D Torch_DIR=&quot;D:/Download/libtorch-win-shared-with-deps-1.11.0+cu113/libtorch/share/cmake/Torch&quot; -D OpenCV_DIR=&quot;D:/OpenCV/opencv/build&quot;</span><br></pre></td></tr></table></figure>
-<p>。<code>Torch_DIR</code>是<code>&quot;xxxxxxxx/libtorch/share/cmake/Torch</code>,<code>OpenCV_DIR</code>大约是<code>xxxxxxxx/opencv/build</code>。每个人的具体路径可能不一样，只要记住，这两个路径里都得是包含了<code>.cmake</code>文件的。根据编程环境的不同，设置这两个CMake参数的位置也不同，详见后文。</p>
-<p>官方教程[3]给了一种很骚的提供路径的方法：<code>-DCMAKE_PREFIX_PATH=&quot;$(python -c &#39;import torch.utils; print(torch.utils.cmake_prefix_path)&#39;)&quot;</code>。这个命令是调用Python脚本以添加PyTorch默认的CMake搜索目录。但是这个命令有一些问题：1) 当前命令行环境里不一定能正确调用Python及访问torch库（比如PyTorch是用conda装的，而当前环境不是对应的conda环境）；2) 我们下载的libtorch似乎难以对得上PyTorch包里默认的libtorch路径。这行命令似乎仅适用于处于正确Python环境下，把libtorch装到了<code>/libtorch</code>目录下的Linux系统。为了命令的兼容性，我们不用这么骚的操作，老老实实自己设置LibTorch目录和OpenCV目录。</p>
-<p>再写一个叫<code>op.cpp</code>的C++源文件。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	torch::Tensor tensor = torch::<span class="built_in">rand</span>(&#123; <span class="number">2</span>, <span class="number">3</span> &#125;);</span><br><span class="line">	std::cout &lt;&lt; tensor &lt;&lt; std::endl;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果你是高手，可以不去配环境，直接手敲CMake命令。但为了方便，接下来我们还是准备调试运行这个程序。配置CMake调试环境有很多方法，这里先给一个Windows上Visual Studio的方案<a target="_blank" rel="noopener" href="https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019">[4]</a>：</p>
-<p>准备好上面那个<code>CMakeLists.txt</code>后，用VS打开这个CMake文件（相信大家的VS都是2017版本以上的，旧版本是没有CMake的功能的~）：</p>
-<p><img src="/2022/03/18/20220315-custom-op/3.jpg" alt></p>
-<p>如果文件没写错VS会自动配置(Configure)CMake。在工具栏中可以手动中断或开始CMake的配置。</p>
-<p><img src="/2022/03/18/20220315-custom-op/4.jpg" alt></p>
-<p>还可以点击上面的“{PROJECT_NAME}的CMake设置”来设置CMake命令中要用的参数（比如<code>-D</code>参数）</p>
-<p><img src="/2022/03/18/20220315-custom-op/5.jpg" alt></p>
-<p>注意，一开始CMake只有Debug版的配置，可以点左上角的加号手动加一个Release版的配置。</p>
-<p>同时，如图中所示，<code>xxx_DIR</code>应该卸载CMake命令参数里面。</p>
-<p>配置好后去上面的工具栏点击”生成-全部生成”就可以把程序编译好了。接下来按熟悉的F5就可以运行程序了。</p>
-<p>再介绍一个VSCode的CMake编程环境，这个基本上是全平台通用的。不过同样，我还是在Windows上测试的，以Windows上的配置为主。</p>
-<p>通过搜索”Windows CMake VSCode cl 配置”等关键词，我搜索到了一篇<a target="_blank" rel="noopener" href="https://blog.csdn.net/Nichlson/article/details/113763551">很好的教程</a>，我是照着这篇教程配的环境。如果是Linux的话，换一下编译器应该就能拿过来用了。</p>
-<p>为了添加<code>-D</code>等配置参数，可以用<code>ctrl+,</code>打开设置，修改工作区设置里的CMake Configure命令：</p>
-<p><img src="/2022/03/18/20220315-custom-op/6.jpg" alt></p>
-<p>如果一切正常，程序会输出随机张量的内容。</p>
-<p><img src="/2022/03/18/20220315-custom-op/7.jpg" alt></p>
-<h2 id="LibTorch-A-B"><a href="#LibTorch-A-B" class="headerlink" title="LibTorch A+B"></a>LibTorch A+B</h2><h3 id="C-侧"><a href="#C-侧" class="headerlink" title="C++ 侧"></a>C++ 侧</h3><p>修改<code>op.cpp</code>：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">0</span>) == t2.<span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line">	<span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">1</span>) == t2.<span class="built_in">size</span>(<span class="number">1</span>));</span><br><span class="line">	<span class="function">cv::Mat <span class="title">m1</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t1.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line">	<span class="function">cv::Mat <span class="title">m2</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t2.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line">	</span><br><span class="line">	cv::Mat res = m1 + m2;</span><br><span class="line"></span><br><span class="line">	torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.ptr&lt;<span class="keyword">float</span>&gt;(), &#123; t1.<span class="built_in">size</span>(<span class="number">0</span>), t1.<span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br><span class="line">	<span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">TORCH_LIBRARY</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">	m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们要实现一个新PyTorch算子<code>my_add</code>，该实现函数先把两个PyTorch Tensor转换成OpenCV Mat，用Mat做加法，再把Mat转回Tensor。整个代码非常易懂，哪怕对LibTorch和OpenCV的语法不熟，也基本猜得出每行代码的作用。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br></pre></td></tr></table></figure>
-<p>一开始，先包含LibTorch、OpenCV的头文件。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br></pre></td></tr></table></figure>
-<p>我们要实现的是一个PyTorch的加法，因此实现函数中所有的张量类型都是<code>torch::Tensor</code>。加法输入是两个量，输出是一个量，因此最后的函数头要这样写。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">0</span>) == t2.<span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line"><span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">1</span>) == t2.<span class="built_in">size</span>(<span class="number">1</span>));</span><br></pre></td></tr></table></figure>
-<p>做为严谨的程序员，我们要对输入的Tensor做一定的检查（实际上这两个检查还不够，由于我们默认输入图像的通道是3，还应该检查一下通道数。但这样检查下去可能会没完没了了，这里仅仅是提醒大家要养成良好的编程习惯）（其实是我写了两行就懒得写下去了）。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">cv::Mat <span class="title">m1</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t1.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line"><span class="function">cv::Mat <span class="title">m2</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t2.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br></pre></td></tr></table></figure>
-<p>这两行是用Tensor构造Mat。从这两行代码中，可以学到两点：1）可以通过<code>tensor.data_ptr&lt;float&gt;</code>来获取Tensor存储数据的指针;2）不同框架下的数据结构互转时一般是传指针，再传shape。</p>
-<p>OpenCV这里有一点点特殊。OpenCV的Mat是二维的，要维护一个H-W-C（高-宽-通道）的数据，需要传一个基础数据类型<code>CV_32FC3</code>，即3通道浮点数。</p>
-<p>从代码中可以猜出来，<code>tensor.size(i)</code>可以获取Tensor第i维的长度。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cv::Mat res = m1 + m2;</span><br></pre></td></tr></table></figure>
-<p>不用猜都知道这是调用了Mat的加法。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.ptr&lt;<span class="keyword">float</span>&gt;(), &#123; t1.<span class="built_in">size</span>(<span class="number">0</span>), t1.<span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br></pre></td></tr></table></figure>
-<p>这一行是Mat转Tensor，同样是传了数据指针和张量形状。</p>
-<p>这里第二个参数是个叫<code>at::IntArrayRef</code>的类型的。这个类型会用在Tensor的shape上。该类型的最简单的初始化方式就是用大括号把值框进去，就像Python里用方括号或圆括号传List和Set一样。</p>
-<p>相比生成OpenCV Mat，这里没有传数据类型。原因如前文所述，应该是由于OpenCV的数据类型里包含了维度信息，所以OpenCV的Mat构造时要额外传这个信息。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br></pre></td></tr></table></figure>
-<p>最后返回的是<code>tensor.clone()</code>。官方教程里说，用指针创建Tensor时会复用原来的指针，而不会新申请内存。函数结束后，Mat里的资源会释放，等于说这个用Mat创建出的Tensor也失效了。因此要<code>clone()</code>一下，让数据在函数结束后依然存在。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">TORCH_LIBRARY</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">	m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>最后调用API把C++函数绑定到Python上，现在可以不用追究这些代码的具体原理，只要知道这样写Python就可以访问到<code>my_add</code>了。</p>
-<p>这里可以改动的内容其实有两处：算子的域<code>my_ops</code>，算子名/函数名<code>my_add</code>。前面那个<code>my_ops</code>在PyTorch的某些地方会用到，这里我们先不管，随便取一个名字即可。</p>
-<p>现在我们要编译的是一个包含一个函数的动态库，而不是一个包含<code>main</code>的应用程序了。因此，我们要修改一下<code>CMakeLists.txt</code>中的编译选项：</p>
-<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.1</span> FATAL_ERROR)</span><br><span class="line"><span class="keyword">project</span>(equi_conv)</span><br><span class="line"></span><br><span class="line"><span class="keyword">find_package</span>(Torch REQUIRED)</span><br><span class="line"><span class="keyword">find_package</span>(OpenCV REQUIRED)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_library</span>(equi_conv SHARED op.cpp)</span><br><span class="line"><span class="keyword">target_compile_features</span>(equi_conv PRIVATE cxx_std_14)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv <span class="string">&quot;$&#123;TORCH_LIBRARIES&#125;&quot;</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv opencv_core opencv_imgproc)</span><br></pre></td></tr></table></figure>
-<p>其实就改了一行:<code>add_library(equi_conv SHARED op.cpp)</code>，这样可以把编译目标变成一个动态库。</p>
-<p>代码没错的话，重新Configure和Generate后动态库就编译好了。</p>
-<h3 id="Python-侧"><a href="#Python-侧" class="headerlink" title="Python 侧"></a>Python 侧</h3><p>我们写一个单元测试Python脚本来测试一下我们的算子能否在PyTorch里成功运行：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">lib_path = <span class="string">r&quot;D:\Repo\equi_conv\EquiConv\out\build\x64-Release\equi_conv.dll&quot;</span></span><br><span class="line">torch.ops.load_library(lib_path)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_add</span>():</span></span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = torch.ops.my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
-<p>再一次，为了体现我们编程时的严谨性，我们使用pytest来测试这个脚本。<code>pip install pytest</code>就可以轻松安装好这个Python单元测试工具。但如果你实在太懒了，不想下pytest，就得在后面补一行<code>test_add()</code>手动调用一下这个函数。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lib_path = <span class="string">r&quot;D:\Repo\equi_conv\EquiConv\out\build\x64-Release\equi_conv.dll&quot;</span></span><br><span class="line">torch.ops.load_library(lib_path)</span><br></pre></td></tr></table></figure>
-<p><code>import torch</code>就不说了。这两行代码是调用PyTorch的API来读取我们刚刚编译出来的动态库。我们这里只需要把动态库路径改成自己的就好，别的都不用改。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_add</span>():</span></span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = torch.ops.my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
-<p>后面这些代码就是实际单元测试的代码里，代码非常简单：生成两个随机tensor，比较一下我们的加法和PyTorch自己的加法是否结果一致。</p>
-<p>值得注意的是，用<code>torch.ops.my_ops.my_add</code>可以调用我们刚刚那个C++函数。前面的<code>torch.ops</code>都是写死的，后面的<code>my_add</code>是我们自己定义的函数名。而<code>my_ops</code>，则是我们刚刚调API时填的“算子域”了。算子域在注册Python符号表的时候还会用到，这里不用管那么多，把算子域理解成一个命名空间，一个防止算子命名冲突的东西即可。</p>
-<p><code>torch.allclose</code>可以简单地理解为一个要求两个Tensor所有值都<strong>几乎</strong>相等的比较函数。</p>
-<p>在该文件夹下运行命令<code>pytest</code>，屏幕上显示绿色的<code>1 passed xxxxxxxxxx</code>即说明单元测试成功运行。</p>
-<p>至此，我们算是成功在Python里调用了一个C++写的算子。只需要写上torch.ops.my_ops.my_add`，我们就能够在任何地方（比如模型的forward函数）调用我们的算子。聪明的人看到这里，已经学会随心所欲地在PyTorch里嵌入自己的高效率的C++算子了。</p>
-<p>配好环境，搭好框架后，我们自己实现算子倒是非常舒服。问题是，如果我们要把这些算子给别人使用的话，要么是给别人源代码，让别人自己配置LibTorch编译环境；要么是把所有<code>Torch版本数 * Cuda版本数 * 操作系统数</code>这么多个动态库给预编译出来。</p>
-<p>要是能抛掉LibTorch，让有PyTorch和Cuda环境的用户自己编译源代码，似乎一个平衡开发者体验和用户体验的选择。所以，这里再介绍之前讲过的第二种添加算子的方法：直接在PyTorch里添加C++拓展。</p>
-<h2 id="PyTorch-Extension-A-B"><a href="#PyTorch-Extension-A-B" class="headerlink" title="PyTorch Extension A+B"></a>PyTorch Extension A+B</h2><p>用Python的setuptools也可以编译一些C++项目但，由于其头文件目录、依赖的库目录这些编译选项需要手动设置，setuptools仅适用于编译比较简单的C++项目。</p>
-<p>在同文件夹中，编写以下的<code>setup.py</code>文件：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> setuptools <span class="keyword">import</span> setup</span><br><span class="line"><span class="keyword">from</span> torch.utils <span class="keyword">import</span> cpp_extension</span><br><span class="line"></span><br><span class="line">include_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\include&#x27;</span>]</span><br><span class="line">library_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\x64\vc15\lib&#x27;</span>]</span><br><span class="line">libraries = [<span class="string">r&#x27;opencv_world452&#x27;</span>]</span><br><span class="line"></span><br><span class="line">setup(name=<span class="string">&#x27;my_add&#x27;</span>,</span><br><span class="line">      ext_modules=[</span><br><span class="line">          cpp_extension.CppExtension(<span class="string">&#x27;my_ops&#x27;</span>, [<span class="string">&#x27;op2.cpp&#x27;</span>],</span><br><span class="line">                                     include_dirs=include_dirs,</span><br><span class="line">                                     library_dirs=library_dirs,</span><br><span class="line">                                     libraries=libraries)</span><br><span class="line">      ],</span><br><span class="line">      cmdclass=&#123;<span class="string">&#x27;build_ext&#x27;</span>: cpp_extension.BuildExtension&#125;)</span><br></pre></td></tr></table></figure>
-<p>在这个源文件中，要改的就是以下三个路径（代码块中显示的是我的路径）：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">include_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\include&#x27;</span>]</span><br><span class="line">library_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\x64\vc15\lib&#x27;</span>]</span><br><span class="line">libraries = [<span class="string">r&#x27;opencv_world452&#x27;</span>]</span><br></pre></td></tr></table></figure>
-<p>这三个路径用于配置OpenCV的编译选项，分别表示OpenCV的包含目录（头文件目录）、静态库目录、静态库名。用Visual Studio导入过第三方库的，肯定对这三个选项不陌生。</p>
-<blockquote>
-<p>如果是在 Linux 上，前两个路径大概是”/usr/local/include/opencv2”, “/usr/local/lib” 。最后的库名填写<code>opencv_core</code>即可。</p>
-</blockquote>
-<p>至于PyTorch相关的编译选项，我们不需要手动设置。这是因为我们用了PyTorch封装的添加C++拓展接口，PyTorch有关的路径已经被填好了。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">setup(name=<span class="string">&#x27;my_add&#x27;</span>,</span><br><span class="line">      ext_modules=[</span><br><span class="line">          cpp_extension.CppExtension(<span class="string">&#x27;my_ops&#x27;</span>, [<span class="string">&#x27;op2.cpp&#x27;</span>],</span><br><span class="line">                                     include_dirs=include_dirs,</span><br><span class="line">                                     library_dirs=library_dirs,</span><br><span class="line">                                     libraries=libraries)</span><br><span class="line">      ],</span><br><span class="line">      cmdclass=&#123;<span class="string">&#x27;build_ext&#x27;</span>: cpp_extension.BuildExtension&#125;)</span><br></pre></td></tr></table></figure>
-<p>在调用<code>setup</code>时，<code>name</code>是整个项目的名字，可以随便取。<code>my_ops</code>和刚刚一样，是命名空间的名字，我们还是保持<code>my_ops</code>这个名字。<code>op2.cpp</code>就是要编译的源文件了，这里我们待会再讨论。剩下的参数这些传进去就行了。</p>
-<p>我们再在<code>op.cpp</code>的基础上新建一个新的C++源文件<code>op2.cpp</code>：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">0</span>) == t2.<span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line">  <span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">1</span>) == t2.<span class="built_in">size</span>(<span class="number">1</span>));</span><br><span class="line">  <span class="function">cv::Mat <span class="title">m1</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t1.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line">  <span class="function">cv::Mat <span class="title">m2</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t2.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line"></span><br><span class="line">  cv::Mat res = m1 + m2;</span><br><span class="line"></span><br><span class="line">  torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.ptr&lt;<span class="keyword">float</span>&gt;(), &#123;t1.<span class="built_in">size</span>(<span class="number">0</span>), t1.<span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br><span class="line">  <span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">PYBIND11_MODULE</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">  m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其实修改的就是这一行<code>TORCH_LIBRARY(my_ops, m)-&gt;PYBIND11_MODULE(my_ops, m)</code>，没有调用TorchScript的绑定接口，而是直接用Pybind绑定了C++函数。</p>
-<p>接下来，在当前文件夹下运行命令<code>python setup.py install</code>即可编译刚刚的C++源文件了。成功的话大概会有<code>Finished processing dependencies for my-add==0.0.0</code>这样的提示。</p>
-<p>编译结束后，我们在原来<code>test_add.py</code>的基础上添加一些单元测试，看看用这种新方法编译完C++拓展后怎么调用C++函数。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_add2</span>():</span></span><br><span class="line">    <span class="keyword">import</span> my_ops</span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
-<p>由于我们刚刚编译了一个命名空间为<code>my_ops</code>的包，我们可以用<code>import my_ops</code>导入这个刚刚编译好的库了。现在调用C++函数的方法变成了<code>my_ops.my_add</code>，其他地方都没有变化。</p>
-<p>运行<code>pytest test_add.py::test_add2</code>可以单独测试这一个函数。当然懒的话直接<code>pytest</code>可以把刚刚那个测试和这个测试一起做一遍。单元测试通过就说明我们成功运行了C++拓展。</p>
-<p>事实上，这种安装方式还是不够友好。由于我们用到了OpenCV，OpenCV的库路径还是要手动设置。这种安装方式只有在除PyTorch本身外不需要任何第三方库时比较友好。不然的话要么让用户自己手动设置路径，要么在代码库里引用别的开源库，再一个一个重写路径。大型项目还是用CMake等编译系统来编译比较友好。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了两种在PyTorch里调用C++新算子的方法。只要看懂了这篇文章，就算是彻底打通了PyTorch与C++的桥梁，以后写代码可以专注于C++算子的实现及PyTorch对算子的封装，剩下的绑定算子的内容直接套这个模板就行。</p>
-<p>两种算子实现方法的区别主要在于编译选项的设置上和用户在编译算子的体验上。应根据项目的实际情况选择一种方案。</p>
-<p>这篇文章强行调用OpenCV实现了Tensor加法，看上去是多此一举，实际上这是为了展示如何在添加自定义算子时使用第三方库。但为了简化他人编译的过程，实际实现算子时最好只用原本的PyTorch API。</p>
-<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><h3 id="运行LibTorch的示例程序，无法定位程序输入点-xxxxx-于动态链接库-xxxxx"><a href="#运行LibTorch的示例程序，无法定位程序输入点-xxxxx-于动态链接库-xxxxx" class="headerlink" title="运行LibTorch的示例程序，无法定位程序输入点 xxxxx 于动态链接库 xxxxx"></a>运行LibTorch的示例程序，无法定位程序输入点 xxxxx 于动态链接库 xxxxx</h3><p>这个问题找了我老半天，就找到2~3个相关的答案，全是治标不治本的方法。</p>
-<p>有人说，是动态库路径的问题。我测试了一下，直接运行编译好的程序会报错，但是<strong>把程序放到LibTorch的动态库目录下就不会报错</strong>。我已经隐隐约约地感觉到，不是动态库找不到，而是<strong>动态库路径的优先顺序</strong>出了问题。</p>
-<p>果不其然，最后我在<a target="_blank" rel="noopener" href="https://www.icode9.com/content-3-1005434.html">这篇文章</a>里找到了问题的真正原因：Cuda的动态库和LibTorch的冲突了（PyTorch和Cuda要背大锅）。那篇文章中暴力删掉了Cuda的动态库，但是温柔的我们绝对不要这样做。按照前面章节的内容，调整LibTorch与Cuda的路径优先级即可。</p>
-<p><img src="/2022/03/18/20220315-custom-op/bug1.jpg" alt></p>
-<p>貌似官方教程提到了类似的错误。这里再提供一种可能的解决问题的思路（反正我没试）。</p>
-<h3 id="WinError-126-找不到指定的模块"><a href="#WinError-126-找不到指定的模块" class="headerlink" title="[WinError 126] 找不到指定的模块"></a>[WinError 126] 找不到指定的模块</h3><p>这个问题说明Python的PyTorch库版本和下载的LibTorch C++版本不一致。用<code>pip show torch</code>查看当前的PyTorch版本，去重新下载对应的LibTorch即可。</p>
-<h3 id="OSError-xxx-Undefined-symbol-Linux"><a href="#OSError-xxx-Undefined-symbol-Linux" class="headerlink" title="OSError: xxx Undefined symbol (Linux)"></a>OSError: xxx Undefined symbol (Linux)</h3><p>要把 LibTorch 的动态库加入 LD_LIBRARY_PATH 里。</p>
-<h1 id="有关博客“学习”分类下子类别的说明"><a href="#有关博客“学习”分类下子类别的说明" class="headerlink" title="有关博客“学习”分类下子类别的说明"></a>有关博客“学习”分类下子类别的说明</h1><p>貌似之前说明过一次，这里再整理一遍。</p>
-<ul>
-<li>工具用法指南：几乎没有技术含量的，把下载安装过程的踩坑过程原封不动地讲一遍。</li>
-<li>知识记录：对现有成体系知识的描述，尤其会写教科书、公开课上的知识，较少我个人的见解。</li>
-<li>知识整理：对某一工具、知识、技术的说明，主要以我个人的见解、整理为主。</li>
-</ul>
-<p>另外，“学习”类别和“记录”类别挺容易混淆的。这里我再做个规定：“记录”以具体的任务为导向，比如先有要写的作业、要看的论文、要做的项目、规划好的旅游计划，再对这些事情进行描述。而“学习”中包含的文章，更多是一种主观的，以学到东西为目的而写的文章。如果我看了一篇论文，只写论文的内容的话，会分到“记录”里；如果我想调研一个主题的文章，会把调研结果放到“学习-笔记”里；如果我看了很多论文，有了原创性非常强的一篇描述知识的文章，会放到“知识分享”（未来的“创作-知识”）里。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/03/08/Code-Optimization-Fun/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/03/08/Code-Optimization-Fun/" class="post-title-link" itemprop="url">拆掉循环竟然让代码性能大幅提升？ ~ 有趣的高性能计算大作业</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-03-08 22:29:29" itemprop="dateCreated datePublished" datetime="2022-03-08T22:29:29+08:00">2022-03-08</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E4%BD%9C%E4%B8%9A-%E7%BB%83%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">作业/练习</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>由于这个学期没有返校，我变懒了不少。明明有不少可以写的东西，却没有去写。等学期结束了有时间了我会好好补写一些博客。</p>
-<p>这几天，我在赶一个高性能计算的大作业。题目要求优化一段代码，使程序的运行时间尽可能短。大作业本来是一个令人烦躁忧虑，头皮发麻的事物，但在deadline的紧逼之下，我仿佛按下了大脑的启动按钮，火力全开地应对起这个大作业来。于是，我的漫长的编程时间就开始了。——看到这里，如何你对编程不是非常了解，可能完全没有读下去的兴致。但我保证我会用外行人也能看懂的方式，来描述我这次有趣的写大作业经历。</p>
-<p>再具体地讲一下我的大作业要求。我的大作业题目是代码优化，跑代码花费的时间是评价成绩的唯一指标。当然，代码的正确性不能受到影响，你不能让程序刚进去就关掉。代码跑得越快，分数越高。如果代码速度是原来的2倍，则可以拿到60分及格。如果达到原来的2.5，3，3.5，4倍，则可以分别拿到80，90， 95， 100分。成绩评判标准唯一且清晰。</p>
-<p>我是作业截止的最后4天开始看这个大作业的。看完这个评分标准，我心里先是一乐：“哈哈，终于有一个评分透明的大作业了，写论文什么的成绩太容易受老师主观评价影响了。”接着，我又发现事情有些不太对：“既然老师敢给这么高的分数，说明代码想优化到3倍或者4倍是很困难的。我的时间这么少，恐怕只能拿个80分吧。”我也没再想下去，反正代码能优化多少就优化多少，也没有那种先定目标再开始干活的必要。</p>
-<p>我的编程任务正式开始了。准确来说，我做的不是编程，是合理而优雅地修改老师给的代码，让这个代码运行速度更快一些，而不改变程序本身的意思。要打比方的话，我是一个拿着手术刀的医生，我需要精准地切掉病变部位，还病人一个更好的身体。比较幸运的是，我的工作可以反复调试，代码出了问题可以重新修改，而不需要担心造成什么破坏性的后果。</p>
-<p>代码的功能是计算化学反应的一些参数。这段代码产生的程序不会产生任何花哨的网页、按钮，只会在默默地运行数十秒中后，冷冰冰地在控制台上输出一行数学计算的结果。运行这段代码就好像把一个优等生关进一个房间，让他把数学卷子全做出来再离开一样。只不过程序在输入的参数完全相同的情况下，每次都会执行一模一样的操作，最终得到完全相同，完全正确的结果。</p>
-<p>这段代码可谓是又臭又长。丝毫没有注释，一个文件里的代码（代码分布在多个文件中）全是看不懂的化学常量，另一个文件的代码全是看似毫无逻辑的计算步骤。在浏览过代码，手足无措数秒钟后，我迅速转换了思维：“化学反应的代码归根结底就是计算一个很长的公式。我没有必要看懂为什么这么做，我只需要知道哪些加减乘除运算可以被我优化就行了。”我的这种冷静能力与思维跳转能力非常惊人。</p>
-<p>在<a href="https://zhouyifan.net/2019/12/23/Software-Engineering-Project/">这个大作业</a>中，我学到了查看代码性能瓶颈的方法。经过检测，代码最耗时的部分竟然是一个<code>exp()</code>自然指数运算。自然指数本身是一个很容易理解的函数，高中数学就讲过这个函数的性质。这个函数在数学上很好表达，在程序中计算起来却非常麻烦。因为这个函数的值往往是一个无限不循环数，而程序只能进行有限的计算。程序只能通过多次的加法、乘法来得到一个十分近似的结果。程序总计进行了3亿次自然指数运算，代码性能瓶颈出现在这确实也情有可原。</p>
-<p>程序中的指数运算，需要调用标准库。标准库是高级程序员们反复锤炼，被无数人反复验证的代码。这个自然指数运算对我来说是根本不可能修改的。看到这个情况，我心都凉了半截。</p>
-<p>虽然一上来就碰到如此困难的情况，但我再次调整了心态。指数运算耗费了三成的时间，还有七成的运行时间可以被优化。我把目光又放到了其他运算速度较慢的代码上。凭借多年的高级语言（比较抽象、接近自然语言的程序语言）编程经验，我意气风发，大刀阔斧地对代码进行优化。我主要对代码进行了预处理、循环合并这两类优化。预处理就是把一些程序中不会变动的常量提前算好，避免每次重新计算。就好像你提前买一箱抽纸，这样几个月都不用再去买纸一样。循环合并就是把条件一样，需要反复做的事情，再每个“反复”中一起做掉。比如让你去测全校同学的身高体重，量身高和量体重的仪器摆在一起，这里假设两台仪器不能同时工作。你不能让同学挨个测完身高，回教室休息一下，再一个一个回来量体重。每个人量身高体重的时间虽然没变，但来回教室、排队等待的时间浪费了。最好的方法是每个人先量身高，再量体重。如果你懂编程，你或许能理解，这里的来回教室时间就是CPU从内存中读数据的时间，排队时间可以看成循环变量、控制流耗费的时间，在一个循环里做尽可能多的事能减小时间开销。</p>
-<p>以上两类优化是非常基础的优化。经过优化后，程序运行时间从26秒到了17秒。很可惜，速度还没有达到2倍，我的成绩连及格也没有。我反复查看了其他部分的代码，绞尽脑汁也没有想出哪里可以优化。于是，我只好把目光再次放到了开始的指数运算上。</p>
-<p>经过观察，我发现指数运算是一批一批做的，也就是一次会对多个数据依次执行步骤相同的指数运算，而标准库只能每次对一个数据进行指数运算。这里面有没有可以利用的空间呢？我凭借着十多年与搜索引擎打交道的经验，总算找到了一个比较厉害的数学运算库。里面有一种对批量数据进行指数运算的函数。我满怀期望地用这种”高级“函数替换了原来的函数。结果非常令人惊喜：程序的执行时间从17秒降到了12~13秒，速度整体变成了原来的2倍，我总算及格了。</p>
-<p>开心之余，我总感觉自己忘了些什么事。仔细回忆了一下，代码优化不仅要快，原来程序的输出结果还不能被更改。我还没有验证新代码的正确性呢！我赶快把新代码和旧代码的结果进行了比较，发现新代码的输出结果发生了变化！</p>
-<p>我改动了那么多处，究竟是哪一步出错了啊？！为了找出代码中的BUG，我采用了古老而有效的控制变量法。我把旧代码粘贴了回去，一段一段地把代码更新成新代码。如果某一次更新后运行结果有问题，就说明这段代码有问题。我顺利地找出了不少的低级错误。可是，我最不想碰到的情况发生了——</p>
-<p>我发现指数运算的那整段代码中存在问题。我尝试地把指数运算的那一行改回了旧版本的代码，输出结果就正常了。也就是说，这种优化的指数运算会导致结果不正确。</p>
-<p>我又慌了，心想指数运算这道坎可能就是过不去了。但我内心中突然涌现出的自信告诉我，我的新代码没有错误。这个新的指数运算函数是intel公司写的，如果有问题，只可能是他们有问题。代码的运行结果虽然改变了，但是代码不一定有错——这两句话并不是矛盾的。在精度较高的数学计算中，如果小数点后面好多位出现了偏差，只能算是结果有误差，不能说结果错误。况且原来的代码也只是对数学计算结果的一种近似，你怎么能保证原来的代码就离正确的结果更近呢？给你两块手表，两者差了几秒，你能知道哪块手表是正确的时间吗？保证这样的心理，我对新代码输出结果的误差进行了计算。</p>
-<p>经检验，新代码和源代码的相对误差在小数点后6位，也就是0.0001%这个数量级。老师可没有强调结果要完全相同，或者误差保持在什么范围内。从道理上来看，只要保证代码整体的正确性就行。在强烈的自我暗示下，我接受了代码输出结果不完全相同，但我却是正确的这一事实。</p>
-<p>如前面所述，我已经尽可能地在其他地方优化代码，就目前而言，这份代码对我来说是最优的。第一天天色已晚，我选择偃旗息鼓，明日再战。</p>
-<p> 第二天十点，烈日当空，天朗气清。我再次开始着手优化代码。经过缜密的分析，我觉得我缺少部分的知识，我需要从别的角度入手，用一些我不太熟悉的方法优化代码。</p>
-<p>程序的运行可以分成串行和并行。串行的概念非常简单，我们人的大脑就是串行的。你不能说我左半边脑子在浏览选项题，右边的大脑跑去想填空题去了。并行就是多个串行，可以理解成多个人合作做一件事。写论文时，你写正文，我写摘要，我们同时开始写，这就是一种并行。显然，N个人干活，必然不能让事情的快N倍。因为人与人之间的交流存在着极大的效率浪费。如若不然，为什么每个企业要设置那么复杂的管理体系呢？并行程序也是如此，在硬件支持的情况下，程序并行可以提高速度，但也有一定的资源损耗。</p>
-<p>我学过并行的知识，了解并行的概念，但没有并行编程的经验。于是，我只好以”C++ 并行编程”为搜索词去搜索有关信息。很快，我就搜到了一个满意的答案：有一种叫OpenMP的并行编程API，只需要在程序里加一些代码，就能把串行的程序变成并行的程序。但是，要是只加少量代码的话，只能并行执行循环结构，且只有对重复次数较多的循环起到优化作用。比如搬1000个箱子，让10个人来搬来搬肯定比1个搬快，而且大家只需要在搬完后交换一次信息，确认一下所有箱子都搬完了。想把更复杂的代码并行执行并达到优化效果，就要学更多的知识了。考虑到我所剩的时间不多，我打算只用OpenMP来并行优化循环。</p>
-<p>我写了个算加法的循环，并用OpenMP并行优化。经过实验后，这个简单循环的运算确实变快了，优化成功了。看来，并行加速并不是很难啊。现在大作业代码的性能瓶颈还是那个指数运算。指数运算是作用在一个数组上的，目前的实现方式是循环对数组的每一个元素做指数运算。如果能把这个循环并行化，但代码的运算速度肯定能快上很多。于是，我把OpenMP的并行代码运用到了指数运算循环上。</p>
-<p>可是，并行化后，代码不仅没有变快，反而变慢了。甚至随着并行线程数（可以理解为同时有多少个人在做同一个工作）增加，代码会运行得越来越慢。</p>
-<p>做为一个自信的程序员，碰到问题时，我的第一反应肯定不是觉得我自己写错了，而是这个OpenMP调用得用问题。可能我使用这个工具的方法不太对。既然这样，也没时间去学新的东西了，没有轮子就自己造轮子，我只好自己来写一个多线程的并行程序了。于是，我删掉了OpenMP的代码，手写了创造线程、用线程做指数运算、同步线程的代码。我自己写的代码，肯定没问题了吧？</p>
-<p>结果，用我自己的并行代码运行程序后，程序的运行速度也变慢了。做为一个正常的程序员，在代码全是自己写的情况下还发现了运行上的问题，第一反应就是出bug了。于是，我把那段并行的代码拎了出来，单独测试了好久。可是，无论怎么调试，都没有发现问题。第二天就在无聊而令人烦恼的调试中度过了。</p>
-<p>晚上，躺在床上，苦恼地思索着代码里的问题。突然，我想到：是不是我的代码一直没有问题，而是并行这个方案有问题？做循环的次数只有10多次，如果用多线程的话，线程之间沟通的时间，就远远多于并行运算本身减少的时间。正所谓“三个和尚没水喝啊”。没办法，第二天就这么浪费了。我及时止损，准备使用新的方法优化程序。</p>
-<p>经过昨晚的计划后，第三天，我早早地打开电脑查询一个新的技术。我顺着并行编程这一条线索，想到了另一个并行技术——SIMD（单指令多数据流）。这个技术就好比之前是一个人搬一箱货物，现在这个人可以拿手推车，一次搬几箱货物。在SIMD中，唯一增加的成本，就是货物得提前按组打包，这样才能够一组一组地搬运。这一项成本远远小于之前多线程之间沟通的成本。我去网上查了什么AVX指令集，学会了如何一次对4个数据进行计算。这样，不仅是那个指数运算，还有一些相邻的乘除法运算也可以顺便用并行</p>
-<p>这次程序运算时间在8、9秒左右浮动。严格来说，程序并没有优化到三倍。但是，要是精心挑选一组比较看得过去的测试时间的话，应该能在报告里声称我把程序优化了3倍。这下，80分才算勉勉强强拿到。</p>
-<p>代码真的就不能再优化了吗？既然老师敢说把速度优化4倍就能拿到满分，说明这份代码肯定还是有优化空间的。我把这份代码从头到尾读了一遍又一遍，在我的知识范围内，能用的优化小伎俩都用上了。但是，程序的运算时间几乎没有减少。我感觉自己已经弹尽粮绝了。</p>
-<p>经过多次优化后，指数运算的用时占比已经不算很多了。一些对一个常量数组的遍历、取值、运算的用时占比逐渐高了起来。就好像一个邮递员要挨家挨户上门取件，再把货物送到另一个地方一样。这一部分的时间完全耗费在了跑到每个人家门口，敲门等人开门上，跑腿的时间反倒是可以忽略不计。这部分循环操作数组的代码是不能用之前的并行来优化的。这部分的代码没有什么过多的操作，自然也几乎没有改动的空间。我通读代码，看到这一团改不了的代码时，总会无可奈何地快速跳过。</p>
-<p>我对代码优化已经绝望了。走神时，我想起了计算机体系结构课里的知识：现在CPU采用了流水线的设计，跳转指令（比如循环）会导致流水线的断流。为了让代码更快运行，某些时候能不用分支、循环就不要用。</p>
-<p>我突然产生了一个奇怪的念头：循环吗……如果我把从常量数组取值的循环全部拆掉如何？这个可以理解成快递员上门取一层楼的货品时，可以用循环表示：取这个房间的货，往前走；去这个房间的货，往前走；……；如果这一层没有住户了，就上一层楼。但是，这是一个常量数组，即我可以提前知道这栋楼有几层，每层有哪几个房间。这样，快递员的指令就变成了：去101取件；去102取件……去606取件这样确切的命令。快递员不用动脑筋去观察什么时候把这层楼走完，可以上一层楼了。抛弃掉回产生跳转指令的循环后，按理说代码能变快很多。</p>
-<p>但是，我们初学编程认识循环时，就知道循环是用来简化代码的。现在，我却要反常识地把循环拆掉，把要执行的代码展开来，一行一行写出来。这太反常识了。当然，循环拆掉代码展开后，代码会变得特别长，其中会包含很多重复的代码。与其我手动写，不如写个脚本自动把这些代码生成出来。于是，我写了一段生成代码的Python代码，把原来的循环拆掉了。</p>
-<p>我持着怀疑的态度，一边苦笑地看着那些丑陋的代码，一边等待着程序运行结束。没想到，程序的运算时间竟然大幅度变少了！这次运行时间之间减少到了6秒多，程序的速度基本上是最开始的4倍了。我还没来得及烦恼怎么跨过优化3.5倍这道分数砍，程序一下就优化到满分了。</p>
-<p>这太有趣了！违反常理地拆掉循环竟然能让代码加速。我关掉了再也不想多看一眼的代码，开开心心地把优化四倍的结果写进实验报告里。然后，我开始着手写这篇文章，记录一下这段过程紧张，结局却是Happy Ending的代码优化之旅。</p>
-<p>噢，对了，源代码我是有的，但我一定不会开源。我能想象到，老师肯定会把同一份大作业用好几年。为了让这门课公平一点，我是不会上传代码的。当然了，稍微有一点编程水平的人，看完这篇文章后，都知道了该怎么优化程序了。这篇文章也算是给和我一样初学代码优化的人一些学习上的启发吧。</p>
-<blockquote>
-<p>这是2020年6月份的文章，我当时写到一半搁笔没写了。趁现在有时间，赶快填一个坑。</p>
-<p>现在重温这段经历，当时提笔时的激动已经没了，只剩下了怀念。两年前，我肯定想不到这四天不到的代码优化经历，竟然是我本科期间学代码优化技术学得最多、学习效率最高的一段时间，也想不到几年后的现在的几天后我即将开始新的工作，会把之前学到的这些代码优化技术全部用出来。</p>
-<p>对了，最近我在写很多文章。今天不认真的文字写了3000~4000，之前比较认真的写得话一天3000字都不到。我本来以为这个速度很慢，上网一看，这才是正常速度。把写东西单纯当一个爱好也挺不错嘛。虽然既没有编程有趣，也没有编程挣钱就是了。</p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -3149,7 +3285,7 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">147</span>
+          <span class="site-state-item-count">149</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -3162,7 +3298,7 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">62</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

@@ -168,6 +168,256 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221213-toefl-listening/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/12/19/20221213-toefl-listening/" class="post-title-link" itemprop="url">用深度学习的思想准备托福听力</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-19 19:28:02" itemprop="dateCreated datePublished" datetime="2022-12-19T19:28:02+08:00">2022-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%9B%E4%BD%9C/" itemprop="url" rel="index"><span itemprop="name">创作</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%9B%E4%BD%9C/%E6%96%B9%E6%B3%95%E8%AE%BA/" itemprop="url" rel="index"><span itemprop="name">方法论</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>最近，我在考托福。第一次考完，我惊讶地发现我的听力只有19分（满分30）。我两年前考的成绩都不止这么一点。这两年我也一直在接触英语，英语水平不可能退步。如果托福真的是一个合理的，能够反映考生真实水平的考试，那我不可能考出差别这么大的分数。因此，我认为，考出这么差的分数，不是我的问题，是托福考试的问题。托福考试过分强调应试技巧，而无法稳定地反映我的水平。为了证明我的观点，我不服气地宣誓道：「我要用一周时间，学习听力应试技巧，考出一个较高的听力分数。」一周后，我又考了一次托福。结果很喜人，我的听力考了27分。</p>
+<p>在这几天里，我总结了网上的托福听力准备方法，用一套规范的算法流程把方法表达了出来。我将分享一下这一套和深度学习算法形式相似的托福听力准备方法。我会从头把方法的背景、解决方法讲清楚。哪怕你不需要准备托福考试，或者说对深度学习没那么了解，也可以把这篇文章当故事读一遍。</p>
+<h2 id="托福听力规则"><a href="#托福听力规则" class="headerlink" title="托福听力规则"></a>托福听力规则</h2><p>托福听力主要涉及两类材料：对话与讲座。对话通常发生在学生与教授或学校工作人员之间，描述了校园中常见的一些讨论、询问。讲座则模拟了真实的课堂教学，讲师会对某一专业话题做简要的描述，偶尔会穿插几句学生的提问。讲座涉及的知识面很广，常常会谈及艺术、历史、生物学、地理学、心理学等领域。不过，这些讲座不会讲特别深入的内容，也不会讲过于偏离生活的概念，保证多数人都能听懂讲座的内容。</p>
+<p>一场无加试的托福听力由两轮组成。每轮会听1段对话和1~2段讲座。对话有5题，讲座有6题。</p>
+<p>托福听力的答题形式和国内多数英语考试不同。每段听力中，考生只有听完了听力材料后，才能看到题目。并且，只有确认提交了前一题才能答下一题。当然，可以在听的同时记笔记。</p>
+<p>题目全是选择题。每段听力材料给3~4分钟，基本不会有时间不够的情况出现。</p>
+<p>托福这种不允许提前看题的考试模式把考生的记忆力也变成了考察目标之一，为考试增添了不合理的难度。后续算法的诸多改进都是为了解决「记不住」这一问题。</p>
+<h2 id="托福应试流程"><a href="#托福应试流程" class="headerlink" title="托福应试流程"></a>托福应试流程</h2><p>大多数人在初次接触托福听力时都会采用这一套非常直观的算法：</p>
+<p><img src="/2022/12/19/20221213-toefl-listening/1.jpg" alt></p>
+<p>但是，这套算法有一个问题：无论我们的听力水平多么优秀，都不可能把材料原原本本地记忆下来。一旦有题目考察了一个我们没记住的地方，这道题就答不上来了。</p>
+<p>因此，多数托福教程会给出一套改进的算法。这套算法把「听材料」细分成了两部分。第一部分是「语音转文字」，这是我们大脑自己训练出来的功能。理解了听力材料的内容后，我们根据一些先验知识（知道听力材料的哪些部分容易出考题），对部分内容做重点记忆。重点记忆的方法可以是竖起耳朵集中注意力，也可以是用笔记记录关键词。最后，根据重点记忆的内容和大脑中残留的其他记忆，回答问题。</p>
+<p><img src="/2022/12/19/20221213-toefl-listening/2.jpg" alt></p>
+<p>这套算法出色地把托福听力分成了三个独立的子任务：语音识别、记忆、阅读理解。这三个子任务恰好对应了三种要考察的能力：听力能力、记忆能力、理解能力。把这三种能力拆开来讨论是很有必要的。如果你没有意识到自己哪种能力相对相差，盲目地做题，尝试同时提升这三项能力，那你的学习是十分低效的。后文我们将基于这一套算法讨论如何分别提升这三种能力。</p>
+<h2 id="错因分析"><a href="#错因分析" class="headerlink" title="错因分析"></a>错因分析</h2><p>在正式开始学习之前，我们一定要诊断出自己哪方面的能力有所缺失，进而对症下药，从最差的一项开始练习。为了找出做听力的问题，我们要进行错因分析。</p>
+<p>为了考察听力、记忆、理解这三种能力，我们固然可以用做托福听力题以外的方式去分别测试这三种能力。但是，使用其他测试方式的话，我们不能保证我们测试出来的能力恰好是托福考试要求的能力。比如，你可以拿托福阅读来测试自己的理解能力。但是，由于托福阅读的理解难度比听力的理解难度要大，哪怕你阅读做得不好，也不能说明你听力就理解不好。因此，做托福听力题这件事本身就是最好的测试方式。</p>
+<p>可是，正如前文所述，做托福听力会同时考察三种能力。该怎么分别考察这三种能力呢？其实，使用一些巧妙的控制变量法，就可以把这些能力区分出来了。我把网上提出的各种错因分析方法加以总结融合，提出了一种「反掩码错因分析」法。</p>
+<p>什么是「反掩码」呢？众所周知，掩码 (mask)，指的是计算机中用于屏蔽其他数据的一种数据，有时也泛指屏蔽数据这一过程。那么，我提出的「反掩码」，指的就是把原本不透明的数据变得透明。</p>
+<p>在托福听力中，听力材料是不透明的。你需要通过自己的听力能力把听力材料变成可理解的文字。如果直接把听力材料变成了阅读材料，你就可以直接根据听力原文答题。这样，做题考察的就只有理解能力，而不再考察听力和记忆能力了。</p>
+<p>因此，为了考察自己的理解能力。可以<strong>先听一遍材料，做题，不看答案，读一遍原文，再做题</strong>。第一遍做题是正常的练习，第二次做题是控制变量。如果第二次做题还是错了很多，就说明理解能力不行；如果第一遍做题相较第二遍错了很多，就说明听力和记忆存在问题。</p>
+<p>同理，为了进一步区分听力和记忆的问题，我们可以调整反掩码，使用更精妙的控制变量方式：<strong>先听一遍材料，做题，不看答案，再听一遍材料，再做题</strong>。在第二次听力的时候，你已经知道题目了，不存在记不住的问题。如果第二遍答题还是错了很多，就说明听力和理解有问题；如果第一遍相较第二遍错了很多，就说明记忆有问题。当然，如果你的理解已经基本没问题了，在这一步就可以排除掉理解能力的影响，直接区分听力问题和记忆问题。</p>
+<p>综上，「反掩码错因分析」的流程如下：</p>
+<ol>
+<li>找出几套听力题。先听一遍材料，做题，不看答案，读一遍原文，再做题。主要分析自己的理解是否存在问题。</li>
+<li>理解能力最容易提升。先想办法提升理解能力。</li>
+<li>再找出几套听力题。先听一遍材料，做题，不看答案，再听一遍材料，再做题。区分听力问题和记忆问题。</li>
+<li>根据诊断结果，先后提升听力问题和记忆问题。</li>
+</ol>
+<h2 id="能力提升"><a href="#能力提升" class="headerlink" title="能力提升"></a>能力提升</h2><p>诊断出了问题后。就应该考虑如何设计子任务分别训练这三种能力了。</p>
+<h3 id="听力能力"><a href="#听力能力" class="headerlink" title="听力能力"></a>听力能力</h3><p>使用听力能力时，输入是英语音频，输出是大脑中可理解的英文文字。这一过程完全由大脑的本能决定，几乎不需要主观思考。因此，我们可以设计一个非常直接的子任务：使用任意一种英语音频，一边听，一边「输出」自己的听到的文字。听完音频后，比较自己的输出和原文，看看自己哪些地方没听懂。不断反思，让大脑自己提升。</p>
+<p>网上的很多托福听力攻略会叫你去「精听」，「听写」，或者使用什么「影子跟读法」。其实，所有这些方法都只是为了提升听力水平。他们的目的都是构造一个输入音频输出文字的训练任务。只是「输出」的方式不同而已。在我看来，输出文字的方式，可以是复述，可以是听写，甚至不用讲出来，在大脑里有个印象就行。所有这些具体的方法里，我不推荐听写法，因为你大量的学习时间都会浪费在写单词上。听完一句话后，复述这句话即可。至于是一句话反复听，还是听完一整段材料，这些形式都不重要。保证你在强迫自己不断输出听到的内容即可。</p>
+<p>另外，与其纠结听力练习的具体方法，不如去花一点时间准备恰当的听力材料。对于有高考英语听力水平的人，直接拿托福官方题目（TPO）的听力材料练就可以，类似于TED的知识分享、新闻播报也可以。看电视剧的提升可能没那么快，因为电视剧的语速较快，且通常只有日常用语，与托福听力材料的内容不符。我个人推荐去上自己专业的英文公开课，比如大名鼎鼎的「MIT线性代数」。这些公开课语速适中，用语朴素，比较容易听懂，形式与托福听力类似，还可以顺便学一下专业知识。</p>
+<h3 id="记忆能力"><a href="#记忆能力" class="headerlink" title="记忆能力"></a>记忆能力</h3><p>托福听力考试的记忆分两类：第一类是被动记忆，也就是你听完整段材料后自然残留在大脑里的记忆；另一类是主动记忆，是你根据以往的答题经验，对材料中你认为的重点段落的记忆（或者笔记）。被动记忆我们没法操控，只能祈求考试当天头脑清醒一点。因此，练习记忆时，主要是练习托福听力应试技巧，提高对出题点的灵敏度，并且做到在不影响听力的情况下记下笔记。</p>
+<p>在培训班或者网上，都能找到大量的托福听力技巧。这些技巧告诉你什么地方容易出题，听到哪些词的时候做笔记之类的。但是，我觉得背技巧的效率是很低的。最好的方式是，自己去尝试发现技巧，有了一定的经验后再去和别人的技巧对比。</p>
+<p>那么，怎么去学会洞察听力材料的出题点呢？有两个方面的事要做。一方面，做完了题目后，总结归纳常见题型，并且找题目对应的原文，总结规律；另一方面，在听材料时，多做一点笔记，做题时看看哪些笔记用到了，哪些没有。甚至，对于以前练过的材料，可以直接跳过听力，读原文，猜出题点。通过正向和反向的练习，很快就能掌握技巧。</p>
+<p>作为示例，我来分享几个我发现的技巧。</p>
+<ul>
+<li>对话材料90%会问对话发起的原因是什么。注意，这道题不是问整段对话的主题是什么，而是问学生为什么找老师或老师为什么找学生。很可能两个人寒暄了老半天，学生突然支支吾吾地说出自己过来的原因，然后话题一下就飞走了。如果你没有预判出题点，很可能这一句话就被你忽略了。</li>
+<li>讲座有时会先讲理论，再讲示例。题目会问这个示例是揭示哪个理论。如果示例里恰好冒出两个专有名词，你又不知道这里会出题，这个例子就会被你忘掉了。因此，听到示例，赶快把示例里涉及的几个名词记下来。</li>
+<li>讲座中，老师和学生都可能会表达对于某一理论的态度。尤其是结尾，老师很可能冷不丁地说「虽然这个理论很有名，但我并不是很认可」。题目很喜欢考这些态度。你可能辛辛苦苦听了4分钟的材料，想着听力要结束了，可以放松一下了。结果最后这两句很重要的态度就被你忽略了。</li>
+</ul>
+<p>找到材料中的出题点，其实只是比较初级的技巧。如果你想成为高手，还有一种高阶的，更一般的方法。我把它称之为「基于注意力的记忆法」。听力材料，甚至是阅读材料，以及我们生活中各种各样的文字讯息，都是有很多废话的。如果你知道哪些话言之无物，你就可以过滤掉这些话，而集中记忆那些有意义的话。更进一步，如果你知道听力中哪些话一定不会出题，那么这些话也可以过滤掉。你可以只把注意力集中在哪些容易出题的有意义的话上。</p>
+<p>比如说，老师讲「好久不见」、「我们上节课讲了什么什么，但是这节课……」。这些话都可以直接当成废话忽略掉。讲座时提到某个名人出生于何处，几几年在哪上学，这种过于细节的地方也不可能出题，可以忽略掉。</p>
+<p>这种基于注意力的记忆法是很有用的。一来，它可以帮你找到重点和非重点的话，有助于合理安排精力；二来，在知道这句话不重要时，可以放心地去记上一句话的笔记。</p>
+<p>这种记忆法不用刻意训练，多听了几段材料后就能自然地知道听力材料中哪些地方是可以忽略的。</p>
+<h3 id="理解能力"><a href="#理解能力" class="headerlink" title="理解能力"></a>理解能力</h3><p>托福听力中的理解，既包括对材料的理解，也包含对题目和选项的理解。整体来说，托福听力对理解的要求不高。只要清楚地听懂了材料，做题时一般不会因为理解而扣分。</p>
+<p>材料理解比较简单。只有介绍一个复杂的理科概念，或者人物表明态度时过于委婉，才可能导致材料理解错误。只要把托福阅读题练好，听力材料不可能有理解问题。</p>
+<p>理解题目、选项时则可能会碰到一些问题。比如在主旨题中，每一个选项概括主旨都概括得不是很确切，但是其中三个选项有明显错误，一个选项概括得不全。这个时候，得选择那个概括得不全的选项。为了解决这个问题，只需要多做点题，总结记录选项理解错误导致的错题，很快避开常见的一些坑。另外，听力的时间非常充足，碰到模棱两可的选项时可以多读两遍题，千万不要把题目读错。</p>
+<h3 id="综合练习"><a href="#综合练习" class="headerlink" title="综合练习"></a>综合练习</h3><p>TPO 30之前的题都比较简单，可以拿这些题目来反复训练各个子能力。预训练好了大脑中的各个子模块后，就可以直接开始做TPO 30之后的题，进一步综合训练所有能力。</p>
+<p>综合练习时，应按照正常的应试流程，一边听材料，一边做笔记。听完了材料就做题，对答案。有题目做错了，大致把错因归个类，看看是三步中哪一步出了问题。根据错题的情况做进一步的查缺补漏。</p>
+<p>在评估自己的综合练习水平时，除了对答案，还需要反思两件事：材料中的哪几句话没有听清；笔记是否记下了重要信息。</p>
+<p>很多时候，你可能听漏了某几句话，但依然把题目都做对了。但这样并不保险，最好是把每一句话都理解透来，保证听力能力没有问题。</p>
+<p>哪怕你已经熟悉了材料中的出题点，依然需要练习一下记笔记的方法。首先，你要保证记笔记的时机合理，不能影响听力。其次，你要保证重要的信息没有记漏。在不影响听力的前提下，多记笔记是没有坏处的。因此，反思时，只需要评估哪些题目中考察的信息是漏记的，尤其是哪些导致你做题出错的漏记的信息。</p>
+<p>最后，再总结一下各种能力在托福听力中的重要性。理解能力是必须的，也是难度最低的。一定要把理解能力练到满分。听力能力是答题的基础，是托福听力题的主要考察对象。听力能力是最考验基本功，最难在短期提升的，一定要早做准备。记忆能力是把听力能力转换成分数的必备途径，你可能文章听得津津有味，答题时却头脑发昏。记忆能力最好提升，几天内就可以总结套路，掌握记忆关键信息的方法。</p>
+<h2 id="方法总结"><a href="#方法总结" class="headerlink" title="方法总结"></a>方法总结</h2><p>我们来把这篇文章讲过的托福听力准备方法和应试方法整理一下。</p>
+<p>准备考试：</p>
+<ol>
+<li>做几套TPO听力，使用分析错因，找出自己较弱的能力。分析错因时，先听一遍，做题，然后在不看答案的前提下再听一遍或看一遍原文，排除出做题出错的原因。</li>
+<li>从较弱的能力开始，逐个提升提升能力。</li>
+<li>练得差不多了以后，综合练习，查缺补漏，同时练习应试的状态与技巧。</li>
+</ol>
+<p>考试时：</p>
+<ol>
+<li>听语音，在脑中把语音变成文字，判断这句话有没有重要信息。</li>
+<li>如果觉得这句话很重要，就着重记在脑子里，或者用笔记记下。对话可以少记或不记笔记。讲座必须记下关键信息，比如举例、分类讨论、态度之类的。</li>
+<li>根据笔记或印象答题。</li>
+</ol>
+<p>托福听力题本质上还是在考察听力能力。如果你听力的基础不好，还是要把主要的时间花在打基础上。等听力水平差不多了，可以按照这篇文章介绍的内容，学习一些技巧，把听力能力转换成分数。希望大家能够考出一个不错的托福分数。</p>
+<h2 id="附录：托福听力框架图"><a href="#附录：托福听力框架图" class="headerlink" title="附录：托福听力框架图"></a>附录：托福听力框架图</h2><p><img src="/2022/12/19/20221213-toefl-listening/3.jpg" alt></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221126-ArcFace/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/12/19/20221126-ArcFace/" class="post-title-link" itemprop="url">快速上手 PyTorch 人脸相似度计算方法 ArcFace</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-19 19:27:37" itemprop="dateCreated datePublished" datetime="2022-12-19T19:27:37+08:00">2022-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>我在学习今年的一篇和人脸生成相关的论文时，看到了一个约束人脸相似度的 loss。这个 loss 基于经典的 ArcFace 人脸识别网络。ArcFace 是 2019年发表的，这么久了还有人用，说明这是一篇适用性很强的工作。于是，我顺手学了一下 ArcFace 的相关背景。在这篇文章中，我将简要分享 ArcFace 人脸识别网络的发展历程，并介绍如何快速利用它的开源 PyTorch 项目计算任意两幅人脸的相似度。</p>
+<h2 id="人脸识别与-ArcFace"><a href="#人脸识别与-ArcFace" class="headerlink" title="人脸识别与 ArcFace"></a>人脸识别与 ArcFace</h2><p>人脸识别是在深度学习时代取得较大突破的一项任务：给定一个登记了 N 个人的人脸数据库，再输入一幅人脸，输出这个人是否是 N 个人中的某一个。</p>
+<p>多数深度学习算法会用一个 CNN 来提取所有人脸图片的特征，如果输入的图片特征和数据库里的某个特征的向量相似度大于某个阈值，就说明识别成功。也就是说，人脸识别的关键在于如何用 CNN 生成一个「好」的特征。特征的「好」体现在两点上：1) 同一个人的人脸特征要尽可能相似；2) 不同人的人脸之间的特征要尽可能不同。</p>
+<p>为了达成这个目的，研究者提出了不同的学习特征的方法。最直观的方式是像学习词嵌入一样，用一个具体的任务来学习特征提取。恰好，人脸识别可以天然地被当成一个多分类任务：对于一个有 N 个人的人脸训练集，人脸识别就是一个 N 分类任务。只要在特征提取后面加一个线性层和一个 softmax 就可以做多分类了。训练好多分类器后，扔掉线性层和 softmax 层，就得到了一个特征提取器。</p>
+<p>这种基于 softmax 分类器的学习方法确实能够区分训练集中的人脸，但在辨别开放人脸数据集时表现不佳。这是因为 softmax 的学习目标仅仅是区分不同类别的人脸，而没有要求这种区分有多么分明。后续的多篇工作，包括 ArcFace，都是在改进训练目标 softmax，使得每类对象之间有一个较大的间隔。</p>
+<p><img src="/2022/12/19/20221126-ArcFace/1.jpg" alt></p>
+<p>为了让不同的类别之间存在间隔，研究者们详细分析了 softmax 函数。假设$x \in \mathbb{R}^d$是人脸图片提取出的维度为$d$的特征向量，它属于$N$类里的第$y$类。softmax 前的线性层的参数是$W\in \mathbb{R}^{d\times N}, b\in \mathbb{R}^N$。则基于 softmax 的多分类误差可以写成：</p>
+<script type="math/tex; mode=display">
+L = -log\frac{e^{W^{T}_{y}x+b_y}}{\sum_{j=1}^{N}e^{W^{T}_{j}x+b_j}}</script><p>其中，向量内积$W^T_jx$可以展开为：$W^T_jx=||W^T_j||  ||x||  cos \theta_j$，其中$\theta_j$是两个向量的夹角。如果对向量$W^T_j$和$x$都做归一化的话，再令$b=0$，则新的误差可以写成：</p>
+<script type="math/tex; mode=display">
+L = -log\frac{e^{cos\theta_y}}{\sum_{j=1}^{N}e^{cos\theta_j}}</script><p>也就是说，对于这种归一化的多分类误差，对误差产生贡献的只有特征向量和$W$的列向量的夹角。那么，我们就可以换一个视角来看待这个误差：$W$其实是$N$个维度为$d$的向量的数组，它们表示了$N$个人脸类别的中心特征向量。误差要求每个特征和它对应的中心向量的夹角更小。</p>
+<p>为了让不同的类别之间有更大的间隔，相同类别内部更加聚拢，ArcFace 在误差的$cos$中加了一个常数项。</p>
+<script type="math/tex; mode=display">
+L = -log\frac{e^{cos(\theta_y+m)}}{e^{cos(\theta_y+m)}+\sum_{j=1, j \neq y}^{N}e^{cos\theta_j}}</script><p>直观上来看，加这一项就是把角度远离类别中心的惩罚扩大，使得各个类别的数据都更加靠近中心。这一优化是有效的。作者做了一个简单的实验，用8类人脸的训练集训练了一个维度为2的特征。其可视化结果如下（线是各个类别中心的方向向量，点是样本的特征向量）：</p>
+<p><img src="/2022/12/19/20221126-ArcFace/2.jpg" alt></p>
+<p>ArcFace 的核心思想就是其 loss 的设计。ArcFace 的网络架构没有特别的要求，一般使用 ResNet 就行。</p>
+<h2 id="使用-ArcFace-开源项目"><a href="#使用-ArcFace-开源项目" class="headerlink" title="使用 ArcFace 开源项目"></a>使用 ArcFace 开源项目</h2><blockquote>
+<p>其实用这个库的时候可以完全不懂 ArcFace 的原理。</p>
+</blockquote>
+<p>可能是由于「ArcFace」这个名字和其他项目撞车了，ArcFace 的官方 GitHub 仓库叫做 insightface。其 PyTorch 实现的网址是 <a target="_blank" rel="noopener" href="https://github.com/deepinsight/insightface/tree/master/recognition/arcface_torch。">https://github.com/deepinsight/insightface/tree/master/recognition/arcface_torch。</a></p>
+<p>早期该论文没有官方的 PyTorch 实现。有人用 PyTorch 复现了该论文（<a target="_blank" rel="noopener" href="https://github.com/TreB1eN/InsightFace_Pytorch">https://github.com/TreB1eN/InsightFace_Pytorch</a> ）。我使用的项目是这个复现版，它更完整一点，包含了人脸预处理代码。</p>
+<p>人脸识别任务最简单的例子是输出两幅人脸的相似度。接下来我将介绍如何安装这个项目，并用它来编写一个简单的计算人脸相似度的 demo。</p>
+<p>安装这个库很方便，只要一键 <code>git clone</code> 就行。这个项目基本不依赖什么第三方库，环境里有 PyTorch，NumPy 等常见库就行了。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone git@github.com:TreB1eN/InsightFace_Pytorch.git</span><br></pre></td></tr></table></figure>
+<p>获取仓库后，在 README 的链接里下载 IR-SE50 模型 <code>model_ir_se50.pth</code>。随便放在哪个目录里。比如下载 <a target="_blank" rel="noopener" href="https://1drv.ms/u/s!AhMqVPD44cDOhkPsOU2S_HFpY9dC">IR-SE50 @ Onedrive</a> 。</p>
+<p>最后，还要准备一下测试图片。我很机智地使用了吴恩达《深度学习专项》里讲人脸识别时用到的图片，分别命名为<code>face1.jpg, face2.jpg, face3.jpg</code>。</p>
+<p><img src="/2022/12/19/20221126-ArcFace/3.jpg" alt></p>
+<p>准备就绪后，就可以编写 demo 了。在做一个人脸相关的项目时，一般会先对人脸做预处理，让所有的人脸图片都有相同的分辨率，且五官的位置对齐。我们的 demo 也是先利用了项目中的人脸预处理库对齐人脸，再调用模型计算相似度。这三张图片的对齐结果如下：</p>
+<p><img src="/2022/12/19/20221126-ArcFace/4.jpg" alt></p>
+<p>这个demo会输出第一张人脸和第二、第三张人脸之间的相似度。完整的 demo 代码如下（注意修改其中的路径）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> model <span class="keyword">import</span> Backbone</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">from</span> mtcnn <span class="keyword">import</span> MTCNN</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> torchvision.transforms <span class="keyword">import</span> Compose, ToTensor, Normalize</span><br><span class="line"></span><br><span class="line">mtcnn = MTCNN()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_img</span>(<span class="params">img_path, device</span>):</span></span><br><span class="line">    img = Image.<span class="built_in">open</span>(img_path)</span><br><span class="line">    face = mtcnn.align(img)</span><br><span class="line">    transfroms = Compose(</span><br><span class="line">        [ToTensor(), Normalize([<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>], [<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>])])</span><br><span class="line">    <span class="keyword">return</span> transfroms(face).to(device).unsqueeze(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">device = <span class="string">&#x27;cuda&#x27;</span></span><br><span class="line">img1 = get_img(<span class="string">&#x27;face1.jpg&#x27;</span>, device)</span><br><span class="line">img2 = get_img(<span class="string">&#x27;face2.jpg&#x27;</span>, device)</span><br><span class="line">img3 = get_img(<span class="string">&#x27;face3.jpg&#x27;</span>, device)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(img1.shape)</span><br><span class="line"></span><br><span class="line">model = Backbone(num_layers=<span class="number">50</span>, drop_ratio=<span class="number">0.6</span>, mode=<span class="string">&#x27;ir_se&#x27;</span>)</span><br><span class="line">model.load_state_dict(torch.load(<span class="string">&#x27;model_ir_se50.pth&#x27;</span>))</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line">model.to(device)</span><br><span class="line"></span><br><span class="line">emb1 = model(img1)[<span class="number">0</span>]</span><br><span class="line">emb2 = model(img2)[<span class="number">0</span>]</span><br><span class="line">emb3 = model(img3)[<span class="number">0</span>]</span><br><span class="line"><span class="built_in">print</span>(emb1.shape)</span><br><span class="line"></span><br><span class="line">sim_12 = emb1.dot(emb2).item()</span><br><span class="line">sim_13 = emb1.dot(emb3).item()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(sim_12)</span><br><span class="line"><span class="built_in">print</span>(sim_13)</span><br></pre></td></tr></table></figure>
+<p>可能是 NumPy 更新的原因，代码在读取<code>.npy</code>时少了<code>allow_pickle=True</code>，会报错。要在<code>mtcnn_pytorch/src/get_nets.py</code>的几个<code>np.load</code>的地方加上<code>allow_pickle=True</code>。不知道在哪加也没关系，报错了再补上即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># mtcnn_pytorch/src/get_nets.py</span></span><br><span class="line"><span class="comment"># 约55行</span></span><br><span class="line">weights = np.load(<span class="string">&#x27;mtcnn_pytorch/src/weights/pnet.npy&#x27;</span>,</span><br><span class="line">                          allow_pickle=<span class="literal">True</span>)[()]</span><br><span class="line"><span class="comment"># 约100行</span></span><br><span class="line">weights = np.load(<span class="string">&#x27;mtcnn_pytorch/src/weights/rnet.npy&#x27;</span>,</span><br><span class="line">                          allow_pickle=<span class="literal">True</span>)[()]</span><br><span class="line"><span class="comment"># 约151行</span></span><br><span class="line">weights = np.load(<span class="string">&#x27;mtcnn_pytorch/src/weights/rnet.npy&#x27;</span>,</span><br><span class="line">                          allow_pickle=<span class="literal">True</span>)[()]</span><br></pre></td></tr></table></figure>
+<p>修改完毕后，直接运行脚本就行了。其输出大致为：</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">torch.Size([1, 3, 112, 112])</span><br><span class="line">torch.Size([512])</span><br><span class="line">0.5305924415588379</span><br><span class="line">0.03854911029338837</span><br></pre></td></tr></table></figure>
+<p>第一个输出是模型输入张量的形状。第二个输出是模型输出的特征的性质。了解这两个形状信息有助于我们调用此库。</p>
+<p>第三个输出是第一、第二张人脸的cos相似度，第四个输出是第二、第三张人脸的cos相似度。我们已经事先知道了，第一和第二张人脸图片是同一个人，第一和第三张人脸图片是两个人。所以说，这个输出结果非常正确。</p>
+<p>在我们自己的人脸项目中，一般都会准备好人脸预处理的代码。因此，在调用这个库时，可以只把 <code>model.Backbone</code> 里的代码复制过去，只使用该项目的模型即可。使用时注意输入输出的形状要求。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>ArcFace 论文：ArcFace: Additive Angular Margin Loss for Deep Face Recognition</p>
+<p>官方仓库：<a target="_blank" rel="noopener" href="https://github.com/deepinsight/insightface">https://github.com/deepinsight/insightface</a></p>
+<p>PyTorch 复现仓库：<a target="_blank" rel="noopener" href="https://github.com/TreB1eN/InsightFace_Pytorch">https://github.com/TreB1eN/InsightFace_Pytorch</a></p>
+<p>《人脸识别的 loss》：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/34404607">https://zhuanlan.zhihu.com/p/34404607</a> <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/34436551">https://zhuanlan.zhihu.com/p/34436551</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221029-torch-parallel-training/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1476,375 +1726,6 @@ D_{KL}(P||Q) = log\frac{\sigma_2}{\sigma_1} + \frac{\sigma_1^2+(\mu_1-\mu_2)^2}{
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-17/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/09/21/DLS-note-17/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（十七）：Transformer</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-21 17:47:58" itemprop="dateCreated datePublished" datetime="2022-09-21T17:47:58+08:00">2022-09-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在最后一课中，我们要学习Transformer模型。Transformer是深度学习发展史上的一次重大突破，它在多个领域中取得了傲人的成绩。Transformer最早用于解决NLP任务，它在CV任务上的潜力也在近几年里被挖掘出来。</p>
-<p>RNN有一个致命的缺陷：计算必须按照时序执行，无法并行。为了改进这一点，Transformer借用了CNN的想法，并行地用注意力机制处理所有输入，抛弃了经典RNN的组件。</p>
-<p>为了理解Transformer，我们将主要学习两个概念：自注意力和多头注意力。</p>
-<ul>
-<li>自注意力：Transformer会为序列里的每一个元素用注意力生成一个新的表示，就和CNN里卷积层能为每个像素生成高维特征向量一样。这个表示和词嵌入不同，词嵌入只能表示一个单词本身的意义，而「自注意力」生成的表示是和句子里其他单词相关的。</li>
-<li>多头注意力：「多头注意力」表示多次利用自注意力机制，生成多个表示，就和CNN里N个卷积核能生成N个特征一样。</li>
-</ul>
-<blockquote>
-<p>这节课是《深度学习专项》新增的课程，内容比较简短。估计是因为Transformer太火了，不得不在教材里加上这些新内容。这节课讲得并不是很清楚，我会用更易懂的逻辑把这节课讲一遍。</p>
-</blockquote>
-<h2 id="Transformer"><a href="#Transformer" class="headerlink" title="Transformer"></a>Transformer</h2><h3 id="自注意力"><a href="#自注意力" class="headerlink" title="自注意力"></a>自注意力</h3><p>词嵌入只能反映一个词本身的意思，而不能反映一个词在句子中的意思。比如我们要把”简访问非洲“翻译成英文，其中第三个字“问”有很多意思，比如询问、慰问等。自注意力的目的就是为每个词生成一个新的表示$A$，反映它在句子中的意思，比如我们为“问”字生成的表示$A^{&lt; 3 &gt;}$是“访问”这个具体的意思。</p>
-<p>自注意力，顾名思义，就是对句子自己使用注意力机制。我们先回忆一下最初的注意力机制。</p>
-<p><img src="/2022/09/21/DLS-note-17/1.jpg" alt></p>
-<p>在翻译句子时，我们要算每个输出单词对每个输入单词的注意力$\alpha$，以这个注意力为权重，我们可以算所有输入状态$a$的加权平均数$c$（公式1）。这个$c$用于输出每一个单词。</p>
-<p>注意力$\alpha$是权重$e$的归一化结果（如公式2所示，因为是求平均数，得保证权重$\alpha$的和为1），这里的$e^{&lt; t, t’ &gt;}$表示第$t’$个输入和第$t$个输出的相关量。由于$e^{&lt; t, t’ &gt;}$是用于计算$s^{&lt; t &gt;}$的，$s^{&lt; t &gt;}$还获取不了，我们只能用$s^{&lt; t - 1 &gt;}$来表示第$t$个输出。另外，我们用$a^{&lt; t’ &gt;}$表示第$t’$个输入。这样，$e^{&lt; t, t’ &gt;}$就应该由$s^{&lt; t - 1 &gt;}$和$a^{&lt; t’ &gt;}$决定。</p>
-<p>Transformer用一种通用的公式表示了这种注意力的计算。</p>
-<script type="math/tex; mode=display">
-A(q, K, V) = \sum_i\frac{exp(qk^{< i >})}{\Sigma_jexp(qk^{< j >})}v^{< i >}</script><p>我们先不管这里的$q, K, V$是什么意思，暂且把它们当成标记。用它来表示最初的注意力机制的话，$q$就相当于输出状态$s$，$k$就相当于输入状态$a$，二者的相关关系$e$就是两个向量的内积$qk$。$v$也是输入状态$a$。</p>
-<p>现在，我们来看看如何用这个公式计算自注意力。我们将以第三个输入$x ^ {&lt; 3 &gt;}$的注意力表示$A^{&lt; 3 &gt;}$为例。</p>
-<p>假设我们为每个输入单词都已经维护好了3个变量$q^{&lt; t &gt;}, k^{&lt; t &gt;}, v^{&lt; t &gt;}$。q, k, v是英文query, key, value的缩写，这一概念来自于数据库。假如数据库里存了学生的年龄，第一条记录的key-value是<code>(&quot;张三&quot;, 18)</code>，第二条记录的key-value是<code>(&quot;李四&quot;, 19)</code>。现在，有一条query，询问<code>&quot;张三&quot;</code>的年龄。我们把这一条query和所有key比对，发现第一条记录是我们需要的。因此，我们取出第一个value，即<code>18</code>。</p>
-<p>每个单词的$q, k, v$也可以有类似的解释。比如第三个字“问”的query $q^{&lt; 3 &gt;}$是：哪个字和“问”字组词了？当然，在这个句子里，我们人类可以很轻松地知道答案，“问”和“访”组成了“访问”这个词。每个字的key可以认为是字的固有属性，比如是名词还是动词。每个字的value就可以认为是这个字的词嵌入。</p>
-<p><img src="/2022/09/21/DLS-note-17/2.jpg" alt></p>
-<p>让计算机去查询$q^{&lt; 3 &gt;}$的话，我们要用这个query去句子的其他字里查出我们要的答案。和数据库的查询一样，我们也要把这个query和所有字的key进行比对。根据注意力的公式，我们用$q^{&lt; 3 &gt;}$和所有$k$相乘再做softmax，得到注意力权重。再用这个权重乘上每个$v$，加起来，得到所有$v$的加权平均数。既然是查询“问”字和谁组词了，那么这个要找的字肯定是一个动词。因此，计算机会发现$q^{&lt; 3 &gt;}, k^{&lt; 2 &gt;}$比较相关，即这两个向量的内积比较大。一切顺利的话，这个$A^{&lt; 3 &gt;}$应该和$v^{&lt; 2 &gt;}$很接近，即问题“哪个字和‘问’字组词了？”的答案是第二个字“访”。</p>
-<p><img src="/2022/09/21/DLS-note-17/3.jpg" alt></p>
-<p>这是$A^{&lt; 3 &gt;}$的计算过程。准确来说，$A^{&lt; 3 &gt;}=A(q^{&lt; 3 &gt;}, K, V)$。类似地，$A^{&lt; 1 &gt;}-A^{&lt; 5 &gt;}$都是用这个公式来计算。把所有$A$的计算合起来，把$q$合起来，得到的就是下面这个公式。</p>
-<script type="math/tex; mode=display">
-Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><p>其中，$d_k$是一个常量，$\sqrt{d_k}$这一项是用来防止点乘结果的数值过大的。它属于实现细节，对整个式子的意义不影响。抛去这一项的话，上式不过是之前那个公式的矩阵版本。这个公式在原论文里叫做Scaled Dot-Product Attention。</p>
-<p>现在，我们已经理解了注意力的公式。自注意力，其实就是令$Q=K=V=E$，对$E$这个向量自己做注意力。但是，我们还有一个重要的问题没有解决：$Q, K, V$在Transformer里是怎么获得的？别急，后几节我们会把所有的概念串起来，学习Transformer的结构。现在，让我们再看一看Transformer里的另一个概念——多头注意力。</p>
-<h3 id="多头注意力"><a href="#多头注意力" class="headerlink" title="多头注意力"></a>多头注意力</h3><p>在CNN中，我们会在一个卷积层里使用多个卷积核，以提取出不同的特征。比如第一个卷积核提取出图像水平方向的边缘，第二个卷积核提取出图像垂直方向的边缘。类似地，一次自注意力也只能得到部分的信息，我们可以多次使用自注意力得到多个信息。</p>
-<p>上一节的$A^{&lt; 3 &gt;}$是问题“哪个字和‘问’字组词了？”的答案。我们可以多问几个问题，得到有关“问”字的更多信息，比如“‘问’的主语是谁？”、“‘问’的宾语是谁？”。为了描述这些不同的问题，我们要准备一些可学习的矩阵$W^Q_i, W^K_i, W^V_i$。$Attention(W^Q_1Q, W^K_1K, W^V_1V)$就是第一组注意力结果，$Attention(W^Q_2Q, W^K_2K, W^V_2V)$就是第二组注意力结果，以此类推。这种机制叫做多头注意力。</p>
-<p><img src="/2022/09/21/DLS-note-17/4.jpg" alt></p>
-<p>每次Attention的结果是一个向量，所有Attention的结果concat起来就是多头注意力的结果。</p>
-<h3 id="Transformer-网络结构"><a href="#Transformer-网络结构" class="headerlink" title="Transformer 网络结构"></a>Transformer 网络结构</h3><p>搞懂了自注意力、多头注意力这两个核心机制后，我们就能够看懂Transformer的整体结构了。</p>
-<p>让我们看看Transformer是怎么翻译一句话的。给定一个单词序列（为了方便，我们认为输入句子已经被token化，且输入的是每个token的嵌入），我们要先用encoder提取特征，再用decoder逐个输出翻译出来的token。</p>
-<p>在encoder中，输入会经过一个多头注意力层。这一层的Q, K, V都是输入的词嵌入。多头注意力层会接到一个前馈神经网络上，这个网络就是一个简单的全连接网络。</p>
-<blockquote>
-<p>别忘了，多头注意力层的可学习参数是$W^Q_i, W^K_i, W^V_i$，Q, K, V可以是预训练好的词嵌入。</p>
-</blockquote>
-<p>再看decoder。先看一下decoder的输出流程。第一轮，decoder的输入是<code>&lt;SOS&gt;</code>，输出<code>Jane</code>；第二轮，decoder的输入是<code>&lt;SOS&gt; Jane</code>，输出是<code>visits</code>。也就是说，decoder的输入是现有的翻译序列，输出是下一个翻译出来的单词。</p>
-<p>在decoder中，输入同样要经过一个多头注意力层。这一层的Q, K, V全是输入的词嵌入。之后，数据会经过另一个多头注意力层，它的Q是上一层的输出，K, V来自于Encoder。为什么这一层有这样的设计呢？大家不妨翻回到前几节，回顾一下经典注意力模型中注意力是怎么计算的。其实，经典注意力模型就是以decoder的隐状态为Q，以encoder的隐状态为K, V的注意力。Transformer不过是用一套全新的公式把之前的机制搬过来了而已。做完这次多头注意力后，数据也是会经过一个全连接网络，输出结果。</p>
-<p>encoder和decoder的大模块一共重复了N次，原论文中N=6。</p>
-<p><img src="/2022/09/21/DLS-note-17/5.jpg" alt></p>
-<p>总结一下注意力在Transformer里的使用。多头注意力其实有两个版本：第一个版本是自注意力，用于进一步提取输入的特征；第二个版本和经典注意力模型一样，把输出序列和输入序列关联了起来。</p>
-<p>刚才我们学习的是Transformer的主要结构。实际上，Transformer的结构里还有很多细节。</p>
-<ol>
-<li>Positional Encoding （位置编码）: 和RNN不同，Transformer的多头注意力无法区分每一个输入的顺序。为了告诉模型每一个token的先后顺序，词嵌入在输入模型之前还要加上一个Positional Encoding。这个编码会给每一个词嵌入的每一维加上一个三角函数值。三角函数之间的差具有周期性，模型能够从这个值里认识到输入序列的顺序信息。</li>
-</ol>
-<blockquote>
-<p>我会在之后的文章详细介绍位置编码，这里只需要明白位置编码的意义即可。</p>
-</blockquote>
-<ol>
-<li><p>Add &amp; Norm 层：参考深度CNN的结构，Transformer给每个模块的输出都做了一次归一化，并且使用了残差连接。</p>
-</li>
-<li><p>输出前的线性层和Softmax：为了输出一个单词，我们肯定要做一个softmax。这些层是输出单词的常规操作，和RNN结构里的相同。</p>
-</li>
-</ol>
-<p><img src="/2022/09/21/DLS-note-17/6.jpg" alt></p>
-<p>最后，在训练Tranformer时，还有一个重要的模块：Masked Multi-head Attention。刚刚我们学到，在输出翻译的句子时，我们要输出一个单词，更新一次decoder的输入；输出一个单词，更新一次decoder的输入。然而，在训练时，我们实际上已经有了正确的输出。因此，我们可以同时给decoder看前1个单词，看前2个单词……，并行地训练所有的这些情况。为了只让decoder看到前几个单词，我们可以给输入加一个mask，把后面那些不应该看到的单词“蒙上”。</p>
-<p>Masked Multi-head Attention 其实只是一个实现上的小技巧，不能算作一个新模块。具体的实现方式其实有很多，我们只要重点理解这一设计的原因即可。总之，这种设计让Transformer能够并行地训练翻译进度不同的句子。因此，Transfomer的训练效率会比RNN快很多。</p>
-<p><img src="/2022/09/21/DLS-note-17/7.jpg" alt></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课我们主要学习了Transformer模型。在学习时，我们主要应该关注两个核心机制：自注意力、多头注意力。搞懂Transformer的注意力机制后，我们基本就理解了Transformer的原理了。剩下的一些细节知识可以去看原论文，这些细节不干扰论文主体思想的理解。</p>
-<p>《深度学习专项》的课就到此结束了。不过，之后我还会围绕这门课发两篇文章。第一篇文章会详细地解读“Attention Is All You Need”这篇论文，第二篇文章会详细介绍Transformer的复现过程，作为这节课的大作业。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-16/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/09/21/DLS-note-16/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（十六）：序列模型与注意力机制</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-21 17:47:51" itemprop="dateCreated datePublished" datetime="2022-09-21T17:47:51+08:00">2022-09-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在前两周的课中，我们分别学习了RNN的基础结构、词嵌入的知识。学完这些东西后，我们已经能够开发大多数NLP应用了。</p>
-<p>正如我们第一周所学，序列任务的本质区别是输入和输出的映射关系不同。我们曾经把任务按映射关系分成一对一、一对多、多对一、等长多对多、不等长多对多。其中，不等长的多对多任务是最常见、最通用的。这周，我们就要以机器翻译任务为例，学习解决多对多问题的更多技巧。同时，我们也会学习机器翻译任务中比较出名的一种模型架构——注意力模型。</p>
-<p>学完了机器翻译任务的一些常见架构后，我们还会把这些方法拓展到语音识别问题上，了解一些语音识别中的常见任务。</p>
-<h2 id="序列到序列模型"><a href="#序列到序列模型" class="headerlink" title="序列到序列模型"></a>序列到序列模型</h2><h3 id="基础模型"><a href="#基础模型" class="headerlink" title="基础模型"></a>基础模型</h3><p>有一些问题，它们的输入和输出都是一个序列。比如说机器翻译，输入是某种语言的一句话，输出是另一种语言的一句话。这种序列到序列的问题可以简单地套用RNN解决。</p>
-<p>如我们第一周所学，不等长的序列到序列问题可以用如下的RNN模型解决。前面只有输入的部分叫做编码器(encoder)，后面输出的部分叫做解码器(decoder)。</p>
-<p><img src="/2022/09/21/DLS-note-16/1.jpg" alt></p>
-<p>再举另一个任务——看图说话的例子。看图说话，就是输入一幅图片，输出该图片的文字描述。比如给定下图的图片，我们可以说“小猫在椅子上”。这个任务的输入看上去并不是一个序列，但我们可以用某种CNN架构把图片转换成一个向量。这个向量就可以看成图片的编码，和刚刚那个RNN编码器的输出一样。利用这个编码，我们可以用RNN解码器生成一句话。</p>
-<p><img src="/2022/09/21/DLS-note-16/2.jpg" alt></p>
-<h3 id="挑选最好的句子"><a href="#挑选最好的句子" class="headerlink" title="挑选最好的句子"></a>挑选最好的句子</h3><p>但是，这种基础的架构类似于我们第一周学的语言模型。它可能生成多个新句子，而不能保证生成最好的句子。为了按要求生成最好的句子，我们要使用一些其他的方法。</p>
-<p>比如把“Jane九月要访问非洲”翻译成英文，可以翻译成”Jane is visiting Africa in September.”，也可以翻译成”Jane is going to be visiting Africa in September.”。上节提到的那个类似于语言模型的RNN架构可以生成出这两个句子中的任何一个。</p>
-<p>从语言的角度，”Jane is visiting Africa in September.”这个翻译比”Jane is going to be visiting Africa in September.”更好。或者说，前面那个句子的概率更高一点。用数学公式来表达，给定被翻译的句子$x$, 我们希望求一个使$P(y^{&lt; 1 &gt;}, y^{&lt; 2 &gt;}, …y^{&lt; T_y &gt;},|x)$最大的序列$y$。</p>
-<p>求解这个最优化问题时，我们可能会想到贪心算法。由于RNN解码器每步的softmax可以输出下一个词的概率（还是和语言模型一样的道理），我们可以求出$argmax_{y^{&lt; 1 &gt;}}P(y^{&lt; 1 &gt;}|x)$, $argmax_{y^{&lt; 2 &gt;}}P(y^{&lt; 2 &gt;}|y^{&lt; 1 &gt;}, x)$, …，即用贪心算法每次求出一个概率最大的单词。</p>
-<p><img src="/2022/09/21/DLS-note-16/a1.jpg" alt></p>
-<p>然而，每次选一个概率最大的单词，不能保证整句话概率最大。比如，模型可能有”Jane is visiting Africa in September.”和”Jane is going to be visiting Africa in September.”这两个潜在的候选翻译结果。选第三个单词时，”going”的概率可能比”visiting”要高，按贪心算法，我们最后会生成出第二个句子。可是，从翻译质量来看，第一个句子显然更好，它的概率更高。</p>
-<p>为了求出概率最大的输出序列，我们要使用一种较好的搜索算法。</p>
-<h3 id="Beam-Search"><a href="#Beam-Search" class="headerlink" title="Beam Search"></a>Beam Search</h3><p>贪心算法每次只求出能令当前句子概率最大的下一个单词。这种算法太容易遗漏更优的输出了。而如果真的想求出最优的句子，即求出$argmax_{y}P(y|x)$，需要遍历所有可能的$y$。假如每个单词有$N$种选择，句子长度$T_y$，则搜索算法的复杂度是$O(N^{T_y})$。这个指数增长的复杂度是不能接受的。</p>
-<p>Beam Search是这样一种折中的启发式搜算算法。它不能保证求出最优解，却能比贪心算法找出更多更优的解。</p>
-<p>Beam Search的核心思想可以用一句话概括：相比于只维护一个概率最优句子的贪心算法，Beam Search每次维护$B$个概率最优的句子。</p>
-<p>还是拿开始那句话的翻译为例，并假设$B=3$，词汇表大小为10000。生成第一个单词时，概率最高的三个单词可能是in, Jane, September。生成第二个单词时，我们要遍历第一个单词是in, Jane, September时的所有30000种两个单词组合的可能。最终，我们可能发现in September, Jane is, Jane visits这三个句子的概率最高。依次类推，我们继续遍历下去，直到生成句子里的所有单词。</p>
-<p><img src="/2022/09/21/DLS-note-16/a2.jpg" alt></p>
-<p>这个算法用伪代码表示如下:</p>
-<blockquote>
-<p>这份伪代码不是用来是解读的，而是用来对齐想法的。看懂了算法的流程后，读者应该能够用自己的伪代码把这个算法写出来。如果读者自己能写出伪代码，就也能顺着思路读懂我的这份伪代码。</p>
-</blockquote>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">Input x, B</span><br><span class="line"></span><br><span class="line"><span class="comment"># encoder</span></span><br><span class="line">a = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(tx):</span><br><span class="line">    a, _ = RNN(embed(x[i]), a)</span><br><span class="line"><span class="comment"># decoder</span></span><br><span class="line"><span class="comment"># step 1</span></span><br><span class="line">a, p = RNN(<span class="number">0</span>, a)</span><br><span class="line">a_arr = [a] * B</span><br><span class="line">words, prob = get_max_words_from_softmax(p, B)</span><br><span class="line">sentences = copy(words)</span><br><span class="line"><span class="comment"># step 2 - ty</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(ty - <span class="number">1</span>):</span><br><span class="line">    all_words = []</span><br><span class="line">    all_prob = []</span><br><span class="line">    all_a = []</span><br><span class="line">    <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(B):</span><br><span class="line">        new_a, p = RNN(embed(words[j]), a_arr[j])</span><br><span class="line">        tmp_words, tmp_prob = get_max_words_from_softmax(p, B)</span><br><span class="line">        tmp_a = [new_a] * B</span><br><span class="line">        <span class="comment"># Accmulative multiply the probablity </span></span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(B):</span><br><span class="line">            tmp_prob[k] *= prob[j]</span><br><span class="line">        all_words += tmp_words</span><br><span class="line">        all_parob += tmp_prob</span><br><span class="line">        all_a += tmp_a</span><br><span class="line">    words, prob, a_arr = get_max_B(all_words, all_prob, all_a)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Cancatenate output</span></span><br><span class="line">    <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(B):</span><br><span class="line">        sentences[j].append(words[B])</span><br><span class="line"></span><br><span class="line">y = get_max_sentences(sentences[j], prob)</span><br><span class="line">Output y</span><br></pre></td></tr></table></figure>
-<p>Beam Search 还有一些优化的手段。</p>
-<p>在Beam Search中，我们用了语言模型中求句子的概率的方法，即：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-P(y|x) &=P(y^{< 1 >}, y^{< 2 >} ... y^{< T_y >} |x)\\
-&= P(y^{< 1 >} | x) P(y^{< 2 >} | x, y^{< 1 >}) ... P(y^{< T_y >} | x, y^{< 1 >}, ..., y^{< T_y-1 >}) \\
-&= \prod_{t=1}^{T_y}P(y^{< t >} | x, y^{< 1 >}, ..., y^{< t-1 >})
-\end{aligned}</script><p>这个概率是我们的优化目标。但是，使用累乘会碰到计算机硬件精度不够的问题。为此，我们可以把优化目标由累乘取log变成累加：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-&argmax_y \prod_{t=1}^{T_y}P(y^{< t >} | x, y^{< 1 >}, ..., y^{< t-1 >}) \\
-\Rightarrow &argmax_y \sum_{t=1}^{T_y}logP(y^{< t >} | x, y^{< 1 >}, ..., y^{< t-1 >})
-\end{aligned}</script><p>此外，大多情况下，输出的句子越短，句子可能越不准确。因此，我们可以给优化目标添加一个和长度有关的归一化项：</p>
-<script type="math/tex; mode=display">
-\frac{1}{T_y^\alpha}\sum_{t=1}^{T_y}logP(y^{< t >} | x, y^{< 1 >}, ..., y^{< t-1 >})</script><p>这里的$\alpha(\alpha&lt; 1)$是一个超参数，它用于让长度惩罚更平滑一点，即模型更容易生成长句子。一般$\alpha=0.7$。</p>
-<p>为了生成不同长度的句子，在让decoder输出句子时，我们可以记录下$T_y=1, 2…$时概率最大的句子。得到了这些不同长度的候选句子后，把它们的概率乘上归一化项，找出整体概率最大的句子。</p>
-<p>Beam Search是一种启发式算法，它的效果取决于超参数B。一般情况下，为了保证速度，B取10就挺不错了。只有在某些不考虑速度的应用或研究中才会令B=100或更高。</p>
-<p>加入Beam Search会让我们调试机器翻译算法时更加困难。还是对于开始那个翻译示例，假如人类给出了翻译$y^{\ast}$：Jane visits Africa in September，算法给出了翻译$\hat{y}$：Jane visited Africa last September。这个算法的翻译不够好，我们想利用第三门课学的错误分析方法来分析错误的来源。这究竟是Beam Search出了问题，还是RNN神经网络出了问题呢？</p>
-<p>对此，我们可以把训练好的RNN当成一个语言模型，输入$y^{\ast}$和$\hat{y}$，求出这两个句子的概率。如果$y^{\ast} \gt \hat{y}$，那说明RNN的判断是准确的，是Beam Search漏搜了；如果$y^{\ast} \leq \hat{y}$，那说明RNN判断得不准，是RNN出了问题。</p>
-<h3 id="Bleu-Score"><a href="#Bleu-Score" class="headerlink" title="Bleu Score"></a>Bleu Score</h3><p>在图像分类中，我们可以用识别准确率来轻松地评价一个模型。但是，在机器翻译任务中，最优的翻译可能不只一个。比如把“小猫在垫子上”翻译成英文，既可以说”The cat is on the mat”，也可以说”There is a cat on the mat”。我们不太好去评价每句话的翻译质量。Bleu Score就是一种衡量翻译质量的指标。</p>
-<p>为了评价一句话的翻译质量，我们还是需要专业翻译者给出的参考翻译。比如把刚刚那两句英文翻译作为参考译句：</p>
-<ul>
-<li>The cat is on the mat</li>
-<li>There is a cat on the mat</li>
-</ul>
-<p>我们可以把机器的翻译结果和这两句参考结果做对比。对比的第一想法是看看机器翻译的句子里的单词有多少个在参考句子里出现过。但是，这种比较方法有问题。假如机器输出了”the the the the the the the”，the在参考句子里出现过，输出的7个单词全部都出现过。因此，翻译准确率是$\frac{7}{7}$。这显然不是一个好的评价指标。</p>
-<p>一种更公平的比较方法是，每个单词重复计分的次数是原句中该单词出现的最大次数。比如，the在第一个参考句子里出现2次，在第二个参考句子里出现1次。因此，我们认为the最多计分两次。这样，这句话的翻译准确率就是$\frac{2}{7}$。这个评价结果好多了。</p>
-<p>我们不仅可以对单个单词计分，还可以对相邻两个单词构成的单词对计分。比如机器翻译输出了句子The cat the cat on the cat。我们统计每一个词对在输出里出现的次数和计分的次数。</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th></th>
-<th>count</th>
-<th>score</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>the cat</td>
-<td>2</td>
-<td>1</td>
-</tr>
-<tr>
-<td>cat the</td>
-<td>1</td>
-<td>0</td>
-</tr>
-<tr>
-<td>cat on</td>
-<td>1</td>
-<td>1</td>
-</tr>
-<tr>
-<td>on the</td>
-<td>1</td>
-<td>1</td>
-</tr>
-<tr>
-<td>the mat</td>
-<td>1</td>
-<td>1</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>这样，这个句子的准确率是$\frac{4}{6}$。</p>
-<p>这种打分方式就叫做bleu score。刚刚我们只讨论了考虑一个单词、两个单词时的打分结果。实际上，我们可以用$p_n$表示连续考虑$n$个单词的bleu score。最终评价一个翻译出来的句子时，我们会考虑到$n$取不同值的情况，比如考虑$n=1, 2, 3, 4$的情况。最终使用的这种指标叫做组合bleu score，它的计算公式为：</p>
-<script type="math/tex; mode=display">
-BP \ exp(\frac{1}{4}\sum_{n=1}^{4}p_n)</script><p>其中，BP的全称是brevity penalty（简短惩罚）。这是一个系数，用于防止输出的句子过短。它的计算公式是:</p>
-<script type="math/tex; mode=display">
-BP = \left\{\begin{aligned}
-&1 \ &L_o  > L_r, \\
-&exp(1 - \frac{L_r}{L_o}) \ &otherwise
-
-\end{aligned}
-\right.</script><p>其中，$L_o$是输出句子的长度，$L_r$是参考句子的长度。</p>
-<p>bleu score是一个能十分合理地评价机器翻译句子的指标。在评估机器翻译模型时，我们只要使用这一种指标就行了，这符合我们在第三门课中学习的单一优化目标原则。bleu score最早是在机器翻译任务中提出的，后续很多和句子生成相关的任务都使用了此评估指标。</p>
-<h3 id="注意力模型"><a href="#注意力模型" class="headerlink" title="注意力模型"></a>注意力模型</h3><p>我们刚刚学习的这种“编码器-解码器”架构的RNN确实能在机器翻译上取得不错的效果。但是，这种架构存在一定的限制：模型的编码（输入）和解码（输出）这两步都是一步完成的，模型一次性输入所有的句子，一次性输出所有的句子。这种做法在句子较短的时候还比较可行，但输入句子较长时，模型就“记不住”之前的信息了。而我们这一节学习的注意力模型能够很好地处理任意长度的句子。</p>
-<p><img src="/2022/09/21/DLS-note-16/3.jpg" alt></p>
-<p>让我们看看人类在翻译长句的时候是怎么做的。比如把“简访问非洲”翻译成”Jane visits Africa”时，我们一般不会把整句话一次性翻译，而是会对单词（或文字）逐个翻译。我们会把“简”翻译成”Jane”，“访问”翻译成”visits”，“非洲”翻译成”Africa”。在输出每一个单词时，我们往往只需要关心输入里的某几个单词就行了，而不需要关注所有单词。</p>
-<p>注意力模型就使用了类似的原理。在注意力模型中，我们先把输入喂给一个BRNN（双向RNN）。这个BRNN不用来输出句子，而是用于提取每一个输入单词的特征。我们会用另一个单向RNN来输出句子。每一个输出单词的RNN会去查看输入特征，看看它需要“关注”哪些输入。比如，”Jane”的RNN会关注“简”的特征，”visits”的RNN会关注“访”和“问”的特征。这一过程如下图所示（线条表示输出对输入的关注，线条越粗关注度越高）。</p>
-<p><img src="/2022/09/21/DLS-note-16/4.jpg" alt></p>
-<p>这样，不管输入的序列有多长，每一个输出都能找到它需要关注的部分单词，仅根据这些输入来完成翻译，就和我们人类的做法一样。这就是注意力模型的思想。</p>
-<p>让我们看一下具体的计算过程。为了区分上下两个RNN，我们用$a$表示编码RNN的状态，$t’$表示输入序号；$s$表示解码RNN的状态，$t$表示输出序号。刚才提到的那种关注每个输入单词的注意力机制会给每个输出一个上下文向量$c^{&lt; t &gt;}$。这个向量和上一轮输出$\hat{y}^{&lt; t-1 &gt;}$拼在一起作为这轮解码RNN的输入。</p>
-<p><img src="/2022/09/21/DLS-note-16/5.jpg" alt></p>
-<blockquote>
-<p>注意，从逻辑上来讲，解码RNN有两个输入。第一个输入和我们之前见过的解码RNN一样，是上一轮的输出$\hat{y}^{&lt; t-1 &gt;}$。第二个输入是注意力上下文$c^{&lt; t &gt;}$。这两个输入通过拼接（concatenate）的方式一起输入解码RNN。我在学到这里的时候一直很疑惑，两个输入该怎么输入进RNN。原视频并没有强调两个输入是拼接在一起的。</p>
-<p>如果输出的单词不是很依赖于上一个单词，解码RNN也可以不输入上一个单词，只输入注意力上下文。这门课的编程作业就采用了这种只有一个输入的更为简单的结构。</p>
-</blockquote>
-<p>接下来，我们来详细看看注意力机制是怎么工作的。如前文所述，注意力机制就是要算一个对每个输入的关注度，根据这个关注度以不同的权重去输入里取值。这个过程的表示如下。</p>
-<p>设输入状态$a^{&lt; t’ &gt;}=(\overrightarrow{a}^{&lt; t’ &gt;}, \overleftarrow{a}^{&lt; t’ &gt;})$（把BRNN前后的状态拼接到一起）。假如我们得到了权重$\alpha^{&lt; t, t’ &gt;}$，它表示第$t$个输出对第$t’$个输入的关注度，则注意力上下文$c^{&lt; t &gt;}$的计算方法为：</p>
-<script type="math/tex; mode=display">
-c^{< t >} = \sum_{t'=1}^{T_x}\alpha^{< t, t' >}a^{< t' >}.</script><p>对于每一个$t$, 所有$t’$的$\alpha^{&lt; t, t’ &gt;}$和为1。也就是说，上式其实就是一个加权平均数，其中$\alpha^{&lt; t, t’ &gt;}$是权重。“注意力”这个名词看上去很高端，其实就是一个中学生都会的概念而已。</p>
-<p>现在，我们还不知道关注度$\alpha^{&lt; t, t’ &gt;}$是怎么算的。让我们思考一下，第$t$个输出单词和第$t’$个输入单词的关注度取决于谁的信息呢？答案很简单，取决于第$t$个输出单词的信息和第$t’$个输入单词的信息。第$t$个输出单词的信息，可以用其上一层的状态$s^{&lt; t-1 &gt;}$表达；第$t’$个输入单词的信息，可以用$a^{&lt; t’ &gt;}$表达。怎么用它们算一个关注度出来呢？谁也给不出一个具体的公式，干脆就用一个神经网络来拟合就好了。</p>
-<p>具体的计算过程如下图所示：</p>
-<p><img src="/2022/09/21/DLS-note-16/6.jpg" alt></p>
-<p>我们用一个小全连接网络算出一个输出$e^{&lt; t, t’ &gt;}$。由于$\alpha^{&lt; t, t’ &gt;}$最后的和要为1，我们用对$e^{&lt; t, t’ &gt;}$做一个softmax，得到归一化的$\alpha^{&lt; t, t’ &gt;}$。</p>
-<p>整理一下，注意力模型的计算步骤如下：</p>
-<ol>
-<li>用一个编码RNN（比如Bi-LSTM）算出输入的特征$a^{&lt; t’ &gt;}$。</li>
-<li>用一个解码RNN（比如LSTM）的状态$s^{&lt; t-1 &gt;}$和所有$a^{&lt; t’ &gt;}$算一个对每个输入的关注度$\alpha^{&lt; t, t’ &gt;}$ 。</li>
-<li>以关注度为权重，以$a^{&lt; t’ &gt;}$为值，算一个加权平均数$c^{&lt; t &gt;}$作为第$t$个输出的注意力上下文。</li>
-<li>以上一轮输出$y^{&lt; t-1 &gt;}$和$c^{&lt; t &gt;}$为输入，以$s^{&lt; t-1 &gt;}$为上一轮状态，计算解码RNN这一轮的输出$y^{&lt; t &gt;}$。</li>
-</ol>
-<p>注意力模型的效果不错，但它的计算复杂度是平方级别的（输入长度乘输出长度）。不过，机器翻译任务的输入输出都不会太大，这一性能弊端没有那么明显。</p>
-<h2 id="语音任务"><a href="#语音任务" class="headerlink" title="语音任务"></a>语音任务</h2><h3 id="语音识别"><a href="#语音识别" class="headerlink" title="语音识别"></a>语音识别</h3><p>到目前为止，我们主要用序列模型完成NLP任务。其实序列模型也很适合用在语音数据上。让我们来快速认识一下语音识别任务的解决方法。</p>
-<p>语音数据是一维数据，表示每一时刻的声音强度。而我们人脑在在接受声音时，会自动对声音处理，感知到声音的音调（频率）和响度。</p>
-<p>语音识别任务的输入是语音数据，输出是一个句子。我们可以直接用注意力模型解决这个问题（令输出元素为<strong>字母</strong>而不是单词），也可以用一种叫做CTC（connectionist temporal classification)的算法解决。</p>
-<p>CTC算法用于把语音识别的输入输出长度对齐。这样，我们用一个简单的等长多对多RNN就可以了。在语音识别中，输入的长度远大于输出的长度，我们可以想办法扩大输出长度。这种扩充方式如下：</p>
-<p>比如，对于句子”the quick brown fox”，我们可以把”the q”它扩充成<code>ttt_h_eee____&lt; space &gt;____qqq__</code>。这个和输入等长的序列表示每一个时刻发音者正在说哪个字母。序列中有一些特殊标记，下划线表示没有识别出任何东西，空格<code>&lt; space &gt;</code>表示英语里的空格。</p>
-<p>通过这种方法，我们可以把所有训练数据的标签预处理成和输入等长的序列，进而用普通RNN解决语音识别问题。</p>
-<h3 id="触发词检测"><a href="#触发词检测" class="headerlink" title="触发词检测"></a>触发词检测</h3><p>触发词检测也是一类常见的语音问题，我们可以用序列模型轻松解决它。</p>
-<p>触发词检测在生活中比较常见，比如苹果设备的”Hey Siri”就可以唤醒苹果语音助手。我们的任务，就是给定一段语音序列，输出何时有人说出了某个触发词。</p>
-<p>我们可以用一张图快速地学会如何解决这个问题。如下图所示，对于每一个输入，我们可以构造一个等长的输出，表示每一时刻是否说完了触发词。每当一个触发词说完，我们就往它后面几个时刻标上1。用一个普通RNN就可以解决这个问题了。</p>
-<p><img src="/2022/09/21/DLS-note-16/7.jpg" alt></p>
-<p>从这两个示例中，我们能看出，学会了序列模型后，我们掌握了很多武器。而在解决实际问题时，关键在于如何建模，把问题的输入输出对应到RNN的输入输出上，把我们的武器用出去。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这堂课以机器翻译任务为例，介绍了序列到序列问题的一些解决方法。特别地，这堂课介绍了注意力模型。注意力模型在序列到序列问题上有着极佳的表现，并催生了后续纯粹由注意力机制构成的更加强大的Transformer模型。利用这些学到的知识，我们可以轻松地解决大多数序列到序列问题，比如和语音相关的语音识别与触发词检测问题。</p>
-<p>这堂课的知识点有：</p>
-<ul>
-<li>Beam Search<ul>
-<li>序列到序列问题的建模方法：解码器与生成器，生成一个概率尽可能大的输出序列</li>
-<li>为什么需要搜索算法，为什么贪心算法不好</li>
-<li>Beam Search 的过程</li>
-</ul>
-</li>
-<li>Bleu Score 的计算思想：公平地根据参考序列评价生成序列的质量</li>
-<li>注意力模型<ul>
-<li>新的编码器-解码器架构</li>
-<li>注意力机制的动机</li>
-<li>解码器怎么利用注意力权重</li>
-<li>注意力权重怎么生成</li>
-</ul>
-</li>
-<li>语音问题<ul>
-<li>建模思想：对齐输入输出序列，用简单的RNN解决问题</li>
-<li>语音识别CTC算法：输出每一时刻正在发音的字符</li>
-<li>触发词检测：用01表示是否有触发词</li>
-</ul>
-</li>
-</ul>
-<p>本来，深度学习专项的课程就到此为止了。但是，后来Transformer太火了，课程专门加了一节介绍Transformer的内容。让我们在下周详细学习一下Transformer这一功能强大的模型架构。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1914,7 +1795,7 @@ c^{< t >} = \sum_{t'=1}^{T_x}\alpha^{< t, t' >}a^{< t' >}.</script><p>对于每�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">147</span>
+          <span class="site-state-item-count">149</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1927,7 +1808,7 @@ c^{< t >} = \sum_{t'=1}^{T_x}\alpha^{< t, t' >}a^{< t' >}.</script><p>对于每�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">62</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

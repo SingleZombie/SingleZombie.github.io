@@ -168,6 +168,332 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/03/18/20220315-custom-op/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/03/18/20220315-custom-op/" class="post-title-link" itemprop="url">PyTorch Custom OP （自定义算子） 教程</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-18 15:28:41" itemprop="dateCreated datePublished" datetime="2022-03-18T15:28:41+08:00">2022-03-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="PyTorch-自定义算子教程：两种方法实现加法算子（附LibTorch-Windows环境配置教程）"><a href="#PyTorch-自定义算子教程：两种方法实现加法算子（附LibTorch-Windows环境配置教程）" class="headerlink" title="PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）"></a>PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）</h1><p>我们都知道，PyTorch做卷积等底层运算时，都是用C++实现的。有时，我们再怎么去调用PyTorch定义好的算子，也无法满足我们的需求。这时，我们就要考虑用C++自定义一个PyTorch的算子了。</p>
+<p>PyTorch提供了两种添加C++算子的方法：编译动态库并嵌入<code>TorchScript</code><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html">[1]</a>、用PyTorch的C++拓展接口<a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/cpp_extension.html">[2]</a>。前者适合导入独立的C++项目，后者需要用PyTorch的API设置编译信息，只适合小型C++项目，更适合于把新算子共享给他人的情况。由于我还没有用过torch的C++接口，这里先用第一种方法写一套独立的算子实现示例，跑通整个流程，再基于同一份代码，用第二种方法实现一次，以全方位地介绍PyTorch自定义算子的方法。</p>
+<p><strong>前置准备：</strong></p>
+<ul>
+<li>装好了CMake</li>
+<li>装好了PyTorch</li>
+<li>装好了OpenCV</li>
+<li>看得懂C++、Python</li>
+</ul>
+<p><strong>知识点预览：</strong></p>
+<ul>
+<li>如何配置LibTorch</li>
+<li>第一个Torch C++程序</li>
+<li>如何自己写简单的CMake</li>
+<li>如何用Visual Studio写CMake项目</li>
+<li>如何编译使用简单的动态库</li>
+<li>如何用两种方法实现PyTorch自定义算子</li>
+<li>如何用setuptools自动编译C++源代码</li>
+</ul>
+<p>（以上是我写这篇文章之前还不会的东西。）</p>
+<ul>
+<li>如何用PyTest做单元测试</li>
+</ul>
+<p><strong>参考教程</strong>：</p>
+<p>[1] 添加<code>TorchScript</code>拓展 <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html">https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html</a></p>
+<p>[2] PyTorch的C++拓展 <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/cpp_extension.html">https://pytorch.org/tutorials/advanced/cpp_extension.html</a></p>
+<p>[3] 安装LibTorch <a target="_blank" rel="noopener" href="https://pytorch.org/cppdocs/installing.html">https://pytorch.org/cppdocs/installing.html</a></p>
+<p>[4] VS CMake <a target="_blank" rel="noopener" href="https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019">https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019</a></p>
+<h2 id="配置-LibTorch-开发环境"><a href="#配置-LibTorch-开发环境" class="headerlink" title="配置 LibTorch 开发环境"></a>配置 LibTorch 开发环境</h2><p>我们这个项目是使用CMake开发的，理论上任何平台都能使用。我是在Windows上测试的，理论上Windows上碰到的毛病会多一些，Linux上可能直接用就没问题了。</p>
+<p>对于我们这个CMake项目来说，成功添加路径，使得<code>find_package（Torch)</code>（找到Torch的CMake配置）不报错就算配置环境成功。当然，貌似由于Torch依赖于OpenCV，找OpenCV包也得成功才行。</p>
+<p>参考教程是<a target="_blank" rel="noopener" href="https://pytorch.org/cppdocs/installing.html">[3]</a>，但对于像我一样什么都不懂的新手来说，由于CMake有些东西要配置，这篇官方教程还不太够用。</p>
+<h3 id="下载-LibTorch"><a href="#下载-LibTorch" class="headerlink" title="下载 LibTorch"></a>下载 LibTorch</h3><p>想用PyTorch的C++相关内容的话，要先去下载LibTorch库。</p>
+<p>在获取PyTorch的Python版本下载命令处，可以找到LibTorch的安装链接：</p>
+<p><img src="/2022/03/18/20220315-custom-op/1.jpg" alt></p>
+<p>和装PyTorch Python版的时候类似，选好自己的版本，之后点击某个链接下载就行。第一个链接是Release版，第二个是Debug版。由于我是编程高手，不要调试，所以直接选择了Release版。建议大家去下Debug版方便随时调试。</p>
+<h3 id="添加环境变量"><a href="#添加环境变量" class="headerlink" title="添加环境变量"></a>添加环境变量</h3><p>下一步要把LibTorch的动态库所在目录加入环境变量中，以使程序运行时能够找得到依赖的动态库（编译是没问题的）。</p>
+<p>把<code>xxxxxxxx\libtorch\lib</code>这个目录添加进环境变量即可。</p>
+<p>如果是在Windows上，添加环境变量时有一个细节要注意：</p>
+<p><img src="/2022/03/18/20220315-custom-op/2.jpg" alt></p>
+<p>相信90%的人装PyTorch前都是把Cuda装好了的。在添加LibTorch的动态库目录时一定要注意，要把这个路径移到Cuda路径的上面。详细原因见<strong>FAQ</strong>。</p>
+<h3 id="Hello-LibTorch"><a href="#Hello-LibTorch" class="headerlink" title="Hello LibTorch"></a>Hello LibTorch</h3><p>接下来我们要用一个能调试CMake程序的环境来完成第一个C++ LibTorch程序。</p>
+<p>创建一个崭新的文件夹，在里面添加一个<code>CMakeLists.txt</code>:</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.1</span> FATAL_ERROR)</span><br><span class="line"><span class="keyword">project</span>(equi_conv)</span><br><span class="line"></span><br><span class="line"><span class="keyword">find_package</span>(Torch REQUIRED)</span><br><span class="line"><span class="keyword">find_package</span>(OpenCV REQUIRED)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(equi_conv op.cpp)</span><br><span class="line"><span class="keyword">target_compile_features</span>(equi_conv PRIVATE cxx_std_14)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv <span class="string">&quot;$&#123;TORCH_LIBRARIES&#125;&quot;</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv opencv_core opencv_imgproc)</span><br></pre></td></tr></table></figure>
+<p>里面的<code>equi_conv</code>可以换成你喜欢的项目名。我使用的项目名是<code>equi_conv</code>，这个名称会在后面多次出现。理论上我显示<code>equi_conv</code>的地方显示的应该是你自己的项目名。</p>
+<p><strong>注意！</strong> 一般情况下CMake是找不到Torch和OpenCV的，要手动设置CMake Configure附加命令中的<code>Torch_DIR</code>和<code>OpenCV_DIR</code>这两个参数，比如我的附加命令是</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-D Torch_DIR=&quot;D:/Download/libtorch-win-shared-with-deps-1.11.0+cu113/libtorch/share/cmake/Torch&quot; -D OpenCV_DIR=&quot;D:/OpenCV/opencv/build&quot;</span><br></pre></td></tr></table></figure>
+<p>。<code>Torch_DIR</code>是<code>&quot;xxxxxxxx/libtorch/share/cmake/Torch</code>,<code>OpenCV_DIR</code>大约是<code>xxxxxxxx/opencv/build</code>。每个人的具体路径可能不一样，只要记住，这两个路径里都得是包含了<code>.cmake</code>文件的。根据编程环境的不同，设置这两个CMake参数的位置也不同，详见后文。</p>
+<p>官方教程[3]给了一种很骚的提供路径的方法：<code>-DCMAKE_PREFIX_PATH=&quot;$(python -c &#39;import torch.utils; print(torch.utils.cmake_prefix_path)&#39;)&quot;</code>。这个命令是调用Python脚本以添加PyTorch默认的CMake搜索目录。但是这个命令有一些问题：1) 当前命令行环境里不一定能正确调用Python及访问torch库（比如PyTorch是用conda装的，而当前环境不是对应的conda环境）；2) 我们下载的libtorch似乎难以对得上PyTorch包里默认的libtorch路径。这行命令似乎仅适用于处于正确Python环境下，把libtorch装到了<code>/libtorch</code>目录下的Linux系统。为了命令的兼容性，我们不用这么骚的操作，老老实实自己设置LibTorch目录和OpenCV目录。</p>
+<p>再写一个叫<code>op.cpp</code>的C++源文件。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	torch::Tensor tensor = torch::<span class="built_in">rand</span>(&#123; <span class="number">2</span>, <span class="number">3</span> &#125;);</span><br><span class="line">	std::cout &lt;&lt; tensor &lt;&lt; std::endl;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果你是高手，可以不去配环境，直接手敲CMake命令。但为了方便，接下来我们还是准备调试运行这个程序。配置CMake调试环境有很多方法，这里先给一个Windows上Visual Studio的方案<a target="_blank" rel="noopener" href="https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019">[4]</a>：</p>
+<p>准备好上面那个<code>CMakeLists.txt</code>后，用VS打开这个CMake文件（相信大家的VS都是2017版本以上的，旧版本是没有CMake的功能的~）：</p>
+<p><img src="/2022/03/18/20220315-custom-op/3.jpg" alt></p>
+<p>如果文件没写错VS会自动配置(Configure)CMake。在工具栏中可以手动中断或开始CMake的配置。</p>
+<p><img src="/2022/03/18/20220315-custom-op/4.jpg" alt></p>
+<p>还可以点击上面的“{PROJECT_NAME}的CMake设置”来设置CMake命令中要用的参数（比如<code>-D</code>参数）</p>
+<p><img src="/2022/03/18/20220315-custom-op/5.jpg" alt></p>
+<p>注意，一开始CMake只有Debug版的配置，可以点左上角的加号手动加一个Release版的配置。</p>
+<p>同时，如图中所示，<code>xxx_DIR</code>应该卸载CMake命令参数里面。</p>
+<p>配置好后去上面的工具栏点击”生成-全部生成”就可以把程序编译好了。接下来按熟悉的F5就可以运行程序了。</p>
+<p>再介绍一个VSCode的CMake编程环境，这个基本上是全平台通用的。不过同样，我还是在Windows上测试的，以Windows上的配置为主。</p>
+<p>通过搜索”Windows CMake VSCode cl 配置”等关键词，我搜索到了一篇<a target="_blank" rel="noopener" href="https://blog.csdn.net/Nichlson/article/details/113763551">很好的教程</a>，我是照着这篇教程配的环境。如果是Linux的话，换一下编译器应该就能拿过来用了。</p>
+<p>为了添加<code>-D</code>等配置参数，可以用<code>ctrl+,</code>打开设置，修改工作区设置里的CMake Configure命令：</p>
+<p><img src="/2022/03/18/20220315-custom-op/6.jpg" alt></p>
+<p>如果一切正常，程序会输出随机张量的内容。</p>
+<p><img src="/2022/03/18/20220315-custom-op/7.jpg" alt></p>
+<h2 id="LibTorch-A-B"><a href="#LibTorch-A-B" class="headerlink" title="LibTorch A+B"></a>LibTorch A+B</h2><h3 id="C-侧"><a href="#C-侧" class="headerlink" title="C++ 侧"></a>C++ 侧</h3><p>修改<code>op.cpp</code>：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">0</span>) == t2.<span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line">	<span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">1</span>) == t2.<span class="built_in">size</span>(<span class="number">1</span>));</span><br><span class="line">	<span class="function">cv::Mat <span class="title">m1</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t1.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line">	<span class="function">cv::Mat <span class="title">m2</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t2.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line">	</span><br><span class="line">	cv::Mat res = m1 + m2;</span><br><span class="line"></span><br><span class="line">	torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.ptr&lt;<span class="keyword">float</span>&gt;(), &#123; t1.<span class="built_in">size</span>(<span class="number">0</span>), t1.<span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br><span class="line">	<span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">TORCH_LIBRARY</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">	m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们要实现一个新PyTorch算子<code>my_add</code>，该实现函数先把两个PyTorch Tensor转换成OpenCV Mat，用Mat做加法，再把Mat转回Tensor。整个代码非常易懂，哪怕对LibTorch和OpenCV的语法不熟，也基本猜得出每行代码的作用。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br></pre></td></tr></table></figure>
+<p>一开始，先包含LibTorch、OpenCV的头文件。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br></pre></td></tr></table></figure>
+<p>我们要实现的是一个PyTorch的加法，因此实现函数中所有的张量类型都是<code>torch::Tensor</code>。加法输入是两个量，输出是一个量，因此最后的函数头要这样写。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">0</span>) == t2.<span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line"><span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">1</span>) == t2.<span class="built_in">size</span>(<span class="number">1</span>));</span><br></pre></td></tr></table></figure>
+<p>做为严谨的程序员，我们要对输入的Tensor做一定的检查（实际上这两个检查还不够，由于我们默认输入图像的通道是3，还应该检查一下通道数。但这样检查下去可能会没完没了了，这里仅仅是提醒大家要养成良好的编程习惯）（其实是我写了两行就懒得写下去了）。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">cv::Mat <span class="title">m1</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t1.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line"><span class="function">cv::Mat <span class="title">m2</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t2.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br></pre></td></tr></table></figure>
+<p>这两行是用Tensor构造Mat。从这两行代码中，可以学到两点：1）可以通过<code>tensor.data_ptr&lt;float&gt;</code>来获取Tensor存储数据的指针;2）不同框架下的数据结构互转时一般是传指针，再传shape。</p>
+<p>OpenCV这里有一点点特殊。OpenCV的Mat是二维的，要维护一个H-W-C（高-宽-通道）的数据，需要传一个基础数据类型<code>CV_32FC3</code>，即3通道浮点数。</p>
+<p>从代码中可以猜出来，<code>tensor.size(i)</code>可以获取Tensor第i维的长度。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cv::Mat res = m1 + m2;</span><br></pre></td></tr></table></figure>
+<p>不用猜都知道这是调用了Mat的加法。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.ptr&lt;<span class="keyword">float</span>&gt;(), &#123; t1.<span class="built_in">size</span>(<span class="number">0</span>), t1.<span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br></pre></td></tr></table></figure>
+<p>这一行是Mat转Tensor，同样是传了数据指针和张量形状。</p>
+<p>这里第二个参数是个叫<code>at::IntArrayRef</code>的类型的。这个类型会用在Tensor的shape上。该类型的最简单的初始化方式就是用大括号把值框进去，就像Python里用方括号或圆括号传List和Set一样。</p>
+<p>相比生成OpenCV Mat，这里没有传数据类型。原因如前文所述，应该是由于OpenCV的数据类型里包含了维度信息，所以OpenCV的Mat构造时要额外传这个信息。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br></pre></td></tr></table></figure>
+<p>最后返回的是<code>tensor.clone()</code>。官方教程里说，用指针创建Tensor时会复用原来的指针，而不会新申请内存。函数结束后，Mat里的资源会释放，等于说这个用Mat创建出的Tensor也失效了。因此要<code>clone()</code>一下，让数据在函数结束后依然存在。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">TORCH_LIBRARY</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">	m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后调用API把C++函数绑定到Python上，现在可以不用追究这些代码的具体原理，只要知道这样写Python就可以访问到<code>my_add</code>了。</p>
+<p>这里可以改动的内容其实有两处：算子的域<code>my_ops</code>，算子名/函数名<code>my_add</code>。前面那个<code>my_ops</code>在PyTorch的某些地方会用到，这里我们先不管，随便取一个名字即可。</p>
+<p>现在我们要编译的是一个包含一个函数的动态库，而不是一个包含<code>main</code>的应用程序了。因此，我们要修改一下<code>CMakeLists.txt</code>中的编译选项：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.1</span> FATAL_ERROR)</span><br><span class="line"><span class="keyword">project</span>(equi_conv)</span><br><span class="line"></span><br><span class="line"><span class="keyword">find_package</span>(Torch REQUIRED)</span><br><span class="line"><span class="keyword">find_package</span>(OpenCV REQUIRED)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_library</span>(equi_conv SHARED op.cpp)</span><br><span class="line"><span class="keyword">target_compile_features</span>(equi_conv PRIVATE cxx_std_14)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv <span class="string">&quot;$&#123;TORCH_LIBRARIES&#125;&quot;</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv opencv_core opencv_imgproc)</span><br></pre></td></tr></table></figure>
+<p>其实就改了一行:<code>add_library(equi_conv SHARED op.cpp)</code>，这样可以把编译目标变成一个动态库。</p>
+<p>代码没错的话，重新Configure和Generate后动态库就编译好了。</p>
+<h3 id="Python-侧"><a href="#Python-侧" class="headerlink" title="Python 侧"></a>Python 侧</h3><p>我们写一个单元测试Python脚本来测试一下我们的算子能否在PyTorch里成功运行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">lib_path = <span class="string">r&quot;D:\Repo\equi_conv\EquiConv\out\build\x64-Release\equi_conv.dll&quot;</span></span><br><span class="line">torch.ops.load_library(lib_path)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_add</span>():</span></span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = torch.ops.my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
+<p>再一次，为了体现我们编程时的严谨性，我们使用pytest来测试这个脚本。<code>pip install pytest</code>就可以轻松安装好这个Python单元测试工具。但如果你实在太懒了，不想下pytest，就得在后面补一行<code>test_add()</code>手动调用一下这个函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lib_path = <span class="string">r&quot;D:\Repo\equi_conv\EquiConv\out\build\x64-Release\equi_conv.dll&quot;</span></span><br><span class="line">torch.ops.load_library(lib_path)</span><br></pre></td></tr></table></figure>
+<p><code>import torch</code>就不说了。这两行代码是调用PyTorch的API来读取我们刚刚编译出来的动态库。我们这里只需要把动态库路径改成自己的就好，别的都不用改。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_add</span>():</span></span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = torch.ops.my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
+<p>后面这些代码就是实际单元测试的代码里，代码非常简单：生成两个随机tensor，比较一下我们的加法和PyTorch自己的加法是否结果一致。</p>
+<p>值得注意的是，用<code>torch.ops.my_ops.my_add</code>可以调用我们刚刚那个C++函数。前面的<code>torch.ops</code>都是写死的，后面的<code>my_add</code>是我们自己定义的函数名。而<code>my_ops</code>，则是我们刚刚调API时填的“算子域”了。算子域在注册Python符号表的时候还会用到，这里不用管那么多，把算子域理解成一个命名空间，一个防止算子命名冲突的东西即可。</p>
+<p><code>torch.allclose</code>可以简单地理解为一个要求两个Tensor所有值都<strong>几乎</strong>相等的比较函数。</p>
+<p>在该文件夹下运行命令<code>pytest</code>，屏幕上显示绿色的<code>1 passed xxxxxxxxxx</code>即说明单元测试成功运行。</p>
+<p>至此，我们算是成功在Python里调用了一个C++写的算子。只需要写上torch.ops.my_ops.my_add`，我们就能够在任何地方（比如模型的forward函数）调用我们的算子。聪明的人看到这里，已经学会随心所欲地在PyTorch里嵌入自己的高效率的C++算子了。</p>
+<p>配好环境，搭好框架后，我们自己实现算子倒是非常舒服。问题是，如果我们要把这些算子给别人使用的话，要么是给别人源代码，让别人自己配置LibTorch编译环境；要么是把所有<code>Torch版本数 * Cuda版本数 * 操作系统数</code>这么多个动态库给预编译出来。</p>
+<p>要是能抛掉LibTorch，让有PyTorch和Cuda环境的用户自己编译源代码，似乎一个平衡开发者体验和用户体验的选择。所以，这里再介绍之前讲过的第二种添加算子的方法：直接在PyTorch里添加C++拓展。</p>
+<h2 id="PyTorch-Extension-A-B"><a href="#PyTorch-Extension-A-B" class="headerlink" title="PyTorch Extension A+B"></a>PyTorch Extension A+B</h2><p>用Python的setuptools也可以编译一些C++项目但，由于其头文件目录、依赖的库目录这些编译选项需要手动设置，setuptools仅适用于编译比较简单的C++项目。</p>
+<p>在同文件夹中，编写以下的<code>setup.py</code>文件：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> setuptools <span class="keyword">import</span> setup</span><br><span class="line"><span class="keyword">from</span> torch.utils <span class="keyword">import</span> cpp_extension</span><br><span class="line"></span><br><span class="line">include_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\include&#x27;</span>]</span><br><span class="line">library_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\x64\vc15\lib&#x27;</span>]</span><br><span class="line">libraries = [<span class="string">r&#x27;opencv_world452&#x27;</span>]</span><br><span class="line"></span><br><span class="line">setup(name=<span class="string">&#x27;my_add&#x27;</span>,</span><br><span class="line">      ext_modules=[</span><br><span class="line">          cpp_extension.CppExtension(<span class="string">&#x27;my_ops&#x27;</span>, [<span class="string">&#x27;op2.cpp&#x27;</span>],</span><br><span class="line">                                     include_dirs=include_dirs,</span><br><span class="line">                                     library_dirs=library_dirs,</span><br><span class="line">                                     libraries=libraries)</span><br><span class="line">      ],</span><br><span class="line">      cmdclass=&#123;<span class="string">&#x27;build_ext&#x27;</span>: cpp_extension.BuildExtension&#125;)</span><br></pre></td></tr></table></figure>
+<p>在这个源文件中，要改的就是以下三个路径（代码块中显示的是我的路径）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">include_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\include&#x27;</span>]</span><br><span class="line">library_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\x64\vc15\lib&#x27;</span>]</span><br><span class="line">libraries = [<span class="string">r&#x27;opencv_world452&#x27;</span>]</span><br></pre></td></tr></table></figure>
+<p>这三个路径用于配置OpenCV的编译选项，分别表示OpenCV的包含目录（头文件目录）、静态库目录、静态库名。用Visual Studio导入过第三方库的，肯定对这三个选项不陌生。</p>
+<blockquote>
+<p>如果是在 Linux 上，前两个路径大概是”/usr/local/include/opencv2”, “/usr/local/lib” 。最后的库名填写<code>opencv_core</code>即可。</p>
+</blockquote>
+<p>至于PyTorch相关的编译选项，我们不需要手动设置。这是因为我们用了PyTorch封装的添加C++拓展接口，PyTorch有关的路径已经被填好了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">setup(name=<span class="string">&#x27;my_add&#x27;</span>,</span><br><span class="line">      ext_modules=[</span><br><span class="line">          cpp_extension.CppExtension(<span class="string">&#x27;my_ops&#x27;</span>, [<span class="string">&#x27;op2.cpp&#x27;</span>],</span><br><span class="line">                                     include_dirs=include_dirs,</span><br><span class="line">                                     library_dirs=library_dirs,</span><br><span class="line">                                     libraries=libraries)</span><br><span class="line">      ],</span><br><span class="line">      cmdclass=&#123;<span class="string">&#x27;build_ext&#x27;</span>: cpp_extension.BuildExtension&#125;)</span><br></pre></td></tr></table></figure>
+<p>在调用<code>setup</code>时，<code>name</code>是整个项目的名字，可以随便取。<code>my_ops</code>和刚刚一样，是命名空间的名字，我们还是保持<code>my_ops</code>这个名字。<code>op2.cpp</code>就是要编译的源文件了，这里我们待会再讨论。剩下的参数这些传进去就行了。</p>
+<p>我们再在<code>op.cpp</code>的基础上新建一个新的C++源文件<code>op2.cpp</code>：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">0</span>) == t2.<span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line">  <span class="built_in">assert</span>(t1.<span class="built_in">size</span>(<span class="number">1</span>) == t2.<span class="built_in">size</span>(<span class="number">1</span>));</span><br><span class="line">  <span class="function">cv::Mat <span class="title">m1</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t1.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line">  <span class="function">cv::Mat <span class="title">m2</span><span class="params">(t1.size(<span class="number">0</span>), t1.size(<span class="number">1</span>), CV_32FC3, t2.data_ptr&lt;<span class="keyword">float</span>&gt;())</span></span>;</span><br><span class="line"></span><br><span class="line">  cv::Mat res = m1 + m2;</span><br><span class="line"></span><br><span class="line">  torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.ptr&lt;<span class="keyword">float</span>&gt;(), &#123;t1.<span class="built_in">size</span>(<span class="number">0</span>), t1.<span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br><span class="line">  <span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">PYBIND11_MODULE</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">  m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其实修改的就是这一行<code>TORCH_LIBRARY(my_ops, m)-&gt;PYBIND11_MODULE(my_ops, m)</code>，没有调用TorchScript的绑定接口，而是直接用Pybind绑定了C++函数。</p>
+<p>接下来，在当前文件夹下运行命令<code>python setup.py install</code>即可编译刚刚的C++源文件了。成功的话大概会有<code>Finished processing dependencies for my-add==0.0.0</code>这样的提示。</p>
+<p>编译结束后，我们在原来<code>test_add.py</code>的基础上添加一些单元测试，看看用这种新方法编译完C++拓展后怎么调用C++函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_add2</span>():</span></span><br><span class="line">    <span class="keyword">import</span> my_ops</span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
+<p>由于我们刚刚编译了一个命名空间为<code>my_ops</code>的包，我们可以用<code>import my_ops</code>导入这个刚刚编译好的库了。现在调用C++函数的方法变成了<code>my_ops.my_add</code>，其他地方都没有变化。</p>
+<p>运行<code>pytest test_add.py::test_add2</code>可以单独测试这一个函数。当然懒的话直接<code>pytest</code>可以把刚刚那个测试和这个测试一起做一遍。单元测试通过就说明我们成功运行了C++拓展。</p>
+<p>事实上，这种安装方式还是不够友好。由于我们用到了OpenCV，OpenCV的库路径还是要手动设置。这种安装方式只有在除PyTorch本身外不需要任何第三方库时比较友好。不然的话要么让用户自己手动设置路径，要么在代码库里引用别的开源库，再一个一个重写路径。大型项目还是用CMake等编译系统来编译比较友好。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了两种在PyTorch里调用C++新算子的方法。只要看懂了这篇文章，就算是彻底打通了PyTorch与C++的桥梁，以后写代码可以专注于C++算子的实现及PyTorch对算子的封装，剩下的绑定算子的内容直接套这个模板就行。</p>
+<p>两种算子实现方法的区别主要在于编译选项的设置上和用户在编译算子的体验上。应根据项目的实际情况选择一种方案。</p>
+<p>这篇文章强行调用OpenCV实现了Tensor加法，看上去是多此一举，实际上这是为了展示如何在添加自定义算子时使用第三方库。但为了简化他人编译的过程，实际实现算子时最好只用原本的PyTorch API。</p>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><h3 id="运行LibTorch的示例程序，无法定位程序输入点-xxxxx-于动态链接库-xxxxx"><a href="#运行LibTorch的示例程序，无法定位程序输入点-xxxxx-于动态链接库-xxxxx" class="headerlink" title="运行LibTorch的示例程序，无法定位程序输入点 xxxxx 于动态链接库 xxxxx"></a>运行LibTorch的示例程序，无法定位程序输入点 xxxxx 于动态链接库 xxxxx</h3><p>这个问题找了我老半天，就找到2~3个相关的答案，全是治标不治本的方法。</p>
+<p>有人说，是动态库路径的问题。我测试了一下，直接运行编译好的程序会报错，但是<strong>把程序放到LibTorch的动态库目录下就不会报错</strong>。我已经隐隐约约地感觉到，不是动态库找不到，而是<strong>动态库路径的优先顺序</strong>出了问题。</p>
+<p>果不其然，最后我在<a target="_blank" rel="noopener" href="https://www.icode9.com/content-3-1005434.html">这篇文章</a>里找到了问题的真正原因：Cuda的动态库和LibTorch的冲突了（PyTorch和Cuda要背大锅）。那篇文章中暴力删掉了Cuda的动态库，但是温柔的我们绝对不要这样做。按照前面章节的内容，调整LibTorch与Cuda的路径优先级即可。</p>
+<p><img src="/2022/03/18/20220315-custom-op/bug1.jpg" alt></p>
+<p>貌似官方教程提到了类似的错误。这里再提供一种可能的解决问题的思路（反正我没试）。</p>
+<h3 id="WinError-126-找不到指定的模块"><a href="#WinError-126-找不到指定的模块" class="headerlink" title="[WinError 126] 找不到指定的模块"></a>[WinError 126] 找不到指定的模块</h3><p>这个问题说明Python的PyTorch库版本和下载的LibTorch C++版本不一致。用<code>pip show torch</code>查看当前的PyTorch版本，去重新下载对应的LibTorch即可。</p>
+<h3 id="OSError-xxx-Undefined-symbol-Linux"><a href="#OSError-xxx-Undefined-symbol-Linux" class="headerlink" title="OSError: xxx Undefined symbol (Linux)"></a>OSError: xxx Undefined symbol (Linux)</h3><p>要把 LibTorch 的动态库加入 LD_LIBRARY_PATH 里。</p>
+<h1 id="有关博客“学习”分类下子类别的说明"><a href="#有关博客“学习”分类下子类别的说明" class="headerlink" title="有关博客“学习”分类下子类别的说明"></a>有关博客“学习”分类下子类别的说明</h1><p>貌似之前说明过一次，这里再整理一遍。</p>
+<ul>
+<li>工具用法指南：几乎没有技术含量的，把下载安装过程的踩坑过程原封不动地讲一遍。</li>
+<li>知识记录：对现有成体系知识的描述，尤其会写教科书、公开课上的知识，较少我个人的见解。</li>
+<li>知识整理：对某一工具、知识、技术的说明，主要以我个人的见解、整理为主。</li>
+</ul>
+<p>另外，“学习”类别和“记录”类别挺容易混淆的。这里我再做个规定：“记录”以具体的任务为导向，比如先有要写的作业、要看的论文、要做的项目、规划好的旅游计划，再对这些事情进行描述。而“学习”中包含的文章，更多是一种主观的，以学到东西为目的而写的文章。如果我看了一篇论文，只写论文的内容的话，会分到“记录”里；如果我想调研一个主题的文章，会把调研结果放到“学习-笔记”里；如果我看了很多论文，有了原创性非常强的一篇描述知识的文章，会放到“知识分享”（未来的“创作-知识”）里。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/03/08/Code-Optimization-Fun/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/03/08/Code-Optimization-Fun/" class="post-title-link" itemprop="url">拆掉循环竟然让代码性能大幅提升？ ~ 有趣的高性能计算大作业</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-08 22:29:29" itemprop="dateCreated datePublished" datetime="2022-03-08T22:29:29+08:00">2022-03-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E4%BD%9C%E4%B8%9A-%E7%BB%83%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">作业/练习</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>由于这个学期没有返校，我变懒了不少。明明有不少可以写的东西，却没有去写。等学期结束了有时间了我会好好补写一些博客。</p>
+<p>这几天，我在赶一个高性能计算的大作业。题目要求优化一段代码，使程序的运行时间尽可能短。大作业本来是一个令人烦躁忧虑，头皮发麻的事物，但在deadline的紧逼之下，我仿佛按下了大脑的启动按钮，火力全开地应对起这个大作业来。于是，我的漫长的编程时间就开始了。——看到这里，如何你对编程不是非常了解，可能完全没有读下去的兴致。但我保证我会用外行人也能看懂的方式，来描述我这次有趣的写大作业经历。</p>
+<p>再具体地讲一下我的大作业要求。我的大作业题目是代码优化，跑代码花费的时间是评价成绩的唯一指标。当然，代码的正确性不能受到影响，你不能让程序刚进去就关掉。代码跑得越快，分数越高。如果代码速度是原来的2倍，则可以拿到60分及格。如果达到原来的2.5，3，3.5，4倍，则可以分别拿到80，90， 95， 100分。成绩评判标准唯一且清晰。</p>
+<p>我是作业截止的最后4天开始看这个大作业的。看完这个评分标准，我心里先是一乐：“哈哈，终于有一个评分透明的大作业了，写论文什么的成绩太容易受老师主观评价影响了。”接着，我又发现事情有些不太对：“既然老师敢给这么高的分数，说明代码想优化到3倍或者4倍是很困难的。我的时间这么少，恐怕只能拿个80分吧。”我也没再想下去，反正代码能优化多少就优化多少，也没有那种先定目标再开始干活的必要。</p>
+<p>我的编程任务正式开始了。准确来说，我做的不是编程，是合理而优雅地修改老师给的代码，让这个代码运行速度更快一些，而不改变程序本身的意思。要打比方的话，我是一个拿着手术刀的医生，我需要精准地切掉病变部位，还病人一个更好的身体。比较幸运的是，我的工作可以反复调试，代码出了问题可以重新修改，而不需要担心造成什么破坏性的后果。</p>
+<p>代码的功能是计算化学反应的一些参数。这段代码产生的程序不会产生任何花哨的网页、按钮，只会在默默地运行数十秒中后，冷冰冰地在控制台上输出一行数学计算的结果。运行这段代码就好像把一个优等生关进一个房间，让他把数学卷子全做出来再离开一样。只不过程序在输入的参数完全相同的情况下，每次都会执行一模一样的操作，最终得到完全相同，完全正确的结果。</p>
+<p>这段代码可谓是又臭又长。丝毫没有注释，一个文件里的代码（代码分布在多个文件中）全是看不懂的化学常量，另一个文件的代码全是看似毫无逻辑的计算步骤。在浏览过代码，手足无措数秒钟后，我迅速转换了思维：“化学反应的代码归根结底就是计算一个很长的公式。我没有必要看懂为什么这么做，我只需要知道哪些加减乘除运算可以被我优化就行了。”我的这种冷静能力与思维跳转能力非常惊人。</p>
+<p>在<a href="https://zhouyifan.net/2019/12/23/Software-Engineering-Project/">这个大作业</a>中，我学到了查看代码性能瓶颈的方法。经过检测，代码最耗时的部分竟然是一个<code>exp()</code>自然指数运算。自然指数本身是一个很容易理解的函数，高中数学就讲过这个函数的性质。这个函数在数学上很好表达，在程序中计算起来却非常麻烦。因为这个函数的值往往是一个无限不循环数，而程序只能进行有限的计算。程序只能通过多次的加法、乘法来得到一个十分近似的结果。程序总计进行了3亿次自然指数运算，代码性能瓶颈出现在这确实也情有可原。</p>
+<p>程序中的指数运算，需要调用标准库。标准库是高级程序员们反复锤炼，被无数人反复验证的代码。这个自然指数运算对我来说是根本不可能修改的。看到这个情况，我心都凉了半截。</p>
+<p>虽然一上来就碰到如此困难的情况，但我再次调整了心态。指数运算耗费了三成的时间，还有七成的运行时间可以被优化。我把目光又放到了其他运算速度较慢的代码上。凭借多年的高级语言（比较抽象、接近自然语言的程序语言）编程经验，我意气风发，大刀阔斧地对代码进行优化。我主要对代码进行了预处理、循环合并这两类优化。预处理就是把一些程序中不会变动的常量提前算好，避免每次重新计算。就好像你提前买一箱抽纸，这样几个月都不用再去买纸一样。循环合并就是把条件一样，需要反复做的事情，再每个“反复”中一起做掉。比如让你去测全校同学的身高体重，量身高和量体重的仪器摆在一起，这里假设两台仪器不能同时工作。你不能让同学挨个测完身高，回教室休息一下，再一个一个回来量体重。每个人量身高体重的时间虽然没变，但来回教室、排队等待的时间浪费了。最好的方法是每个人先量身高，再量体重。如果你懂编程，你或许能理解，这里的来回教室时间就是CPU从内存中读数据的时间，排队时间可以看成循环变量、控制流耗费的时间，在一个循环里做尽可能多的事能减小时间开销。</p>
+<p>以上两类优化是非常基础的优化。经过优化后，程序运行时间从26秒到了17秒。很可惜，速度还没有达到2倍，我的成绩连及格也没有。我反复查看了其他部分的代码，绞尽脑汁也没有想出哪里可以优化。于是，我只好把目光再次放到了开始的指数运算上。</p>
+<p>经过观察，我发现指数运算是一批一批做的，也就是一次会对多个数据依次执行步骤相同的指数运算，而标准库只能每次对一个数据进行指数运算。这里面有没有可以利用的空间呢？我凭借着十多年与搜索引擎打交道的经验，总算找到了一个比较厉害的数学运算库。里面有一种对批量数据进行指数运算的函数。我满怀期望地用这种”高级“函数替换了原来的函数。结果非常令人惊喜：程序的执行时间从17秒降到了12~13秒，速度整体变成了原来的2倍，我总算及格了。</p>
+<p>开心之余，我总感觉自己忘了些什么事。仔细回忆了一下，代码优化不仅要快，原来程序的输出结果还不能被更改。我还没有验证新代码的正确性呢！我赶快把新代码和旧代码的结果进行了比较，发现新代码的输出结果发生了变化！</p>
+<p>我改动了那么多处，究竟是哪一步出错了啊？！为了找出代码中的BUG，我采用了古老而有效的控制变量法。我把旧代码粘贴了回去，一段一段地把代码更新成新代码。如果某一次更新后运行结果有问题，就说明这段代码有问题。我顺利地找出了不少的低级错误。可是，我最不想碰到的情况发生了——</p>
+<p>我发现指数运算的那整段代码中存在问题。我尝试地把指数运算的那一行改回了旧版本的代码，输出结果就正常了。也就是说，这种优化的指数运算会导致结果不正确。</p>
+<p>我又慌了，心想指数运算这道坎可能就是过不去了。但我内心中突然涌现出的自信告诉我，我的新代码没有错误。这个新的指数运算函数是intel公司写的，如果有问题，只可能是他们有问题。代码的运行结果虽然改变了，但是代码不一定有错——这两句话并不是矛盾的。在精度较高的数学计算中，如果小数点后面好多位出现了偏差，只能算是结果有误差，不能说结果错误。况且原来的代码也只是对数学计算结果的一种近似，你怎么能保证原来的代码就离正确的结果更近呢？给你两块手表，两者差了几秒，你能知道哪块手表是正确的时间吗？保证这样的心理，我对新代码输出结果的误差进行了计算。</p>
+<p>经检验，新代码和源代码的相对误差在小数点后6位，也就是0.0001%这个数量级。老师可没有强调结果要完全相同，或者误差保持在什么范围内。从道理上来看，只要保证代码整体的正确性就行。在强烈的自我暗示下，我接受了代码输出结果不完全相同，但我却是正确的这一事实。</p>
+<p>如前面所述，我已经尽可能地在其他地方优化代码，就目前而言，这份代码对我来说是最优的。第一天天色已晚，我选择偃旗息鼓，明日再战。</p>
+<p> 第二天十点，烈日当空，天朗气清。我再次开始着手优化代码。经过缜密的分析，我觉得我缺少部分的知识，我需要从别的角度入手，用一些我不太熟悉的方法优化代码。</p>
+<p>程序的运行可以分成串行和并行。串行的概念非常简单，我们人的大脑就是串行的。你不能说我左半边脑子在浏览选项题，右边的大脑跑去想填空题去了。并行就是多个串行，可以理解成多个人合作做一件事。写论文时，你写正文，我写摘要，我们同时开始写，这就是一种并行。显然，N个人干活，必然不能让事情的快N倍。因为人与人之间的交流存在着极大的效率浪费。如若不然，为什么每个企业要设置那么复杂的管理体系呢？并行程序也是如此，在硬件支持的情况下，程序并行可以提高速度，但也有一定的资源损耗。</p>
+<p>我学过并行的知识，了解并行的概念，但没有并行编程的经验。于是，我只好以”C++ 并行编程”为搜索词去搜索有关信息。很快，我就搜到了一个满意的答案：有一种叫OpenMP的并行编程API，只需要在程序里加一些代码，就能把串行的程序变成并行的程序。但是，要是只加少量代码的话，只能并行执行循环结构，且只有对重复次数较多的循环起到优化作用。比如搬1000个箱子，让10个人来搬来搬肯定比1个搬快，而且大家只需要在搬完后交换一次信息，确认一下所有箱子都搬完了。想把更复杂的代码并行执行并达到优化效果，就要学更多的知识了。考虑到我所剩的时间不多，我打算只用OpenMP来并行优化循环。</p>
+<p>我写了个算加法的循环，并用OpenMP并行优化。经过实验后，这个简单循环的运算确实变快了，优化成功了。看来，并行加速并不是很难啊。现在大作业代码的性能瓶颈还是那个指数运算。指数运算是作用在一个数组上的，目前的实现方式是循环对数组的每一个元素做指数运算。如果能把这个循环并行化，但代码的运算速度肯定能快上很多。于是，我把OpenMP的并行代码运用到了指数运算循环上。</p>
+<p>可是，并行化后，代码不仅没有变快，反而变慢了。甚至随着并行线程数（可以理解为同时有多少个人在做同一个工作）增加，代码会运行得越来越慢。</p>
+<p>做为一个自信的程序员，碰到问题时，我的第一反应肯定不是觉得我自己写错了，而是这个OpenMP调用得用问题。可能我使用这个工具的方法不太对。既然这样，也没时间去学新的东西了，没有轮子就自己造轮子，我只好自己来写一个多线程的并行程序了。于是，我删掉了OpenMP的代码，手写了创造线程、用线程做指数运算、同步线程的代码。我自己写的代码，肯定没问题了吧？</p>
+<p>结果，用我自己的并行代码运行程序后，程序的运行速度也变慢了。做为一个正常的程序员，在代码全是自己写的情况下还发现了运行上的问题，第一反应就是出bug了。于是，我把那段并行的代码拎了出来，单独测试了好久。可是，无论怎么调试，都没有发现问题。第二天就在无聊而令人烦恼的调试中度过了。</p>
+<p>晚上，躺在床上，苦恼地思索着代码里的问题。突然，我想到：是不是我的代码一直没有问题，而是并行这个方案有问题？做循环的次数只有10多次，如果用多线程的话，线程之间沟通的时间，就远远多于并行运算本身减少的时间。正所谓“三个和尚没水喝啊”。没办法，第二天就这么浪费了。我及时止损，准备使用新的方法优化程序。</p>
+<p>经过昨晚的计划后，第三天，我早早地打开电脑查询一个新的技术。我顺着并行编程这一条线索，想到了另一个并行技术——SIMD（单指令多数据流）。这个技术就好比之前是一个人搬一箱货物，现在这个人可以拿手推车，一次搬几箱货物。在SIMD中，唯一增加的成本，就是货物得提前按组打包，这样才能够一组一组地搬运。这一项成本远远小于之前多线程之间沟通的成本。我去网上查了什么AVX指令集，学会了如何一次对4个数据进行计算。这样，不仅是那个指数运算，还有一些相邻的乘除法运算也可以顺便用并行</p>
+<p>这次程序运算时间在8、9秒左右浮动。严格来说，程序并没有优化到三倍。但是，要是精心挑选一组比较看得过去的测试时间的话，应该能在报告里声称我把程序优化了3倍。这下，80分才算勉勉强强拿到。</p>
+<p>代码真的就不能再优化了吗？既然老师敢说把速度优化4倍就能拿到满分，说明这份代码肯定还是有优化空间的。我把这份代码从头到尾读了一遍又一遍，在我的知识范围内，能用的优化小伎俩都用上了。但是，程序的运算时间几乎没有减少。我感觉自己已经弹尽粮绝了。</p>
+<p>经过多次优化后，指数运算的用时占比已经不算很多了。一些对一个常量数组的遍历、取值、运算的用时占比逐渐高了起来。就好像一个邮递员要挨家挨户上门取件，再把货物送到另一个地方一样。这一部分的时间完全耗费在了跑到每个人家门口，敲门等人开门上，跑腿的时间反倒是可以忽略不计。这部分循环操作数组的代码是不能用之前的并行来优化的。这部分的代码没有什么过多的操作，自然也几乎没有改动的空间。我通读代码，看到这一团改不了的代码时，总会无可奈何地快速跳过。</p>
+<p>我对代码优化已经绝望了。走神时，我想起了计算机体系结构课里的知识：现在CPU采用了流水线的设计，跳转指令（比如循环）会导致流水线的断流。为了让代码更快运行，某些时候能不用分支、循环就不要用。</p>
+<p>我突然产生了一个奇怪的念头：循环吗……如果我把从常量数组取值的循环全部拆掉如何？这个可以理解成快递员上门取一层楼的货品时，可以用循环表示：取这个房间的货，往前走；去这个房间的货，往前走；……；如果这一层没有住户了，就上一层楼。但是，这是一个常量数组，即我可以提前知道这栋楼有几层，每层有哪几个房间。这样，快递员的指令就变成了：去101取件；去102取件……去606取件这样确切的命令。快递员不用动脑筋去观察什么时候把这层楼走完，可以上一层楼了。抛弃掉回产生跳转指令的循环后，按理说代码能变快很多。</p>
+<p>但是，我们初学编程认识循环时，就知道循环是用来简化代码的。现在，我却要反常识地把循环拆掉，把要执行的代码展开来，一行一行写出来。这太反常识了。当然，循环拆掉代码展开后，代码会变得特别长，其中会包含很多重复的代码。与其我手动写，不如写个脚本自动把这些代码生成出来。于是，我写了一段生成代码的Python代码，把原来的循环拆掉了。</p>
+<p>我持着怀疑的态度，一边苦笑地看着那些丑陋的代码，一边等待着程序运行结束。没想到，程序的运算时间竟然大幅度变少了！这次运行时间之间减少到了6秒多，程序的速度基本上是最开始的4倍了。我还没来得及烦恼怎么跨过优化3.5倍这道分数砍，程序一下就优化到满分了。</p>
+<p>这太有趣了！违反常理地拆掉循环竟然能让代码加速。我关掉了再也不想多看一眼的代码，开开心心地把优化四倍的结果写进实验报告里。然后，我开始着手写这篇文章，记录一下这段过程紧张，结局却是Happy Ending的代码优化之旅。</p>
+<p>噢，对了，源代码我是有的，但我一定不会开源。我能想象到，老师肯定会把同一份大作业用好几年。为了让这门课公平一点，我是不会上传代码的。当然了，稍微有一点编程水平的人，看完这篇文章后，都知道了该怎么优化程序了。这篇文章也算是给和我一样初学代码优化的人一些学习上的启发吧。</p>
+<blockquote>
+<p>这是2020年6月份的文章，我当时写到一半搁笔没写了。趁现在有时间，赶快填一个坑。</p>
+<p>现在重温这段经历，当时提笔时的激动已经没了，只剩下了怀念。两年前，我肯定想不到这四天不到的代码优化经历，竟然是我本科期间学代码优化技术学得最多、学习效率最高的一段时间，也想不到几年后的现在的几天后我即将开始新的工作，会把之前学到的这些代码优化技术全部用出来。</p>
+<p>对了，最近我在写很多文章。今天不认真的文字写了3000~4000，之前比较认真的写得话一天3000字都不到。我本来以为这个速度很慢，上网一看，这才是正常速度。把写东西单纯当一个爱好也挺不错嘛。虽然既没有编程有趣，也没有编程挣钱就是了。</p>
+</blockquote>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/03/08/20220123-everyone-is-lonely/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1205,247 +1531,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2021/09/25/20210925-Life-Outside-Campus/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/09/25/20210925-Life-Outside-Campus/" class="post-title-link" itemprop="url">苟活于世间 —— 初入社会有感 ~ Life Outside Campus</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-09-25 21:41:25" itemprop="dateCreated datePublished" datetime="2021-09-25T21:41:25+08:00">2021-09-25</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/%E9%9A%8F%E7%AC%94/" itemprop="url" rel="index"><span itemprop="name">随笔</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="苟活于世间-——-初入社会有感-Life-Outside-Campus"><a href="#苟活于世间-——-初入社会有感-Life-Outside-Campus" class="headerlink" title="苟活于世间 —— 初入社会有感 ~ Life Outside Campus"></a>苟活于世间 —— 初入社会有感 ~ Life Outside Campus</h1><p>最近我获得了一份极佳的临时工作机会。薪资媲美互联网大厂，工作时间965，工作内容是我不算讨厌的开源项目开发。我独居于市区中的小房间里，骑车一刻钟就能到公司。公司内氛围良好，大家全是搞技术的出身，穿T恤凉鞋、和上司交谈时插科打诨都是正常现象。同事个个都很年轻，面孔就像学校里见到的同辈同学一样。</p>
-<p>但是，在同事们聊天时，我只能当一个听众——他们的生活经历超出了我之前的认知。</p>
-<p>有人谈自己被高薪诱去某个大厂工作了两年，工作强度大，上司欺压员工，经历种种不公才得以跳槽到现在的公司。大家纷纷赞赏他的忍耐能力，这样差的工作环境，竟然忍了两年。</p>
-<p>有人说在其他城市能租一个两居室，自己住一间房，狗住一间房。来了这里，只能让狗屈居于客厅。另一个同事打趣道：“我现在住的还没有你家狗以前住的地方好。”</p>
-<p>有新来的员工问关于落户的政策。大家纷纷提出自己的见解。话题渐渐从落户，到租公租房，到租一个郊区的房子要买车，到汽车每天要收高额的停车费。</p>
-<p>有人在经验分享会上讲述买房流程，介绍买房时要考虑的注意事项、和租房有哪些不同。分享之后，同事提的第一个问题是怎么凑到买房的钱。演讲者不好意思地笑着说：“有6个钱包就可以了。”</p>
-<p>有同事已经结了婚，抱怨生活中种种琐事带来的烦恼。我好奇地询问彩礼的事情。他认真地分析了各地的习俗，总结说只要彩礼的钱最后是给小两口用就没关系。他回头问我是不是在恐婚，我只好笑一笑岔开了话题。</p>
-<p>有人早上到岗时间时早时晚，据了解他和女朋友一同起床。女朋友要早起上班时，他也跟着早起。周五下午，多数人都早早地回家，我问了后才知道，大家都要赶紧回家陪陪家人。</p>
-<p>有一位同事刚和女朋友租了一间更好的房子，突然向他人谈起了自己情感上的问题。二人相识于校园，感情融洽。毕业后二人在开始工作，经济上主要由男方负责。平时小矛盾虽有，但这次的矛盾似乎难以缓和：男方平时想买个游戏都犹豫不决，女方却以借钱的名义想买一个贵重的装饰品。一石激起千层浪，过去忍忍就算了的小事全部变成了引爆矛盾的燃料。另一位同事以自己和前女友和现女友的生活经历，半安慰半抱怨地提供着建议。还有一位刚实习没多久的同事竟然也感到了共情，讲述自己工作后劳累无比，懒于在七夕回复在校女友的消息，对方因此断绝了联系。大家都感叹着单身的美好，劝我好好珍惜。我笑了笑，他们嘲弄道：“弈帆，不要笑，你以后也是这样的。”我不是在嘲笑他们，我是在苦笑自己对现实的切换感到无所适从啊！前几个月，单纯的本科好友还在向我炫耀着他女人缘有多广，形象地描述他是怎么如痴如醉地喜欢上了某个人。</p>
-<p>工作、住房、情感，这些都是在学校里难以见到的话题。我淹没于一个个陌生的名词中，勉强地记下生活中的种种见闻。但是，有一件事是我不需要特别去记忆的：哪怕有舒适的工作，靠父母付了房子的首付，有了稳定的婚后生活，大家都不想生孩子，都嘲笑着三孩政策。</p>
-<p>在三、四十岁的人口中听到这些话题，一点也不令人意外。问题是，我的同事们实在是太年轻了——放在大学里，他们就是路过的同学，就是普通的同龄人。我们的好朋友，基本上都是小学、中学、大学时同龄的同学。可以预见，我们这些同龄的好友，在进入社会三五年后，就会和我现在的同事一样，把重心放到无穷无尽的生活琐事上，变成既熟悉又陌生的样子。</p>
-<p>傍晚时分，路上都是悠然地骑电动车回家的上班族。我一边想着上面这些闲事，感叹生活的不易，一边把劳累全部释放到自行车的踏板上，得意地赶超一辆又一辆电动车。忽然，伴随着由远到近响起的几阵急促的喇叭声，一辆电动车倏然从我身边掠过。不用看那颜色统一的安全帽、衣服、后备箱也知道，在这个时间还在马路上飞奔的，只会是一位送餐的外卖员。我们这些“名校”毕业，干着”体面工作“的程序员，好像还没有抱怨生活的资格啊。</p>
-<p>这些都是在我视野内的见闻。在我看不到的地方，还有多少人机械地进行着重复性劳动？有多少人提心吊胆地游走在法律边缘的灰色产业？有多少中年人战战兢兢，生怕明天就被裁员？又或是有多少人已经在一声令下后失业，正为生计四处奔波？</p>
-<p>再仔细一想，我们这些程序员，谈不上高贵，却也不能说没有抱怨生活的资格。对于世界上的大多数人来说，大家都是一样的——我们不过是苟活于世间罢了。古今中外，人类的目的都是一样的：活下去，好好地活着，幸福地活着。不管是在众人的期待下出生，立下过扬名立万的理想；在盛世时享受着家人的呵护，畅想过未来幸福美好的生活；在遭遇挫折时心有不甘，发出过改变一切的豪言；在众人中脱颖而出，妄想过自己是天之骄子；在初窥知识的边界后，为拓宽人类见闻而奋发图强过，都会在某时某刻，被迫离开心里的象牙塔，破开”自己永远会被他人照顾“的茧房，踏上普通平淡的生活之路。多数人都没有躺着活的资格，要靠自己的双手去挣钱，用钱换取住处，换取食物，在世间守住属于自己的一隅，普通地活下去。</p>
-<p>不走出学校，自己看一看这个世界，是无法摆脱幼稚的思想的。感谢现在这段经历，让我知道了自己会活得怎么样，因此应该为了什么而活。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2021/09/21/20210916-git-note/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/09/21/20210916-git-note/" class="post-title-link" itemprop="url">git使用方法、git与github的关系</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-09-21 01:10:46" itemprop="dateCreated datePublished" datetime="2021-09-21T01:10:46+08:00">2021-09-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>之前学了不少东西，今天以学习笔记的形式分享出来。学习笔记不适合作为入门的教程。</p>
-<h1 id="Git-Github使用方法学习笔记"><a href="#Git-Github使用方法学习笔记" class="headerlink" title="Git/Github使用方法学习笔记"></a>Git/Github使用方法学习笔记</h1><h2 id="从例子直观理解git"><a href="#从例子直观理解git" class="headerlink" title="从例子直观理解git"></a>从例子直观理解git</h2><p>git是一个<strong>开源的分布式版本控制系统</strong>。如果你去网上搜git的定义，一定会搜到不少这样精确又令人看不懂的定义。今天，我准备根据我的笔记，来友好地介绍一下git相关的知识。</p>
-<p>假设你要玩一个流程很长的RPG，你打了一天，打到了半夜。这个时候该做什么呢？没错，存档。不然下次就要从头开始玩游戏了。</p>
-<p>除了继承之前的游戏进度，存档还有一个好处：如果你不小心输了，可以从上次存档的地方开始重新玩。甚至你玩着玩着发现进错了结局，可以从好早的档重新开始玩。存档，除了保存进度，还能记录下游戏发展向不同分支的关键节点。</p>
-<p>现在再做一个很不现实的假设：你要玩一个无聊又冗长的RPG游戏，但是通关了之后你会得到一大笔钱。为此，你只开始关注能否尽快通关，而不去体验游戏的内容了。你在单位的电脑玩，在网吧的电脑玩，还在家里的电脑玩。你把所有好友都动员起来一起帮你玩游戏。但是每个人的进度不一样就没意义了。于是，你们想了个办法：大家玩完后，把存档放到网络上，下一个人就可以用最新的文档来了。</p>
-<p>大家决定按贡献度分钱。同时，大家还想方便地交流每个人玩的具体情况，碰到了什么问题。于是，大家扩展了存档功能，不仅让存档保存游戏内容，还保存了每个人的保存时间、进行了多少游戏进度、想分享的游戏攻略等有意义的信息。</p>
-<p>这就是git用法的一个形象的解释。在我的理解里，能够保存项目进度关键节点，并记录有意义的日志信息，就是一个<strong>版本控制</strong>，不同的人能在不同的设备上同步所有其他人的进度，就是<strong>分布式</strong>。源代码给你看，就叫<strong>开源</strong>。合起来呢，就变成了<strong>开源的分布式版本控制系统。</strong></p>
-<p>这个例子基本上是我自己想出来的，我在想这个例子的时候会主动思考git有哪些性质，这些性质与另一个通俗易懂的事情的哪些性质比较类似。通过这个过程，我反而加深了自己对git的理解。如果读者在学完git后，能够真正看懂这个例子，并且举出一个自己的例子，那就说明你基本理解了git。</p>
-<p>这里推荐个比较有名的<a target="_blank" rel="noopener" href="https://www.liaoxuefeng.com/wiki/896043488029600">博客</a>,上面有git的教程。我是跟着这篇博客上的教程入门git的。该教程举了个日志的例子（如下图）。该日志记录的内容，代表了git的大部分操作。可以暂且认为git就是一个自动生成这样格式的版本日志的程序。说得那么好听，git就是个自动记事本。</p>
-<p><img src="/2021/09/21/20210916-git-note/1.jpg" alt></p>
-<h2 id="git的操作"><a href="#git的操作" class="headerlink" title="git的操作"></a>git的操作</h2><p><strong>一定要自己开一个项目去学习git，光看不动手很难学会</strong></p>
-<p>为了节约写作时间，让我能够写更多的学习笔记，最大化造福他人，我决定牺牲博文质量，偷懒地放上之前做的ppt。</p>
-<h3 id="Hello-git！"><a href="#Hello-git！" class="headerlink" title="Hello git！"></a>Hello git！</h3><p><img src="/2021/09/21/20210916-git-note/2.jpg" alt></p>
-<p>完成上图中的操作，你就可以像写完了一门新语言的hello world程序一样，说自己已经掌握git了。</p>
-<p>这么说有点夸张，但也不假。上图介绍了一次完整的git使用流程。首先，需要使用<code>git init</code>初始化一个git仓库，呼叫git这个记录员来帮你管理版本，不然你的文件夹只是一个普通的、无法进行其他git操作的文件夹。之后，随便新建并写入一个文件（假设它名字叫<code>readne.md</code>。用<code>git add readme.md</code>告诉git你加了这个文件。最后用<code>git commit -m &quot;改动信息&quot;</code>来让git把加的文件给记录下来。</p>
-<p>我学到这里的时候十分疑惑：为什么要先<code>add</code>，再<code>commit</code>才能把文件记录下来。为什么不一次性把文件记录下来呢？听说还有个叫github的东西，我’commit’完，还要再进行一步操作才能把文件传到github上面。为什么我想在网上存一份文件要这么多步操作啊！</p>
-<p>这里，考虑到知道git的人都知道github，而对git操作有着许多的疑惑，我打算用一张简单的数据流图（该图及后文的称呼并不严谨，仅供学习理解）来介绍git、github的关系，以便于接下来的理解。git与github的具体关系还是放到后面介绍。<br><img src="/2021/09/21/20210916-git-note/3.jpg" alt></p>
-<p>其实啊，<code>git init</code>这条语句看上去没干什么，实际上在你的电脑里新建了一个“文件夹”（逻辑上的，而不是实际的）。这个“文件夹”是本地git仓库。而这个仓库呢，又分成两个分区：暂存区和实际的版本库。可以认为git是一个管家，add进缓存区，就是叫管家把事情记在脑子里；commit进版本库，就是叫管家用水笔把事情记在本子上——这样这条记录就确实储存下来，不好销毁了。那么，使用add把文件放入暂存区的好处就显而易见了：有的时候我们要改/加的文件很可能出错，我们再提交之前，需要把文件检查一遍，这样出了错就能及时更改。一旦文件commit了，更改起来就麻烦了，之前的错误记录也难以消除。</p>
-<p>而github一类的托管平台，则又可以视为一个文件夹。这些文件夹可以看成是网盘，它们由运营平台提供，以便于你能用互联网在不同设备上访问自己的仓库。目前对于git、github之间的关系，add与commit之间的关系理解到这个程度就行了。</p>
-<p><img src="/2021/09/21/20210916-git-note/4.jpg" alt></p>
-<p>git提供了一个十分使用的命令——<code>git status</code>。该命令不会对git仓库进行任何的修改，而仅仅会输出当前git仓库的状态。如上图所示，修改已有文件，add，commit后，git status都会输出不同的信息。要查看具体的修改细节，可以使用<code>git diff</code>。</p>
-<p><img src="/2021/09/21/20210916-git-note/5.jpg" alt></p>
-<p>如最开头所说，我们使用版本控制程序的一大原因，就是希望像RPG读档一样，能够让所有文件回到之前某个保存下来的状态中。这样的操作在git中叫做版本回退。上图给出了一个例子，我们不小心在文件里做出了错误的修改，还commit了。这个时候该如何把文件回退呢？</p>
-<p>首先，可以使用<code>git log</code>，查看所有提交记录。之后，可以使用<code>git reset --hard &lt;要回退的版本&gt;</code>指令来进行回退。最新的版本叫做HEAD，上一个版本叫做HEAD^，上上个叫做HEADT^^……依次类推，可以快速地回退到上一个版本。除了用这样的方法指定版本号外，还可以用commit的id来指定版本（commit id在log中查找）。指定id的时候不需要把id输全，只需要输入前几位，保证不冲突就行。</p>
-<p><img src="/2021/09/21/20210916-git-note/6.jpg" alt></p>
-<p>除了commit后发现错误想回退，还有一些程度较轻的版本回退情况：不小心修改了文件而没有add，或者已经add了。对于这两种误修改，都有对应的解决情况：如上图所示，如果文件没有add，使用<code>git checkout -- &lt;filename&gt;</code>就可以把对应文件恢复到暂存区的最新状态（最后一次git commit或者git add的状态）。如果文件add了，使用<code>git reset HEAD &lt;filename&gt;</code>就可以把git暂存区中的文件恢复到没有add之前的状态（最后一次git commit的状态），这等于回到了上个问题，文件没有add该怎么恢复。再一次执行<code>git checkout -- &lt;filename&gt;</code>就可以把文件的内容也彻底恢复回去了。</p>
-<p><img src="/2021/09/21/20210916-git-note/7.jpg" alt></p>
-<p><code>git add</code>是一个很神奇的指令。它的名字虽然叫add，但实际上不管是新建文件、修改文件、还是删除文件，都需要用<code>git add</code>来更新文件在暂存区中的状态。因此，与其叫做add，不如把这个命令称作update比较好。那么，现在问题来了：如上图所示，有一个文件，我不小心让它进入了git暂存区，我想在文件系统里保留它，但不想让它进入git仓库，该怎么操作呢？这个时候就要使用<code>git rm --cache &lt;filename&gt;</code>。这个叫<code>rm</code>的操作是真正意义是上的remove了，而不像add一样有一点歧义。如果想让文件从文件系统中也消失 ，可以用<code>git rm -f &lt;filename&gt;</code></p>
-<p><img src="/2021/09/21/20210916-git-note/8.jpg" alt></p>
-<p>刚刚我们碰到了这样一个应用场景：有一个文件，我想在文件系统保留它，却不想让它进入git仓库。这些文件可能是我们为了调试而编写的脚本文件，我们不希望这些乱糟糟的文件上传到公开的仓库中。如果我们不做任何处理，每次输入<code>git status</code>都会看到这些在文件夹中存在却没有进入git仓库的untracked files. 该如何让这些碍眼的提示消失呢？这个时候，可以在git仓库的根目录下创建一个<code>.gitignore</code>文件。该文件用于描述不被git跟踪的文件，描述的形式可以是直接描述文件的全名，也可以用*来模糊匹配，还可以直接忽略一整个文件夹。上图的例子中，我们如果在<code>.gitignore</code>中加入<code>test.py</code>，再输入git status就不会提示有文件没有加入git仓库了。</p>
-<p>使用github初始化仓库的话，可以自动创建一个<code>.gitignore</code>文件。这个文件也可以参考别人的仓库里的来写。</p>
-<p><img src="/2021/09/21/20210916-git-note/9.jpg" alt>讲了这么久的git，终于可以来讲github了。git本身是分布式的，每台电脑都存储了所有的git仓库版本信息。但是，实际上使用的时候，为了在互联网上同步信息，我们一般需要托管平台的帮助。github就是这样一个平台。先直接看一看和github有关的操作吧。</p>
-<p>不管怎么样，所有git操作都是基于一个git仓库。这个git仓库可以是我们本地的，也可以是github上面创建的。</p>
-<p>如果本地有了一个仓库，那只需去github上创建一个空的同名仓库，再用图中的第一条命令把远程仓库和本地仓库关联起来。</p>
-<p>但是，使用https的方法通信，很容易出现超时的问题。如果之前不小心对https格式的地址进行了绑定，可以先remove掉。</p>
-<p><img src="/2021/09/21/20210916-git-note/10.jpg" alt></p>
-<p>与github关联的正确方式是使用ssh，这是一种更安全高效的连接方式。先像上图一样再本地生成ssh密钥。</p>
-<p><img src="/2021/09/21/20210916-git-note/11.jpg" alt></p>
-<p>再把公钥放到github上。</p>
-<p><img src="/2021/09/21/20210916-git-note/12.jpg" alt></p>
-<p>这样就可以正常把本地仓库和github的仓库关联起来了。如果本地没有仓库，而是去克隆github上面的仓库，则可以使用<code>git clone</code>指令。</p>
-<p><img src="/2021/09/21/20210916-git-note/13.jpg" alt></p>
-<p>这里特别要说一句。如果只是用别人的代码，clone仓库本身就行了。如果想要对别人的仓库进行贡献，则最好先去github上面点一下fork，分支出一个完全一样的，属于你自己的仓库，再clone这个属于自己的仓库。因为对别人的仓库是无法进行修改等操作的。</p>
-<p><img src="/2021/09/21/20210916-git-note/14.jpg" alt></p>
-<p>和github的仓库进行关联后，还需要学习一些和分支有关的知识，才能开始使用github。以上图为例，在git里创建分支并在不同的分支开发，就好比在同一台电脑，同一款游戏里，不同的玩家玩到了不同的进度上。当前电脑（HEAD）由玩家dev控制，他玩的进度比较超前。之后轮到玩家master来玩，他看dev的进度很前，于是直接拷贝了dev的游戏存档，这样两个人的游戏进度就完全一样。之后master把dev的存档删了，因为这份存档已经没用了。在这个例子里，两个分支都是线性进行，因此只需要把旧的分支向新分支同步就行。但是，实际开发时，很可能两个分支往不同的方向发展，之后这两个分支还需要进行同步。这个时候就需要对两个分支的信息进行细心的比对，才能把两个分支的代码给融合起来。</p>
-<p><img src="/2021/09/21/20210916-git-note/15.jpg" alt></p>
-<p>开始那副图片描述的内容，可以用上图中的操作来实现。</p>
-<p><img src="/2021/09/21/20210916-git-note/16.jpg" alt></p>
-<p>这页ppt做得不好，它实际包含了两类不太相关的内容：</p>
-<p>首先是对开始那些操作的收尾：把副分支向主分支合并后，副分支一般没什么意义了，这个时候可以直接删除。</p>
-<p>有了分支的知识，我们就可以理解本地git仓库如何与github上的仓库交互了。我们本地仓库和github上的仓库其实是同一个仓库的两个分支，我们需要不断令这两个仓库同步。</p>
-<p>如果本地仓库较新，应该用push，等于是把本地的内容向github上的内容合并。</p>
-<p>如果github上的仓库较新，应该用pull，等于把github的内容向本地更新。</p>
-<p>这里的命令写得不够具体。理论上两个操作的用法都是<code>git pull/push &lt;remote-repo-name&gt; &lt;branch&gt;</code>这样的格式的。远程仓库名一般叫做<code>origin</code>。但是可以通过<code>--set-upstream</code>可以指定push和pull的默认远程分支。直接git push/pull的时候命令行里会报错，按照提示设置upstream即可。</p>
-<p><img src="/2021/09/21/20210916-git-note/17.jpg" alt></p>
-<p>不管是开发自己还是别人的开源项目，都建议创建一个新的分支开发。开发完一项功能后，把新分支推送到github上，再利用github的pull request把分支合并到主分支上。这种开发方式使得在添加新功能时，所有人都能看到哪些代码进行过修改，有利于多人协作。</p>
-<p>更新github上的分支的几分钟内，github会主动提示你要不要进行pull request。或者是点击pull request一栏主动进行”New pull request“，都可以开启一个新的PR。</p>
-<p>PR的标题和内容一般都有格式要求。如果是向别人贡献代码，一定要向别人的要求对齐。输入完对PR的描述后，就可以正式创建一个PR了。</p>
-<p>（这里没截图）PR的审阅者可以在PR的file changes里面查看有哪些代码被修改，确认无误后可以点击approve，并在整个pr的最后面点击merge。这样，一个带有新功能的分支就正式被并入主分支了。</p>
-<p><img src="/2021/09/21/20210916-git-note/18.jpg" alt></p>
-<p>我之前就接触了github，一直用github gui进行个人项目的同步。但是push/pull/commit等概念一直没有弄明白。通过这次彻底的学习后，我建立起了git及github的知识框架，才算是彻底理解了这些工具的使用方法。这个知识框架可以总结为上图。如果一个人学完git的相关知识后，能在脑中建立起类似上图这样的数据流图，那么就可以说是基本理解了git什么多命令究竟是在干什么。</p>
-<p>首先，要理解先得存在本地git仓库，在线github的git仓库才有意义。通过add命令，可以把文件夹里的文件托付给git系统进行管理；通过commit命令，可以让git把当前的内容”存档“。</p>
-<p>为了使用github，需要把本地仓库和远程仓库关联。如果是从现有的远程仓库开始构建代码，则用<code>git clone</code>；如果是本地仓库已经有了代码，仅需用<code>git remote add</code>关联起远程仓库。后续所有的git pull/push操作都是在同步本地和远程的git仓库分支。</p>
-<p>为了对别人的代码进行贡献，需要fork别人的仓库，形成一个自己的仓库。对自己的仓库进行更新后，再以pr的形式请求更新别人的仓库。但开发个人/私有项目时，也建议使用pr的形式更新代码。</p>
-<p>git的笔记差不多就这么多。还有很多知识没有在笔记里提及。比如如果合并存在冲突的代码。其实在有了整体的概念后，这些细枝末节的知识反而都很好理解了。</p>
-<p>我反正在学完了git的基础知识后，就再也不用命令行，而是用一些其他工具来进行git仓库的管理了。我现在在使用vscode的git管理系统。里面add、commit都可以方便地进行操作。冲突合并也就是点一点按钮的事情。</p>
-<h1 id="我的博客的分类-标签管理方法"><a href="#我的博客的分类-标签管理方法" class="headerlink" title="我的博客的分类/标签管理方法"></a>我的博客的分类/标签管理方法</h1><p>之前我把博客里所有博文的分类、标签进行了重构，一直没有提及。这里简要介绍一下重构的内容，及重构后分类和标签的使用依据。</p>
-<p>之前的分类和标签貌似是英文。我也不知道自己怎么想的。既然博客的内容全是中文，那么读者也全是会中文的人，用英文的分类/标签没什么意义。当然，我是发现自己想给新分类取名，却怎么也不知道如何用英文来表达某个中文词语的意思时，才准备把所有分类/标签改成中文的。</p>
-<p>现在的分类是按照文章的性质进行分类。目前分类仅有两级，直觉上分三级可能更好一点，不知道以后还有没有改进的空间。</p>
-<p>目前有学习/杂谈/经验分享/记录这几大类。”学习“就是分享一些客观正确的事情。”工具用法指南“包括软件的安装使用方法，这些是最没有技术含量、原创性，最死板的内容‘；”知识“是我对某一学科的知识的再表达，主要是巩固我自己的学习，内容有一定的原创性，但根本目的还是复述别人的知识，这个名字取得不好，改成”知识分享“或许更合理一点；这篇文章所属的”学习笔记“可以说是劣化版的”知识分享“，原创性稍高一点，但完成度低，内容连贯性差，不适合作为第一手学习资料，适合作为参考，或者用于我口头讲授的素材。</p>
-<p>”杂谈“就是中小学生作文。有的文章是有一些深意的，有的文章是随便写的，”趣文“里的就真的是写来玩的。</p>
-<p>”经验分享“和”杂谈“一样，是原创性极强的作品，主要是我个人的见解。但提出系统性的个人见解非常困难，还需要保证不与客观事实或参考资料有出入，目前文章较少。”经验分享“这个名字也不是很恰当。说不定以后”经验分享“专门来放一点原创性强，但是不够有深度和完成度，随便写的一些经验分享文章。专门开一个”我的理论“来放最具原创性和深度的文章。</p>
-<p>”记录“里包含了专门对我<strong>完成</strong>的某件事做描述的文章。这里有些东西是为了好玩而写，有些东西是为了丰富个人简历，专门写给别人看的。</p>
-<p>分类只能给所有文章从性质这一个维度上进行一个大概的分类，但我感觉用标签检索文章更加合适。标签比分类更加灵活，可以像分类一样描述文章性质（日记），也可以描述文章涉及的内容（数学），还可以标识一类专题（未来可能出现的”博士毕业论文“）。目前标签我是想到什么放什么。</p>
-<p>用标签的时候会有一个问题：理论上标签越多越好，但是如果某一天突然想出一个新标签，但以前有些文章可以套入这个标签，却还没有加，我该怎么给以前的文章加标签呢？或者说我想出了一个新标签，却忘了以前想出了类似的标签，取了个不同的名字，这样标签该如何对齐呢？感觉标签使用起来非常麻烦。一个简单的方法是怠惰处理，以前的内容不管了，只管现在和未来的标签是正确的。</p>
-<h1 id="写这篇学习笔记的感想"><a href="#写这篇学习笔记的感想" class="headerlink" title="写这篇学习笔记的感想"></a>写这篇学习笔记的感想</h1><p>确切来说，要分成对”学习笔记“的感想和对写这篇文章的感想。</p>
-<p>我之前一直不肯写学习笔记。一个人真要学会一个东西，不一定要像”学霸“一样记下花花绿绿的笔记，只需要在关键处进行顿悟式的理解，再在脑中建立知识框架即可。在学一个东西的时候（尤其是学习需逻辑思考而非记忆事实的知识），很可能什么都不用记，或者只是对关键知识进行了演算或者分析，留下一些草稿。记录笔记，其实应该是一个向他人表达知识的过程，应该把这个过程用于巩固知识的理解。在这一过程中，把问题讲清楚一般是十分困难的，因为我们的大脑此时都用于如何让脑中的知识变通顺，而无暇顾及他人能否理解我们在讲什么。只有完全学懂了，才可能写出漂亮的笔记或教程；若是对知识的理解更高一层，才可以写教材。我之前一直认为我写的学习笔记没用，因为这些学习笔记属于我个人学习的副产品——正如我们呼出的二氧化碳一样。要把它们转换成能给人看的东西，需要花很多心血。我自己学东西的时候，经常去网上查资料，总能查到这样的一些学习笔记：这些学习笔记缺乏逻辑性，完全不能用来进行自学，看它们就是在浪费时间。我不希望自己的发出来的学习笔记干扰他人的学习。但最近我开始愿意发出自己写的学习笔记了。</p>
-<p>这里再次强调一遍学习笔记所属的性质。我之前”知识“（未来将改成”知识分享“）中的文章，是以现有教材为素材，记录我个人分析与总结的文章；而学习笔记，则应该算是自己写出来的学习素材，我加上了一些描述以使得它们勉强可读。这两类文章本质上来说都是我自学的时候用的。</p>
-<p>现在开始讲我愿意发学习笔记的原因。首先是因为最近我有分享知识的需要，制造了一些用于讲授的学习素材。这些素材只要加工一下就能发出来让别人看了。有了积累，不发表出来，实在太亏了。我是不愿亏的人，很想有了东西就发表出来。</p>
-<p>发学习笔记的最大问题是需要加入一些描述性的文字。写这篇学习笔记之前，我的想法是随便写点文字描述一下就得了。但是，写着写着，我发现不多写点字是不可能把抽象的知识描述清楚的。最后，我只好在文章质量上进行妥协。文字优美与否、通顺与否我已经关心不了了，我只能尽可能让文章可读，并且赶快把文章写完。赶快做出了一个能用的东西，比憋半天什么都做不出来要好。</p>
-<p>我之前不想发学习笔记的另一个原因是，我把学习笔记和教材搞混了。教材需要对知识进行面面俱到而精准无误的描述。这样的工作量的巨大的。现在我想通了：学习笔记就是参考资料，我也强烈建议读者不要把学习笔记当成自学的资料来用。学了一会儿，或者知识掌握得已经差不多后，再来以批判的眼光看学习笔记，哪里写得好，哪里有疏漏。这样看待学习笔记才是对的。</p>
-<p>再吐槽一下写这篇文章的感想。</p>
-<p>我讲这几页ppt的时候感觉十分轻松。我感觉随便写点内容就能把ppt串起来了。但实际写文章的时候却不是这样的，我感觉ppt缺斤少两，逻辑混乱，得加大量的文字才能把话说清楚。最后，我花了比预计多得多的时间才把这篇博文完成。</p>
-<p>可见，基于语音的授课的教学效果还是很好的。加上答疑机制的存在，理想情况下教师能够把要讲的知识完全传授给学生。只要学生稍微会学习，老师有强大的表达能力，就能把知识通过上课这种方法传授出去。可惜，大部分人不会教学，逼得学生通过阅读的方式自学。阅读式学习对教授者和学生的要求都更高。真的要感谢那些写出优秀教程/教材的人。</p>
-<p>再对我自己和读者强调一句：凡是以实践为目标的技术，一定要在实践中学习，不然学不进去。我们从小到大写那么多作业，就是为了利用实践来加强对知识的理解。对于一种编程技术，学习并验证学习情况的最好方法就是把这个技术用出去。</p>
-<p>写这篇学习笔记太累了。如果还要保持产出，我只能进一步降低学习笔记的文章质量了。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1515,7 +1600,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">147</span>
+          <span class="site-state-item-count">149</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1528,7 +1613,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">62</span>
+        <span class="site-state-item-count">63</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1619,6 +1704,59 @@
   
 
   
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
 
   
 
