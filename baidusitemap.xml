@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://zhouyifan.net/2025/03/06/20250305-fractal-generation/</loc>
+    <lastmod>2025-03-06</lastmod>
+  </url>
+  <url>
+    <loc>https://zhouyifan.net/2024/07/27/20240717-ar-wo-vq/</loc>
+    <lastmod>2025-03-05</lastmod>
+  </url>
+  <url>
     <loc>https://zhouyifan.net/2025/03/04/20250215-inference-time/</loc>
     <lastmod>2025-03-04</lastmod>
   </url>
@@ -87,10 +95,6 @@
   <url>
     <loc>https://zhouyifan.net/2024/06/05/20240407-SVD-1/</loc>
     <lastmod>2024-08-19</lastmod>
-  </url>
-  <url>
-    <loc>https://zhouyifan.net/2024/07/27/20240717-ar-wo-vq/</loc>
-    <lastmod>2024-07-27</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2022/10/13/20221012-entropy/</loc>

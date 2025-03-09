@@ -168,6 +168,108 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/24/DLS-note-10-2/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》代码实战（十）：1.用 TensorFlow 实现简单的 CNN 二分类器</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-24 00:30:51" itemprop="dateCreated datePublished" datetime="2022-07-24T00:30:51+08:00">2022-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>学完了CNN的基本构件，让我们用TensorFlow来搭建一个CNN，并用这个网络完成之前那个简单的猫狗分类任务。</p>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN</a></p>
+<h2 id="获取数据集"><a href="#获取数据集" class="headerlink" title="获取数据集"></a>获取数据集</h2><p>和之前几次的代码实战任务一样，我们这次还用的是Kaggle上的猫狗数据集。我已经写好了数据预处理的函数。使用如下的接口即可获取数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">train_X, train_Y, test_X, test_Y = get_cat_set(</span><br><span class="line">        <span class="string">&#x27;dldemos/LogisticRegression/data/archive/dataset&#x27;</span>, train_size=<span class="number">1500</span>)</span><br><span class="line"><span class="built_in">print</span>(train_X.shape)  <span class="comment"># (m, 224, 224, 3)</span></span><br><span class="line"><span class="built_in">print</span>(train_Y.shape)  <span class="comment"># (m , 1)</span></span><br></pre></td></tr></table></figure>
+<p>这次的数据格式和之前项目中的有一些区别。</p>
+<p>在使用全连接网络时，每一个输入样本都是一个一维向量。在预处理数据集时，我就做了一个flatten操作，把图片的所有颜色值塞进了一维向量中。而在CNN中，对于卷积操作，每一个输入样本都是一个三维张量。在用OpenCV读取完图片后，不用对图片Resize，直接拿过来用就可以了。</p>
+<p>另外，在用NumPy实现时，我们把数据集大小<code>m</code>当作了最后一个参数。而TensorFlow默认张量是”NHWC(数量-高度-宽度-通道数)”格式。在此项目中，我们是按照TensorFlow的格式预处理数据的。</p>
+<h2 id="初始化模型"><a href="#初始化模型" class="headerlink" title="初始化模型"></a>初始化模型</h2><p>根据课堂里讲的CNN构建思路，我搭了一个这样的网络。</p>
+<p><img src="/2022/07/24/DLS-note-10-2/1.jpg" alt></p>
+<p>由于这个二分类任务比较简单，我在设计时尽可能让可训练参数更少。刚开始用一个大步幅、大卷积核的卷积快速缩小图片边长，之后逐步让图片边长减半、深度翻倍。</p>
+<p>这样一个网络用TensorFlow实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init_model</span>(<span class="params">input_shape=(<span class="params"><span class="number">224</span>, <span class="number">224</span>, <span class="number">3</span></span>)</span>):</span></span><br><span class="line">    model = tf.keras.Sequential([</span><br><span class="line">        tf.keras.layers.Conv2D(<span class="number">16</span>, <span class="number">11</span>, (<span class="number">3</span>, <span class="number">3</span>), input_shape=input_shape),</span><br><span class="line">        tf.keras.layers.BatchNormalization(<span class="number">3</span>),</span><br><span class="line">        tf.keras.layers.ReLU(),</span><br><span class="line">        tf.keras.layers.MaxPool2D(),</span><br><span class="line">        tf.keras.layers.Conv2D(<span class="number">32</span>, <span class="number">5</span>),</span><br><span class="line">        tf.keras.layers.BatchNormalization(<span class="number">3</span>),</span><br><span class="line">        tf.keras.layers.ReLU(),</span><br><span class="line">        tf.keras.layers.MaxPool2D(),</span><br><span class="line">        tf.keras.layers.Conv2D(<span class="number">64</span>, <span class="number">3</span>, padding=<span class="string">&#x27;same&#x27;</span>),</span><br><span class="line">        tf.keras.layers.BatchNormalization(<span class="number">3</span>),</span><br><span class="line">        tf.keras.layers.ReLU(),</span><br><span class="line">        tf.keras.layers.Conv2D(<span class="number">64</span>, <span class="number">3</span>),</span><br><span class="line">        tf.keras.layers.BatchNormalization(<span class="number">3</span>),</span><br><span class="line">        tf.keras.layers.ReLU(),</span><br><span class="line">        tf.keras.layers.MaxPool2D(),</span><br><span class="line">        tf.keras.layers.Flatten(),</span><br><span class="line">        tf.keras.layers.Dense(<span class="number">2048</span>, <span class="string">&#x27;relu&#x27;</span>),</span><br><span class="line">        tf.keras.layers.Dense(<span class="number">1</span>, <span class="string">&#x27;sigmoid&#x27;</span>)</span><br><span class="line">    ])</span><br><span class="line"></span><br><span class="line">    model.summary()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> model</span><br></pre></td></tr></table></figure>
+<p><code>tf.keras.Sequential()</code>用于创建一个串行的网络（前一个模块的输出就是后一个模块的输入）。网络各模块用到的初始化参数的介绍如下：</p>
+<ul>
+<li>Conv2D: 输出通道数、卷积核边长、步幅（要用一个数对表示）、填充方法。</li>
+<li>BatchNormalization: 做归一化的维度（全填3即可）。</li>
+<li>Dense（全连接层）：输出通道数、激活函数。</li>
+</ul>
+<p>根据之前的设计，把参数填入这些模块即可。 </p>
+<p>另外，TensorFlow维护的是静态图。一种比较简单的建图方法是在第一层里给出<code>input_shape</code>参数，让框架提前算好后续每一层中间结果的形状。</p>
+<p>建图成功后，调用<code>model.summary()</code>可以查看网络各层的形状、参数量信息。</p>
+<h2 id="训练与推理"><a href="#训练与推理" class="headerlink" title="训练与推理"></a>训练与推理</h2><p>有了数据集和模型，用TensorFlow训练是一件很简单的事情。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span>():</span></span><br><span class="line">    train_X, train_Y, test_X, test_Y = get_cat_set(</span><br><span class="line">        <span class="string">&#x27;dldemos/LogisticRegression/data/archive/dataset&#x27;</span>, train_size=<span class="number">1500</span>)</span><br><span class="line">    <span class="built_in">print</span>(train_X.shape)  <span class="comment"># (m, 224, 224, 3)</span></span><br><span class="line">    <span class="built_in">print</span>(train_Y.shape)  <span class="comment"># (m , 1)</span></span><br><span class="line"></span><br><span class="line">    model = init_model()</span><br><span class="line">    model.<span class="built_in">compile</span>(optimizer=<span class="string">&#x27;adam&#x27;</span>,</span><br><span class="line">                  loss=<span class="string">&#x27;binary_crossentropy&#x27;</span>,</span><br><span class="line">                  metrics=[<span class="string">&#x27;accuracy&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    model.fit(train_X, train_Y, epochs=<span class="number">20</span>, batch_size=<span class="number">16</span>)</span><br><span class="line">    model.evaluate(test_X, test_Y)</span><br></pre></td></tr></table></figure>
+<p>使用<code>init_model</code>初始化模型后，用<code>compile</code>填入模型的优化器、误差函数、评估指标信息。之后，只要用<code>fit</code>输入训练输入、训练标签、epoch数、batch size即可开始训练。训练结束后，用<code>evaluate</code>输入测试输入、测试标签即可在测试集上评估模型。</p>
+<p>TensorFlow的这些函数确实非常方便，这里<code>test_X, test_Y, train_X, train_Y</code>其实都是NumPy里的ndarray，可以不用显式地把它们转换成TensorFlow里的张量。</p>
+<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><p>由于数据量较少，20个epoch后模型在训练集上的精度就快满了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Epoch <span class="number">20</span>/<span class="number">20</span></span><br><span class="line"><span class="number">188</span>/<span class="number">188</span> [==============================] - 23s 121ms/step - loss: <span class="number">0.0690</span> - accuracy: <span class="number">0.9776</span></span><br></pre></td></tr></table></figure>
+<p>测试集上的精度就没那么高了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">13</span>/<span class="number">13</span> [==============================] - 1s 30ms/step - loss: <span class="number">1.0136</span> - accuracy: <span class="number">0.7375</span></span><br></pre></td></tr></table></figure>
+<p>相比前几周用的全连接网络，CNN的效果出彩很多。相信加入更多训练数据的话，模型在测试集上的表现会更好。</p>
+<p>另外，TensorFlow的高度封装的函数确实很好用，寥寥几行代码就完成了训练配置、训练、评估。相比用NumPy从零写代码，编程框架的开发效率会高上很多。</p>
+<p>下篇文章里，我会介绍本项目的等价PyTorch实现。大家届时可以比较一下两个框架的区别。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/11/DLS-note-10/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1925,321 +2027,6 @@ F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/27/DLS-note-summary-2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/06/27/DLS-note-summary-2/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》第二阶段总结与第三阶段预览</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-06-27 18:56:06" itemprop="dateCreated datePublished" datetime="2022-06-27T18:56:06+08:00">2022-06-27</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在过去的三周，我们学完了《深度学习专项》的第二门课《改进深度神经网络：调整超参数、正则化和优化》。这些知识十分零散，让我们用点技能点的方式回顾一下这些知识，同时评测一下自己的学习情况。复习完了后，我们来看看下一门课的学习内容。</p>
-<h1 id="第二阶段回顾"><a href="#第二阶段回顾" class="headerlink" title="第二阶段回顾"></a>第二阶段回顾</h1><p>在本节中，你需要记下两个数字：技能点数和觉醒技能点数。</p>
-<p>技能点获取规则：必须先点完基础的知识，再点进阶的知识。同级知识之间没有先后限制。同时，某些知识还有额外的前置条件。</p>
-<h2 id="数据集划分"><a href="#数据集划分" class="headerlink" title="数据集划分"></a>数据集划分</h2><p><strong>浅尝（+1点）</strong></p>
-<ul>
-<li>数据集可以分成训练集、开发集、测试集三种。</li>
-<li>数据量小时按比例划分，数据量大时只需要选少量数据用作开发集、测试集。</li>
-<li><strong>开发集和测试集的区别：开发模型时不能偷看测试集的评估结果。</strong></li>
-</ul>
-<h2 id="偏差与方差"><a href="#偏差与方差" class="headerlink" title="偏差与方差"></a>偏差与方差</h2><p><strong>浅尝（+1点）</strong></p>
-<ul>
-<li>理解偏差和方差的基本意义。</li>
-<li>能用二维点集分类的例子描述偏差问题和方差问题。</li>
-<li>在知道了模型在训练集、开发集上的误差后，能够诊断模型存在的问题。</li>
-</ul>
-<p><strong>精通 - 解决偏差与方差问题（+1点）</strong></p>
-<p>前置技能点：正则化</p>
-<ul>
-<li>面对偏差问题，常见的解法是使用的更复杂的模型提升参数量，并延长训练时间。</li>
-<li>面对方差问题，常见的解法是增加数据（数量和质量）和正则化。</li>
-<li>改变模型结构往往能同时解决这两个问题。</li>
-</ul>
-<h2 id="正则化"><a href="#正则化" class="headerlink" title="正则化"></a>正则化</h2><p><strong>浅尝（+1点）</strong></p>
-<p>前置技能点：了解方差</p>
-<ul>
-<li>正则化的作用：缓解过拟合。</li>
-<li>正则化的通用思想：防止网络过分依赖少量的某些参数。</li>
-</ul>
-<p><strong>入门 - 添加正则化项（+1点）</strong></p>
-<p>在损失函数新加一项：</p>
-<script type="math/tex; mode=display">
-J(w, b) = \frac{1}{m}\Sigma_{i=1}^{m}L(\hat{y}, y) + \frac{\lambda}{2m}||w^2||_2</script><p>梯度下降时稍微修改一下参数的更新方法：</p>
-<script type="math/tex; mode=display">
-w :=(1-\frac{\alpha\lambda}{m})w-\alpha dw</script><p><strong>精通 - dropout（+1点）</strong></p>
-<ul>
-<li>dropout的思想：训练时随机丢掉某些激活输出。</li>
-<li>dropout的实现：由随机数矩阵和失活概率算出一个bool矩阵，以此bool矩阵为mask与激活输出相乘。</li>
-</ul>
-<p><strong>博闻 - 其他正则化方法（+1点）</strong></p>
-<ul>
-<li>数据增强。</li>
-<li>提前停止（early stopping)。</li>
-<li>……</li>
-</ul>
-<p>若能够实现正则化项、dropout、提前停止，则获得<strong>1觉醒点</strong>。</p>
-<h2 id="参数初始化"><a href="#参数初始化" class="headerlink" title="参数初始化"></a>参数初始化</h2><p><strong>浅尝（+0点）</strong></p>
-<ul>
-<li>知道参数要用比较小的值初始化。</li>
-</ul>
-<p><strong>入门（+1点）</strong></p>
-<ul>
-<li>了解梯度数值异常的原因：中间计算结果随网络层数指数级变化。</li>
-<li>参数初始化可以令数据的方差尽可能靠近1，防止梯度异常问题。</li>
-</ul>
-<p><strong>精通（+1点）</strong></p>
-<ul>
-<li>知道如何添加参数初始化系数。</li>
-<li>了解常见的初始化系数的选择方法，比如He、Xavier。</li>
-</ul>
-<p><strong>博闻（+1点）</strong></p>
-<ul>
-<li>看参数初始化的原论文，深入理解参数初始化的原理。</li>
-</ul>
-<h2 id="梯度检查"><a href="#梯度检查" class="headerlink" title="梯度检查"></a>梯度检查</h2><p><strong>精通（+1点）</strong></p>
-<ul>
-<li>知道梯度检查的数学公式。</li>
-<li>实现简单模型的梯度检查。</li>
-</ul>
-<p><strong>博闻（+1点）</strong></p>
-<ul>
-<li>会用编程框架里的梯度检查以调试大模型里的梯度。</li>
-</ul>
-<h2 id="mini-batch"><a href="#mini-batch" class="headerlink" title="mini-batch"></a>mini-batch</h2><p><strong>入门（+1点）</strong></p>
-<ul>
-<li>知道mini-batch是怎么根据batchsize划分训练集的。</li>
-<li>能够实现mini-batch。</li>
-</ul>
-<p><strong>精通（+2点）</strong></p>
-<ul>
-<li>mini-batch的加速原理：增加参数更新次数，同时不影响向量化运算的性能。</li>
-<li>在实验中体会不同batchsize的效果，能灵活选择batchsize。</li>
-</ul>
-<h2 id="指数加权移动平均"><a href="#指数加权移动平均" class="headerlink" title="指数加权移动平均"></a>指数加权移动平均</h2><p><strong>入门（+1点）</strong></p>
-<ul>
-<li>移动平均数的作用。</li>
-<li>指数加权移动平均的公式：$v_i=\beta v_{i-1} + (1 - \beta)t_i$。</li>
-</ul>
-<p><strong>精通（+1点）</strong></p>
-<ul>
-<li>大概明白为什么使用指数加权移动平均而不使用普通的移动平均。</li>
-<li>偏差矫正的原理和实现。</li>
-</ul>
-<h2 id="高级梯度下降算法"><a href="#高级梯度下降算法" class="headerlink" title="高级梯度下降算法"></a>高级梯度下降算法</h2><p>前置知识：指数加权移动平均</p>
-<p><strong>精通 - Momentum（+1点）</strong></p>
-<ul>
-<li>大致理解Momentum的思想。</li>
-<li>掌握公式，能用代码实现，知道一般情况下超参数$\beta=0.9$。</li>
-</ul>
-<p><strong>精通 - RMSProp（+0点）</strong></p>
-<ul>
-<li>掌握公式，能用代码实现，知道有哪些超参数。</li>
-</ul>
-<p><strong>精通 - Adam（+2点）</strong></p>
-<p>前置知识：Momentum, RMSProp</p>
-<ul>
-<li>掌握公式，能用代码实现，知道一般情况下超参数$\beta_1=0.9, \beta_2=0.999, \epsilon=10^{-8}$，基本不需要调参。</li>
-</ul>
-<p><strong>博闻（+1点）</strong></p>
-<ul>
-<li>阅读经典优化器的论文。</li>
-<li>了解各优化器的由来，能直观理解各种优化算法的意义。</li>
-</ul>
-<p>实现Adam后，获得<strong>1觉醒点</strong>。</p>
-<h2 id="学习率衰减"><a href="#学习率衰减" class="headerlink" title="学习率衰减"></a>学习率衰减</h2><p><strong>精通（+1点）</strong></p>
-<ul>
-<li>知道学习率衰减的意义。</li>
-<li>了解几个常见的学习率衰减公式。</li>
-</ul>
-<p>尝试使用Mini-batch、高级优化算法、学习率衰减训练网络，比较各类改进梯度下降方法的效果，则获得<strong>1觉醒点</strong>。</p>
-<h2 id="调参"><a href="#调参" class="headerlink" title="调参"></a>调参</h2><p><strong>浅尝（+1点）</strong></p>
-<ul>
-<li>明确自己的模型里有哪些超参数。</li>
-<li>大概知道超参数的优先级，会先去尝试调学习率。</li>
-</ul>
-<p><strong>入门（+1点）</strong></p>
-<ul>
-<li>调参整体思想：随机选数，由粗至精。</li>
-<li>不要均匀采样，而要根据参数的意义选择合适的搜索尺度。</li>
-</ul>
-<h2 id="批归一化"><a href="#批归一化" class="headerlink" title="批归一化"></a>批归一化</h2><p><strong>浅尝（+0点）</strong></p>
-<ul>
-<li>知道批归一化的存在。</li>
-<li>知道深度学习框架有时默认附带批归一化操作。</li>
-</ul>
-<p><strong>入门（+1点）</strong></p>
-<ul>
-<li>知道批归一化的意义，与输入归一化的异同。</li>
-<li>知道批归一化层有两个超参数。</li>
-</ul>
-<p><strong>精通（+1点）</strong></p>
-<ul>
-<li>知道批归一化的数学公式（正向传播、反向传播）。</li>
-<li>知道批归一化在测试时的用法。</li>
-</ul>
-<p><strong>精通II（+1点）</strong></p>
-<ul>
-<li>动手实现批归一化</li>
-</ul>
-<p><strong>博闻（+1点）</strong></p>
-<p>完成<strong>入门</strong>即可学习。</p>
-<ul>
-<li>了解其他的几种归一化(layer, group)。</li>
-<li>知道不同归一化方法的优劣。</li>
-</ul>
-<h2 id="多分类问题"><a href="#多分类问题" class="headerlink" title="多分类问题"></a>多分类问题</h2><p><strong>浅尝（+1点）</strong></p>
-<ul>
-<li>多分类问题的定义。</li>
-<li>知道多分类问题的输出、训练集标签与二分类有什么不同。</li>
-</ul>
-<p><strong>精通 - softmax（+1点）</strong></p>
-<ul>
-<li>softmax的公式定义。</li>
-<li>如何在网络中使用softmax。</li>
-<li>大致了解softmax为什么要做一步指数运算。</li>
-</ul>
-<p><strong>精通II - 实现带softmax的多分类网络（+1点）</strong></p>
-<ul>
-<li>one-hot编码转换。</li>
-<li>实现多分类网络。</li>
-<li>利用one-hot处理标签和输出结果，正确评测多分类网络。</li>
-</ul>
-<h2 id="初识Tensorflow"><a href="#初识Tensorflow" class="headerlink" title="初识Tensorflow"></a>初识Tensorflow</h2><p><strong>浅尝 - 编程框架（+1点）</strong></p>
-<ul>
-<li>知道编程框架能做什么事。</li>
-<li>认识常见的编程框架。</li>
-<li>知道选择编程框架的原则。</li>
-</ul>
-<p><strong>入门（+1点）</strong></p>
-<ul>
-<li>安装GPU版的TensorFlow。</li>
-</ul>
-<p><strong>精通（+2点，+1觉醒点）</strong></p>
-<p>前置知识：多分类问题</p>
-<ul>
-<li>使用TensorFlow实现多分类网络。</li>
-</ul>
-<h1 id="第二阶段自评"><a href="#第二阶段自评" class="headerlink" title="第二阶段自评"></a>第二阶段自评</h1><p>在“回顾”一节中，共35个普通技能点，4个觉醒技能点。普通技能点主要表示课堂知识，以及少量的课堂上没讲到的可拓展知识点（我自己也拿不满），觉醒技能点主要表示对知识的综合实现与应用。让我们根据自己获得的技能点数，看看自己的学习情况。</p>
-<h2 id="Level-0：乱搞一通"><a href="#Level-0：乱搞一通" class="headerlink" title="Level 0：乱搞一通"></a>Level 0：乱搞一通</h2><p>条件：<strong>技能点≤5</strong></p>
-<p>评价：随便去拷贝了几份深度学习代码，跑通了，就以为自己会深度学习了。丝毫不去关心深度学习的基础知识。这样下去，学习和应用更难的深度学习技术时肯定会碰到很多困难。</p>
-<h2 id="Level-1：初来乍到"><a href="#Level-1：初来乍到" class="headerlink" title="Level 1：初来乍到"></a>Level 1：初来乍到</h2><p>条件：<strong>6≤技能点≤15</strong></p>
-<p>预估学习情况：大致获取了6个<strong>浅尝</strong>技能点和7个<strong>入门</strong>技能点，没有对知识做进一步的思考和实现。</p>
-<p>评价：要学会使用深度学习编程框架，甚至复现出一些经典模型，了解入门知识就足够了。尽管如此，钻研更深的知识对深度学习项目的开发还是有很大的帮助的。</p>
-<h2 id="Level-2：学有所成"><a href="#Level-2：学有所成" class="headerlink" title="Level 2：学有所成"></a>Level 2：学有所成</h2><p>条件：<strong>16≤技能点≤22</strong>。至少有1个觉醒点才能升级到Level 2。</p>
-<p>预估学习情况：完全获取了6个<strong>浅尝</strong>技能点和7个<strong>入门</strong>技能点，深入理解了部分知识，进行过代码实现。</p>
-<p>评价：非常棒！相信在这一过程中，你已经对部分知识有了更深的理解。第二阶段的所有知识都很重要，建议坚持下去，把所有知识都探究完。</p>
-<h2 id="Level-3：登堂入室"><a href="#Level-3：登堂入室" class="headerlink" title="Level 3：登堂入室"></a>Level 3：登堂入室</h2><p>条件：<strong>23≤技能点≤32</strong>。至少有3个觉醒点才能升级到Level 3。</p>
-<p>预估学习情况：完全获取了6个<strong>浅尝</strong>技能点和7个<strong>入门</strong>技能点，基本获取了17个<strong>精通</strong>知识点，对部分自己感兴趣的知识做了额外的探究。</p>
-<p>评价：恭喜！学到这里，你可以说自己已经完全掌握了第二阶段的知识了。同时，在多个代码实现项目中，你也锻炼了编程能力，从代码的角度近距离接触了各项知识。相信这些学习经验会对你未来的学习和应用产生莫大的帮助。</p>
-<h2 id="Level-4：学无止境"><a href="#Level-4：学无止境" class="headerlink" title="Level 4：学无止境"></a>Level 4：学无止境</h2><p>条件：<strong>33≤技能点≤35</strong>。至少有4个觉醒点才能升级到Level 4。</p>
-<p>预估学习情况：学懂了除<strong>博闻</strong>外所有的知识点，对课堂中没有详细介绍的知识做了补充学习。同时，完成了大量的编程练习。</p>
-<p>评价：很强。能做到这一步，说明你对深度学习的学习充满了兴趣。相信这一兴趣能够帮助在未来的学习中走得更远。</p>
-<h2 id="成就"><a href="#成就" class="headerlink" title="成就"></a>成就</h2><p>此外，还要颁发两个成就：</p>
-<p><strong>编程狂魔</strong>：获取4个觉醒点。</p>
-<p><strong>百科全书</strong>：获取5个博闻知识点。</p>
-<h1 id="第三阶段知识预览"><a href="#第三阶段知识预览" class="headerlink" title="第三阶段知识预览"></a>第三阶段知识预览</h1><p>经过了三周紧张的学习，我们学到了非常多硬核的深度学习知识，还完成了不少编程项目。</p>
-<p>在《深度学习专项》的下一门课《组织深度学习项目》中，我们会用两周时间，轻松地学一些不那么困难的知识：</p>
-<ul>
-<li>机器学习改进策略的宗旨<ul>
-<li>正交化</li>
-</ul>
-</li>
-<li>设置改进目标<ul>
-<li>评估指标</li>
-<li>数据集划分的细节</li>
-</ul>
-</li>
-<li>与人类表现比较<ul>
-<li>为什么使用人类的表现</li>
-<li>理解并利用人类表现</li>
-<li>试图改进模型以超过人类的表现</li>
-</ul>
-</li>
-<li>差错分析<ul>
-<li>分析开发误差的由来</li>
-<li>清理错标数据</li>
-</ul>
-</li>
-<li>不匹配的训练与开发/测试集<ul>
-<li>如何使用不同分布的数据</li>
-<li>如何在这种情况下评估偏差与方差</li>
-<li>解决数据不匹配问题</li>
-</ul>
-</li>
-<li>完成多个任务<ul>
-<li>迁移学习</li>
-<li>多任务学习</li>
-</ul>
-</li>
-<li>端到端学习<ul>
-<li>什么是端到端学习</li>
-<li>何时用端到端学习</li>
-</ul>
-</li>
-</ul>
-<p>从标题中也能大致看出，这些知识基本不涉及任何复杂的数学公式，学习起来应该会很轻松。不过，了解这些知识也是很有必要的。在搭建一个能解决实际问题的深度学习项目时，这些组织深度学习项目的经验往往能帮助到我们。让我们做好准备，迎接新课程的学习。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2309,7 +2096,7 @@ w :=(1-\frac{\alpha\lambda}{m})w-\alpha dw</script><p><strong>精通 - dropout�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">149</span>
+          <span class="site-state-item-count">150</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2322,7 +2109,7 @@ w :=(1-\frac{\alpha\lambda}{m})w-\alpha dw</script><p><strong>精通 - dropout�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-count">64</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

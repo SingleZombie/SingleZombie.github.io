@@ -168,6 +168,220 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/07/14/20240703-SD3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/07/14/20240703-SD3/" class="post-title-link" itemprop="url">Stable Diffusion 3 论文及源码概览</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-07-14 10:26:06" itemprop="dateCreated datePublished" datetime="2024-07-14T10:26:06+08:00">2024-07-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E4%BB%A3%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">代码阅读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>近期，最受开源社区欢迎的文生图模型 Stable Diffusion 的最新版本 Stable Diffusion 3 开放了源码和模型参数。开发者宣称，Stable Diffusion 3 使用了全新的模型结构和文本编码方法，能够生成更符合文本描述且高质量的图片。得知 Stable Diffusion 3 开源后，社区用户们纷纷上手测试，在网上分享了许多测试结果。而在本文中，我将面向之前已经熟悉 Stable Diffusion 的科研人员，快速讲解 Stable Diffusion 3 论文的主要内容及其在 Diffusers 中的源码。对于 Stable Diffusion 3 中的一些新技术，我并不会介绍其细节，而是会讲清其设计动机并指明进一步学习的参考文献。</p>
+<h2 id="内容索引"><a href="#内容索引" class="headerlink" title="内容索引"></a>内容索引</h2><p>本文会从多个角度简单介绍 SD3，具体要介绍的方面如下所示。读者可以根据自己的需求，跳转到感兴趣的部分阅读。</p>
+<h3 id="流匹配原理简介"><a href="#流匹配原理简介" class="headerlink" title="流匹配原理简介"></a>流匹配原理简介</h3><p>流匹配是一种定义图像生成目标的方法，它可以兼容当前扩散模型的训练目标。流匹配中一个有代表性的工作是整流 (rectified flow)，它也正是 SD3 用到的训练目标。我们会在本文中通过简单的可视化示例学习流匹配的思想。</p>
+<h3 id="SD3-中的-DiT"><a href="#SD3-中的-DiT" class="headerlink" title="SD3 中的 DiT"></a>SD3 中的 DiT</h3><p>我们会从一个简单的类 ViT 架构开始，学习 SD3 中的去噪网络 DiT 模型是怎么一步一步搭起来的。读者不需要提前学过 DiT，只需要了解 Transformer 的结构，并大概知道视觉任务里的 Transformer 会做哪些通用的修改（如图块化），即可学懂 SD3 里的 DiT。</p>
+<h3 id="SD3-模型与训练策略改进细节"><a href="#SD3-模型与训练策略改进细节" class="headerlink" title="SD3 模型与训练策略改进细节"></a>SD3 模型与训练策略改进细节</h3><p>除了将去噪网络从 U-Net 改成 DiT 外，SD3 还在模型结构与训练策略上做了很多小改进：</p>
+<ul>
+<li>改变训练时噪声采样方法</li>
+<li>将一维位置编码改成二维位置编码</li>
+<li>提升 VAE 隐空间通道数</li>
+<li>对注意力 QK 做归一化以确保高分辨率下训练稳定</li>
+</ul>
+<p>本文会简单介绍这些改进。</p>
+<h3 id="大型消融实验"><a href="#大型消融实验" class="headerlink" title="大型消融实验"></a>大型消融实验</h3><p>对于想训练大型文生图模型的开发者，SD3 论文提供了许多极有价值的大型消融实验结果。本文会简单分析论文中的两项实验结果：各训练目标在文生图任务中的表现、SD3 的参数扩增实验结果。</p>
+<h3 id="SD3-Diffusers-源码解读"><a href="#SD3-Diffusers-源码解读" class="headerlink" title="SD3 Diffusers 源码解读"></a>SD3 Diffusers 源码解读</h3><p>本文会介绍如何配置 Diffusers 环境以用代码运行 SD3，并简单介绍相比于 SD，SD3 的采样代码和模型代码有哪些变动。</p>
+<h2 id="论文阅读"><a href="#论文阅读" class="headerlink" title="论文阅读"></a>论文阅读</h2><h3 id="核心贡献"><a href="#核心贡献" class="headerlink" title="核心贡献"></a>核心贡献</h3><p>介绍 Stable Diffusion 3 (SD3) 的文章标题为 <em>Scaling Rectified Flow Transformers for High-Resolution Image Synthesis</em>。与其说它是一篇技术报告，更不如说它是一篇论文，因为它确实是按照撰写学术论文的一般思路，将正文的叙述重点放到了方法的核心创新点上，而没有过多叙述工程细节。正如其标题所示，这篇文章的内容很简明，就是用<strong>整流 (rectified flow)</strong> 生成模型、<strong>Transformer</strong> 神经网络做了模型<strong>参数扩增</strong>实验，以实现高质量文生图大模型。</p>
+<p>由于这是一篇实验主导而非思考主导的文章，论文的开头没有太多有价值的内容。从我们读者学习论文的角度，文章的核心贡献如下：</p>
+<p>从方法设计上：</p>
+<ul>
+<li>首次在大型文生图模型上使用了整流模型。</li>
+<li>用一种新颖的 Diffusion Transformer (DiT) 神经网络来更好地融合文本信息。</li>
+<li>使用了各种小设计来提升模型的能力。如使用二维位置编码来实现任意分辨率的图像生成。</li>
+</ul>
+<p>从实验上：</p>
+<ul>
+<li>开展了一场大规模、系统性的实验，以验证哪种扩散模型/整流模型的学习目标最优。</li>
+<li>开展了扩增模型参数的实验 (scaling study)，以证明提升参数量能提升模型的效果。</li>
+</ul>
+<h3 id="整流模型简介"><a href="#整流模型简介" class="headerlink" title="整流模型简介"></a>整流模型简介</h3><p>由于 SD3 最后用了整流模型来建模图像生成，所以文章是从一种称为流匹配 (Flow Matching) 的角度而非更常见的扩散模型的角度来介绍各种训练目标。鉴于 SD3 并没有对其他论文中提出的整流模型做太多更改，我们在阅读本文时可以主要关注整流的想法及其与扩散模型的关系，后续再从其他论文中学习整流的具体原理。在此，我们来大致认识一下流匹配与整流的想法。</p>
+<p>所谓图像生成，其实就是让神经网络模型学习一个图像数据集所表示的分布，之后从分布里随机采样。比如我们想让模型生成人脸图像，就是要让模型学习一个人脸图像集的分布。为了直观理解，我们可以用二维点来表示一张图像的数据。比如在下图中我们希望学习红点表示的分布，即我们希望随机生成点，生成的点都落在红点处，而不是落在灰点处。</p>
+<p><img src="/2024/07/14/20240703-SD3/1.jpg" alt></p>
+<p>我们很难表示出一个适合采样的复杂分布。因此，我们会把学习一个分布的问题转换成学习一个简单好采样的分布到复杂分布的映射。一般这个简单分布都是标准正态分布。如下图所示，我们可以用简单的算法采样在原点附近的来自标准正态分布的蓝点，我们要想办法得到蓝点到红点的映射方法。</p>
+<p><img src="/2024/07/14/20240703-SD3/2.jpg" alt></p>
+<p>学习这种映射依然是很困难的。而近年来包括扩散模型在内的几类生成模型用一种巧妙的方法来学习这种映射：从纯噪声（标准正态分布里的数据）到真实数据的映射很难表示，但从真实数据到纯噪声的逆映射很容易表示。所以，我们先人工定义从图像数据集到噪声的变换路线（红线），再让模型学习逆路线（蓝线）。让噪声数据沿着逆路线走，就实现了图像生成。</p>
+<p><img src="/2024/07/14/20240703-SD3/3.jpg" alt></p>
+<p>我们又可以用一种巧妙的方法间接学习图像生成路线。知道了预定义的数据到噪声的路线后，我们其实就知道了数据在路线上每一位置的速度（红箭头）。那么，我们可以以每一位置的反向速度（蓝箭头）为真值，学习噪声到真实数据的速度场。这样的学习目标被称为流匹配。</p>
+<p><img src="/2024/07/14/20240703-SD3/4.jpg" alt></p>
+<p>对于不同的扩散模型及流匹配模型，其本质区别在于图像到噪声的路线的定义方式。在扩散模型中，图像到噪声的路线是由一个复杂的公式表示的。而整流模型将图像到噪声的路线定义为了直线。比如根据论文的介绍，整流中 $t$ 时刻数据 $z_t$ 由真实图像 $x_0$ 变换成纯噪声 $\epsilon$ 的位置为:</p>
+<script type="math/tex; mode=display">
+z_t = (1 - t) x_0 + t \epsilon</script><p>而较先进的扩散模型 EDM 提出的路线公式为（$b_t$ 是一个形式较为复杂的变量）：</p>
+<script type="math/tex; mode=display">
+z_t = x_0 + b_t \epsilon</script><p>由于整流最后学习出来的生成路线近乎是直线，这种模型在设计上就支持少步数生成。</p>
+<blockquote>
+<p>虽然整流模型是这样宣传的，但实际上 SD3 还是默认用了 28 步来生成图像。单看这篇文章，原整流论文里的很多设计并没有用上。对整流感兴趣的话，可以去阅读原论文 <em>Flow straight and fast: Learning to generate and transfer data with rectified flow</em></p>
+<p>流匹配模型和扩散模型的另一个区别是，流匹配模型天然支持 image2image 任务。从纯噪声中生成图像只是流匹配模型的一个特例。</p>
+</blockquote>
+<h3 id="非均匀训练噪声采样"><a href="#非均匀训练噪声采样" class="headerlink" title="非均匀训练噪声采样"></a>非均匀训练噪声采样</h3><p>在学习这样一种生成模型时，会先随机采样一个时刻 $t \in [0, 1]$，根据公式获取此时刻对应位置在生成路线上的速度，再让神经网络学习这个速度。直观上看，刚开始和快到终点的路线很好学，而路线的中间处比较难学。因此，在采样时刻 $t$ 时，SD3 使用了一种非均匀采样分布。</p>
+<p>如下图所示，SD3 主要考虑了两种公式: mode（左）和 logit-norm （右）。二者的共同点是中间多，两边少。mode 相比 logit-norm，在开始和结束时概率不会过分接近 0。</p>
+<p><img src="/2024/07/14/20240703-SD3/5.jpg" alt></p>
+<h3 id="网络整体架构"><a href="#网络整体架构" class="headerlink" title="网络整体架构"></a>网络整体架构</h3><p>以上内容都是和训练相关的理论基础，下面我们来看多数用户更加熟悉的文生图架构。</p>
+<p>从整体架构上来看，和之前的 SD 一样，SD3 主要基于隐扩散模型（latent diffusion model, LDM）。这套方法是一个两阶段的生成方法：先用一个 LDM 生成隐空间低分辨率的图像，再用一个自编码器把图像解码回真实图像。</p>
+<p>扩散模型 LDM 会使用一个神经网络模型来对噪声图像去噪。为了实现文生图，该去噪网络会以输入文本为额外约束。相比之前多数扩散模型，SD3 的主要改进是把去噪模型的结构从 U-Net 变为了 DiT。</p>
+<blockquote>
+<p>DiT 的论文为 <em>Scalable Diffusion Models with Transformers</em>。如果只是对 DiT 的结构感兴趣的话，可以去直接通过读 SD3 的源码来学习。读 DiT 论文时只需要着重学习 AdaLayerNormZero 模块。</p>
+</blockquote>
+<h3 id="提升自编码器通道数"><a href="#提升自编码器通道数" class="headerlink" title="提升自编码器通道数"></a>提升自编码器通道数</h3><p>在当时设计整套自编码器 + LDM 的生成架构时，SD 的开发者并没有仔细改进自编码器，用了一个能把图像下采样 8 倍，通道数变为 4 的隐空间图像。比如输入 $512 \times 512 \times 3$ 的图像会被自编码器编码成 $64 \times 64 \times 4$。而近期有些工作发现，这个自编码器不够好，提升隐空间的通道数能够提升自编码器的重建效果。因此，SD3 把隐空间图像的通道数从 $4$ 改为了 $16$。</p>
+<h3 id="多模态-DiT-MM-DiT"><a href="#多模态-DiT-MM-DiT" class="headerlink" title="多模态 DiT (MM-DiT)"></a>多模态 DiT (MM-DiT)</h3><p>SD3 的去噪模型是一个 Diffusion Transformer (DiT)。如果去噪模型只有带噪图像这一种输入的话，DiT 则会是一个结构非常简单的模型，和标准 ViT 一样：图像过图块化层 (Patching) 并与位置编码相加，得到序列化的数据。这些数据会像标准 Transformer 一样，经过若干个子模块，再过反图块层得到模型输出。DiT 的每个子模块 DiT-Block 和标准 Transformer 块一样，由 LayerNorm, Self-Attention, 一对一线性层 (Pointwise Feedforward, FF) 等模块构成。</p>
+<blockquote>
+<p>图块化层会把 $2\times2$ 个像素打包成图块，反图块化层则会把图块还原回像素。</p>
+</blockquote>
+<p><img src="/2024/07/14/20240703-SD3/6.jpg" alt></p>
+<p>然而，扩散模型中的去噪网络一定得支持带约束生成。这是因为扩散模型约束于去噪时刻 $t$。此外，作为文生图模型，SD3 还得支持文本约束。DiT 及本文的 MM-DiT 把模型设计的重点都放在了处理额外约束上。</p>
+<p>我们先看一下模块是怎么处理较简单的时刻约束的。此处，如下图所示，SD3 的模块保留了 DiT 的设计，用自适应 LayerNorm (Adaptive LayerNorm, AdaLN) 来引入额外约束。具体来说，过了 LayerNorm 后，数据的均值、方差会根据时刻约束做调整。另外，过完 Attention 层或 FF 层后，数据也会乘上一个和约束相关的系数。</p>
+<p><img src="/2024/07/14/20240703-SD3/7.jpg" alt></p>
+<p>我们再来看文本约束的处理。文本约束以两种方式输入进模型：与时刻编码拼接、在注意力层中融合。具体数据关联细节可参见下图。如图所示，为了提高 SD3 的文本理解能力，描述文本 (“Caption”) 经由三种编码器编码，得到两组数据。一组较短的数据会经由 MLP 与文本编码加到一起；另一组数据会经过线性层，输入进 Transformer 的主模块中。</p>
+<blockquote>
+<p>将约束编码与时刻编码相加是一种很常见的做法。此前 U-Net 去噪网络中处理简单约束（如 ImageNet 类型约束）就是用这种方法。</p>
+</blockquote>
+<p><img src="/2024/07/14/20240703-SD3/8.jpg" alt></p>
+<p>SD3 的 DiT 的子模块结构图如下所示。我们可以分几部分来看它。先看时刻编码 $y$ 的那些分支。和标准 DiT 子模块一样，$y$ 通过修改 LayerNorm 后数据的均值、方差及部分层后的数据大小来实现约束。再看输入的图像编码 $x$ 和文本编码 $c$。二者以相同的方式做了 DiT 里的 LayerNorm, FF 等操作。不过，相比此前多数基于 DiT 的模型，此模块用了一种特殊的融合注意力层。具体来说，在过注意力层之前，$x$ 和 $c$ 对应的 $Q, K, V$ 会分别拼接到一起，而不是像之前的模型一样，$Q$ 来自图像，$K, V$ 来自文本。过完注意力层，输出的数据会再次拆开，回到原本的独立分支里。由于 Transformer 同时处理了文本、图像的多模态信息，所以作者将模型取名为 MM-DiT (Multimodal DiT)。</p>
+<p><img src="/2024/07/14/20240703-SD3/9.jpg" alt></p>
+<blockquote>
+<p>论文里讲:「这个结构可以等价于两个模态各有一个 Transformer，但是在注意力操作时做了拼接，使得两种表示既可以在独自的空间里工作也可以考虑到另一个表示。」然而，我不太喜欢这种尝试去凭空解读神经网络中间表示的表述。仅从数据来源来看，过了一个注意力层后，图像信息和文本信息就混在了一起。你很难说，也很难测量，之后的 $x$ 主要是图像信息，$c$ 主要是文本信息。只能说 $x, c$ 都蕴含了多模态的信息。之前 SD U-Net 里的 $x, c$ 可以认为是分别包含了图像信息和文本信息，因为之前的 $x$ 保留了二维图像结构，而 $c$ 仅由文本信息决定。</p>
+</blockquote>
+<h3 id="比例可变的位置编码"><a href="#比例可变的位置编码" class="headerlink" title="比例可变的位置编码"></a>比例可变的位置编码</h3><p>此前多数方法在使用类 ViT 架构时，都会把图像的图块从左上到右下编号，把二维图块拆成一维序列，再用这种一维位置编码来对待图块。</p>
+<p><img src="/2024/07/14/20240703-SD3/10.jpg" alt></p>
+<p>这样做有一个很大的坏处：生成的图像的分辨率是无法修改的。比如对于上图，假如采样时输入大小不是 $4 \times 4$，而是 $4 \times 5$，那么 $0$ 号图块的下面就是 $5$ 而不是 $4$ 了，模型训练时学习到的图块之间的位置关系全部乱套。</p>
+<p>解决此问题的方法很简单，只需要将一维的编码改为二维编码。这样 Transformer 就不会搞混二维图块间的关系了。</p>
+<p><img src="/2024/07/14/20240703-SD3/11.jpg" alt></p>
+<p>SD3 的 MM-DiT 一开始是在 $256^2$ 固定分辨率上训练的。之后在高分辨率图像上训练时，开发者用了一些巧妙的位置编码设置技巧，让不同比例的高分辨率图像也能共享之前学到的这套位置编码。详细公式请参见原论文。</p>
+<h3 id="训练数据预处理"><a href="#训练数据预处理" class="headerlink" title="训练数据预处理"></a>训练数据预处理</h3><p>看完了模块设计，我们再来看一下 SD3 在训练中的一些额外设计。在大规模训练前，开发者用三个方式过滤了数据：</p>
+<ol>
+<li>用了一个 NSFW 过滤器过滤图片，似乎主要是为了过滤色情内容。</li>
+<li>用美学打分器过滤了美学分数太低的图片。</li>
+<li>移除了看上去语义差不多的图片。</li>
+</ol>
+<p>虽然开发者们自信满满地向大家介绍了这些数据过滤技术，但根据社区用户们的反馈，可能正是因为色情过滤器过分严格，导致 SD3 经常会生成奇怪的人体。</p>
+<p>由于在训练 LDM 时，自编码器和文本编码器是不变的，因此可以提前处理好所有训练数据的图像编码和文本编码。当然，这是一项非常基础的工程技巧，不应该写在正文里的。</p>
+<h3 id="用-QK-归一化提升训练稳定度"><a href="#用-QK-归一化提升训练稳定度" class="headerlink" title="用 QK 归一化提升训练稳定度"></a>用 QK 归一化提升训练稳定度</h3><p>按照之前高分辨率文生图模型的训练方法，SD3 会先在 $256^2$ 的图片上训练，再在高分辨率图片上微调。然而，开发者发现，开始微调后，混合精度训练常常会训崩。根据之前工作的经验，这是由于注意力输入的熵会不受控制地增长。解决方法也很简单，只要在做注意力计算之前对 Q, K 做一次归一化就行，具体做计算的位置可以参考上文模块图中的 “RMSNorm”。不过，开发者也承认，这个技巧并不是一个长久之策，得具体问题具体分析。看来这种 DiT 模型在大规模训练时还是会碰到许多训练不稳定的问题，且这些问题没有一个通用解。 </p>
+<h3 id="哪种扩散模型训练目标最适合文生图任务？"><a href="#哪种扩散模型训练目标最适合文生图任务？" class="headerlink" title="哪种扩散模型训练目标最适合文生图任务？"></a>哪种扩散模型训练目标最适合文生图任务？</h3><p>最后我们来看论文的实验结果部分。首先，为了寻找最好的扩散模型/流匹配模型，开发者开展了一场声势浩大的实验。实验涉及 61 种训练公式，其中的可变项有：</p>
+<ul>
+<li>对于普通扩散模型，考虑 $\epsilon$- 或 $\mathbf{v}$-prediction，考虑线性或 cosine 噪声调度。</li>
+<li>对于整流，考虑不同的噪声调度。</li>
+<li>对于 EDM，考虑不同的噪声调度，且尽可能与整流的调度机制相近以保证可比较。</li>
+</ul>
+<p>在训练时，除了训练目标公式可变外，优化算法、模型架构、数据集、采样器都不可变。所有模型在 ImageNet 和 CC12M 数据集上训练，在 COCO-2014 验证集上评估 FID 和 CLIP Score。根据评估结果，可以选出每个模型的最优停止训练的步数。基于每种目标下的最优模型，开发者对模型进行最后的排名。由于在最终评估时，仍有采样步数、是否使用 EMA 模型等可变采样配置，开发者在所有 24 种采样配置下评估了所有模型，并用一种算法来综合所有采样配置的结果，得到一个所有模型的最终排名。最终的排名结果如下面的表 1 所示。训练集上的一些指标如表 2 所示。</p>
+<p><img src="/2024/07/14/20240703-SD3/12.jpg" alt></p>
+<p>根据实验结果，我们可以得到一些直观的结论：整流领先于扩散模型。惊人的是，较新推出的 EDM 竟然没有战胜早期的 LDM (“eps/linear”)。</p>
+<p>当然，我个人认为，应该谨慎看待这份实验结果。一般来说，大家做图像生成会用一个统一的指标，比如 ImageNet 上的 FID。这篇论文相当于是新提出了一种昂贵的评价方法。这种评价方法是否合理，是否能得到公认还犹未可知。另外，想说明一个生成模型的拟合能力不错，用 ImageNet 上的 FID 指标就足够有说服力了，大家不会对一个简单的生成模型有太多要求。然而，对于大型文生图模型，大家更关心的是模型的生成效果，而 FID 和 CLIP Score 并不能直接反映文生图模型的质量。因此，光凭这份实验结果，我们并不能说整流一定比之前的扩散模型要好。</p>
+<p>会关注这份实验结果的应该都是公司里的文生图开发者。我建议体量小的公司直接参考这份实验结果，无脑使用整流来代替之前的训练目标。而如果有能力做同等级的实验的话，则不应该错过改良后的扩散模型，如最新的 EDM2，说不定以后还会有更好的文生图训练目标。</p>
+<h3 id="参数扩增实验结果"><a href="#参数扩增实验结果" class="headerlink" title="参数扩增实验结果"></a>参数扩增实验结果</h3><p>现在多数生成模型都会做参数扩增实验，即验证模型表现随参数量增长而增长，确保模型在资源足够的情况下可以被训练成「大模型」。SD3 也做了类似的实验。开发者用参数 $d$ 来控制 MM-DiT 的大小，Transformer 块的个数为 $d$，且所有特征的通道数与 $d$ 成正比。开发者在 $256^2$ 的数据上训练了所有模型 500k 步，每 50k 步在 CoCo 数据集上统计验证误差。最终所有评估指标如下图所示。可以说，所有指标都表明，模型的表现的确随参数量增长而增长。更多结果请参见论文。</p>
+<p><img src="/2024/07/14/20240703-SD3/13.jpg" alt></p>
+<h2 id="Diffusers-源码阅读"><a href="#Diffusers-源码阅读" class="headerlink" title="Diffusers 源码阅读"></a>Diffusers 源码阅读</h2><h3 id="测试脚本"><a href="#测试脚本" class="headerlink" title="测试脚本"></a>测试脚本</h3><p>我们来阅读一下 SD3 在最流行的扩散模型框架 Diffusers 中的源码。在读源码前，我们先来跑通官方的示例脚本。</p>
+<p>由于使用协议的限制，SD3 的环境搭起来稍微有点麻烦。首先，我们要确保 Diffuers 和 Transformers 都用的是最新版本。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install --upgrade diffusers transformers</span><br></pre></td></tr></table></figure>
+<p>之后，我们要注册 HuggingFace 账号，再在 SD3 的模型网站 <code>https://huggingface.co/stabilityai/stable-diffusion-3-medium</code> 里确认同意某些使用协议。之后，我们要设置 Access Token。具体操作如下所示，先点右上角的 “settings”，再点左边的 “Access Tokens”，创建一个新 token。将这个 token 复制保存在本地后，点击 token 右上角选项里的 “Edit Permission”，在权限里开启 “… public gated repos …”。</p>
+<p><img src="/2024/07/14/20240703-SD3/14.jpg" alt></p>
+<p>最后，我们用命令行登录 HuggingFace 并使用 SD3。先用下面的命令安装 HuggingFace 命令行版。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -U &quot;huggingface_hub[cli]&quot;</span><br></pre></td></tr></table></figure>
+<p>再输入 <code>huggingface-cli login</code>，命令行会提示输入 token 信息。把刚刚保存好的 token 粘贴进去，即可完成登录。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">huggingface-cli login</span><br><span class="line"></span><br><span class="line">Enter your token (input will not be visible): 在这里粘贴 token</span><br></pre></td></tr></table></figure>
+<p>做完准备后，我们就可以执行下面的测试脚本了。注意，该脚本会自动下载模型，我们需要保证当前环境能够访问 HuggingFace。执行完毕后，生成的 $1024 \times 1024$ 大小的图片会保存在 <code>tmp.png</code> 里。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> diffusers <span class="keyword">import</span> StableDiffusion3Pipeline</span><br><span class="line"></span><br><span class="line">pipe = StableDiffusion3Pipeline.from_pretrained(</span><br><span class="line">    <span class="string">&quot;stabilityai/stable-diffusion-3-medium-diffusers&quot;</span>, torch_dtype=torch.float16)</span><br><span class="line">pipe = pipe.to(<span class="string">&quot;cuda&quot;</span>)</span><br><span class="line"></span><br><span class="line">image = pipe(</span><br><span class="line">    <span class="string">&quot;A cat holding a sign that says hello world&quot;</span>,</span><br><span class="line">    negative_prompt=<span class="string">&quot;&quot;</span>,</span><br><span class="line">    num_inference_steps=<span class="number">28</span>,</span><br><span class="line">    guidance_scale=<span class="number">7.0</span>,</span><br><span class="line">).images[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">image.save(<span class="string">&#x27;tmp.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>我得到的图片如下所示。看起来 SD3 理解文本的能力还是挺强的。</p>
+<p><img src="/2024/07/14/20240703-SD3/15.jpg" alt></p>
+<h3 id="模型组件"><a href="#模型组件" class="headerlink" title="模型组件"></a>模型组件</h3><p>接下来我们来快速浏览一下 SD3 流水线 <code>StableDiffusion3Pipeline</code> 的源码。在 IDE 里使用源码跳转功能可以在 <code>diffusers/pipelines/stable_diffusion_3/pipeline_stable_diffusion_3.py</code> 里找到该类的源码。</p>
+<p>通过流水线的 <code>__init__</code> 方法，我们能知道 SD3 的所有组件。组件包括自编码器 <code>vae</code>, MM-DiT <code>Transformer</code>, 流匹配噪声调度器 <code>scheduler</code>，以及三个文本编码器。每个编码器由一个 tokenizer 和一个 text encoder 组成.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="function">    self,</span></span></span><br><span class="line"><span class="params"><span class="function">    transformer: SD3Transformer2DModel,</span></span></span><br><span class="line"><span class="params"><span class="function">    scheduler: FlowMatchEulerDiscreteScheduler,</span></span></span><br><span class="line"><span class="params"><span class="function">    vae: AutoencoderKL,</span></span></span><br><span class="line"><span class="params"><span class="function">    text_encoder: CLIPTextModelWithProjection,</span></span></span><br><span class="line"><span class="params"><span class="function">    tokenizer: CLIPTokenizer,</span></span></span><br><span class="line"><span class="params"><span class="function">    text_encoder_2: CLIPTextModelWithProjection,</span></span></span><br><span class="line"><span class="params"><span class="function">    tokenizer_2: CLIPTokenizer,</span></span></span><br><span class="line"><span class="params"><span class="function">    text_encoder_3: T5EncoderModel,</span></span></span><br><span class="line"><span class="params"><span class="function">    tokenizer_3: T5TokenizerFast,</span></span></span><br><span class="line"><span class="params"><span class="function"></span>):</span></span><br></pre></td></tr></table></figure>
+<p><code>vae</code> 的用法和之前 SD 的一模一样，编码时用 <code>vae.encode</code> 并乘 <code>vae.config.scaling_factor</code>，解码时除以 <code>vae.config.scaling_factor</code> 并用 <code>vae.decode</code>。</p>
+<p>文本编码器的用法可以参见 <code>encode_prompt</code> 方法。文本会分别过各个编码器的 tokenizer 和 text encoder，得到三种文本编码，并按照论文中的描述拼接成两种约束信息。这部分代码十分繁杂，多数代码都是在处理数据形状，没有太多有价值的内容。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">encode_prompt</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="function">        self,</span></span></span><br><span class="line"><span class="params"><span class="function">        prompt,</span></span></span><br><span class="line"><span class="params"><span class="function">        prompt_2,</span></span></span><br><span class="line"><span class="params"><span class="function">        prompt_3,</span></span></span><br><span class="line"><span class="params"><span class="function">        device,</span></span></span><br><span class="line"><span class="params"><span class="function">        num_images_per_prompt,</span></span></span><br><span class="line"><span class="params"><span class="function">        do_classifier_free_guidance,</span></span></span><br><span class="line"><span class="params"><span class="function">        negative_prompt,</span></span></span><br><span class="line"><span class="params"><span class="function">        negative_prompt_2,</span></span></span><br><span class="line"><span class="params"><span class="function">        negative_prompt_3,</span></span></span><br><span class="line"><span class="params"><span class="function">        ...</span></span></span><br><span class="line"><span class="params"><span class="function"></span></span></span><br><span class="line"><span class="params"><span class="function">    </span>):</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> prompt_embeds, negative_prompt_embeds,</span><br><span class="line">     pooled_prompt_embeds, negative_pooled_prompt_embeds</span><br></pre></td></tr></table></figure>
+<h3 id="采样流水线"><a href="#采样流水线" class="headerlink" title="采样流水线"></a>采样流水线</h3><p>我们再来通过阅读流水线的 <code>__call__</code> 方法了解 SD3 采样的过程。由于 SD3 并没有修改 LDM 的这套生成框架，其采样流水线和 SD 几乎完全一致。SD3 和 SD 的 <code>__call__</code> 方法的主要区别是，生成文本编码时会生成两种编码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">(</span><br><span class="line">    prompt_embeds,</span><br><span class="line">    negative_prompt_embeds,</span><br><span class="line">    pooled_prompt_embeds,</span><br><span class="line">    negative_pooled_prompt_embeds,</span><br><span class="line">) = self.encode_prompt(...)</span><br></pre></td></tr></table></figure>
+<p>在调用去噪网络时，那个较小的文本编码 <code>pooled_prompt_embeds</code> 会作为一个额外参数输入。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">noise_pred = self.transformer(</span><br><span class="line">    hidden_states=latent_model_input,</span><br><span class="line">    timestep=timestep,</span><br><span class="line">    encoder_hidden_states=prompt_embeds,</span><br><span class="line">    pooled_projections=pooled_prompt_embeds,</span><br><span class="line">    joint_attention_kwargs=self.joint_attention_kwargs,</span><br><span class="line">    return_dict=<span class="literal">False</span>,</span><br><span class="line">)[<span class="number">0</span>]</span><br></pre></td></tr></table></figure>
+<h3 id="MM-DiT-去噪模型"><a href="#MM-DiT-去噪模型" class="headerlink" title="MM-DiT 去噪模型"></a>MM-DiT 去噪模型</h3><p>相比之下，SD3 的去噪网络 MM-DiT 的改动较大。我们来看一下对应的 <code>SD3Transformer2DModel</code> 类，它位于文件 <code>diffusers\models\transformers\transformer_sd3.py</code>。</p>
+<p>类的构造函数里有几个值得关注的模块：二维位置编码类 <code>PatchEmbed</code>、组合时刻编码和文本编码模块 <code>CombinedTimestepTextProjEmbeddings</code>、主模块类 <code>JointTransformerBlock</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">...</span>):</span></span><br><span class="line">    ...</span><br><span class="line">    self.pos_embed = PatchEmbed(...)</span><br><span class="line">    self.time_text_embed = CombinedTimestepTextProjEmbeddings(...)</span><br><span class="line">    ...</span><br><span class="line">    self.transformer_blocks = nn.ModuleList(</span><br><span class="line">          [</span><br><span class="line">              JointTransformerBlock(..)</span><br><span class="line">              <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.config.num_layers)</span><br><span class="line">          ]</span><br><span class="line">      )</span><br></pre></td></tr></table></figure>
+<p>类的前向传播函数 <code>forward</code> 里都是比较常规的操作。数据会依次经过前处理、若干个 Transformer 块、后处理。所有实现细节都封装在各个模块类里。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">...</span>):</span></span><br><span class="line">    hidden_states = self.pos_embed(hidden_states)</span><br><span class="line">    temb = self.time_text_embed(timestep, pooled_projections)</span><br><span class="line">    encoder_hidden_states = self.context_embedder(encoder_hidden_states)</span><br><span class="line">    <span class="keyword">for</span> index_block, block <span class="keyword">in</span> <span class="built_in">enumerate</span>(self.transformer_blocks):</span><br><span class="line">       encoder_hidden_states, hidden_states = block(...)</span><br><span class="line">    </span><br><span class="line">    encoder_hidden_states, hidden_states = block(</span><br><span class="line">    hidden_states=hidden_states, encoder_hidden_states=encoder_hidden_states, temb=temb</span><br><span class="line">)</span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+<p>接下来我们来看这几个较为重要的子模块。<code>PatchEmbed</code> 类的实现写在 <code>diffusers/models/embeddings.py</code> 里。这个类的实现写得非常清晰。<code>PatchEmbed</code> 类本身用于维护位置编码宽高、特征长度这些信息，计算位置编码的关键代码在 <code>get_2d_sincos_pos_embed</code> 中。<code>get_2d_sincos_pos_embed</code> 会生成 <code>(0, 0), (1, 0), ...</code> 这样的二维坐标网格，再调用 <code>get_2d_sincos_pos_embed_from_grid</code> 生成二维位置编码。<code>get_2d_sincos_pos_embed_from_grid</code> 会调用两次一维位置编码函数 <code>get_1d_sincos_pos_embed_from_grid</code>，也就是 Transformer 里那种标准位置编码生成函数，来分别生成两个方向的编码，最后拼接成二维位置编码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">PatchEmbed</span>(<span class="params">nn.Module</span>):</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, latent</span>):</span></span><br><span class="line">        ...</span><br><span class="line">        pos_embed = get_2d_sincos_pos_embed(...)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_2d_sincos_pos_embed</span>(<span class="params">...</span>):</span></span><br><span class="line">    grid_h = np.arange(...)</span><br><span class="line">    grid_w = np.arange(...)</span><br><span class="line">    grid = np.meshgrid(grid_w, grid_h)</span><br><span class="line">    ...</span><br><span class="line">    pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_2d_sincos_pos_embed_from_grid</span>(<span class="params">...</span>):</span></span><br><span class="line">    <span class="comment"># use half of dimensions to encode grid_h</span></span><br><span class="line">    emb_h = get_1d_sincos_pos_embed_from_grid(embed_dim // <span class="number">2</span>, grid[<span class="number">0</span>])  <span class="comment"># (H*W, D/2)</span></span><br><span class="line">    emb_w = get_1d_sincos_pos_embed_from_grid(embed_dim // <span class="number">2</span>, grid[<span class="number">1</span>])  <span class="comment"># (H*W, D/2)</span></span><br><span class="line"></span><br><span class="line">    emb = np.concatenate([emb_h, emb_w], axis=<span class="number">1</span>)  <span class="comment"># (H*W, D)</span></span><br><span class="line">    <span class="keyword">return</span> emb</span><br></pre></td></tr></table></figure>
+<p>组合时刻编码和文本编码模块 <code>CombinedTimestepTextProjEmbeddings</code> 的代码非常短。它实际上就是用通常的 <code>Timesteps</code> 类获取时刻编码，用一个 <code>text_embedder</code> 模块再次处理文本编码，最后把两个编码加起来。<br><code>text_embedder</code> 是一个线性层、激活函数、线性层构成的简单模块。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CombinedTimestepTextProjEmbeddings</span>(<span class="params">nn.Module</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, embedding_dim, pooled_projection_dim</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        self.time_proj = Timesteps(num_channels=<span class="number">256</span>, flip_sin_to_cos=<span class="literal">True</span>, downscale_freq_shift=<span class="number">0</span>)</span><br><span class="line">        self.timestep_embedder = TimestepEmbedding(in_channels=<span class="number">256</span>, time_embed_dim=embedding_dim)</span><br><span class="line">        self.text_embedder = PixArtAlphaTextProjection(pooled_projection_dim, embedding_dim, act_fn=<span class="string">&quot;silu&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, timestep, pooled_projection</span>):</span></span><br><span class="line">        timesteps_proj = self.time_proj(timestep)</span><br><span class="line">        timesteps_emb = self.timestep_embedder(timesteps_proj.to(dtype=pooled_projection.dtype))  <span class="comment"># (N, D)</span></span><br><span class="line"></span><br><span class="line">        pooled_projections = self.text_embedder(pooled_projection)</span><br><span class="line"></span><br><span class="line">        conditioning = timesteps_emb + pooled_projections</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> conditioning</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">PixArtAlphaTextProjection</span>(<span class="params">nn.Module</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">...</span>):</span></span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, caption</span>):</span></span><br><span class="line">        hidden_states = self.linear_1(caption)</span><br><span class="line">        hidden_states = self.act_1(hidden_states)</span><br><span class="line">        hidden_states = self.linear_2(hidden_states)</span><br><span class="line">        <span class="keyword">return</span> hidden_states</span><br></pre></td></tr></table></figure>
+<p>MM-DiT 的主要模块 <code>JointTransformerBlock</code> 在 <code>diffusers/models/attention.py</code> 文件里。这个类的代码写得比较乱。它主要负责处理 LayerNorm 及数据的尺度变换操作，具体的注意力计算由注意力处理器 <code>JointAttnProcessor2_0</code> 负责。两处 LayerNorm 的实现方式竟然是不一样的。</p>
+<p><img src="/2024/07/14/20240703-SD3/9.jpg" alt></p>
+<p>我们先简单看一下构造函数里初始化了哪些模块。代码中，<code>norm1, ff, norm2</code> 等模块都是普通 Transformer 块中的模块。而加了 <code>_context</code> 的模块则表示处理文本分支 $c$ 的模块，如 <code>norm1_context, ff_context</code>。<code>context_pre_only</code> 表示做完了注意力计算后，还要不要给文本分支加上 LayerNorm 和 FeedForward。如前文所述，具体的注意力计算由 <code>JointAttnProcessor2_0</code> 负责。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">JointTransformerBlock</span>(<span class="params">nn.Module</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, dim, num_attention_heads, attention_head_dim, context_pre_only=<span class="literal">False</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        self.context_pre_only = context_pre_only</span><br><span class="line">        context_norm_type = <span class="string">&quot;ada_norm_continous&quot;</span> <span class="keyword">if</span> context_pre_only <span class="keyword">else</span> <span class="string">&quot;ada_norm_zero&quot;</span></span><br><span class="line"></span><br><span class="line">        self.norm1 = AdaLayerNormZero(dim)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> context_norm_type == <span class="string">&quot;ada_norm_continous&quot;</span>:</span><br><span class="line">            self.norm1_context = AdaLayerNormContinuous(</span><br><span class="line">                dim, dim, elementwise_affine=<span class="literal">False</span>, eps=<span class="number">1e-6</span>, bias=<span class="literal">True</span>, norm_type=<span class="string">&quot;layer_norm&quot;</span></span><br><span class="line">            )</span><br><span class="line">        <span class="keyword">elif</span> context_norm_type == <span class="string">&quot;ada_norm_zero&quot;</span>:</span><br><span class="line">            self.norm1_context = AdaLayerNormZero(dim)</span><br><span class="line">        </span><br><span class="line">        processor = JointAttnProcessor2_0()</span><br><span class="line">        self.attn = Attention(</span><br><span class="line">            query_dim=dim,</span><br><span class="line">            cross_attention_dim=<span class="literal">None</span>,</span><br><span class="line">            added_kv_proj_dim=dim,</span><br><span class="line">            dim_head=attention_head_dim,</span><br><span class="line">            heads=num_attention_heads,</span><br><span class="line">            out_dim=dim,</span><br><span class="line">            context_pre_only=context_pre_only,</span><br><span class="line">            bias=<span class="literal">True</span>,</span><br><span class="line">            processor=processor,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        self.norm2 = nn.LayerNorm(dim, elementwise_affine=<span class="literal">False</span>, eps=<span class="number">1e-6</span>)</span><br><span class="line">        self.ff = FeedForward(dim=dim, dim_out=dim, activation_fn=<span class="string">&quot;gelu-approximate&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> context_pre_only:</span><br><span class="line">            self.norm2_context = nn.LayerNorm(dim, elementwise_affine=<span class="literal">False</span>, eps=<span class="number">1e-6</span>)</span><br><span class="line">            self.ff_context = FeedForward(dim=dim, dim_out=dim, activation_fn=<span class="string">&quot;gelu-approximate&quot;</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.norm2_context = <span class="literal">None</span></span><br><span class="line">            self.ff_context = <span class="literal">None</span>     </span><br></pre></td></tr></table></figure>
+<p>我们再来看 <code>forward</code> 方法。在前向传播时，图像分支和文本分支会分别过 <code>norm1</code>，再一起过注意力操作，再分别过 <code>norm2</code> 和 <code>ff</code>。大概的代码如下所示，我把较复杂的 context 分支的代码略过了。</p>
+<p>这份代码写得很不漂亮，按理说模块里两个 LayerNorm + 尺度变换 (即 Adaptive LayerNorm) 的操作是一样的，应该用同样的代码来处理。但是这个模块里 <code>norm1</code> 是 <code>AdaLayerNormZero</code> 类，<code>norm2</code> 是 <code>LayerNorm</code> 类。<code>norm1</code> 会自动做完 AdaLayerNorm 的运算，并把相关变量返回。而在 <code>norm2</code> 处，代码会先执行普通的 LayerNorm，再根据之前的变量手动调整数据的尺度。我们心里知道这份代码是在实现论文里那张结构图就好，没必要去仔细阅读。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="function">    self, hidden_states: torch.FloatTensor, encoder_hidden_states: torch.FloatTensor, temb: torch.FloatTensor</span></span></span><br><span class="line"><span class="params"><span class="function"></span>):</span></span><br><span class="line">    norm_hidden_states, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.norm1(hidden_states, emb=temb)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> self.context_pre_only:</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Attention.</span></span><br><span class="line">    attn_output, context_attn_output = self.attn(</span><br><span class="line">        hidden_states=norm_hidden_states, encoder_hidden_states=norm_encoder_hidden_states</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Process attention outputs for the `hidden_states`.</span></span><br><span class="line">    attn_output = gate_msa.unsqueeze(<span class="number">1</span>) * attn_output</span><br><span class="line">    hidden_states = hidden_states + attn_output</span><br><span class="line"></span><br><span class="line">    norm_hidden_states = self.norm2(hidden_states)</span><br><span class="line">    norm_hidden_states = norm_hidden_states * (<span class="number">1</span> + scale_mlp[:, <span class="literal">None</span>]) + shift_mlp[:, <span class="literal">None</span>]</span><br><span class="line">    ff_output = self.ff(norm_hidden_states)</span><br><span class="line">    ff_output = gate_mlp.unsqueeze(<span class="number">1</span>) * ff_output</span><br><span class="line"></span><br><span class="line">    hidden_states = hidden_states + ff_output</span><br><span class="line">    <span class="keyword">if</span> self.context_pre_only:</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> encoder_hidden_states, hidden_states</span><br></pre></td></tr></table></figure>
+<p>融合注意力的实现方法很简单。和普通的注意力计算相比，这种注意力就是把另一条数据分支 <code>encoder_hidden_states</code> 也做了 QKV 的线性变换，并在做注意力运算前与原来的 QKV 拼接起来。做完注意力运算后，两个数据又会拆分回去。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">JointAttnProcessor2_0</span>:</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;Attention processor used typically in processing the SD3-like self-attention projections.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="function">        self,</span></span></span><br><span class="line"><span class="params"><span class="function">        attn: Attention,</span></span></span><br><span class="line"><span class="params"><span class="function">        hidden_states: torch.FloatTensor,</span></span></span><br><span class="line"><span class="params"><span class="function">        encoder_hidden_states: torch.FloatTensor = <span class="literal">None</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        attention_mask: <span class="type">Optional</span>[torch.FloatTensor] = <span class="literal">None</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        *args,</span></span></span><br><span class="line"><span class="params"><span class="function">        **kwargs,</span></span></span><br><span class="line"><span class="params"><span class="function">    </span>) -&gt; torch.FloatTensor:</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">        <span class="comment"># `sample` projections.</span></span><br><span class="line">        query = attn.to_q(hidden_states)</span><br><span class="line">        key = attn.to_k(hidden_states)</span><br><span class="line">        value = attn.to_v(hidden_states)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># `context` projections.</span></span><br><span class="line">        encoder_hidden_states_query_proj = attn.add_q_proj(encoder_hidden_states)</span><br><span class="line">        encoder_hidden_states_key_proj = attn.add_k_proj(encoder_hidden_states)</span><br><span class="line">        encoder_hidden_states_value_proj = attn.add_v_proj(encoder_hidden_states)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># attention</span></span><br><span class="line">        query = torch.cat([query, encoder_hidden_states_query_proj], dim=<span class="number">1</span>)</span><br><span class="line">        key = torch.cat([key, encoder_hidden_states_key_proj], dim=<span class="number">1</span>)</span><br><span class="line">        value = torch.cat([value, encoder_hidden_states_value_proj], dim=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Split the attention outputs.</span></span><br><span class="line">        hidden_states, encoder_hidden_states = (</span><br><span class="line">            hidden_states[:, : residual.shape[<span class="number">1</span>]],</span><br><span class="line">            hidden_states[:, residual.shape[<span class="number">1</span>] :],</span><br><span class="line">        )</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我们学习了 SD3 论文及源码中的主要内容。相比于 SD，SD3 做了两项较大的改进：用整流代替原来的 DDPM 中的训练目标；将去噪模型从 U-Net 变成了能更好地处理多模态信息的 MM-DiT。SD3 还在模型结构和训练目标上做了许多小改进，如调整训练噪声采样分布、使用二维位置编码。SD3 论文展示了多项大型消融实验的结果，证明当前的 SD3 是以最优配置训练得到的。SD3 可以在 Diffusers 中使用。当然，由于 SD3 的使用协议较为严格，我们需要做一些配置，才能在代码中使用 SD3。SD3 的采样流水线基本没变，原来 SD 的多数编辑方法能够无缝迁移过来。而 SD3 的去噪模型变动较大，和 U-Net 相关的编辑方法则无法直接用过来。在学习源码时，主要值得学习的是新 MM-DiT 模型中每个 Transformer 层的实现细节。</p>
+<p>尽管 SD3 并没有提出新的流匹配方法，但其实验结果表明流匹配模型可能更适合文生图任务。作为研究者，受此启发，我们或许需要关注一下整流等流匹配模型，知道它们的思想，分析它们与原扩散模型训练目标的异同，以拓宽自己的视野。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/06/24/20240622-CVPR2024/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1646,154 +1860,6 @@ CrossFrameAttn(A, A_1, A_{prev}) = CrossAttnLayer(A, [A_1, A_{prev}])</script><b
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/01/23/20230709-SD2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/01/23/20230709-SD2/" class="post-title-link" itemprop="url">Stable Diffusion 解读（二）：论文精读</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-01-23 19:41:52" itemprop="dateCreated datePublished" datetime="2024-01-23T19:41:52+08:00">2024-01-23</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在上一篇文章中，我们梳理了基于自编码器（AE）的图像生成模型的发展脉络，并引出了Stable Diffusion的核心思想。简单来说，Stable Diffusion是一个两阶段的图像生成模型，它先用一个AE压缩图像，再在压缩图像所在的隐空间上用DDPM生成图像。在这篇文章中，我们来精读Stable Diffusion的论文：<em>High-Resolution Image Synthesis with Latent Diffusion Models</em>。</p>
-<blockquote>
-<p>注意：如果你从未学习过扩散模型，Stable Diffusion并不是你应该的读的第一篇论文。请参照我[上篇文章]的早期工作总结，至少在学会了DDPM后再来学习Stable Diffusion。</p>
-</blockquote>
-<h2 id="摘要与引言"><a href="#摘要与引言" class="headerlink" title="摘要与引言"></a>摘要与引言</h2><p>论文摘要的大意如下：扩散模型的生成效果很好，但是，在像素空间上训练和推理扩散模型的计算开销都很大。为了在不降低质量与易用性的前提下用较少的计算资源训练扩散模型，我们在一个预训练过的自编码器的隐空间上使用扩散模型。相较以往的工作，在这种表示下训练扩散模型首次在减少计算复杂度和维持图像细节间达到几近最优的平衡点，极大地提升了视觉保真度。通过向模型架构中引入交叉注意力层，我们把扩散模型变成了强大而灵活的带约束图像生成器，它支持常见的约束，如文字、边界框，且能够以纯卷积方式实现高分辨率的图像合成。我们的<strong>隐扩散模型（latent diffusion model, LDM）</strong> 在使用比像素扩散模型少得多的计算资源的前提下，在各项图像合成任务上取得最优成果或顶尖成果。</p>
-<p>整理一下。论文提出了一种叫LDM的图像生成模型。论文想解决的问题是减少像素空间扩散模型的运算开销。为此，LDM借助了VQVAE「先压缩、再生成」的想法，把扩散模型用在AE的隐空间上，在几乎不降低生成质量的前提下减少了计算量。另外，LDM还支持带约束图像合成及纯卷积图像超分辨率。</p>
-<p>在上一篇回顾LDM早期工作的文章中，我们已经理解了LDM想解决的问题及解决问题的思路。因此，在读完摘要后，我们接下来读文章时只需要关注LDM的两个创新点：</p>
-<ol>
-<li>LDM的AE是怎么设计以达到压缩比例与质量的平衡的。</li>
-<li>LDM怎么实现带约束的图像合成。</li>
-</ol>
-<p>引言基本是摘要的扩写。首先，引言大致介绍了图像合成任务的背景，提及了扩散模型近期的突出表现。随后，引言介绍了本文想解决的主要问题：扩散模型的训练和推理太耗时了，需要在不降低效果的前提下减少扩散模型的运算量。最后，引言揭示了本工作的解决方法：使用类似VQGAN的两阶段图像生成方法。</p>
-<p>引言的前两部分没有什么关键信息，而最后一部分介绍了本工作改进扩散模型的动机，值得一读。如下图所示，DDPM的论文展示了从不同去噪时刻的同一个噪声图像开始的不同生成结果，比如$\mathbf{x}_{750}$指从时刻$t=750$的去噪图像开始，多次以不同随机数执行DDPM的反向过程，生成的多幅图像。LDM作者认为，DDPM的这一实验表明，扩散模型的图像生成分两个阶段：先是对语义进行压缩，再是对图像的感知细节压缩。正因此，随机对早期的噪声图像去噪，生成图像的内容会更多样；而随机对后期的噪声图像去噪，生成图像只是在细节上有所不同。LDM的作者认为，扩散模型的大量计算都浪费在了生成整幅图像的细节上，不如只让扩散模型描述比较关键的语义压缩部分，而让自编码器（AE）负责感知细节压缩部分。</p>
-<p><img src="/2024/01/23/20230709-SD2/1.jpg" alt></p>
-<p>引言在结尾总结了本工作的贡献：</p>
-<ol>
-<li>相比之前按序列处理图像的纯Transformer的方法，扩散模型能更好地处理二维数据。因此，LDM生成隐空间图像时不需要那么重的压缩比例（比如DIV2K数据集上，LDM只需要将图像下采样4倍，而之前的纯Transformer方法要下采样8倍或16倍），图像在压缩时能有更高的保真度，整套方法能更高效地生成高分辨率图像。</li>
-<li>在大幅降低计算开销的前提下在多项图像生成任务上取得了顶尖成果。</li>
-<li>相比于之前同时训练图像压缩模型和图像生成模型的方法，该方法分步训练两个模型，训练起来更加简单。</li>
-<li>对于有着稠密约束的任务（如超分辨率、补全、语义生成），该方法的模型能换成一个纯卷积版本的，且能生成边长为1024的图像。</li>
-<li>该工作设计了一种通用的约束机制，该机制基于交叉注意力，支持多模态训练。作者训练了多种带约束的模型。</li>
-<li>作者把工作开源了，并提供了预训练模型。</li>
-</ol>
-<p>我们来整理一下这些贡献。读论文时，可以忽略第6条。第2条是成果，与方法设计无关。第1、3条主要描述了提出两阶段图像生成建模方法的贡献。第4条是把方法拓展到稠密约束任务的贡献。第5条是提出了新约束机制的贡献。所以，在学习论文的方法时，我们还是主要关注摘要里就提过的那两个创新点。在读完引言后，我们可以把阅读目标再细化一下：</p>
-<ol>
-<li>LDM的AE是怎么设计以达到压缩比例与质量的平衡的。与纯基于Transformer的VQGAN相比，它有什么不同。</li>
-<li>LDM怎么用交叉注意力机制实现带约束的图像生成。</li>
-</ol>
-<h2 id="相关工作"><a href="#相关工作" class="headerlink" title="相关工作"></a>相关工作</h2><p>作者主要从两个角度回顾了早期工作：不同架构的图像生成模型与两阶段的图像合成方法。其回顾逻辑与本系列的第一篇文章类似，在此就不过多介绍了。除了介绍早期工作外，作者重申了引言中的对比结果，强调了LDM相对于扩散模型的创新和相对于两阶段图像生成模型的创新。</p>
-<h2 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h2><p>在方法章节中，作者先是大致介绍了使用LDM这种两阶段图像生成架构的优点，再分三部分详细介绍了论文的实现细节：图像压缩AE的实现、LDM的实现、约束的实现。开头的介绍和AE的实现相对比较重要，我们放在一起详细阅读；相对于DDPM，LDM几乎没有做任何修改，只是把要拟合的图片从真实图片换成了压缩图片，这一部分我们会快速浏览一遍；而添加约束的方法有所创新，我们会详细阅读一遍。</p>
-<h3 id="AE与两阶段图像生成模型"><a href="#AE与两阶段图像生成模型" class="headerlink" title="AE与两阶段图像生成模型"></a>AE与两阶段图像生成模型</h3><p>我们来先读3.1节，看一看AE的具体实现方法，再回头读第3节开头介绍的两阶段图像生成模型的优点。</p>
-<p>LDM配套的图像压缩模型（论文中称之为”感知压缩模型”）和VQGAN几乎完全一样。该压缩模型的原型是一个AE。普通的AE会用原图像和重建图像的重建误差（L1误差或者L2误差）来训练。在普通的AE的基础上，该压缩模型参考了GAN的误差设置方法，使用感知误差代替重建误差，并添加了基于patch的对抗误差。</p>
-<p><img src="/2024/01/23/20230709-SD2/2.jpg" alt></p>
-<p>但该图像压缩模型的输出与VQGAN有所不同。我们先回忆一下VQGAN的原理。VQGAN的输出会接到Transformer里，Transformer的输入必须是离散的。因此，VQGAN必须要额外完成两件事：1）让连续输出变成离散输出；2）用正则化方法防止过拟合。为此，VQGAN使用了VQVAE里的向量离散化操作，该操作能同时完成这两件事。</p>
-<p><img src="/2024/01/23/20230709-SD2/3.jpg" alt></p>
-<p>而LDM的压缩模型的输出会接入一个扩散模型里，扩散模型的输入是连续的。因此，LDM的压缩模型只需要额外完成使用正则化方法这一件事。该压缩模型不必像VQGAN一样非得用向量离散化来完成正则化。如我们在第一篇文章中讨论的，作者在LDM的压缩模型中使用了两种正则化方法：VQ正则化与KL正则化。前者来自于VQVAE，后者来自于VAE。</p>
-<p><img src="/2024/01/23/20230709-SD2/4.jpg" alt></p>
-<p>该压缩模型相较VQGAN有一项明显的优势。VQGAN的Transformer只能按一维序列来处理图像（通过把二维图像reshape成一维），且只能处理较小的压缩图像($16\times16$)。而本身用于二维图像生成的LDM能更好地利用二维信息，因此可以处理更大的压缩图像($64\times 64$)。这样，LDM的压缩模型的压缩程度不必那么重，其保真度会比VQGAN高。</p>
-<p>看完了3.1节，我们来回头看第3节开头介绍了LDM的三项优点：1）通过规避在高维图像空间上训练扩散模型，作者开发出了一个因在低维空间上采样而计算效率大幅提升的扩散模型；2）作者发掘了扩散模型中来自U-Net架构的归纳偏置（inductive bias），使得它们能高效地处理有空间结构的数据（比如二维图像），避免像之前基于Transformer的方法一样使用激进、有损质量的压缩比例；3）本工作的压缩模型是通用的，它的隐空间能用来训练多种图像生成模型。第一个优点是相对于DDPM。第二个是优点是相对于使用Transformer的VQGAN，我们在上一段已经分析过了。第三个优点是相对于之前那些换一个任务就需要换一个压缩模型的两阶段图像生成模型。</p>
-<blockquote>
-<p>归纳偏置可以简单理解为某个学习算法对一类数据的优势。比如CNN结构适合处理图像数据。</p>
-</blockquote>
-<h3 id="隐扩散模型（LDM）"><a href="#隐扩散模型（LDM）" class="headerlink" title="隐扩散模型（LDM）"></a>隐扩散模型（LDM）</h3><p>在DDPM中，一个参数为$\theta$的神经网络$\epsilon_\theta$会根据当前时刻$t$的带噪图片$x_t$预测本时刻的噪声$\epsilon_\theta(x_t, t)$。网络的学习目标是让预测的噪声和真实的噪声$\epsilon$一致。</p>
-<script type="math/tex; mode=display">
-L_{DM} = \mathbb{E}_{x, \epsilon \sim \mathcal{N}(0, 1), t}[||\epsilon -\epsilon_\theta(x_t, t)||_2^2]</script><p>LDM的原理和DDPM完全一样，只不过训练图片从像素空间上的真实图片$x_0$变成了隐空间上的压缩图片$z_0$，每一轮的带噪图片由$x_t$变成了隐空间上的带噪图片$z_t$。在训练时，相比DDPM，只需要多对$x_0$用一次编码器变成$z_0$即可。</p>
-<script type="math/tex; mode=display">
-L_{LDM} = \mathbb{E}_{encode(x), \epsilon \sim \mathcal{N}(0, 1), t}[||\epsilon -\epsilon_\theta(z_t, t)||_2^2]</script><p>如果你在理解这部分内容时有疑问，请去阅读DDPM的相关文章。LDM的具体结构我们会在第三篇代码阅读文章中讨论。</p>
-<h3 id="约束机制"><a href="#约束机制" class="headerlink" title="约束机制"></a>约束机制</h3><p>让模型支持带约束图像生成，其实就是想办法把额外的约束信息输入进扩散模型中。显然，最简单的添加约束的方法就是把额外的信息和扩散模型原本的输入$z_t$拼接起来。如果约束是一个值，就把相同的值拼接到$z_t$的每一个像素上；如果约束本身具有空间结构（如语音分割图片），就可以把约束重采样至和$z_t$一样的分辨率，再逐像素拼接。除了直接的拼接外，作者在LDM中还使用了另一种融合约束信息的方法。</p>
-<p>DDPM中含有自注意力层。自注意力操作其实基于注意力操作$Attention(Q, K, V)$，它可以解释成一个数据库中存储了许多数据$V$，数据的索引（键）是$K$，现在要用查询$Q$查询数据库里的数据并返回查询结果。注意力操作有几种用法，第一种用法是交叉注意力$CrossAttn(A, B)=Attention(W_Q \cdot A, W_K \cdot B, W_V \cdot B)$，可以理解成数据$A$, $B$做了一次信息融合；第二种用法是自注意力$SelfAttn(A)=Attention(W_Q \cdot A, W_K \cdot A, W_V \cdot A)$，可以理解成数据$A$自己做了一次特征提取。</p>
-<p>既然交叉注意力操作可以融合两类信息，何不把DDPM的自注意力层换成交叉注意力层，把$K$, $V$换成来自约束的信息，以实现带约束图像生成呢？如下图所示，通过把用编码器$\tau_\theta$编码过的约束信息输入进扩散模型交叉注意力层的$K$, $V$，LDM实现了带约束图像生成。这里的实现细节我们会在第三篇代码阅读文章中讨论。</p>
-<blockquote>
-<p>根据论文中实验的设计，对于作用于全局的约束，如文本描述，使用交叉注意力较好；对于有空间信息的约束，如语义分割图片，则用拼接的方式较好。</p>
-</blockquote>
-<p><img src="/2024/01/23/20230709-SD2/5.jpg" alt></p>
-<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>在这一章里，作者按照介绍方法的顺序，依次探究了图像压缩模型、无约束图像生成、带约束图像合成的实验结果。我们主要关心前两部分的实验结果。</p>
-<h3 id="感知压缩程度的折衷"><a href="#感知压缩程度的折衷" class="headerlink" title="感知压缩程度的折衷"></a>感知压缩程度的折衷</h3><p>论文首先讨论了图像压缩模型在不同的下采样比例$f$下的实验结果，其中$f\in\{1, 2, 4, 8, 16, 32\}$。这些实验分两部分，第一部分是训练速度上的实验，第二部分是采样速度与效果上的实验。</p>
-<p>在ImageNet上以不同下采样比例$f$训练一定步数后LDM的采样指标对比结果如下图所示。其中，FID指标越低越好，Inception Score越高越好。结果显示，无论下采样比例$f$是过大还是过小都会降低训练速度。作者分析了$f$较小或较大时训练速度慢的原因：$f$过小时扩散模型把过多的精力放在了本应由压缩模型负责的感知压缩上；$f$过大时图像信息在压缩中损失过多。LDM-$\{4\text{-}16\}$的表现相对好一些。</p>
-<p><img src="/2024/01/23/20230709-SD2/6.jpg" alt></p>
-<p>在实验的第二部分中，作者比较了不同采样比例$f$的LDM在CelebA-HQ（下图左侧）和ImageNet（下图右侧）上的采样速度和采样效果。下图中，横坐标为吞吐量，越靠右表示采样速度越快。同一个模型的不同实验结果表示使用不同DDIM采样步数时的实验结果，每一条线上的结果从右到左分别是DDIM采样步数取$\{10, 20, 50, 100, 200\}$的采样结果（DDIM步数越少，采样速度越快，生成图片质量越低）。对于CelebA-HQ上的实验，若采样步数较多，则还是LDM-$\{4, 8\}$效果较好，只有在采样步数较少时压缩比更高的LDM才有优势。而对于ImageNet上的实验，$f$太小或太大的结果都很差，整体上还是LDM-$\{4, 8\}$的结果较好。</p>
-<p><img src="/2024/01/23/20230709-SD2/7.jpg" alt></p>
-<p>综上，根据实验，作者认为$f$取适中的$4$或$8$比较妥当。下采样比例$f=8$也正是Stable Diffusion采用的配置。</p>
-<h3 id="图像生成效果"><a href="#图像生成效果" class="headerlink" title="图像生成效果"></a>图像生成效果</h3><p>在这一节中，作者在几个常见的数据集上对比了LDM与其他模型的无约束图像生成效果。作者主要比较了两类指标：表示采样质量的FID和表示数据分布覆盖率的精确率及召回率（Precision-and-Recall）。</p>
-<p>在介绍具体结果之前，先对这个不太常见的精确率及召回率指标做一个解释。精确率及召回率常用于分类等有确定答案的任务中，分别表示所有被分类为正的样本中有多少是分对了的、所有真值为正的样本中有多少是被成功分类成正的。而无约束图像生成中的精确率及召回率的解释可以参加论文<em>Improved Precision and Recall Metric for Assessing<br>Generative Models</em>。如下图所示，设真实分布为蓝色，生成模型的分布为红色，则红色样本落在蓝色分布的比例为精确率，蓝色样本落在红色分布的比例为召回率。简单来说，精确率能描述采样质量，召回率能描述生成分布与真实分布的覆盖情况。</p>
-<p><img src="/2024/01/23/20230709-SD2/8.jpg" alt></p>
-<p>接下来，我们回头来看论文展示的无约束图像生成对比结果，如下图所示。整体上看，LDM的表现还不错。虽然在FID指标上无法超过GAN或其他扩散模型，但是在精确率和召回率上还是颇具优势。唯一没有被LDM战胜的是LSUN-Bedrooms上的ADM模型，但作者提到，相比ADM，LDM只用了一半的参数，且只需四分之一的训练资源。</p>
-<p><img src="/2024/01/23/20230709-SD2/9.jpg" alt></p>
-<h3 id="带约束图像合成"><a href="#带约束图像合成" class="headerlink" title="带约束图像合成"></a>带约束图像合成</h3><p>这一节里，作者展示了LDM的文生图能力。论文中的LDM用了一个从头训练的基于Transformer的文本编码器，与后续使用CLIP的Stable Diffusion差别较大。这一部分的结果没那么重要，大致看一看就好。</p>
-<p>本文的文生图模型是一个在LAION-400M数据集上训练的KL约束LDM。它的文本编码器是一个Transformer，编码后的特征会以交叉注意力的形式传入LDM。采样时，LDM使用了Classifier-Free Guidance。</p>
-<blockquote>
-<p>Classifier-Free Guidance可以让输出图片更符合文本约束。这是一种适用于所有扩散模型的采样策略，并非要和LDM绑定，感兴趣可以去阅读相关论文。</p>
-</blockquote>
-<p>LDM与其他模型的文生图效果对比如下图所示。虽然这个版本的LDM并没有显著优于其他模型，但它的参数量是最少的。</p>
-<p><img src="/2024/01/23/20230709-SD2/10.jpg" alt></p>
-<p>LDM在类别约束的图像合成上表现也很不错，超越了当时的其他模型。其结果在此略过。</p>
-<p>剩余的带约束图像合成任务都可以看成是图像转图像任务，比如图像超分辨率是低质量图像到高质量图像的转换、语义生成是把语义分割图像转换成一幅合成图像。要添加这些约束，只需要把这些任务的输入图片和LDM原本的输入$z_t$拼接起来即可。比如对于图像超分辨率，可以把输入图片直接与隐空间图片$z_t$拼接，解码后图片会被自然上采样$f$倍；对于语义生成，可以把下采样$f$倍的语义分割图与$z_t$拼接。论文用这些任务上的实验证明了LDM的泛用性。由于这部分实验与LDM的主要知识无关，具体实验结果就不在此详细介绍了。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>论文末尾探讨了LDM的两大不足。首先，尽管LDM的计算需求比其他像素空间上的扩散模型要少得多，但受制于扩散模型本身的串行采样，它的采样速度还是比GAN慢上许多。其次，LDM使用了一个自编码器来压缩图像，重建图像带来的精度损失会成为某些需要精准像素值的任务的性能瓶颈。</p>
-<p>论文最后再次总结了此方法的贡献。LDM的主要贡献其实只有两点：在不损失效果的情况下用两阶段的图像生成方法大幅提升了训练和采样效率、借助交叉注意力实现了各任务通用的约束机制。这两个贡献总结得非常精准。之后的Stable Diffusion之所以大受欢迎，第一就是因为它采样所需的计算资源不多，大众能使用消费级显卡完成图像生成，第二就是因为它强大的文字转图片生成效果。</p>
-<p>我们再从知识学习的角度总结一下LDM。LDM的核心知识是DDPM和VQGAN。如果你能看懂之前这两篇论文，那你一下子就能明白LDM是的核心思想是什么，看论文时只需要精读交叉注意力约束机制那一段即可，其他实验内容在现在看来已经价值不大了。由于近两年有大量基于Stable Diffusion开发的工作，相比论文，阅读源代码的重要性会大很多。我们会在下一篇文章里详细学习Stable Diffusion的官方源码和最常用的Stable Diffusion第三方实现——Diffusers框架。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1863,7 +1929,7 @@ L_{LDM} = \mathbb{E}_{encode(x), \epsilon \sim \mathcal{N}(0, 1), t}[||\epsilon 
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">149</span>
+          <span class="site-state-item-count">150</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1876,7 +1942,7 @@ L_{LDM} = \mathbb{E}_{encode(x), \epsilon \sim \mathcal{N}(0, 1), t}[||\epsilon 
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-count">64</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

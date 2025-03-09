@@ -168,6 +168,196 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/03/06/20250305-fractal-generation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/03/06/20250305-fractal-generation/" class="post-title-link" itemprop="url">解读何恺明团队工作：分形生成其实是一种多叉树视觉 Transformer</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-03-06 13:23:37" itemprop="dateCreated datePublished" datetime="2025-03-06T13:23:37+08:00">2025-03-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>最近，备受瞩目的何恺明团队公布了一篇论文——分形生成模型（Fractal Generative Models）。该论文提出了一种叫做分形生成的全新生成范式。以图像分形生成为例，算法会由粗到精地生成每个像素。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/1.jpg" alt></p>
+<p>但我仔细读过一遍论文后，发现论文的表述不够准确。这篇文章其实提出了一种基于多叉树的效率更高的视觉 Transformer，以降低普通 Transformer 全像素自注意力的高计算复杂度。这种 Transformer 可以用于任何图像生成任务，甚至是图像生成以外的视觉任务。在这篇博文中，我会按我自己的逻辑介绍论文的核心方法，并简单展示论文中的实验结果。之后，我会批判性分析论文的表述，并探讨一些后续可能的科研方向。</p>
+<h2 id="知识准备"><a href="#知识准备" class="headerlink" title="知识准备"></a>知识准备</h2><h3 id="视觉-Transformer"><a href="#视觉-Transformer" class="headerlink" title="视觉 Transformer"></a>视觉 Transformer</h3><p>Transformer 是一种处理序列数据的神经网络。它的核心是自注意力运算。在这个运算中，序列中的元素会两两交换信息。因此，如果序列的长度是 $N$，则自注意力运算的复杂度是 $O(N^2)$。</p>
+<p>具体来说，Transformer 的输入和输出的数据是一个形状为 $N \times C$ 的张量。其中，$N$ 为序列的长度，$C$ 为每个数据向量的长度。实际上，自注意力的运算不仅和 $N$ 有关，也和 $C$ 有关。但由于 $C$ 一般是常数，而复杂度分析一般只关注会不断增长的量，所以我们记自注意力运算关于 $N$ 的复杂度是 $O(N^2)$。</p>
+<p>图像可以认为是由像素构成的序列。因此，我们可以用 Transformer 处理图像数据，即使用视觉 Transformer (Vision Transformer)。然而，视觉 Transformer 的一大缺陷是计算复杂度过高。假如图像的边长是 $O(N)$，则一次自注意力的计算复杂度高达 $O(N^4)$。</p>
+<h3 id="自回归图像生成"><a href="#自回归图像生成" class="headerlink" title="自回归图像生成"></a>自回归图像生成</h3><p>自回归（Autoregressive）是一种直观易懂的序列生成范式：在生成第 $i$ 个元素时，生成模型输入前 $i - 1$ 个元素，输出第 $i$ 个元素。以下是文本自回归生成的一个示例：<br>|步数 | 输入 | 输出 |<br>|—-|—-|—-|<br>1 | （空） | 今<br>2 | 今      | 天<br>3 | 今天    | 早<br>4 | 今天早  | 上</p>
+<p>如前所述，图像也可以看成一种由像素构成的序列数据。但在自回归生成图像时，我们要给每个像素编号，表示像素生成的先后顺序。只有定义了先后顺序，才能根据<strong>前面</strong>的像素生成<strong>后面</strong>的像素。</p>
+<p>给图像编号的方式很多。最直接的想法自然是从左到右、从上到下地编号。其他的编号方式也是可行的。以下是 VQGAN 论文 (Taming Transformers for High-Resolution Image Synthesis) 展示的几种像素编号方案。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/2.jpg" alt></p>
+<p>何恺明团队之前的论文 MAR (Autoregressive Image Generation without Vector Quantization) 表明，可以完全随机地给像素编号。</p>
+<h3 id="提升视觉-Transformer-效率"><a href="#提升视觉-Transformer-效率" class="headerlink" title="提升视觉 Transformer 效率"></a>提升视觉 Transformer 效率</h3><p>视觉 Transformer 处理图像的效率本身就偏低，再算上多步图像生成带来的计算量，生成一张图像的速度将慢得惨不忍睹。能否加速视觉 Transformer 的计算效率呢？</p>
+<p>在早期的 ViT 工作 (An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale) 中，图像在正式输入 Transformer 前会做一步叫做「图块化」（patchify）的预处理操作。原来 $256 \times 256$ 大小的图像会被下采样 16 倍，转换成 $16 \times 16$ 个图块。输入的元素数变少了，Transformer 的计算时间自然也就降下来了。</p>
+<p>后续工作延续了这种压缩输入元素数的思想，但采用了不同的图像压缩方式。VQVAE, VQGAN, Latent Diffusion Model (LDM) 等论文使用自编码器对图像做近乎无损的压缩，再仅用生成模型来生成压缩图像。后续的 DiT (Diffusion Transfomrer, 来自论文 Scalable Diffusion Models with Transformers) 把这种借助自编码器的压缩方案集成到了基于 Transformer 的扩散模型中。</p>
+<h3 id="树"><a href="#树" class="headerlink" title="树"></a>树</h3><p>树是一种常见的数据结构，它以从整体到局部的顺序描述某种事物。树可以表示抽象的生活概念或者具体的计算机概念。比如，通常书籍的结构都是树形，我们可以用第一章、第 1 小节、第 1.1 小节这种逐级递进的结构组织书的内容。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/3.jpg" alt></p>
+<p>和植物里的树不同，数据结构中的树是从上往下生长的。最上面的节点叫做<strong>根节点</strong>。每个节点相邻的下层节点叫做<strong>子节点</strong>，相邻的上层节点叫做<strong>父节点</strong>。没有子节点的节点叫做<strong>叶节点</strong>。树本身还是一种满足<strong>递归</strong>性质的数据结构：我们可以忽略某节点的父节点及父节点连接的所有其他节点，从而将其看作是一个新的树。也就是说，每个节点其实都代表一个以这个节点为根的树。这样的树被称为<strong>子树</strong>。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/4.jpg" alt></p>
+<p>我们也可以用树来组织一个一维数组中的信息。比如，我们把四个数存在树的叶节点里，并让其余每个节点都维护整个子树里所有数据的某种统计信息（这里我们把统计信息定义为求和）。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/5.jpg" alt></p>
+<p>用这种树表示数据有什么好处呢？由于节点都维护了整个子树的所有信息，在查询整个树里某种统计信息时，我们不必访问每个叶节点，而是可以直接从某个中间节点中直接返回信息，以提升计算效率。比如，在上面的求和树中，我们要查询第 1-3 个元素的总和。我们不必逐个访问三个叶节点，而是可以去访问更少的节点。严格来说，普通查询区间和的复杂度是 $O(N)$，用这种求和树的话查询的复杂度会降为 $O(logN)$</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/6.jpg" alt></p>
+<h2 id="多叉树-Transformer"><a href="#多叉树-Transformer" class="headerlink" title="多叉树 Transformer"></a>多叉树 Transformer</h2><h3 id="Transformer-的平方复杂度"><a href="#Transformer-的平方复杂度" class="headerlink" title="Transformer 的平方复杂度"></a>Transformer 的平方复杂度</h3><p>我们先以一维数据为例，学习这篇论文是怎么加速 Transformer 的。在正式学习方法之前，我们再次复习一遍为什么 Tranformer 的运算是平方复杂度的。</p>
+<p>忽略 Transformer 中注意力运算的实现细节，我们仅关心每个运算的输入输出是什么。在 Transformer 中，由于自注意力运算是一种全局运算，每个元素的输出都取决于其他所有元素。从信息的交换次数来看，如果序列有 $N$ 个元素，每个元素都要至少访问 $N$ 个输入元素的信息，总计算的复杂度是 $O(N \times N)= O(N^2)$。 </p>
+<p><img src="/2025/03/06/20250305-fractal-generation/7.jpg" alt></p>
+<h3 id="用多叉树维护区间信息"><a href="#用多叉树维护区间信息" class="headerlink" title="用多叉树维护区间信息"></a>用多叉树维护区间信息</h3><p>在前文对树的知识回顾中，我们知道树的某个根节点可以维护整个子树内所有数据的统计信息。那么，我们可不可以用树来减少 Transformer 的信息交换次数呢？比如，我们要让 8 号元素查询 1-4 号元素的信息，我们不去逐个查询叶子节点，而是去查询它们构成的子树的根。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/8.jpg" alt></p>
+<p>那么，怎么让 Transformer 具有这样的树形结构呢？首先，我们先想办法让某个节点表示一个区间内的所有数据。回忆一下，在 Transformer 中，数据的输入输出形状都是 $N \times C$。这里，我们先假设 $C=1$，即每个数据都是一个实数。这样，我们可以通过通道拼接的方式把多个数据放在一个节点里，并用形状修改操作实现树节点的「分裂」操作。</p>
+<p>如下图所示。一开始，根结点处只有一个数据，数据的长度为 $8$，表示八个实数的拼接。树的每一条边表示 <code>reshape</code> 操作，表示把数据从通道维度 $C$ 上拆开，放到序列长度维度 $N$ 上。最后，数据变成了原本的形状 $8 \times 1$。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/9.jpg" alt></p>
+<p>接着，我们把多个 Transformer 加入树中。我们只允许同一个节点的所有子节点交换信息，而不与同一级的其他子节点交换信息。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/10.jpg" alt></p>
+<p>要进行多个独立的计算，可以利用数据的 batch 维度：我们把数据的形状从 $N \times C$ 拓展成 $B \times N \times C$，其中 $B$ 表示 batch 的数量。每个 batch 之间的运算是完全独立的。在下图中，一个蓝框表示一个 batch 的运算，不同框内运算是独立的。每次运算中，序列长度 $N$ 始终等于 $2$，这个 $2$ 表示的是一个树节点的子节点数。$C$ 和之前一样，表示数据向量的长度乘以区间里数据的个数。由于我们默认数据向量长度为 $1$，所以这里的 $C$ 还是表示区间里数据的个数。</p>
+<blockquote>
+<p>一个树的节点如果最多有 $k$ 个子节点，则该树被称为 $k$ 叉树。我们这里默认使用的是二叉树。</p>
+</blockquote>
+<p><img src="/2025/03/06/20250305-fractal-generation/11.jpg" alt></p>
+<p>这样的结构乍看起来很奇怪：这个树的每个节点表示什么意思？为什么只允许同一个节点的子节点之间交换信息？这样真的能加速吗？我们来一一解释这些问题。</p>
+<h3 id="多叉树-Tranformer-的原理解释"><a href="#多叉树-Tranformer-的原理解释" class="headerlink" title="多叉树 Tranformer 的原理解释"></a>多叉树 Tranformer 的原理解释</h3><p>首先，我们先忽略数据间的信息交换方式，仅考查每个节点的意义。由于更底层（更深层）的节点经过了更多次 Transformer 运算，所以深层的节点拥有的信息更加准确；与之相对，更浅层的节点的信息更加模糊，但概括性更强，能够描述多个节点的统计信息。如下图所示，a, b, c 三个节点的概括性越来越弱，但信息越来越准确。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/12.jpg" alt></p>
+<p>这个树和我们之前见过的求和树一样，每一个节点都维护了整个子树的统计信息。然而，对于求和操作，我们可以精确地维护一个子树里所有数据的和；但对于结果无法直接统计的 Transformer 运算，节点的信息越往上越模糊。我们在之后的分析中，必须要考虑浅层节点的信息损失。</p>
+<p>然后，我们来考查某一个节点能够看到哪些信息。不妨来考查 8 号节点。如下图所示，我们可以找出 8 号节点在整趟运算中「看过」的节点。它看过了总结 1-4 号节点的节点 a，看过了总结 5-6 号节点的节点 b，还看到了它自己以及相邻的 7 号节点。这样看来，8 号节点确实看到了序列里的每一项数据的统计信息。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/13.jpg" alt></p>
+<p>然而，如前所述，浅层节点的概括性虽强，它的准确性也越低。因此，每个节点在访问其他节点时，对于越邻近的节点，获取的信息越准确；相距越远的节点，获取的信息越模糊。这种设计其实假设了数据具有<strong>局部性</strong>：</p>
+<ul>
+<li>数据的输出几乎只取决于局部信息，越远的数据影响越小。</li>
+</ul>
+<p>由于图像数据满足局部性，因此用这种结构处理图像时，浅层节点的信息损失是能够接受的。</p>
+<p>最后，我们来计算这套模型的计算复杂度，以验证这种模型能够加速 Transformer。我们仅考虑一个元素的运算。为了获取一个元素的输出，我们要做 $K$ 次 Transformer 运算，其中 $K$ 为树的高度。每一轮 Transformer 运算中，数据的序列长度、通道数都是常数。因此，一轮运算的复杂度是 $O(K)$。如何计算树的高度 K 呢？假设我们用的是二叉树，则每加一层，树能表示的数据就乘 2。因此 $K=log_2N$。最终，一轮运算的复杂度是 $O(logN)$。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/13.jpg" alt></p>
+<p>当我们要处理 $N$ 项数据时，只需要对复杂度乘一个 $N$。最终，这个新网络结构处理整个序列的复杂度为 $O(NlogN)$，这比普通 Transformer 的 $O(N^2)$ 快多了。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>为了减少 Transformer 中的信息交换，我们重新定义元素的信息交换方式：元素不会直接看到其他元素的准确信息，而是会看到其他元素的统计信息。我们要求越远的信息概括性越强，但准确度越低。这样，每个元素都只需要访问 $O(logN)$ 个信息节点。</p>
+<p>为了产生这种不同层级的信息节点，我们使用了一种树状 Transformer 结构。越浅的节点经过的 Transformer 块越少，信息越模糊。为了在不增加复杂度的前提下进行信息交换，我们只允许子节点之间进行 Transformer 信息交换。由于子节点数是常数，每轮 Transformer 计算的计算量是固定的。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/11.jpg" alt></p>
+<p>我们完全可以让树的子节点更多，以提升效率。比如，我们可以把二叉树拓展成四叉树。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/14.jpg" alt></p>
+<h2 id="图像自回归生成实例"><a href="#图像自回归生成实例" class="headerlink" title="图像自回归生成实例"></a>图像自回归生成实例</h2><p>这套多叉树 Transformer 可以被广泛地用到各种视觉任务上。我们以论文中的图像自回归生成为例，简单了解一下这种模型的拓展方式。</p>
+<h3 id="从一维数据到二维数据"><a href="#从一维数据到二维数据" class="headerlink" title="从一维数据到二维数据"></a>从一维数据到二维数据</h3><p>把多叉树 Transformer 用到图像上时，我们只需要修改元素的编号方式，它从逻辑上等价于一维数据。比如，我们可以用如下的四叉树划分二维空间。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/15.jpg" alt></p>
+<h3 id="应用到自回归图像生成"><a href="#应用到自回归图像生成" class="headerlink" title="应用到自回归图像生成"></a>应用到自回归图像生成</h3><p>相比于一般直接预测结果的图像任务，自回归生成有一个额外的要求：后生成的像素无法看到先生成的像素，需要为 Transformer 的自注意力生成一个描述先后顺序的掩码。因此，在把多叉树应用到自回归图像生成时，我们只需要决定每一处 Transformer 的掩码是什么。</p>
+<p>决定掩码，其实就是决定元素的先后顺序。现在，Transformer 的运算仅在局部进行，我们其实只要随意为同一组做 Transformer 运算的数据标号。比如，对于二维四叉树，我们可以用下面的顺序对各组元素标号。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/16.jpg" alt></p>
+<p>从整体上看，我们并没有修改自回归生成的定义。上述过程只是一种自回归生成的特例而已，它等价于某种全局标号的普通自回归生成。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/17.jpg" alt></p>
+<h3 id="重要实现细节"><a href="#重要实现细节" class="headerlink" title="重要实现细节"></a>重要实现细节</h3><p>在附录中，作者提供了两项提升图像自回归生成效果的实现细节。</p>
+<p><strong>指引像素</strong> 在生成高分辨率图像时，让浅层的 Transformer 输出的颜色值与后续深层的输出颜色值对齐。当然，由于浅层的图块更大，这实际上是让深层输出颜色值的平均值和浅层输出对齐。</p>
+<p><strong>临近图块生成</strong> 直接用这套 Transformer 生成图像，会导致图块与图块的边缘不一致。为此，作者修改了 Transformer 的输出，让它除了输出当前图块的结果外，还输出上下左右四个相邻图块的结果。</p>
+<p>作者在代码中用了一些相对复杂的逻辑，只读论文难以理解方法实现细节。对细节感兴趣的读者欢迎阅读开源代码库里的 <code>models/mar.py</code> 文件。</p>
+<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><p>我们简单看一下本文的图像生成结果。由于这种 Transformer 复杂度较低，作者实现了一个像素级生成模型，而没有按照流行的方法使用两阶段潜空间 (latent space) 图像生成。由于模型直接输出的是每个像素取某一颜色值的概率（类似于 PixelCNN），该模型能够准确建模图像的概率。这种概率可以用 NLL (Negative Log-Likelihood) 指标反映，越低越好。</p>
+<p>先看最重要的 ImageNet-256 图像生成任务。作者仅比较了其他像素级生成模型。本文的最好的生成模型 FractalMAR 的 FID 并不是很好。现在主流生成模型的在此任务上的 FID 都小于 2。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/18.jpg" alt></p>
+<p>再看一下 NLL 指标的结果，作者比较了那些能够准确输出图像概率的模型。从最大似然估计的角度看，本文的方法确实很不错。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/19.jpg" alt></p>
+<p>从支持的任务上看，本文和其他类别约束的自回归模型一样，支持图像内插/外插，且可以用 ImageNet 类别作为指引。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/20.jpg" alt></p>
+<h2 id="论文表述批判性分析"><a href="#论文表述批判性分析" class="headerlink" title="论文表述批判性分析"></a>论文表述批判性分析</h2><p>在初次读文章时，我无论是看示意图还是看公式、文字，都不能理解算法的意思。反复读了几遍后，我才大概明白作者提出的其实是一种多叉树结构。我最后通过阅读代码验证了我的理解是正确的。我认为论文的部分叙述不够严谨，且对于贡献的总结不够准确。具体的分析如下。</p>
+<h3 id="是否是分治算法"><a href="#是否是分治算法" class="headerlink" title="是否是分治算法"></a>是否是分治算法</h3><p>对于一些朴素算法为 $O(N^2)$ 的序列处理任务，分治 (divide-and- conquer) 算法通过把任务拆成子任务并递归求解子任务的方法，将总算法的复杂度降到 $O(N^2)$ 以下。比如我们熟悉的快速排序就是一种分治算法。论文中反复将分形自回归称为分治算法，但它与传统意义上的分治算法存在较大的差别。</p>
+<p>分治算法的核心是「治」这一步。在子问题解决完了之后，我们要用低于 $O(N^2)$ 的时间合并两个子问题的解，产生一个新的当前问题的解。而对于本文介绍的图像生成任务，或者说本文介绍的多叉树 Transformer 模型，模型的输出是一次性决定好的，不存在返回父节点再次修改这一步，自然也没有什么低于 $O(N^2)$ 的合并算法。</p>
+<p>如果用分治算法实现图像生成，那么我们应该在不依赖全局信息的前提下生成局部像素，然后在父节点里根据邻近像素的生成结果，修改当前节点里所有像素的值。本文先决定整体再决定局部的方法恰好是反过来的。</p>
+<p>与其称为分治算法，本文的算法更加靠近树形动态规划：一个区间内所有元素的统计信息可以被综合考虑，而不必逐个访问每个元素。</p>
+<h3 id="分形自回归是否是一种高效的新生成范式"><a href="#分形自回归是否是一种高效的新生成范式" class="headerlink" title="分形自回归是否是一种高效的新生成范式"></a>分形自回归是否是一种高效的新生成范式</h3><p>作者声称以自回归模型为分形生成器的分形生成模型相较以往自回归建模方式计算效率更高。但是，在我看来，提升效率的本质原因是 Transformer 模型设计，而非生成范式上的改进。同时，作者的理论分析和方法设计完全对不上，实际上使用的还是传统自回归生成范式。</p>
+<p>原文的有关说明如下：假设每个自回归模型的序列长度是一个可控常量 $k$，并让随机变量的总长度 $N=k^n$，其中 $n=\text{log}_k(N)$ 表示我们的分形框架的递归层数。第一个分形框架的自回归层随后将（自回归的）联合概率分布划分成 $k$ 个子集，每个子集包含 $k^{n-1}$ 个变量。</p>
+<blockquote>
+<p>这里 $k$ 可以理解成多叉树的最大子节点数，即 $k$ 叉树。$n$ 表示树的高度。包含 $k^{n-1}$ 个变量表示一个大图块里包含 $k^{n-1}$ 个像素。</p>
+</blockquote>
+<p>正式地，我们将概率分布分解成</p>
+<script type="math/tex; mode=display">
+p(x_1, ..., x_{k^n})=\prod_{i=1}^k p(x_{(i-1)\cdot k^{n-1}+1}, ..., x_{i\cdot k^{n-1}} | x_1, ..., x_{(i-1)\cdot k^{n-1}}).</script><blockquote>
+<p>这个式子表示，总的概率分布可以拆成若干个条件概率。每个条件概率的已知事件是之前所有大图块里所有像素的概率，条件事件是当前大图块所有像素的概率。</p>
+</blockquote>
+<p>每个含 $k^{n-1}$ 个变量的条件分布 $p(…|…)$ 接着被第二级递归的自回归模型建模。以此类推。通过递归地调用这种分治过程，我们的分形框架可以通过用 $n$ 级自回归模型来高效率地应对 $k^n$ 个变量的联合分布求解问题，每一级只需要处理长度为 $k$ 的序列，且该序列长度可控。</p>
+<p>以上是论文原文。我开始读论文的时候没读懂这段话的意思。在我写这篇博文的时候，发现作者的意思其实可以用前文的示意图表示。由于每一个递归级的每个子问题都只需要处理长度为 $k$ 的序列，且这个 $k$ 是常量，所以总的复杂度是 $O(NlogN)$。</p>
+<p><img src="/2025/03/06/20250305-fractal-generation/11.jpg" alt></p>
+<p>但是，作者这段话不是针对 Transformer 来讲的，而是针对概率分布来讲的。用严谨的话描述，作者的意思可能是说，上面的那个概率分布按递归展开，最后只会有 $O(NlogN)$ 项。因此，总的计算复杂度降低了。</p>
+<blockquote>
+<p>计算概率分布的算法大致可以被称为分治算法。但计算概率分布和执行多叉树神经网络是两码事。</p>
+</blockquote>
+<p><img src="/2025/03/06/20250305-fractal-generation/21.jpg" alt></p>
+<p>这一段推理存在逻辑漏洞：概率公式有 $O(NlogN)$ 项，并不能代表最后的计算效率是 $O(NlogN)$。这中间还欠缺一个前提条件：每一项条件概率的计算时间是常数级。实际上，一轮自回归生成的计算时间取决于神经网络的设计，而跟自回归的建模方式无关。比如，同样是计算经典自回归条件概率 $P(x_i|x_1, …, x_{i-1})$，如果用 Transformer，它的复杂度就是 $O(i^2)$；如果用 CNN，它的复杂度就是 $O(i)$。</p>
+<p>另外，上述条件概率的计算和论文方法设计完全无关。论文完全没有提如何用模型估计各个叶节点的条件概率，然后用分治算法合并概率，用一套新损失函数优化联合概率。论文的方法完全是按照经典自回归的定义，用神经网络建模 $P(x_i|x_1, …, x_{i-1})$，再用交叉熵损失优化最新像素的类别分布。只不过这个神经网络是一个使用了多叉树优化的 Transformer。</p>
+<p>综上，我认为作者对于方法的分析和论文贡献的描述有误。作者并没有用到论文中提出的递归概率分布，只是用到了一个多叉树 Transformer。论文的核心贡献是加速 Transformer，而不是一种全新的生成范式。</p>
+<h2 id="科研方向探讨"><a href="#科研方向探讨" class="headerlink" title="科研方向探讨"></a>科研方向探讨</h2><p>正如论文所展示的，本文提出的多叉树 Transformer 可以用到 AR 和 MAR 两种生成范式上。我们也可以考虑把它拓展到其他生成范式，甚至其他视觉任务上。比如，将其拓展到 VAR (Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction) 上就是一个显而易见的改进方向。 VAR 用同一个 Transformer 处理所有尺度的图像，但这显然不是最优的。结合多叉树 Transformer，我们或许能够让不同层的 Transformer 输出不同尺度下的预测；同时，我们也可以用这种结构提升 VAR 的性能，避免使用全序列注意力。</p>
+<p>退一步，从更宏观的角度上看，这篇论文以及 VAR 等论文都是通过利用图像特性来减少计算量。我认为最重要的两个特性有：</p>
+<ul>
+<li>局部性：像素受到邻近像素的影响更大，受到远处像素影响更小。</li>
+<li>局部连续性：一块像素的颜色、信息是类似的，且变化是平滑的。这使得我们可以用下采样/图块化的大像素块来近乎无损地表示一块像素的统计信息，也允许我们将低尺度信息的线性上采样结果作为当前结果的近似。</li>
+</ul>
+<p>基于这两种特性，多数工作采用了如下的优化方案：</p>
+<ul>
+<li>降低像素间的依赖关系，较远处的像素与此处的像素可以相互独立地并行生成。</li>
+<li>用某种下采样表示一整块像素的信息。</li>
+<li>将图像生成建模成从低尺度到高尺度的递进式生成。</li>
+<li>使用残差设计，将高尺度图像定义为低尺度图像上采样加上残差图像。</li>
+</ul>
+<p>问题的关键就在于，我们应该把哪种优化方案放到算法的哪一步中。这篇论文实际上是把图像的多尺度表示用在了 Transformer 模型上。</p>
+<p>实不相瞒，我前段时间也尝试设计了一种使用二维四叉树的自注意力，用于加速所有视觉 Transformer，同时也希望实现一个像素级 Transformer。然而，我发现当下采样的比例超过 2 之后，模型的效果就会出现明显下降。当然，我相信对图像做全注意力是没有必要的，肯定存在着更优的加速方案，这个方向仍有研究价值。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Fractal Generative Models 论文提出了一种用多叉树优化的视觉 Transformer 结构。该 Transformer 将图像表达成多个尺度，浅层信息模糊但概括性强，深层信息准确但概括性弱。每个元素最终仅与 $O(logN)$ 个元素做自注意力，距离越远的元素，使用的信息越浅，访问的节点越少。作者用这个 Transformer 实现了自回归生成任务。特别地，作者实现了一个能够准确计算图像概率的像素级自回归模型。该模型在 ImageNet-64 NLL 指标上超越了以往模型，但在 ImageNet-256 的 FID 指标上不尽如人意。</p>
+<p>作者将这套方法称为一种新的生成范式，但我认为作者的表述有误。这种效率更高的视觉 Transformer 可以用在任何视觉任务上，比如 VAR 的生成范式上。我们也可以沿着这篇论文的设计思路，继续思考如何利用图像的自身特性，在不显著降低效果的前提下提升 Transformer 的计算效率。</p>
+<h2 id="相关解读文章"><a href="#相关解读文章" class="headerlink" title="相关解读文章"></a>相关解读文章</h2><p>解读何恺明团队新作：不用向量离散化的自回归图像生成</p>
+<p>NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/03/04/20250215-inference-time/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1517,116 +1707,6 @@ p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/12/15/20241212-Pyramid-Flow/" class="post-title-link" itemprop="url">论文速览 | Pyramid Flow：以低分辨率的前几帧为约束高效生成视频</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-12-15 21:55:08" itemprop="dateCreated datePublished" datetime="2024-12-15T21:55:08+08:00">2024-12-15</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>按分辨率从低到高的顺序生成图像是一种常见思路。此外，Diffusion Forcing 等论文带来了一种新的扩散模型视频生成思路：将视频生成转换为约束于前几帧图像的单张图像自回归生成。Pyramid Flow 工作把两种思路结合起来，提出了一种新的视频生成范式：在自回归生成新帧时，用低分辨率的前几帧图像作为约束。这使得模型能够更高效率地利用历史帧的信息。</p>
-<p>论文名：Pyramidal Flow Matching for Efficient Video Generative Modeling</p>
-<p>Arxiv： <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2410.05954">https://arxiv.org/abs/2410.05954</a></p>
-<p>GitHub：<a target="_blank" rel="noopener" href="https://github.com/jy0205/Pyramid-Flow">https://github.com/jy0205/Pyramid-Flow</a></p>
-<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>将图像生成拆解成从低分辨率到高分辨率是一种很常见的思想。基于扩散模型，有多种方式来应用这种思想。一种比较直接的方式是显式将图像生成分解成生成最低分辨率的图像和多轮超分辨率，代表工作是 <em>Cascaded Diffusion Models for High Fidelity Image Generation</em>；另一种更加巧妙的方式是将图像上采样和扩散模型的去噪同时进行，代表工作是 <em>f-DM: A Multi-stage Diffusion Model via Progressive Signal Transformation</em>。本文的多尺度设计和 f-DM 非常相似，我会在文末详细分析二者的区别。</p>
-<p>将视频生成转换为约束于之前所有帧的图像生成是一种再简单不过的想法。然而，在使用扩散模型时，选择最佳的约束方式并不是一个简单的问题。比较常见的添加图像约束的方式是与原输入在通道维度上拼接。对于视频自回归生成而言，这个做法的问题是网络对于约束图像和待生成图像的处理不统一。近期，Diffusion Forcing 工作告诉我们，我们可以给视频扩散模型的不同帧添加不同的噪声，并修改注意力机制，从而将其转换成一个约束于之前帧的图像生成模型，并且模型对每一帧的处理在注意力层以外是统一的。</p>
-<p>流匹配 (Flow Matching) 可以简单看成一种改进了噪声调度机制的 DDPM。假设时刻 $0$ 表示纯高斯噪声，时刻 $1$ 表示清晰图像，按照最常用的流匹配方法，中间 $t$ 时刻的带噪图像为二者的线性插值。</p>
-<script type="math/tex; mode=display">
-\mathbf{x}_t = t\mathbf{x}_1 + (1 - t)\mathbf{x}_0</script><p>此外，去噪网络的预测目标也从残余噪声 (epsilon) 改为了速度（velocity）。</p>
-<p>相关博文：</p>
-<p><a href="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/">Diffusion Forcing</a></p>
-<h2 id="多尺度的加噪过程"><a href="#多尺度的加噪过程" class="headerlink" title="多尺度的加噪过程"></a>多尺度的加噪过程</h2><p>扩散模型中，我们要把清晰图像中的信息逐渐破坏掉。这样的图像退化方式不只添加高斯噪声一种，我们可以在添加噪声的同时下采样图像，定义出一种新的扩散模型前向过程（退化过程）。</p>
-<p>如下图的一维扩散模型所示，Pyramid Flow 在加噪的同时做两次下采样。总时间被拆成了三段，第 $k$ 个阶段的时间范围是 $[s_k, e_k]$。</p>
-<p><img src="/2024/12/15/20241212-Pyramid-Flow/1.png" alt></p>
-<p>做下采样后，图像中的信息会突然减少。为了让同一个阶段的图像逐渐失去这些信息，而不是在一次下采样中突然失去，我们采用这样的插值策略：设 $\mathbf{x}_t$ 为最大分辨率下 $t$ 时刻的带噪图像（其计算方法由上文的流匹配噪声公式决定），那么在第 $k$ 阶段的分辨率下，$t$ 时刻的带噪图像 $\hat{\mathbf{x}}_t$ 为：</p>
-<script type="math/tex; mode=display">
-\hat{\mathbf{x}}_{t} = t' Down(\mathbf{x}_{e_k}, 2^k) + (1-t')Up(Down(\mathbf{x}_{s_k}, 2^{k+1}))</script><p>其中，$Down(\mathbf{x}, a)$ 表示把 $\mathbf{x}$ 下采样 $a$ 倍，$Up(\mathbf{x})$ 表示把 $\mathbf{x}$ 上采样 $2$ 倍，$t’=(t-s_k)/(e_k-s_k)$ 表示 $t$ 时刻在第 $k$ 阶段里的插值比例。初看这些公式可能会有点头大，我们可以先看下面的示意图再回头看公式。</p>
-<p><img src="/2024/12/15/20241212-Pyramid-Flow/2.png" alt></p>
-<p>公式里做插值的两项分别表示当前阶段最清楚、最模糊的图像，插值比例 $t’$ 为 $t$ 在当前阶段的时间窗口里的比例。这种插值不仅让噪声强度渐变，还让因下采样而产生的信息损失渐变，就好像是我们在连续地对图像下采样一样。</p>
-<p>修改了退化机制后，除了定义流匹配的输入变量 $\hat{\mathbf{x}}_{t}$ 外，我们还可以定义新的流匹配学习目标。流匹配的学习目标是一个速度，而速度又可以由两个端点决定。我们可以用上面的公式定义每一个阶段的端点 $\hat{\mathbf{x}}_{e_k}, \hat{\mathbf{x}}_{s_k}$，再以速度 $\hat{\mathbf{x}}_{e_k} - \hat{\mathbf{x}}_{s_k}$ 为该阶段所有点的学习目标。</p>
-<h2 id="重新设置上采样噪声"><a href="#重新设置上采样噪声" class="headerlink" title="重新设置上采样噪声"></a>重新设置上采样噪声</h2><p>在多尺度生成时，我们必须仔细考虑图像应该怎么跨越两个阶段，也就是图像该怎么上采样。</p>
-<p>大多数涉及扩散模型多尺度生成的工作（比如 Laplacian Diffusion Models sampling, f-DM）都会在上采样时考虑调整噪声强度的大小。而 Pyramid Flow 不仅考虑了噪声的强度，还考虑到了噪声的协方差矩阵——原本扩散模型不同位置的噪声是相互独立的，但 2 倍上采样后一个像素会影响到周围 4 个像素，因此噪声之间的关系需要用协方差矩阵表示而不是独立表示。作者根据协方差矩阵必须半正定这一性质推导了一个更好的修改上采样后噪声的方法。</p>
-<h2 id="多尺度视频生成"><a href="#多尺度视频生成" class="headerlink" title="多尺度视频生成"></a>多尺度视频生成</h2><p>Diffusion Forcing 工作表明，在训练视频扩散模型时，不同帧的退化程度可以不同。而在 Pyramid Flow 的框架下，图像的退化不仅包括加噪，还包括降采样。因此，用 Pyramid Flow 训练视频扩散模型时，可以让过往帧为低分辨率的，只让最新帧为最高分辨率的。这样做可以大大减少注意力操作的输入量，提升计算效率。此外，还可以参照 Diffusion Forcing 的做法，通过因果（causal）注意力把视频扩散模型转换成约束于前几帧的单张图像自回归生成。</p>
-<p><img src="/2024/12/15/20241212-Pyramid-Flow/3.png" alt></p>
-<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p>最后，我们来简单看一下 Pyramid Flow 的实现细节。Pyramid Flow 可以基于任何一种 DiT 架构的文生图模型开发，比如 SD3 和 FLUX.1。为了将文生图模型转换成视频模型，本工作做了如下的适配：</p>
-<ul>
-<li>将图像 VAE 变成能在时间维度压缩视频的 3D VAE。</li>
-<li>在 DiT 中用 RoPE 描述时间维度的位置关系。空间维度位置编码保持原模型的设计。</li>
-</ul>
-<p>另外，为了对齐不同尺度的空间位置编码，本工作参考 CogVideoX，对低分辨率图像使用了位置编码外推。</p>
-<p>本工作开源的视频模型需要用 128 块 A100 训练约 1 天，能生成 241 帧总时长 10 秒的视频。相比其他视频模型来说要的资源已经少了很多了。</p>
-<h2 id="批判性分析与总结"><a href="#批判性分析与总结" class="headerlink" title="批判性分析与总结"></a>批判性分析与总结</h2><p>Pyramid Flow 在多尺度加噪的设计上和以往工作 f-DM 非常相似。二者都把扩散模型的加噪拆成不同尺度，都在同一尺度内采取线性插值的方式计算带噪图片，都考虑了上采样时噪声的变化。二者的不同之处在于：</p>
-<ul>
-<li>f-DM 用的是 DDPM 的噪声调度，而 Pyramid Flow 用的是 Rectified Flow 的公式。由于 Rectified Flow 的公式本来就是线性插值，因此它对同尺度带噪图像插值来说兼容性更好一点。</li>
-<li>基于上一点，可能是由于同尺度线性插值与 DDPM 不太兼容，f-DM 额外用一个残差项表示下采样导致的误差。Pyramid Flow 没用到这一设计。</li>
-<li>f-DM 从局部信噪比的角度推导了上采样时噪声应该发生的变化，而 Pyramid Flow 是从协方差矩阵的角度。</li>
-</ul>
-<p>Pyramid Flow 没引用 f-DM，作者大概是独立发明了一遍类似的加噪策略。我在 GitHub 上已经告知了作者有 f-DM 这篇类似论文。当然，哪怕是有类似工作在前，Pyramid Flow 在结合流匹配和多尺度生成上还是有一定创新的。</p>
-<p>包括这个工作在内，有好几个工作都在用扩散模型做多尺度图像生成。但是，不像自回归中的 VAR，这些工作在纯图像生成任务上并不是很有名。因此，多尺度生成虽然是一个不错的想法，但我们还需要多多思考该怎么在扩散模型里应用它。Pyramid Flow 最大的意义可能不在于其多尺度的设计，而在于将多尺度生成融合进了视频生成中。这样做最直接的好处是减少了历史帧的数据量，提升了模型计算效率。</p>
-<p>虽然这个工作试图用同一个去噪模型来处理任意尺度的图像，但实际上它只用了 3 个尺度。只用 3 个尺度并不能说明模型能够处理任意多尺度的图像，这可能仅仅是暴力拟合的结果。因此，我觉得一个比较重要的思考方向是：怎么让去噪扩散模型更好地理解图像尺度这一概念，复用各个尺度的知识，从而实现任意多尺度的图像去噪。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1696,7 +1776,7 @@ p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">149</span>
+          <span class="site-state-item-count">150</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1709,7 +1789,7 @@ p(r_k|r_1, r_2, ..., r_{k-1}) = \prod_{i=1}^{I_k}p(r_k^i|r_1, r_2, ..., r_{k-1})
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-count">64</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

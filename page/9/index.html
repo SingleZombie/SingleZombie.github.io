@@ -168,6 +168,321 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/27/DLS-note-summary-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/27/DLS-note-summary-2/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》第二阶段总结与第三阶段预览</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-27 18:56:06" itemprop="dateCreated datePublished" datetime="2022-06-27T18:56:06+08:00">2022-06-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在过去的三周，我们学完了《深度学习专项》的第二门课《改进深度神经网络：调整超参数、正则化和优化》。这些知识十分零散，让我们用点技能点的方式回顾一下这些知识，同时评测一下自己的学习情况。复习完了后，我们来看看下一门课的学习内容。</p>
+<h1 id="第二阶段回顾"><a href="#第二阶段回顾" class="headerlink" title="第二阶段回顾"></a>第二阶段回顾</h1><p>在本节中，你需要记下两个数字：技能点数和觉醒技能点数。</p>
+<p>技能点获取规则：必须先点完基础的知识，再点进阶的知识。同级知识之间没有先后限制。同时，某些知识还有额外的前置条件。</p>
+<h2 id="数据集划分"><a href="#数据集划分" class="headerlink" title="数据集划分"></a>数据集划分</h2><p><strong>浅尝（+1点）</strong></p>
+<ul>
+<li>数据集可以分成训练集、开发集、测试集三种。</li>
+<li>数据量小时按比例划分，数据量大时只需要选少量数据用作开发集、测试集。</li>
+<li><strong>开发集和测试集的区别：开发模型时不能偷看测试集的评估结果。</strong></li>
+</ul>
+<h2 id="偏差与方差"><a href="#偏差与方差" class="headerlink" title="偏差与方差"></a>偏差与方差</h2><p><strong>浅尝（+1点）</strong></p>
+<ul>
+<li>理解偏差和方差的基本意义。</li>
+<li>能用二维点集分类的例子描述偏差问题和方差问题。</li>
+<li>在知道了模型在训练集、开发集上的误差后，能够诊断模型存在的问题。</li>
+</ul>
+<p><strong>精通 - 解决偏差与方差问题（+1点）</strong></p>
+<p>前置技能点：正则化</p>
+<ul>
+<li>面对偏差问题，常见的解法是使用的更复杂的模型提升参数量，并延长训练时间。</li>
+<li>面对方差问题，常见的解法是增加数据（数量和质量）和正则化。</li>
+<li>改变模型结构往往能同时解决这两个问题。</li>
+</ul>
+<h2 id="正则化"><a href="#正则化" class="headerlink" title="正则化"></a>正则化</h2><p><strong>浅尝（+1点）</strong></p>
+<p>前置技能点：了解方差</p>
+<ul>
+<li>正则化的作用：缓解过拟合。</li>
+<li>正则化的通用思想：防止网络过分依赖少量的某些参数。</li>
+</ul>
+<p><strong>入门 - 添加正则化项（+1点）</strong></p>
+<p>在损失函数新加一项：</p>
+<script type="math/tex; mode=display">
+J(w, b) = \frac{1}{m}\Sigma_{i=1}^{m}L(\hat{y}, y) + \frac{\lambda}{2m}||w^2||_2</script><p>梯度下降时稍微修改一下参数的更新方法：</p>
+<script type="math/tex; mode=display">
+w :=(1-\frac{\alpha\lambda}{m})w-\alpha dw</script><p><strong>精通 - dropout（+1点）</strong></p>
+<ul>
+<li>dropout的思想：训练时随机丢掉某些激活输出。</li>
+<li>dropout的实现：由随机数矩阵和失活概率算出一个bool矩阵，以此bool矩阵为mask与激活输出相乘。</li>
+</ul>
+<p><strong>博闻 - 其他正则化方法（+1点）</strong></p>
+<ul>
+<li>数据增强。</li>
+<li>提前停止（early stopping)。</li>
+<li>……</li>
+</ul>
+<p>若能够实现正则化项、dropout、提前停止，则获得<strong>1觉醒点</strong>。</p>
+<h2 id="参数初始化"><a href="#参数初始化" class="headerlink" title="参数初始化"></a>参数初始化</h2><p><strong>浅尝（+0点）</strong></p>
+<ul>
+<li>知道参数要用比较小的值初始化。</li>
+</ul>
+<p><strong>入门（+1点）</strong></p>
+<ul>
+<li>了解梯度数值异常的原因：中间计算结果随网络层数指数级变化。</li>
+<li>参数初始化可以令数据的方差尽可能靠近1，防止梯度异常问题。</li>
+</ul>
+<p><strong>精通（+1点）</strong></p>
+<ul>
+<li>知道如何添加参数初始化系数。</li>
+<li>了解常见的初始化系数的选择方法，比如He、Xavier。</li>
+</ul>
+<p><strong>博闻（+1点）</strong></p>
+<ul>
+<li>看参数初始化的原论文，深入理解参数初始化的原理。</li>
+</ul>
+<h2 id="梯度检查"><a href="#梯度检查" class="headerlink" title="梯度检查"></a>梯度检查</h2><p><strong>精通（+1点）</strong></p>
+<ul>
+<li>知道梯度检查的数学公式。</li>
+<li>实现简单模型的梯度检查。</li>
+</ul>
+<p><strong>博闻（+1点）</strong></p>
+<ul>
+<li>会用编程框架里的梯度检查以调试大模型里的梯度。</li>
+</ul>
+<h2 id="mini-batch"><a href="#mini-batch" class="headerlink" title="mini-batch"></a>mini-batch</h2><p><strong>入门（+1点）</strong></p>
+<ul>
+<li>知道mini-batch是怎么根据batchsize划分训练集的。</li>
+<li>能够实现mini-batch。</li>
+</ul>
+<p><strong>精通（+2点）</strong></p>
+<ul>
+<li>mini-batch的加速原理：增加参数更新次数，同时不影响向量化运算的性能。</li>
+<li>在实验中体会不同batchsize的效果，能灵活选择batchsize。</li>
+</ul>
+<h2 id="指数加权移动平均"><a href="#指数加权移动平均" class="headerlink" title="指数加权移动平均"></a>指数加权移动平均</h2><p><strong>入门（+1点）</strong></p>
+<ul>
+<li>移动平均数的作用。</li>
+<li>指数加权移动平均的公式：$v_i=\beta v_{i-1} + (1 - \beta)t_i$。</li>
+</ul>
+<p><strong>精通（+1点）</strong></p>
+<ul>
+<li>大概明白为什么使用指数加权移动平均而不使用普通的移动平均。</li>
+<li>偏差矫正的原理和实现。</li>
+</ul>
+<h2 id="高级梯度下降算法"><a href="#高级梯度下降算法" class="headerlink" title="高级梯度下降算法"></a>高级梯度下降算法</h2><p>前置知识：指数加权移动平均</p>
+<p><strong>精通 - Momentum（+1点）</strong></p>
+<ul>
+<li>大致理解Momentum的思想。</li>
+<li>掌握公式，能用代码实现，知道一般情况下超参数$\beta=0.9$。</li>
+</ul>
+<p><strong>精通 - RMSProp（+0点）</strong></p>
+<ul>
+<li>掌握公式，能用代码实现，知道有哪些超参数。</li>
+</ul>
+<p><strong>精通 - Adam（+2点）</strong></p>
+<p>前置知识：Momentum, RMSProp</p>
+<ul>
+<li>掌握公式，能用代码实现，知道一般情况下超参数$\beta_1=0.9, \beta_2=0.999, \epsilon=10^{-8}$，基本不需要调参。</li>
+</ul>
+<p><strong>博闻（+1点）</strong></p>
+<ul>
+<li>阅读经典优化器的论文。</li>
+<li>了解各优化器的由来，能直观理解各种优化算法的意义。</li>
+</ul>
+<p>实现Adam后，获得<strong>1觉醒点</strong>。</p>
+<h2 id="学习率衰减"><a href="#学习率衰减" class="headerlink" title="学习率衰减"></a>学习率衰减</h2><p><strong>精通（+1点）</strong></p>
+<ul>
+<li>知道学习率衰减的意义。</li>
+<li>了解几个常见的学习率衰减公式。</li>
+</ul>
+<p>尝试使用Mini-batch、高级优化算法、学习率衰减训练网络，比较各类改进梯度下降方法的效果，则获得<strong>1觉醒点</strong>。</p>
+<h2 id="调参"><a href="#调参" class="headerlink" title="调参"></a>调参</h2><p><strong>浅尝（+1点）</strong></p>
+<ul>
+<li>明确自己的模型里有哪些超参数。</li>
+<li>大概知道超参数的优先级，会先去尝试调学习率。</li>
+</ul>
+<p><strong>入门（+1点）</strong></p>
+<ul>
+<li>调参整体思想：随机选数，由粗至精。</li>
+<li>不要均匀采样，而要根据参数的意义选择合适的搜索尺度。</li>
+</ul>
+<h2 id="批归一化"><a href="#批归一化" class="headerlink" title="批归一化"></a>批归一化</h2><p><strong>浅尝（+0点）</strong></p>
+<ul>
+<li>知道批归一化的存在。</li>
+<li>知道深度学习框架有时默认附带批归一化操作。</li>
+</ul>
+<p><strong>入门（+1点）</strong></p>
+<ul>
+<li>知道批归一化的意义，与输入归一化的异同。</li>
+<li>知道批归一化层有两个超参数。</li>
+</ul>
+<p><strong>精通（+1点）</strong></p>
+<ul>
+<li>知道批归一化的数学公式（正向传播、反向传播）。</li>
+<li>知道批归一化在测试时的用法。</li>
+</ul>
+<p><strong>精通II（+1点）</strong></p>
+<ul>
+<li>动手实现批归一化</li>
+</ul>
+<p><strong>博闻（+1点）</strong></p>
+<p>完成<strong>入门</strong>即可学习。</p>
+<ul>
+<li>了解其他的几种归一化(layer, group)。</li>
+<li>知道不同归一化方法的优劣。</li>
+</ul>
+<h2 id="多分类问题"><a href="#多分类问题" class="headerlink" title="多分类问题"></a>多分类问题</h2><p><strong>浅尝（+1点）</strong></p>
+<ul>
+<li>多分类问题的定义。</li>
+<li>知道多分类问题的输出、训练集标签与二分类有什么不同。</li>
+</ul>
+<p><strong>精通 - softmax（+1点）</strong></p>
+<ul>
+<li>softmax的公式定义。</li>
+<li>如何在网络中使用softmax。</li>
+<li>大致了解softmax为什么要做一步指数运算。</li>
+</ul>
+<p><strong>精通II - 实现带softmax的多分类网络（+1点）</strong></p>
+<ul>
+<li>one-hot编码转换。</li>
+<li>实现多分类网络。</li>
+<li>利用one-hot处理标签和输出结果，正确评测多分类网络。</li>
+</ul>
+<h2 id="初识Tensorflow"><a href="#初识Tensorflow" class="headerlink" title="初识Tensorflow"></a>初识Tensorflow</h2><p><strong>浅尝 - 编程框架（+1点）</strong></p>
+<ul>
+<li>知道编程框架能做什么事。</li>
+<li>认识常见的编程框架。</li>
+<li>知道选择编程框架的原则。</li>
+</ul>
+<p><strong>入门（+1点）</strong></p>
+<ul>
+<li>安装GPU版的TensorFlow。</li>
+</ul>
+<p><strong>精通（+2点，+1觉醒点）</strong></p>
+<p>前置知识：多分类问题</p>
+<ul>
+<li>使用TensorFlow实现多分类网络。</li>
+</ul>
+<h1 id="第二阶段自评"><a href="#第二阶段自评" class="headerlink" title="第二阶段自评"></a>第二阶段自评</h1><p>在“回顾”一节中，共35个普通技能点，4个觉醒技能点。普通技能点主要表示课堂知识，以及少量的课堂上没讲到的可拓展知识点（我自己也拿不满），觉醒技能点主要表示对知识的综合实现与应用。让我们根据自己获得的技能点数，看看自己的学习情况。</p>
+<h2 id="Level-0：乱搞一通"><a href="#Level-0：乱搞一通" class="headerlink" title="Level 0：乱搞一通"></a>Level 0：乱搞一通</h2><p>条件：<strong>技能点≤5</strong></p>
+<p>评价：随便去拷贝了几份深度学习代码，跑通了，就以为自己会深度学习了。丝毫不去关心深度学习的基础知识。这样下去，学习和应用更难的深度学习技术时肯定会碰到很多困难。</p>
+<h2 id="Level-1：初来乍到"><a href="#Level-1：初来乍到" class="headerlink" title="Level 1：初来乍到"></a>Level 1：初来乍到</h2><p>条件：<strong>6≤技能点≤15</strong></p>
+<p>预估学习情况：大致获取了6个<strong>浅尝</strong>技能点和7个<strong>入门</strong>技能点，没有对知识做进一步的思考和实现。</p>
+<p>评价：要学会使用深度学习编程框架，甚至复现出一些经典模型，了解入门知识就足够了。尽管如此，钻研更深的知识对深度学习项目的开发还是有很大的帮助的。</p>
+<h2 id="Level-2：学有所成"><a href="#Level-2：学有所成" class="headerlink" title="Level 2：学有所成"></a>Level 2：学有所成</h2><p>条件：<strong>16≤技能点≤22</strong>。至少有1个觉醒点才能升级到Level 2。</p>
+<p>预估学习情况：完全获取了6个<strong>浅尝</strong>技能点和7个<strong>入门</strong>技能点，深入理解了部分知识，进行过代码实现。</p>
+<p>评价：非常棒！相信在这一过程中，你已经对部分知识有了更深的理解。第二阶段的所有知识都很重要，建议坚持下去，把所有知识都探究完。</p>
+<h2 id="Level-3：登堂入室"><a href="#Level-3：登堂入室" class="headerlink" title="Level 3：登堂入室"></a>Level 3：登堂入室</h2><p>条件：<strong>23≤技能点≤32</strong>。至少有3个觉醒点才能升级到Level 3。</p>
+<p>预估学习情况：完全获取了6个<strong>浅尝</strong>技能点和7个<strong>入门</strong>技能点，基本获取了17个<strong>精通</strong>知识点，对部分自己感兴趣的知识做了额外的探究。</p>
+<p>评价：恭喜！学到这里，你可以说自己已经完全掌握了第二阶段的知识了。同时，在多个代码实现项目中，你也锻炼了编程能力，从代码的角度近距离接触了各项知识。相信这些学习经验会对你未来的学习和应用产生莫大的帮助。</p>
+<h2 id="Level-4：学无止境"><a href="#Level-4：学无止境" class="headerlink" title="Level 4：学无止境"></a>Level 4：学无止境</h2><p>条件：<strong>33≤技能点≤35</strong>。至少有4个觉醒点才能升级到Level 4。</p>
+<p>预估学习情况：学懂了除<strong>博闻</strong>外所有的知识点，对课堂中没有详细介绍的知识做了补充学习。同时，完成了大量的编程练习。</p>
+<p>评价：很强。能做到这一步，说明你对深度学习的学习充满了兴趣。相信这一兴趣能够帮助在未来的学习中走得更远。</p>
+<h2 id="成就"><a href="#成就" class="headerlink" title="成就"></a>成就</h2><p>此外，还要颁发两个成就：</p>
+<p><strong>编程狂魔</strong>：获取4个觉醒点。</p>
+<p><strong>百科全书</strong>：获取5个博闻知识点。</p>
+<h1 id="第三阶段知识预览"><a href="#第三阶段知识预览" class="headerlink" title="第三阶段知识预览"></a>第三阶段知识预览</h1><p>经过了三周紧张的学习，我们学到了非常多硬核的深度学习知识，还完成了不少编程项目。</p>
+<p>在《深度学习专项》的下一门课《组织深度学习项目》中，我们会用两周时间，轻松地学一些不那么困难的知识：</p>
+<ul>
+<li>机器学习改进策略的宗旨<ul>
+<li>正交化</li>
+</ul>
+</li>
+<li>设置改进目标<ul>
+<li>评估指标</li>
+<li>数据集划分的细节</li>
+</ul>
+</li>
+<li>与人类表现比较<ul>
+<li>为什么使用人类的表现</li>
+<li>理解并利用人类表现</li>
+<li>试图改进模型以超过人类的表现</li>
+</ul>
+</li>
+<li>差错分析<ul>
+<li>分析开发误差的由来</li>
+<li>清理错标数据</li>
+</ul>
+</li>
+<li>不匹配的训练与开发/测试集<ul>
+<li>如何使用不同分布的数据</li>
+<li>如何在这种情况下评估偏差与方差</li>
+<li>解决数据不匹配问题</li>
+</ul>
+</li>
+<li>完成多个任务<ul>
+<li>迁移学习</li>
+<li>多任务学习</li>
+</ul>
+</li>
+<li>端到端学习<ul>
+<li>什么是端到端学习</li>
+<li>何时用端到端学习</li>
+</ul>
+</li>
+</ul>
+<p>从标题中也能大致看出，这些知识基本不涉及任何复杂的数学公式，学习起来应该会很轻松。不过，了解这些知识也是很有必要的。在搭建一个能解决实际问题的深度学习项目时，这些组织深度学习项目的经验往往能帮助到我们。让我们做好准备，迎接新课程的学习。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/27/DLS-note-7-2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -3107,115 +3422,6 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/04/23/DLS-note-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/04/23/DLS-note-1/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记+代码实战（一）：深度学习入门</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-04-23 21:49:02" itemprop="dateCreated datePublished" datetime="2022-04-23T21:49:02+08:00">2022-04-23</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>最近在学吴恩达的《深度学习专项》（Deep Learning Specialization)。为了让学习更有效率（顺便有一些博文上的产出），我准备写一些学习笔记。笔记的内容比较简单，没有什么原创性的内容，主要是对课堂的知识进行梳理（这些文章的标题虽然叫”笔记“，但根据我之前的分类，这些文章由于原创性较低，被划分在”知识记录“里）。如果读者也在学这门课的话，可以对照我总结出来的知识，查缺补漏。之后几节课有课后作业，我会在笔记里讲解我的编程思路，给读者一些编程上的启发。</p>
-<p>文章中的正文主要是对课堂内容的总结。引用里的内容和每篇笔记的总结是我个人的观点或评论。</p>
-<h2 id="什么是神经网络"><a href="#什么是神经网络" class="headerlink" title="什么是神经网络"></a>什么是神经网络</h2><p>我们把一个有输入有输出的计算单元叫做“神经元”。神经元可以简单地理解成一个线性函数。比如要预测房价和房屋面积的关系，我们可以近似地用一个线性函数去拟合。这个函数就是一个神经元。</p>
-<blockquote>
-<p>事实上，一个神经元不仅包含一个线性函数，还包括一个激活函数。这里提到了激活函数 ReLU 的概念，其具体内容应该会在后面介绍。</p>
-</blockquote>
-<p>神经元的堆叠，构成了神经网络，如下图所示。</p>
-<p><img src="/2022/04/23/DLS-note-1/1.jpg" alt></p>
-<p>在用一个神经元来表示房价和房屋面积的关系时，神经元的输入是房屋面积，输出是房价。而用多层神经元时，每个神经元的意义可能都不一样。比如中间的神经元可能会根据输入的邮政编码、地址特征，输出一个表示房屋地段的中间特征。在神经网络中，这些特征都是<strong>自动生成</strong>的（意味着我们只需要管理神经网络的输入和输出，而不用指定中间的特征，也不用理解它们究竟有没有实际意义）。</p>
-<blockquote>
-<p>以前的一些机器学习要手动设置特征。而神经网络这种自动生成特征的性质，是其成功的原因之一。</p>
-</blockquote>
-<h2 id="用神经网络做监督学习"><a href="#用神经网络做监督学习" class="headerlink" title="用神经网络做监督学习"></a>用神经网络做监督学习</h2><blockquote>
-<p>要理解监督学习，其实应该要对比无监督学习。本节实际上是介绍了监督学习的几个例子。</p>
-</blockquote>
-<p>常见的神经网络有三类：</p>
-<ol>
-<li>标准神经网络（即全连接网络）可以用于房屋分类、广告分类问题。（这些问题一般输入是<strong>结构化</strong>的）</li>
-<li>卷积神经网络（CNN）一般用于图像相关的问题，比如图片猫狗分类，自动驾驶中识别其他车辆的位置。</li>
-<li>循环神经网络（RNN）一般用于处理有时序的序列数据，比如和声音、文字有关的应用都需要RNN。</li>
-</ol>
-<p>结构化数据，就是所有其数据项都是人能理解的（房子的面积、价格）。对比来看，无结构化的数据的具体含义是无法直接解释的，比如图像每一个像素值、声音某时刻的频率和响度、某一个文字/单词。</p>
-<h2 id="为什么最近深度学习“起飞”了？"><a href="#为什么最近深度学习“起飞”了？" class="headerlink" title="为什么最近深度学习“起飞”了？"></a>为什么最近深度学习“起飞”了？</h2><p><img src="/2022/04/23/DLS-note-1/2.jpg" alt></p>
-<p>这张图足以解释深度学习腾飞的原因。随着数据量的增加，所有方法都有性能的上限。而对于神经网络来说，结构越复杂的神经网络，其性能上限越高。复杂的神经网络（深度学习方法）在海量数据不断产生的今天更具优势。</p>
-<p>光有大量的数据，没有使用数据的方法是不够的。总结来看，深度学习在近几年得到发展的原因有下：</p>
-<ul>
-<li>互联网的发展使得数字数据大量增长。</li>
-<li>GPU等计算设备使得处理数据的硬件变强。</li>
-<li>深度学习的算法不断更新迭代，从软件层面上加快了数据处理。（比如激活函数的改进，从sigmoid到ReLU）</li>
-</ul>
-<p>深度学习本质上还是以实验为主。计算能力上来了，研究人员做实验做得快了，各种各样的深度学习的应用也就出来了。各种应用又鼓舞着更多人参与深度学习研究。也就是说，是计算能力的提升使得近年来深度学习进入了良好的正反馈循环中。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>第一周的课没有什么深奥的内容，主要是给对深度学习不太熟悉的同学们介绍了下背景知识。</p>
-<p>在我看来，这周的课需要记住的东西有：</p>
-<ul>
-<li>神经元有输入和输出的计算单元。神经元堆叠成了神经网络。</li>
-<li>大致有三种不同类型的神经网络，适用于不同的任务。</li>
-<li>神经网络的性能随其规模和数据量而增长。</li>
-<li>计算效率的提高使深度学习近期得到飞速发展。</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -3285,7 +3491,7 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">149</span>
+          <span class="site-state-item-count">150</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -3298,7 +3504,7 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">63</span>
+        <span class="site-state-item-count">64</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
