@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://zhouyifan.net/2023/07/07/20230330-diffusion-model/</loc>
+    <lastmod>2025-03-19</lastmod>
+  </url>
+  <url>
     <loc>https://zhouyifan.net/2025/03/06/20250305-fractal-generation/</loc>
-    <lastmod>2025-03-06</lastmod>
+    <lastmod>2025-03-14</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2024/07/27/20240717-ar-wo-vq/</loc>
@@ -139,10 +143,6 @@
   <url>
     <loc>https://zhouyifan.net/2024/01/23/20230709-SD2/</loc>
     <lastmod>2024-01-23</lastmod>
-  </url>
-  <url>
-    <loc>https://zhouyifan.net/2023/07/07/20230330-diffusion-model/</loc>
-    <lastmod>2023-09-27</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2023/05/07/20230506-numba/</loc>
