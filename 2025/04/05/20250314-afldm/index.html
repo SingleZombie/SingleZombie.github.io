@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="潜扩散模型 (Latent Diffusion Models, LDM) 常因生成过程不稳定而备受诟病：哪怕模型的输入只是受到了一点微小的扰动，模型的最终输出也会截然不同。以视频逐帧风格化任务为例，哪怕对每帧使用同样的 Stable Diffusion ControlNet 图生图编辑方法，同样的随机种子，生成的风格化视频会有明显的闪烁现象。    为了找出这一现象的原因，我们设计了一种配置简单的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CVPR 2025 Oral | Alias-Free LDM: 从平移等变性的角度提升潜扩散模型生成稳定性">
+<meta property="og:url" content="https://zhouyifan.net/2025/04/05/20250314-afldm/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="潜扩散模型 (Latent Diffusion Models, LDM) 常因生成过程不稳定而备受诟病：哪怕模型的输入只是受到了一点微小的扰动，模型的最终输出也会截然不同。以视频逐帧风格化任务为例，哪怕对每帧使用同样的 Stable Diffusion ControlNet 图生图编辑方法，同样的随机种子，生成的风格化视频会有明显的闪烁现象。    为了找出这一现象的原因，我们设计了一种配置简单的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/1.5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/1.6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/2.5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/m1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/13.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/14.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/15.jpg">
+<meta property="article:published_time" content="2025-04-05T05:44:43.000Z">
+<meta property="article:modified_time" content="2025-04-05T05:44:43.055Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta property="article:tag" content="同变性">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2025/04/05/20250314-afldm/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CVPR 2025 Oral | Alias-Free LDM: 从平移等变性的角度提升潜扩散模型生成稳定性 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/04/05/20250314-afldm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CVPR 2025 Oral | Alias-Free LDM: 从平移等变性的角度提升潜扩散模型生成稳定性
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-04-05 13:44:43" itemprop="dateCreated datePublished" datetime="2025-04-05T13:44:43+08:00">2025-04-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%9B%E4%BD%9C/" itemprop="url" rel="index"><span itemprop="name">创作</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%9B%E4%BD%9C/%E7%A7%91%E7%A0%94/" itemprop="url" rel="index"><span itemprop="name">科研</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>潜扩散模型 (Latent Diffusion Models, LDM) 常因生成过程<strong>不稳定</strong>而备受诟病：哪怕模型的输入只是受到了一点微小的扰动，模型的最终输出也会截然不同。以视频逐帧风格化任务为例，哪怕对每帧使用同样的 Stable Diffusion ControlNet 图生图编辑方法，同样的随机种子，生成的风格化视频会有明显的闪烁现象。</p>
+<video src="20250314-afldm/1.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<p>为了找出这一现象的原因，我们设计了一种配置简单的扩散模型编辑实验：平移扩散模型的初始噪声，观察去噪输出。理想情况下，平移输入噪声，输出图片也应该会平滑地平移。然而，实验结果却显示，直接平移输入噪声会大幅改变输出图片；使用了提升内容一致性的 Cross-frame Attention (CFA) 技术后，虽然图片的主体内容不再变化，可是输出图像在平移时还是有不自然的「抖动」现象。</p>
+<video src="20250314-afldm/2.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<p>为什么 LDM 的生成过程这么不稳定呢？为什么 CFA 技术又能提升生成的一致性呢？在我们团队近期发表于 CVPR 2025 的论文 <em>Alias-Free Latent Diffusion Models: sImproving Fractional Shift Equivariance of Diffusion Latent Space</em> 中，我们从<strong>平移同变性 (shift equivariance)</strong> 的角度分析了 LDM 的生成稳定性，并提出了一种能够提升平移同变性的 Alias-Free LDM (AF-LDM) 模型。我们在无约束人脸生成、视频编辑、超分辨率、法向量估计等多个任务上验证了该模型的有效性。</p>
+<p><img src="/2025/04/05/20250314-afldm/1.jpg" alt></p>
+<p>在这篇博文中，我将系统性地介绍一下这篇论文。我会先简单回顾背景知识，让对信号处理不太熟悉的读者也能读懂本文；再介绍论文的方法、实验、贡献；最后从本工作出发，探讨新的科研方向。</p>
+<p>项目网站：<a href="https://zhouyifan.net/AF-LDM-Page/">https://zhouyifan.net/AF-LDM-Page/</a></p>
+<h2 id="背景知识回顾"><a href="#背景知识回顾" class="headerlink" title="背景知识回顾"></a>背景知识回顾</h2><p>本节我会先回顾 LDM，再回顾对平移同变性做了深入研究的 StyleGAN3。由于理解 StyleGAN3 需要了解信号处理的基本概念，我会在尽量不用公式的前提下讲清楚图像频率、混叠等概念。为了简化文字，我会省略理论推导，并使用一些易懂却不见得严谨的叙述。对这些原理感兴趣的读者可以系统性地学习一下 StyleGAN3 论文。</p>
+<h3 id="潜扩散模型"><a href="#潜扩散模型" class="headerlink" title="潜扩散模型"></a>潜扩散模型</h3><p>扩散模型是一种图像生成模型。生成算法的输入是一张纯噪声图，输出是一张清晰图像。算法执行 $T$ 步，每一步都会调用一个去噪网络来去除图像中的部分噪声。</p>
+<p><img src="/2025/04/05/20250314-afldm/1.5.jpg" alt></p>
+<p>由于扩散模型运算较慢，我们可以借助一个变分自编码器 (VAE) 来压缩要生成的图像，减少要计算的像素数。简单来讲，VAE 由一个编码器 (encoder) 和一个解码器 (decoder) 组成。编码器负责压缩图像，解码器负责将压缩图像重建。网络的学习目标是让重建图像和输入图像尽可能相似。训练结束后，我们可以单独使用编码器或解码器，实现压缩图像和真实图像之间的相互转换。论文里通常会把压缩图像称为潜图像 (latent image 或者 latent)。</p>
+<p><img src="/2025/04/05/20250314-afldm/1.6.jpg" alt></p>
+<p>潜扩散模型 (Latent Diffusion Models, LDM) 是一种借助 VAE 加速的两阶段扩散模型。普通的像素级扩散模型会生成一张同样大小的清晰图像。而 LDM 会先生成一张潜图像，再用解码器把潜图像还原成真实图像。我们可以把解码操作简单看成一个特殊的上采样。比如在 Stable Diffusion 中，潜图像的边长被压缩了 8 倍，即解码器会对潜图像上采样 8 倍。</p>
+<p><img src="/2025/04/05/20250314-afldm/2.jpg" alt></p>
+<p>训练 LDM 时，我们需要获取训练图像的潜图像。因此，为了构建训练集，我们会用编码器把训练图像转换为潜空间的图像。</p>
+<p><img src="/2025/04/05/20250314-afldm/2.5.jpg" alt></p>
+<h3 id="图像的频域表示"><a href="#图像的频域表示" class="headerlink" title="图像的频域表示"></a>图像的频域表示</h3><p>在计算机中，图像有很多种表示形式。最常见的形式是<strong>空域</strong>图像：图像由一个像素矩阵表示，每个像素存储了图像在某个位置的颜色值。此外，还可以把图像表示为<strong>频域</strong>图像：我们认为图像是由许多不同频率的正弦函数叠加而成的，频域图像的每个像素存储每个频率的正弦函数的振幅和相位。直观来看，图像在空域和频域的可视化结果如下所示：</p>
+<p><img src="/2025/04/05/20250314-afldm/3.jpg" alt></p>
+<p>具体来说，我们可以把空域图像和频域图像都看成二维数组。对于空域图像来说，数组的索引是二维位置坐标，值是此位置的颜色值；对于频域图像来说，数组的索引是横向和纵向的一对频率，值是该频率下的正弦函数的振幅和相位。</p>
+<p><img src="/2025/04/05/20250314-afldm/4.jpg" alt></p>
+<p>为什么我们要大费周章地在频域里表示一张图像呢？这是因为图像的各个频率分量从另一个维度拆分了图像中的信息，这种拆分方式有助于我们分析图像。一张空域图像可以通过 FFT 操作变换成频域图像，而频域图像又可以通过 IFFT 操作变回空域图像。那么，我们可以用如下操作可视化不同频率分量的作用：</p>
+<ol>
+<li>把输入空域图像用 FFT 转换到频域</li>
+<li>对频域图像滤波，分别得到低频、中频、高频三张频域图像</li>
+<li>用 IFFT 在空域中可视化三张频域图像</li>
+</ol>
+<p>该操作的结果如下所示。可以看出，图像的低频分量描述了图像的全局结构，而中频分量和高频分量进一步完善了图像的细节。</p>
+<p><img src="/2025/04/05/20250314-afldm/5.jpg" alt></p>
+<h3 id="混叠"><a href="#混叠" class="headerlink" title="混叠"></a>混叠</h3><p>假设有一根时针在顺时针匀速旋转。现在，我每秒拍一次照片，一共拍下了时针的三张照片。请问，时针的旋转速度是每秒多少度呢？</p>
+<p><img src="/2025/04/05/20250314-afldm/6.jpg" alt></p>
+<p>从照片中可以看出，时针每秒都旋转了 <code>90</code> 度。因此，你可能会说，时针的旋转速度是 90 度每秒。</p>
+<p>下面让我揭晓答案。其实，时针的旋转速度非常非常快。每次拍照时，时针都转了一圈多。也就是说，时针每次旋转了 <code>90 + 360 = 450</code> 度，它的速度是 450 度每秒。如果我们拍照的频率更高的话，将会得到下面的结果。</p>
+<p><img src="/2025/04/05/20250314-afldm/7.jpg" alt></p>
+<p>你可能会觉得这很赖皮：「只给三张照片，谁看得出时针已经多转了一圈啊？」这话确实没错。在相邻两次拍照之间，时针可能已经多转了一圈、两圈……。时针的速度究竟是多少？这其实可以有无数个答案。只有我们强行规定两次拍照之间，时针不能转一圈以上，我们才能得到唯一一种答案。在这种规定之下，如果要表示更快的时针，只能通过增加拍照的频率了。</p>
+<p>让我们总结一下从这个示例中学到的规律。在现实中，时针是<strong>连续</strong>旋转的。而由于存储空间有限，我们往往只能对时针的状态拍照（<strong>采样</strong>），得到<strong>离散</strong>的指针状态。采样数相同的情况下，能够表达的信息量是等同的，或者说能够记录的时针最大旋转速度（<strong>最大频率</strong>）是等同的。要表示更快的时针（更高的频率），就必须要增加采样频率。反过来说，由于采样频率有限，我们有时会错判时针（周期信号）的频率。这种错判现象被称为<strong>混叠</strong> (aliasing)。比如把速度 450 度每秒的时针看成 90 度每秒就是一种混叠现象。</p>
+<p>类似地，我们可以把图像看成空间中的信号。在现实中，我们眼中看到的图像是处处连续的。为了用计算机显示图像，我们只好在空间中对图像采样，记录有限个位置处的颜色值。如果采样的频率过低，也就是在空间中采样的步长过大，就可能会漏掉某些关键信息，从而造成图像信号的混叠。</p>
+<p>而在图像处理中，混叠现象一般出现在高分辨率图像的下采样中。我们来用 matplotlib 中的一个示例复现混叠现象。对于一个包含密集纹理的输入图像，如果我们简单地使用最近邻插值，就会在下采样图像中得到不自然的纹理；而换用抗混叠插值后，混叠现象被大大缓解。</p>
+<p><img src="/2025/04/05/20250314-afldm/8.jpg" alt></p>
+<p>抗混叠的原理是什么呢？我们知道，混叠现象是由于某种采样后，图像的采样率（正比于图像尺寸）过低，导致原图像的高频分量无法正确地在采样后图像中显示。既然如此，我们就先用一个低通滤波器，过滤掉原图像中的高频分量，再做采样。也就是说，抗混叠下采样，等于低通滤波+最近邻下采样。</p>
+<h3 id="平移同变性与混叠"><a href="#平移同变性与混叠" class="headerlink" title="平移同变性与混叠"></a>平移同变性与混叠</h3><p>通常，我们会为图像处理网络引入一些归纳偏置 (inductive bias)，以降低网络的学习难度。CNN （卷积神经网络）就是利用归纳偏置的一个经典示例。由于 CNN 主要由卷积操作构成，而卷积操作在某像素处的输出只取决于邻近像素，因此 CNN 满足<strong>平移同变性</strong>：平移输入图像，CNN 的输出特征也应该对应地平移。而对于基于 CNN + Softmax 的图像分类网络，按理来说，它满足<strong>平移不变性</strong>：平移输入图像，输出的类别分布不变。</p>
+<p>可是，我们训练出来的 CNN 分类网络真的满足平移不变性吗？在经典论文 <em>Making Convolutional Networks Shift-Invariant Again</em> [2] 中，作者发现，平移输入图像时，普通的 CNN 分类网络的输出概率会发现很大的变化。而这背后的罪魁祸首正是混叠现象。而一个抗混叠的神经网络有着更好的平移不变性。</p>
+<p><img src="/2025/04/05/20250314-afldm/9.jpg" alt></p>
+<p>为什么混叠会和平移不变性关联起来呢？为了方便说明，我们先用公式正式地表示一个简化版 CNN。在一个 CNN 分类网络中，输入 <code>x</code> 会经过若干个由卷积和下采样构成的模块，最后得到二维特征图 <code>f</code>。随后，<code>f</code> 会被展平成一维，并经过 MLP 和 Softmax，输出一个概率分布。 </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f = down(conv(x))</span><br><span class="line">prob = softmax(mlp(flatten(f)))</span><br></pre></td></tr></table></figure>
+<p>在这个过程中，我们希望 <code>f</code> 对 <code>x</code> 是平移同变的。严谨地说，对于输入 $x$，如果函数 $F$ 满足</p>
+<script type="math/tex; mode=display">
+F(T(x))=T(F(x)),</script><p>其中 $T$ 是平移操作，那么操作 $F$ 是平移同变的。在分类网络中，我们希望分类网络的卷积部分 <code>down(conv(x))</code> 是平移同变的。一旦这个操作满足平移同变性，后面的 <code>softmax(mlp(flatten(f)))</code> 操作都不会考虑输入像素的先后顺序，整个网络就满足了平移不变性。</p>
+<p>那么，这么多步骤中，是哪一步出错了呢？论文指出，通常 CNN 都使用最近邻下采样。这种下采样操作会导致图像出现混叠现象。解决方法也很简单，如上一节所述，我们可以将最近邻下采样换成先低通滤波再最近邻下采样，以缓解网络的混叠。果不其然，换用了抗混叠下采样后，CNN 的平移同变性大大提升，最后输出的概率分布的平移不变性也相应地大大提升。 </p>
+<h3 id="无混叠的-StyleGAN3"><a href="#无混叠的-StyleGAN3" class="headerlink" title="无混叠的 StyleGAN3"></a>无混叠的 StyleGAN3</h3><p>经典图像生成网络 StyleGAN2 可以把一张 $4 \times 4$ 的特征图像不断上采样并转换成一张 $1024 \times 1024$ 的高清图像。由于该生成网络也是一个 CNN，我们希望它满足平移同变性。这样，移动输入特征图像，就能对应地移动输出高清图像。但是，在平移 StyleGAN2 的特征图像时，我们能在输出图像中观察到纹理滞留 (texture sticking) 现象：人物的胡须和头发好像停留在了原地，并没有随着输入移动而移动。而 StyleGAN3 的目标正是解决这一问题。</p>
+<video src="
+https://nvlabs-fi-cdn.nvidia.com/_web/stylegan3/videos/video_0_ffhq_cinemagraphs.mp4#t=0.001" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<p>StyleGAN3 同样指出，混叠现象是造成纹理滞留的主要原因。为了彻底解决这一问题，StyleGAN3 系统性地用信号处理知识分析并改进了 StyleGAN2 的模块。如前文所述，一张图像能够表示的频率分量是有限的。图像尺寸越大，能表示的最大频率越大，图像的细节也就越多。而在对图像重采样（改变图像尺寸）前后，如果我们不能正确地调整图像的最大频率，就有可能产生造成图像内容错乱的混叠现象。所以，要系统性地调整每个模块以防止其出现混叠，其实就是要让每个模块正确地处理图像的最大频率。</p>
+<p>经分析，StyleGAN3 主要对 CNN 的以下模块做出了改进以去除混叠：</p>
+<ul>
+<li>上/下采样层：早期工作设计抗混叠采样时，只是简单地用同一个模糊卷积来近似低通滤波。而 StyleGAN3 精确地为采样率（边长）不同的特征算出了不同的最大频率，并根据此最大频率设计了不同的低通滤波器，用以修正采样前后的信号频率。</li>
+<li>非线性函数（激活函数）：StyleGAN3 指出，非线性函数会在信号中引入新的高频分量，从而引起混叠。为此，StyleGAN3 的解决方法是，先临时把信号上采样 $m$ 倍，再让信号过非线性函数，最后将信号下采样 $m$ 倍以使其复原。这是因为，采样率越高，能表示的最大频率越高，引起混叠的可能越小。实验中发现，令 $m=2$ 就有不错的效果。这一模块被 StyleGAN3 称为<strong>经过滤的非线性函数（filtered nonlinearities）</strong>。</li>
+</ul>
+<p>除此之外，StyleGAN3 还从抗混叠以外的角度提升了 CNN 的平移同变性：</p>
+<ul>
+<li>傅里叶特征输入：为了让生成网络的输入平滑移动，即能够移动非整数个像素，StyleGAN3 将输入的 $4 \times 4$ 离散特征图像修改成了一个在空间上可以任意采样的傅里叶特征。</li>
+<li>边缘像素裁剪：此前研究表明，CNN 会从图像边缘处的 0 填充卷积中学习到绝对位置信息，这违反了 CNN 平移同变性的假设。因此，StyleGAN3 在同一尺度的特征图像外都填充了一些额外像素，并在每次上采样后丢弃这些边缘像素。</li>
+</ul>
+<h2 id="Alias-free-Latent-Diffusion-Models"><a href="#Alias-free-Latent-Diffusion-Models" class="headerlink" title="Alias-free Latent Diffusion Models"></a>Alias-free Latent Diffusion Models</h2><h3 id="设计动机"><a href="#设计动机" class="headerlink" title="设计动机"></a>设计动机</h3><p>回顾了潜扩散模型理论基础以及神经网络的平移同变性与混叠的关系后，我们来正式学习 AF-LDM 论文。</p>
+<p>如本文开头所述，为了分析 LDM 的生成稳定性为什么那么差，我们用一个更简单的平移任务来定位问题的根源。实验结果显示，LDM 网络的平移同变性也很差。更准确地说，LDM 只对整数平移有较好的同变性。</p>
+<p>这里先补充介绍一下整数平移和分数平移。假设我们有一个能把图像 2 倍上采样的平移同变的网络。如果我们对输入移动 $n$ 个像素，那么输出就应该平移 $2n$ 个像素。然而，如果只对输入平移整数个像素，那么输出只能平移偶数个像素。为了平滑地让输出平移 1, 2, 3, … 个像素，我们有时需要令输入图像平移分数个像素。</p>
+<blockquote>
+<p>在分数平移时，我们要通过插值获得图像在非整数位置处的值。后文我们会详细讨论该如何选取插值方法。</p>
+</blockquote>
+<p><img src="/2025/04/05/20250314-afldm/10.jpg" alt></p>
+<p>回到 LDM 的平移同变性上。实验显示，尽管神经网络主干都是理论上应该平移同变的 CNN，LDM 的 VAE 和去噪 U-Net 都只对整数平移有同变性，而在分数平移时同变性较差。如下图所示，我们测试了潜空间下采样 8 倍的 VAE 和去噪 U-Net 的同变性，每一个平移步数表示平移 1/8 个像素。仅当平移步数是 8 的倍数时，网络的同变性指标（以 PSNR 表示）才比较高。</p>
+<p><img src="/2025/04/05/20250314-afldm/11.jpg" alt></p>
+<p>参考了之前工作后，我们认为 CNN 平移同变性下降是由于混叠现象导致的。如果我们去除了 LDM 的 VAE 和 U-Net 中的混叠，那么 LDM 就会有更好的同变性。总结下来，论文的整套思维链如下：</p>
+<ol>
+<li>Stable Diffusion 等 LDM 编辑稳定性差。</li>
+<li>在较简单的输入平移任务上，LDM 的稳定性依然很差。</li>
+<li>LDM 的分数平移同变性差。</li>
+<li>混叠现象降低了网络同变性。</li>
+</ol>
+<p>为了提升 LDM 的稳定性，我们需要倒着解决问题：</p>
+<ol>
+<li>设计抗混叠模块，去除网络中的混叠。</li>
+<li>验证无混叠 LDM (AF-LDM) 的平移同变性确实有所提升。</li>
+<li>验证提升平移同变性的 LDM 在编辑时稳定性更好。 </li>
+</ol>
+<p>在这一大节里，我们主要会学习 AF-LDM 论文的方法部分，即如何开发一个无混叠的 LDM。在下一大节里，我们再浏览论文里的实验结果，以验证 AF-LDM 确实能提升 LDM 的稳定性。</p>
+<h3 id="引入-StyleGAN3-抗混叠模块"><a href="#引入-StyleGAN3-抗混叠模块" class="headerlink" title="引入 StyleGAN3 抗混叠模块"></a>引入 StyleGAN3 抗混叠模块</h3><p>我们希望设计一种无混叠的 LDM。同时，为了尽可能利用预训练 LDM （比如 Stable Diffusion）的权重，我们希望对 LDM 模型结构上的改动尽可能小。因此，我们仅将前文所述的 StyleGAN3 的两个抗混叠模块引入了 LDM 的 VAE 和 U-Net 中：</p>
+<ul>
+<li>上/下采样层：让上采样层能够正确处理图像频率。和 StyleGAN3 不同的是，StyleGAN3 使用 Kaiser 卷积来近似低通滤波，而我们参考之前的 AF Convnet [3] 工作，使用了基于 FFT 操作的滤波操作以实现理想滤波（恰到好处地过滤图像中的频率）。</li>
+<li>非线性函数：我们也使用了同样的经过滤的非线性函数，以抑制高频分量造成的混叠。</li>
+</ul>
+<p>当然，仅做这些改动还不足以实现无混叠的 LDM。还需要解决的问题有：</p>
+<ul>
+<li><strong>如何定义分数平移</strong>。StyleGAN3 将输入特征图像定义成了傅里叶特征，它可以在任意位置采样，天生支持分数平移。而在 LDM 中，我们往往需要分数平移潜图像。而潜图像是离散的，它在分数平移中的插值方式需要慎重定义。</li>
+<li><strong>使用同变损失进一步提升同变性</strong>。我们在实验中发现，仅靠抗混叠模块还不足以提升模型的平移同变性，我们通过增加损失函数的方式强制让模型在训练中学习平移同变性。</li>
+<li><strong>改进自注意力模块</strong>。由于自注意力输入是全局操作，其输出对输入的变化非常敏感，平移同变性差。我们分析并缓解了此问题。</li>
+</ul>
+<h3 id="连续潜图像表示"><a href="#连续潜图像表示" class="headerlink" title="连续潜图像表示"></a>连续潜图像表示</h3><p>对图像做分数平移，其实就是在图像分数位置处重新采样。比如，假设一维信号原来的采样坐标为 0, 1, 2, …，将其向左平移 0.5 个单位后，采样的坐标变为 0.5, 1.5, 2.5, …。为了求解这些新坐标下的像素值，我们需要使用某种插值方法。</p>
+<p>在这个工作中，我们假设 LDM 的 VAE 中的潜图像是一种连续图像，即它可以无损被傅里叶变换转换成连续信号。那么，对这种连续图像做分数平移时，就可以使用理想插值：先用 FFT 把图像转到频域，再将分数平移转换成信号的相位变动，最后用 IFFT 把平移后的信号复原回空域。</p>
+<p>值得注意的是，将潜图像假设成连续信号，只是规定了我们在分数平移潜图像时用到的算法。模型在训练时并不知道潜图像满足这种表示。在下一节中，我们会学习如何用损失函数让模型学到这种表示。</p>
+<h3 id="同变损失"><a href="#同变损失" class="headerlink" title="同变损失"></a>同变损失</h3><p>加入了 StyleGAN3 中的抗混叠模块后，一个随机初始化的 VAE 确实有了更好的同变性。然而，我们发现了一个奇怪的现象：随着 VAE 训练的不断进行，VAE 的同变性开始不断下降（稍后我们会在实验部分看到这些结果）。相同的现象在去噪 U-Net 也可以观察到。我们猜测这是因为我们的网络中一些不够完美的设计让模型始终会产生轻微的混叠现象，而这些混叠现象能够帮助网络的学习。因此，随着训练的进行，网络会倾向于放大混叠现象。这些不完美的设计可能包括：</p>
+<ul>
+<li>未使用傅里叶特征：StyleGAN3 将输入定义为连续的傅里叶特征，天生支持连续平移。而我们只是假设 VAE 的潜图像可以由连续信号表示，而没有在训练中让模型感知到这一点。</li>
+<li>未使用边缘像素裁剪：边缘像素的卷积会泄露绝对位置信息。我们没有像 StyleGAN3 一样使用这个技术。</li>
+</ul>
+<p>StyleGAN3 可以简单看成一个不断上采样低分辨率图像的网络，它在结构设计上有很大的自由。而在由 VAE 和 U-Net 组成的 LDM 里，实现上述两种技术的方法并不是很直观。且由于我们想尽可能减少新设计，并通过微调预训练模型来使之具有同变性，我们没有在 AF-LDM 里加入上述技术。</p>
+<p>为了防止 LDM 在训练中同变性下降，我们根据同变性的定义，提出了一个额外的同变损失来规范网络模块的学习。对于不同的模块，我们根据其输入输出设置不同的同变损失。比如，对于 VAE 编码器 $\mathcal{E}$，我们定义以下损失：</p>
+<script type="math/tex; mode=display">
+L_{\text{enc}} = || [\mathcal{E}(T_\Delta(x)) - T_{\Delta/k}(\mathcal{E}(x))] \cdot M_{\Delta/k} ||_2^2</script><p>其中，$T_\Delta(x)$ 表示将 $x$ 平移 $\Delta$ 个单位，$k$ 表示编码器下采样倍数。由于潜图像 $\mathcal{E}(x)$ 的边长缩小了 $k$ 倍，编码器输入平移 $\Delta$ 对应输出平移 $\Delta/k$。除了直接做差以对齐同变性的定义外，我们还设置了掩码 $M_{\Delta/k}$ 以表示需要计算损失的有效区域。之所以平移时存在「有效区域」，是因为我们将平移定义为裁剪平移 (cropped shift)，即最右的像素移出图像边界后，最左侧只会填充全零像素。这些全零像素就属于无效区域，我们应该只在另外的有效区域计算同变损失。</p>
+<p>VAE 解码器和 U-Net 的同变损失有着类似的形式。欢迎大家阅读论文以了解细节。</p>
+<p>由于在计算同变损失时，我们将平移操作中的插值设置成了理想插值，因此模型能够学到我们在上一节定义的连续潜图像表示。</p>
+<h3 id="同变注意力"><a href="#同变注意力" class="headerlink" title="同变注意力"></a>同变注意力</h3><p>LDM 的去噪 U-Net 一般会使用自注意力操作：</p>
+<script type="math/tex; mode=display">
+\text{SA}(x) = softmax(xW^Q(xW^K)^T)xW^V</script><p>其中，矩阵 $x \in \mathbb{R}^{HW \times d}$ 是 $H \times W$ 个长度为 $d$ 的特征，三个参数矩阵 $W^Q, W^K, W^V  \in \mathbb{R}^{d \times d}$ 为可学习参数。</p>
+<p>自注意力会严重降低模型的平移同变性。如文本开头的视频所示，原版 Stable Diffusion 在输入噪声平移后，输出会发生极大的改变。而使用 Cross-frame Attention (CFA) 这种提升自注意力稳定性的操作后，模型的输出才稳定起来。</p>
+<video src="20250314-afldm/2.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<p>为什么自注意力的平移同步性较差呢？为什么 CFA 能提升同变性呢？在这篇文章中，我们深入地研究了自注意力的平移同变性。准确来说，我们考虑的是裁剪平移下的同变性。</p>
+<p>根据同变性的定义，自注意力满足以下条件时才是同变的：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\text{softmax}(T(x)W^Q(T(x)W^K)^\top)T(x)W^V = \\ 
+T(\text{softmax}(xW^Q(xW^K)^\top)xW^V),
+\end{aligned}</script><p>由于此时 $x \in \mathbb{R}^{HW \times d}$，即 $x$ 不是一张图像，而是一个特征序列，图像里的每一个像素是一个行向量，因此这里的平移操作 $T(x)$ 其实是修改 $x$ 的行向量的排序。我们先记住这个性质。</p>
+<p>观察上面等式的右边，我们可以将它看成先有输入 $x$，再做了两次矩阵右乘，再做了一次 Softmax，再做了一次矩阵右乘，最后平移。而矩阵右乘和 Softmax <strong>对行向量都是独立的</strong>，所以上面的右式可以化简成 $\text{softmax}(T(x)W^Q(xW^K)^\top)xW^V$。</p>
+<p>现在，要让自注意力操作满足平移同变性，只需要满足下面两个式子：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+T(x)W^K = xW^K \\ 
+T(x)W^V = xW^V 
+\end{aligned}</script><p>然而，由于此时的平移操作为裁剪平移，上面两个式子无法成立，且随着平移的推进误差会越来越大。通过上述分析，我们得出结论：自注意力对裁剪平移不具有平移同变性。这也符合我们直觉上的理解：自注意力是一种全局操作，一旦输入某处发生了一些微小的改变，输出就会出现较大的变动。</p>
+<p>想要重新设计一种同变性更好的自注意力操作并不简单。不过，我们可以采取一种权宜之策来提升现有自注意力的<strong>相对</strong>平移同变性。假设有参考帧 $x_r$ 和平移后的帧 $x_s$，我们将计算 $x_s$ 时的自注意力定义为<strong>同变注意力 (Equivariant Attention)</strong>：</p>
+<script type="math/tex; mode=display">
+\text{EA}(x_r, x_s) = \text{softmax}(x_sW^Q(x_rW^K)^\top)x_rW^V</script><p>在实现时，我们先正常算所有注意力特征 $x_r$，并将其缓存下来；而在计算某一层的 $x_s$ 的自注意力时，我们再取出对应的 $x_r$。这样，含 $W^K$ 和 $W^V$ 的那两项不随输入 $x_s$ 而变化，整个注意力操作就是一定是平移同变的了。注意，这里的平移同变是 $x_s$ 相对参考帧 $x_r$ 而言的，我们不能保证其他帧之间，如两个平移后的帧之间，仍然具有平移同变性。</p>
+<p>这一操作其实就是之前 Stable Diffusion 视频编辑工作 (如 Text2Video-Zero [4]) 里常用的 CFA 操作。而之前工作并没有对 CFA 做深入分析，只是简单解释成「将参考帧的 K, V 注入其他帧能够提升其他帧的风格一致性」。而在我们这篇论文中，我们发现 CFA 有用的原因是它提升了其他帧对参考帧的平移同变性，这其实是一种同变注意力。为了方便其他研究者的理解，我们在后文还是把这种同变注意力称为 CFA。</p>
+<p>为了把 CFA 加入模型中，我们在两处使用了 CFA：</p>
+<ol>
+<li>计算同变损失时</li>
+<li>训练结束后，生成平移后的图片时</li>
+</ol>
+<h3 id="方法小结"><a href="#方法小结" class="headerlink" title="方法小结"></a>方法小结</h3><p>我们的方法可以用下面的示意图概括。除了像 StyleGAN3 一样加入抗混叠模块外，我们的主要改进是在训练时加入同变损失。而在计算此损失时，需要将平移后图像的自注意力运算改成同变注意力。 </p>
+<p><img src="/2025/04/05/20250314-afldm/m1.jpg" alt></p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>做完上述所有改进后，我们将这种同变性更好，无混叠的 LDM 称为 AF-LDM。参照这一简称方式，我们会把改进后的 VAE, Stable Diffusion 简称为 AF-VAE, AF-SD。在实验环节，我们会验证改进后模型的有效性，并展示它的一些应用。</p>
+<h3 id="同变性消融实验"><a href="#同变性消融实验" class="headerlink" title="同变性消融实验"></a>同变性消融实验</h3><p>根据同变性的定义，我们用先平移、再操作和先操作、再平移的图像之间的重建误差来反映同变性的高低。参考之前的工作，我们用 PSNR 来计算重建误差。这种反映同变性的 PSNR 在论文中被简称成 SPSNR。</p>
+<p>我们看一下消融实验的结果。Latent PSNR 表示 U-Net 输出的潜图像的同变性，Image PSNR 表示 U-Net + VAE 解码器的同变性。这个表展示了非常多的结论：</p>
+<ul>
+<li>比较第一栏和第二栏的结果，使用 SD VAE 看起来 Latent PSNR 还不错，但由于 VAE 不是同变的，最后的 Image PSNR 还是很差。我们必须把 VAE 和 U-Net 都变成无混叠的。</li>
+<li>AF-LDM random weights 表示做了模块上的改进 (Ideal Sampling, Filtered Nonlinearity) 之后仅随机初始化参数，不训练模型。将它的同变性和训练过的模型做对比，可以发现模型的同变性在训练中下降。</li>
+<li>为了防止同变性在训练中下降，我们需要加入同变损失。</li>
+<li>在计算同变损失时，我们需要在自注意力中使用 CFA。</li>
+<li>比较不做模块上的改进只加同变损失（倒数第二行）和 AF-LDM （倒数第三行）的结果，可以发现同变损失单独是不起作用的，不仅 FID 差了很多，SPSNR 也变差了。因此，同变损失必须和抗混叠模块一起使用。<br><img src="/2025/04/05/20250314-afldm/12.jpg" alt></li>
+</ul>
+<p>上表的结果表明，我们在论文中介绍的所有设计都是有效的。最终的 AF-LDM 可以在几乎不降低生成质量的前提下大幅提升模型同变性。除表格外，我们在项目网站上分享了更直观的消融实验结果。</p>
+<video src="https://zhouyifan.net/AF-LDM-Page/static/videos/shift_ldm_pipe_2.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<p>我们还用一个简单的实验说明，此前模型仅在整数平移（潜图像移动 1 个单位，真实图像移动 8 个单位）时具有较好的同变性。而为了实现平滑的图像编辑，我们最大的收获是提升了模型的分数平移同变性。</p>
+<p><img src="/2025/04/05/20250314-afldm/13.jpg" alt></p>
+<h3 id="仅用光流变换的视频编辑"><a href="#仅用光流变换的视频编辑" class="headerlink" title="仅用光流变换的视频编辑"></a>仅用光流变换的视频编辑</h3><p>尽管我们在方法设计中仅考虑了裁剪平移的同变性，但在实验中，我们发现模型对更复杂的不规则变换，如光流变换，也具有更好的同变性。这一性质拓宽了 AF-LDM 的应用场景。为此，我们在 AF-VAE 的潜空间里重新训练了加入了抗混叠模块的 Stable Diffusion 1.5 (AF-SD)，并在 AF-SD 上做了光流变换同变性的相关实验。</p>
+<p>先简单补充一下光流的相关知识：光流描述了视频两帧之间每个像素的平移。因此，光流是一张 $H \times W \times 2$ 的图片，两个通道分别表示每个像素在横向和纵向上的平移。根据光流，我们能够把视频的前一帧变换到后一帧。当然，这种变换是存在误差的。</p>
+<p>在实验中，我们主要观察两张图片在扩散模型的 DDIM 反演 （将真实图片变回纯噪声）和 DDIM 重建阶段对光流变换的同变性（以 SPSNR 来评估）。另外，为了知道在光流变换中「较好的」 SPSNR 应该是多少，我们计算了输入帧之间的光流变换误差，用以提供参考。 </p>
+<p><img src="/2025/04/05/20250314-afldm/14.jpg" alt></p>
+<p>结果显示，AF-SD 在反演和生成时的光流变换同变性都有所提升。惊人的是，AF-SD 在生成时的重建效果竟然比直接对输入图像做光流变换还要好。也就是说，在用 AF-SD 时，只要对初始噪声做光流变换，输出视频就会自然做对应的光流变换，且比直接在图像上做更加准确。</p>
+<p><img src="/2025/04/05/20250314-afldm/15.jpg" alt></p>
+<p>受到上述实验结果启发，得益于 AF-SD 在反演和生成过程中的同变性，我们设计了一种非常简单的视频编辑方法：对一个视频的每一帧进行 DDIM 反演和再生成（改变生成时 prompt）。我们做的唯一改动是同时在反演和生成的时候都启用后续帧对第一帧的 CFA。</p>
+<p>这种简单的视频编辑方法能够为内容变化不大（相对第一帧而言）的视频输出平滑的编辑结果。由于我们的改进主要体现在分数平移同变性上，输入视频的变化越是细微、平缓，我们的编辑方法的优势就越明显。比如，以下是同一个编辑方法下，SD 和 AF-SD 的结果对比。</p>
+<video src="https://zhouyifan.net/AF-LDM-Page/static/videos/flow_hike.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<blockquote>
+<p>小声说一句，由于 AF-SD 需要重新训练所有模型，而我们的数据和计算资源都不够，所以 AF-SD 的生成质量较差。当然，它还是可以完成一些简单的编辑任务的。我们主要用这个模型来验证 AF-LDM 的应用潜力。</p>
+</blockquote>
+<h3 id="其他应用"><a href="#其他应用" class="headerlink" title="其他应用"></a>其他应用</h3><p>我们还在其他一些任务上简单验证了 AF-LDM 的通用性。在实现所有任务时，我们都采用了基于扩散模型的方法。欲知细节欢迎阅读原论文和访问项目网站。</p>
+<p>通过对输入图像做光流变换和插值，我们能够实现视频插帧。</p>
+<video src="https://zhouyifan.net/AF-LDM-Page/static/videos/morph_sleeping_2.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<p>被平移图像的超分辨率。该应用基于 I2SB 工作 [5]。</p>
+<video src="https://zhouyifan.net/AF-LDM-Page/static/videos/shift_i2sb_2.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<p>被平移图像的法向量估计。该应用基于 ControlNet。</p>
+<video src="https://zhouyifan.net/AF-LDM-Page/static/videos/shift_yoso_2.mp4" type="video/mp4" controls="controls" width="100%" height="100%">
+</video>
+
+<h2 id="贡献总结与未来展望"><a href="#贡献总结与未来展望" class="headerlink" title="贡献总结与未来展望"></a>贡献总结与未来展望</h2><p>读完论文的主要内容后，我们可以总结论文的贡献：</p>
+<ol>
+<li><p>我们追溯了潜扩散模型编辑不稳定的主要原因：缺乏分数平移同变性。</p>
+</li>
+<li><p>我们设计了一种无混叠的潜扩散模型 (AF-LDM)，它能够有效提升 LDM 的平移同变性。</p>
+</li>
+<li><p>从技术贡献上看，我们提出了简明有效的同变损失，以防止加入了抗混叠模块的模型在训练中损失同变性。此外，我们分析了自注意力运算不够稳定的原因，并通过在同变损失里加入同变注意力来提升模型对参考帧的相对同变性。</p>
+</li>
+<li><p>我们在多项任务中展示了 AF-LDM 广泛的应用前景。</p>
+</li>
+</ol>
+<p>其中，我认为第一项贡献是最重要的。潜扩散模型的不稳定性是一个老生常谈的问题，但很少有工作对其做深入分析。而我们提供了一个分析此问题的新视角，并且证明此前常见的 CFA 技术其实和同变性密切相关。第四项贡献也很有趣，我们发现 AF-LDM 也能提升不规则平移的同变性，可能可以拓展到更多任务上。剩下两项技术贡献倒相对来说没有那么重要。</p>
+<p>按惯例，我也给论文挑挑刺，列举它的几项不足：</p>
+<ul>
+<li><p>社区用户很多时候会关注一项工作的方法能否直接用起来，能否用预训练模型实现一些好玩的应用。但我们在这个项目中训练的文生图模型 AF-SD 生成质量较差，只能做一些简单的应用。</p>
+</li>
+<li><p>论文没有进一步分析为什么训练时模型的同变性会逐渐下降，只给了解决方法。</p>
+</li>
+<li><p>我们并没有完美解决自注意力的低同变性问题，目前的同变注意力必须要给一个参考帧。</p>
+</li>
+</ul>
+<p>总体上来，我个人比较喜欢能够深入解释某一问题的工作，我对这个工作的贡献十分满意。</p>
+<p>从这个工作出发，我能想到的未来探索方向有：</p>
+<ul>
+<li>帮助视频生成和多视角 3D 生成。平移同变性好，意味着模型能够用同样的形式表达不同位置的同一物体。这一性质在图像生成中难以体现，而在视频生成和多视角 3D 生成中比较重要。</li>
+<li>更稳定的视频编辑和图像插值方法。我们在论文仅仅展示了简单的视频编辑和图像插值算法。如果将 AF-SD 和之前的方法结合，再稍微加一点新的设计，就能实现一套不错的方法。当然，由于我们提供的预训练 AF-SD 质量较差，开发图像插值应用更可行一点。</li>
+<li>获取像素级精确特征。潜图像的一个像素代表了 $8 \times 8$ 个真实像素。而如本工作所示，目前多数 LDM 的 VAE 存在混叠现象。这会导致我们难以准确获取每个真实像素处的特征，只能大概获取其邻域的特征。而 AF-LDM 可以改善这一点。当然，为了验证 AF-LDM 在这方面的优越性，我们需要找到一个合适的任务去测试。我简单测试了像素级匹配任务 (pixel correspondence)，但似乎 AF-LDM 在这个任务上没有明显提升。</li>
+</ul>
+<p>除了最直接的应用外，这篇论文还能给我们更宏观的一些启示。比如，现在的神经网络在处理图像时并不是完美的。神经网络的上下采样操作一般是固定的，不管网络的其他参数学得有多么好，不够合理的上下采样总会导致一些问题（比如混叠）。我们不能希望靠加数据来解决一切问题，有时候要从更底层的神经网络设计来解决问题。希望这篇论文能够引发大家在科研上的更多思考。</p>
+<blockquote>
+<p>有读者建议：是否应该把 eqvariance 翻译成「等变」？</p>
+<p>我查了一下，按照惯例，CV 里确实翻译成「等变」好一点。我的中文直觉是图像的输出会随输入「共同移动」，而不强调移动距离「相等」（由于输入输出的图像大小可能不一样），在这篇文章的语境下「同变」更好听一点。我在之后的文章里会按照惯例翻译成「等变」。</p>
+</blockquote>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>[1] StyleGAN3: Alias-Free Generative Adversarial Networks</p>
+<p>[2] Making Convolutional Networks Shift-Invariant Again</p>
+<p>[3] AF Convnet: Alias-Free Convnets: Fractional Shift Invariance via Polynomial Activations</p>
+<p>[4] Text2Video-Zero: Text-to-Image Diffusion Models are Zero-Shot Video Generators</p>
+<p>[5] I2SB: Image-to-Image Schrödinger Bridge</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+              <a href="/tags/%E5%90%8C%E5%8F%98%E6%80%A7/" rel="tag"># 同变性</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/03/06/20250305-fractal-generation/" rel="prev" title="解读何恺明团队工作：分形生成其实是一种多叉树视觉 Transformer">
+      <i class="fa fa-chevron-left"></i> 解读何恺明团队工作：分形生成其实是一种多叉树视觉 Transformer
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">背景知识回顾</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BD%9C%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">潜扩散模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E7%9A%84%E9%A2%91%E5%9F%9F%E8%A1%A8%E7%A4%BA"><span class="nav-number">1.2.</span> <span class="nav-text">图像的频域表示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B7%E5%8F%A0"><span class="nav-number">1.3.</span> <span class="nav-text">混叠</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B3%E7%A7%BB%E5%90%8C%E5%8F%98%E6%80%A7%E4%B8%8E%E6%B7%B7%E5%8F%A0"><span class="nav-number">1.4.</span> <span class="nav-text">平移同变性与混叠</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A0%E6%B7%B7%E5%8F%A0%E7%9A%84-StyleGAN3"><span class="nav-number">1.5.</span> <span class="nav-text">无混叠的 StyleGAN3</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Alias-free-Latent-Diffusion-Models"><span class="nav-number">2.</span> <span class="nav-text">Alias-free Latent Diffusion Models</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E5%8A%A8%E6%9C%BA"><span class="nav-number">2.1.</span> <span class="nav-text">设计动机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E5%85%A5-StyleGAN3-%E6%8A%97%E6%B7%B7%E5%8F%A0%E6%A8%A1%E5%9D%97"><span class="nav-number">2.2.</span> <span class="nav-text">引入 StyleGAN3 抗混叠模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9E%E7%BB%AD%E6%BD%9C%E5%9B%BE%E5%83%8F%E8%A1%A8%E7%A4%BA"><span class="nav-number">2.3.</span> <span class="nav-text">连续潜图像表示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E5%8F%98%E6%8D%9F%E5%A4%B1"><span class="nav-number">2.4.</span> <span class="nav-text">同变损失</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E5%8F%98%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">2.5.</span> <span class="nav-text">同变注意力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E5%B0%8F%E7%BB%93"><span class="nav-number">2.6.</span> <span class="nav-text">方法小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">3.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E5%8F%98%E6%80%A7%E6%B6%88%E8%9E%8D%E5%AE%9E%E9%AA%8C"><span class="nav-number">3.1.</span> <span class="nav-text">同变性消融实验</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%85%E7%94%A8%E5%85%89%E6%B5%81%E5%8F%98%E6%8D%A2%E7%9A%84%E8%A7%86%E9%A2%91%E7%BC%96%E8%BE%91"><span class="nav-number">3.2.</span> <span class="nav-text">仅用光流变换的视频编辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E5%BA%94%E7%94%A8"><span class="nav-number">3.3.</span> <span class="nav-text">其他应用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B4%A1%E7%8C%AE%E6%80%BB%E7%BB%93%E4%B8%8E%E6%9C%AA%E6%9D%A5%E5%B1%95%E6%9C%9B"><span class="nav-number">4.</span> <span class="nav-text">贡献总结与未来展望</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">5.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">151</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

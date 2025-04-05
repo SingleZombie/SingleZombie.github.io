@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2025-03-14T06:23:13.534Z</updated>
+  <updated>2025-04-05T05:44:43.055Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,37 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>CVPR 2025 Oral | Alias-Free LDM: 从平移等变性的角度提升潜扩散模型生成稳定性</title>
+    <link href="https://zhouyifan.net/2025/04/05/20250314-afldm/"/>
+    <id>https://zhouyifan.net/2025/04/05/20250314-afldm/</id>
+    <published>2025-04-05T05:44:43.000Z</published>
+    <updated>2025-04-05T05:44:43.055Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;潜扩散模型 (Latent Diffusion Models, LDM) 常因生成过程&lt;strong&gt;不稳定&lt;/strong&gt;而备受诟病：哪怕模型的输入只是受到了一点微小的扰动，模型的最终输出也会截然不同。以视频逐帧风格化任务为例，哪怕对每帧使用同样的 Stable</summary>
+        
+      
+    
+    
+    
+    <category term="创作" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/"/>
+    
+    <category term="科研" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/%E7%A7%91%E7%A0%94/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="同变性" scheme="https://zhouyifan.net/tags/%E5%90%8C%E5%8F%98%E6%80%A7/"/>
+    
+  </entry>
   
   <entry>
     <title>解读何恺明团队工作：分形生成其实是一种多叉树视觉 Transformer</title>
@@ -608,39 +639,6 @@
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
     <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>定制适合自己的 Diffusers 扩散模型训练脚本</title>
-    <link href="https://zhouyifan.net/2024/07/27/20240605-diffusers-training/"/>
-    <id>https://zhouyifan.net/2024/07/27/20240605-diffusers-training/</id>
-    <published>2024-07-27T12:31:57.000Z</published>
-    <updated>2024-08-19T13:00:18.179Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;Diffusers</summary>
-        
-      
-    
-    
-    
-    <category term="创作" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/"/>
-    
-    <category term="编程项目" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/%E7%BC%96%E7%A8%8B%E9%A1%B9%E7%9B%AE/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
-    
-    <category term="PyTorch" scheme="https://zhouyifan.net/tags/PyTorch/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     
   </entry>
   
