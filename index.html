@@ -349,6 +349,10 @@ L_{\text{enc}} = || [\mathcal{E}(T_\Delta(x)) - T_{\Delta/k}(\mathcal{E}(x))] \c
 \begin{aligned}
 \text{softmax}(T(x)W^Q(T(x)W^K)^\top)T(x)W^V = \\ 
 T(\text{softmax}(xW^Q(xW^K)^\top)xW^V),
+\end{aligned}</script><script type="math/tex; mode=display">
+\begin{aligned}
+\text{softmax}(T(x)W^Q(T(x)W^K)^\top)T(x)W^V = \\ 
+(\text{softmax}(T(x)W^Q(xW^K)^\top)xW^V)
 \end{aligned}</script><p>由于此时 $x \in \mathbb{R}^{HW \times d}$，即 $x$ 不是一张图像，而是一个特征序列，图像里的每一个像素是一个行向量，因此这里的平移操作 $T(x)$ 其实是修改 $x$ 的行向量的排序。我们先记住这个性质。</p>
 <p>观察上面等式的右边，我们可以将它看成先有输入 $x$，再做了两次矩阵右乘，再做了一次 Softmax，再做了一次矩阵右乘，最后平移。而矩阵右乘和 Softmax <strong>对行向量都是独立的</strong>，所以上面的右式可以化简成 $\text{softmax}(T(x)W^Q(xW^K)^\top)xW^V$。</p>
 <p>现在，要让自注意力操作满足平移同变性，只需要满足下面两个式子：</p>
@@ -1289,7 +1293,7 @@ Attn(Q_i, K, V) = \frac{\sum_{j=1}^{n}sim(Q_i, K_j)V_j}{\sum_{j=1}^{n}sim(Q_i, K
 <p>其实，LDM 论文尝试用过一个 <code>f32 c64</code> 的 VAE，但生成效果并不好。为什么这次 Sana 的 VAE 就好了不少呢？论文对此没有做深入分析，只是简单列举了一些 Sana 的 VAE 做出的改进：</p>
 <ul>
 <li>从模型设计与训练策略上：此前 <code>f32</code> VAE 效果不好的一大原因是模型没有充分收敛。为此，Sana VAE 将模型中的标准自注意力换成了线性注意力。另外，为了提升在高分辨率图像上的生成效果，Sana VAE 先在低分辨率上训练，之后在 1K 图像上微调。</li>
-<li>从通道数上：作者比较了 <code>f=32</code> 时 <code>c=16, 32, 64</code> 的实验结果，发现将 <code>c=32</code> 改成 <code>c=64</code> 会显著提升扩散模型收敛速度。</li>
+<li>从通道数上：作者比较了 <code>f=32</code> 时 <code>c=16, 32, 64</code> 的实验结果，发现将 <code>c=64</code> 改成 <code>c=32</code> 会显著提升扩散模型收敛速度。</li>
 </ul>
 <blockquote>
 <p>尽管 VAE 是卷积网络，里面还是包含了自注意力运算。</p>

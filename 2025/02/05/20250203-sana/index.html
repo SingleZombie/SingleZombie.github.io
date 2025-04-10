@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/5.jpg">
 <meta property="og:image" content="https://zhouyifan.net/2025/02/05/20250203-sana/6.jpg">
 <meta property="article:published_time" content="2025-02-04T17:13:42.000Z">
-<meta property="article:modified_time" content="2025-02-04T17:13:42.790Z">
+<meta property="article:modified_time" content="2025-04-10T01:05:26.520Z">
 <meta property="article:author" content="Zhou Yifan">
 <meta property="article:tag" content="深度学习">
 <meta property="article:tag" content="扩散模型">
@@ -285,7 +285,7 @@ Attn(Q_i, K, V) = \frac{\sum_{j=1}^{n}sim(Q_i, K_j)V_j}{\sum_{j=1}^{n}sim(Q_i, K
 <p>其实，LDM 论文尝试用过一个 <code>f32 c64</code> 的 VAE，但生成效果并不好。为什么这次 Sana 的 VAE 就好了不少呢？论文对此没有做深入分析，只是简单列举了一些 Sana 的 VAE 做出的改进：</p>
 <ul>
 <li>从模型设计与训练策略上：此前 <code>f32</code> VAE 效果不好的一大原因是模型没有充分收敛。为此，Sana VAE 将模型中的标准自注意力换成了线性注意力。另外，为了提升在高分辨率图像上的生成效果，Sana VAE 先在低分辨率上训练，之后在 1K 图像上微调。</li>
-<li>从通道数上：作者比较了 <code>f=32</code> 时 <code>c=16, 32, 64</code> 的实验结果，发现将 <code>c=32</code> 改成 <code>c=64</code> 会显著提升扩散模型收敛速度。</li>
+<li>从通道数上：作者比较了 <code>f=32</code> 时 <code>c=16, 32, 64</code> 的实验结果，发现将 <code>c=64</code> 改成 <code>c=32</code> 会显著提升扩散模型收敛速度。</li>
 </ul>
 <blockquote>
 <p>尽管 VAE 是卷积网络，里面还是包含了自注意力运算。</p>

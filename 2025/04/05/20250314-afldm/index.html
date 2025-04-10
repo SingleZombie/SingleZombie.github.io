@@ -47,7 +47,7 @@
 <meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/14.jpg">
 <meta property="og:image" content="https://zhouyifan.net/2025/04/05/20250314-afldm/15.jpg">
 <meta property="article:published_time" content="2025-04-05T05:44:43.000Z">
-<meta property="article:modified_time" content="2025-04-05T07:50:39.434Z">
+<meta property="article:modified_time" content="2025-04-10T01:04:32.026Z">
 <meta property="article:author" content="Zhou Yifan">
 <meta property="article:tag" content="深度学习">
 <meta property="article:tag" content="扩散模型">
@@ -374,6 +374,10 @@ L_{\text{enc}} = || [\mathcal{E}(T_\Delta(x)) - T_{\Delta/k}(\mathcal{E}(x))] \c
 \begin{aligned}
 \text{softmax}(T(x)W^Q(T(x)W^K)^\top)T(x)W^V = \\ 
 T(\text{softmax}(xW^Q(xW^K)^\top)xW^V),
+\end{aligned}</script><script type="math/tex; mode=display">
+\begin{aligned}
+\text{softmax}(T(x)W^Q(T(x)W^K)^\top)T(x)W^V = \\ 
+(\text{softmax}(T(x)W^Q(xW^K)^\top)xW^V)
 \end{aligned}</script><p>由于此时 $x \in \mathbb{R}^{HW \times d}$，即 $x$ 不是一张图像，而是一个特征序列，图像里的每一个像素是一个行向量，因此这里的平移操作 $T(x)$ 其实是修改 $x$ 的行向量的排序。我们先记住这个性质。</p>
 <p>观察上面等式的右边，我们可以将它看成先有输入 $x$，再做了两次矩阵右乘，再做了一次 Softmax，再做了一次矩阵右乘，最后平移。而矩阵右乘和 Softmax <strong>对行向量都是独立的</strong>，所以上面的右式可以化简成 $\text{softmax}(T(x)W^Q(xW^K)^\top)xW^V$。</p>
 <p>现在，要让自注意力操作满足平移同变性，只需要满足下面两个式子：</p>
