@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前段时间，多模态模型 GPT-4o 推出了新版图像生成功能，又一次点燃了社区的 AI 创作热情。作为一款多模态模型，GPT-4o 不仅有着不输纯图像生成模型的质量，还能借助其内置的强大文本理解功能，打造各种各样有趣的图像编辑应用。  我一直没有写博文介绍 GPT-4o。这是因为 OpenAI 完全没有给出任何技术细节，只能从用户的生成结果中推测模型原理。没有技术报告可以解读，我还不如多去网上看一看">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GPT-4o 图像生成漫谈：功能总结、多模态模型概述、原理猜测、未来畅想">
+<meta property="og:url" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="前段时间，多模态模型 GPT-4o 推出了新版图像生成功能，又一次点燃了社区的 AI 创作热情。作为一款多模态模型，GPT-4o 不仅有着不输纯图像生成模型的质量，还能借助其内置的强大文本理解功能，打造各种各样有趣的图像编辑应用。  我一直没有写博文介绍 GPT-4o。这是因为 OpenAI 完全没有给出任何技术细节，只能从用户的生成结果中推测模型原理。没有技术报告可以解读，我还不如多去网上看一看">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/0.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/13.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/14.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/15.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/16.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/17.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/18.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/19.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/20.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/21.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/22.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/23.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/24.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/25.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/26.jpg">
+<meta property="article:published_time" content="2025-04-24T09:22:08.000Z">
+<meta property="article:modified_time" content="2025-04-24T09:22:08.603Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta property="article:tag" content="自回归">
+<meta property="article:tag" content="多模态">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2025/04/24/20250412-gpt4o/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2025/04/24/20250412-gpt4o/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>GPT-4o 图像生成漫谈：功能总结、多模态模型概述、原理猜测、未来畅想 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/04/24/20250412-gpt4o/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          GPT-4o 图像生成漫谈：功能总结、多模态模型概述、原理猜测、未来畅想
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-04-24 17:22:08" itemprop="dateCreated datePublished" datetime="2025-04-24T17:22:08+08:00">2025-04-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>前段时间，多模态模型 GPT-4o 推出了新版图像生成功能，又一次点燃了社区的 AI 创作热情。作为一款多模态模型，GPT-4o 不仅有着不输纯图像生成模型的质量，还能借助其内置的强大文本理解功能，打造各种各样有趣的图像编辑应用。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/1.jpg" alt></p>
+<p>我一直没有写博文介绍 GPT-4o。这是因为 OpenAI 完全没有给出任何技术细节，只能从用户的生成结果中推测模型原理。没有技术报告可以解读，我还不如多去网上看一看网友们的创意呢。</p>
+<p>虽然没有任何新技术可以学习，但我一直在关注相关的新闻报道，并从用户的视角思考 GPT-4o：为什么之前的多模态模型没火，这次 GPT-4o 就火了呢？更强的多模态模型又能为用户带来哪些新应用呢？最终，我想把我思考的内容以杂谈的形式分享出来，而不是严谨地去谈某一项技术。</p>
+<p>在这篇文章中，我会从多个角度谈一谈 GPT-4o。首先，我会简单展示一下我自己的使用结果，以说明 GPT-4o 新图像生成的功能；之后，我会先概述所有多模态模型的设计空间，再结合其他社区用户的意见，给出我自己对 GPT-4o 图像生成原理的猜测；接着，我会基于最新发表的 GPT-4o 评测报告 (<em>GPT-ImgEval: A Comprehensive Benchmark for Diagnosing GPT4o in Image Generation</em>，后文简称「评测报告」)，谈一谈 GPT-4o 的定量分析结果；最后，我会从科研和创业两个角度分享我对 GPT-4o 及多模态模型的未来展望。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/0.jpg" alt></p>
+<h2 id="新版-GPT-4o-的内置图像生成"><a href="#新版-GPT-4o-的内置图像生成" class="headerlink" title="新版 GPT-4o 的内置图像生成"></a>新版 GPT-4o 的内置图像生成</h2><p>此前，比较火热的图像模型，比如 Stable Diffusion, FLUX.1，都是文生图模型。这些模型往往会用一个预训练的文本编码器解读文本内容，再基于解读好的文本内容，只学习图像生成一种任务。这就好比是一个画家突然闭门不出，不再更新自己的沟通能力，一心只磨练画技。而在多模态模型中，模型的输入输出都会包含文本和图像。也就是说，模型要同时学习图像和文本的理解和生成。这就像是一个积极参与社交的画家。</p>
+<p>GPT-4o 此前的图像生成功能由 DALL·E 完成。而 DALL·E 是一个独立的图像生成模型。因此，为了实现图像生成，GPT-4o 会解析用户输入中的图像生成命令，输出文本等约束信息，最后把所有约束信息传给 DALL·E。这样看来，旧版 GPT-4o 和图像生成模型的关系不是特别紧密，二者的功能相对独立。而更新过后，GPT-4o 更多地负责了图像生成的功能，更多图像生成的相关知识存储在了 GPT-4o 的模型权重中。</p>
+<p>把大语言模型 (LLM) 的知识引入图像生成模型后，有两个显而易见的好处：</p>
+<ul>
+<li>提升文本理解力：将预训练文本编码器升级成 LLM 后，图像生成模型对于语言的理解更强了</li>
+<li>支持更广泛的任务：由于现在图像既是输出，又是输入，所以多模态模型天生支持各式各样的图像编辑任务。</li>
+</ul>
+<p>其实所有多模态模型都有这两个优势，为什么 GPT-4o 就火了呢？在我看来，GPT-4o 成功的关键并不是技术上或者功能上的突破，而仅仅是模型能力上的提升，尤其是图像质量的提升（我简单尝试了目前可以用的在线 demo，此前多数多模态模型都不支持图像输入+图像输出，哪怕支持，生成图像的质量也很差）。之前多模态模型的生成图像质量一直比不过单纯的文生图扩散模型，但 GPT-4o 这次却大放异彩。这种综合能力上的提升从量变引起了质变，进而点燃了社区的热情。</p>
+<p>当图像生成的输入从纯文本拓宽成图像+文本后，模型的应用场景一下就变得丰富了起来。按输入输出的格式分类，图像生成应用大体可以归结为以下几类：</p>
+<ul>
+<li>纯文本生图</li>
+<li>根据一张图像和编辑命令，局部修改/全局重绘图像</li>
+<li>根据多张图像和编辑命令，融合多张图像的内容</li>
+<li>利用对话机制，对已经生成好的图像做多次编辑</li>
+</ul>
+<p>下面，我将展示我自己用 GPT-4o 在各种输入输出格式下跑出来的一些结果。</p>
+<p>首先是最热门的风格迁移功能（由于现在 GPT-4o 加上了版权检测，需要想办法让它画出来的东西「不太有名」）。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/2.jpg" alt></p>
+<p>然后是输入两张图像，对图像中的元素做组合。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/3.jpg" alt></p>
+<p>最后是多轮图像对话。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/4.jpg" alt></p>
+<p>可以看出，GPT-4o 确实能实现不少功能，输出图像的质量乍看之下也不错。但仔细一看的话，图像在内容合理度、内容一致性、任务理解力、图像空间理解力上还有很大的提升空间。我还随便想了几个整活的主意，但都实现得很不理想。</p>
+<p>GitHub 上已经有人收集并分享了 GPT-4o 的种种应用场景：<a target="_blank" rel="noopener" href="https://github.com/jamez-bondos/awesome-gpt4o-images">https://github.com/jamez-bondos/awesome-gpt4o-images</a> 。在此我就不再赘述了。</p>
+<h2 id="新版-GPT-4o-的模型架构"><a href="#新版-GPT-4o-的模型架构" class="headerlink" title="新版 GPT-4o 的模型架构"></a>新版 GPT-4o 的模型架构</h2><h3 id="多模态图像生成范式回顾"><a href="#多模态图像生成范式回顾" class="headerlink" title="多模态图像生成范式回顾"></a>多模态图像生成范式回顾</h3><p>在分析 GPT-4o 的模型架构前，我们先对多模态模型的生成范式做一个回顾。</p>
+<p>最早，在用 Transformer 搭建语言模型时，我们要想办法把自然语言转换成神经网络能够理解的数据。由于自然语言可以看成是 token (词元) 组成的序列，而 token 的取值是有限的，我们可以把每类 token 映射成整数。比如，假设 token 从二十六个字母中取，我们就让 <code>a</code> 是 <code>0</code>，<code>b</code> 是 <code>1</code>，以此类推。这种把自然语言变成离散 token 的模块叫做 “tokenizer”，把 token 变回自然语言的模块叫做 “detokenizer”。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/5.jpg" alt></p>
+<p>要把图像加入 Transformer，其实就是要决定怎么把图像翻译成 token (这里 token 的意义从文本的「词元」拓展成了一小块图像，多个小块图像可以像词元一样拼成完整图像)，以及怎么把 token 翻译回图像。恰好，图像自编码器的编码器 (encoder) 和解码器 (decoder) 就能完成上述的翻译过程。注意，文本和 token 的转换一般可以用简单的程序规则来描述，而图像的自编码器需要用可学习的神经网络来实现。我们可以把这种经典的架构简称为 “a” 类架构。</p>
+<blockquote>
+<p>这里我们忽略了自编码器的细节。实际上图像自编码器会压缩图像的边长，且有连续和离散自编码器之分。如果读者对这些内容感到疑惑可以先学习图像自编码器的知识。</p>
+</blockquote>
+<p><img src="/2025/04/24/20250412-gpt4o/6.jpg" alt></p>
+<p>把 token 变成图像，其实就是在做图像生成。因此，图像解码器理应是一个生成模型。但如果解码器能力太弱，Transformer 在学习图像生成时就要花更多的精力。因此，为了减少 Transformer 学习图像生成的压力，就要让解码器的图像生成能力变强。传统的解码器是一个直接输出图像的神经网络，我们可以将其改造成扩散模型，即让解码过程变成扩散模型去噪过程，解码网络不直接输出解码图像，而是输出扩散模型里的预测值。我们可以把这种解码器升级成扩散模型的架构称为 “b” 类架构。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/7.jpg" alt></p>
+<p>在上述讨论中，我们其实忽略了一件事：图中的 Transformer 到底输出了啥？其实，这里的 Transformer 的输出取决于我们对文本/图像生成方式的定义。一般来说，我们用自回归的 (AR) 方式生成文本，那么 Transformer 的输出就是已知前 $i-1$ 个 token 时，第 $i$ 个 token 的概率分布（假如词元是二十六个字母，那么 Transformer 的输出就是 26 个概率，即 token 属于每种字母的概率分布）。如果我们也想用同样的方法生成图像 token，就要让自编码器的编码器输出离散 token（即使用 VQVAE）。在上面两张图中，我们默认文本和图像都采用同样的自回归生成方法。</p>
+<blockquote>
+<p>自回归其实不要求模型的输出是概率分布，进而不见得要用离散自编码器。详见 MAR 论文 (<em>Autoregressive Image Generation without Vector Quantization</em>)</p>
+</blockquote>
+<p><img src="/2025/04/24/20250412-gpt4o/8.jpg" alt></p>
+<p>这样看来，我们可以对图像的生成方式做一些改进：我们不用自回归一个一个输出图像 token，而是用一个扩散模型一次性建模所有图像 token 的生成（全序列扩散模型）。我们可以把这个混合范式称为 “c” 类架构。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/9.jpg" alt></p>
+<p>b 和 c 架构都是把扩散模型引入了经典 a 架构，只是在引入时的出发点不一样。事实上，这两项改动是独立的。我们完全可以把 b, c 改动都用上，得出一个使用了两遍扩散模型的 “d” 架构。硬要说 b, c 两个架构有什么区别的话，它们的区别就在于解码器不会受到文本生成任务的干扰，而如果让输出文本 token 分布的 Transformer 也预测噪声，就会影响文本任务的学习。</p>
+<p>让我们来尝试把所有多模态模型的设计空间总结一下。在此之前，我必须吐槽几句。我认为现在多模态模型的设计都大同小异，仅仅是某几个互相独立的模块存在着多种选择。但很多人会把相关概念混淆，比如把「自回归」和「扩散模型」看成两个对立的生成方式（「自回归」和一次性生成所有元素的「全序列扩散模型」才是对立的）。很多论文也会把模块上的小变动渲染成大创新，并混淆各类名词的使用。我希望通过下面的总结能够帮助大家理清多模态模型的设计空间。</p>
+<ol>
+<li>文本生成范式既可以用经典下一个词元自回归，也可以预测下 N 个词元 (deepseek)，还可以按乱序预测下 N 个词元 (MaskGIT, Block Diffusion，通常会被叫做「离散扩散模型」)</li>
+<li>图像生成范式可以分成下一个词元自回归 (VQGAN)、乱序预测下 N 个词元 (MaskGIT, MAR)、用扩散模型一次性建模整个图像的分布 (Latent Diffusion Model)</li>
+<li>如果在图像生成时用到了词元，既可以是离散词元 (VQGAN)，也可以是连续词元 (MAR)，其中连续词元的分布是用像素级扩散模型表示的</li>
+<li>图像的自编码器既可以是 CNN, 也可以是 ViT；自编码器的解码器既可以直接输出图像，也可以用扩散模型间接根据 token 输出图像</li>
+<li>图像自编码器可以先按传统自编码器的重建任务单独训练，并在后续训练中冻结权重，也可以用各种各样更灵活的方式，比如使用预训练图像编码器（如CLIP），或让解码器在中间 Transformer 训练好以后再训练</li>
+</ol>
+<p><img src="/2025/04/24/20250412-gpt4o/10.jpg" alt></p>
+<p>下面是一些现有多模态模型的分类：</p>
+<ul>
+<li>以 Chameleon 为代表的经典多模态模型 (a 类架构) 在文本和图像上都使用下一个 token 预测，使用了 VQVAE 以建模离散图像词元，自编码器是经典 CNN 直接输出图像的架构，先单独训练自编码器再训练多模态 Transformer。</li>
+<li>Emu1, Emu2（b类）在 a 类架构的基础上，把解码器换成了扩散模型，并把词元分布建模成连续分布（但是，这个连续分布不是通过扩散模型而是通过回归任务建模的，详见论文）。此外，解码器会在中间的 Transformer 训练好之后再微调。</li>
+<li>Show-o 在 a 类架构的基础上，把图像生成任务从下一 token 预测变成随机预测下 N 个 token。</li>
+<li>Transfusion（c 类）在 a 类架构的基础上，把图像生成任务从下一 token 预测变成全序列扩散模型。因此，网络中不存在离散图像词元了，VQVAE 被自然地换成了 VAE。</li>
+</ul>
+<h3 id="新版-GPT-4o-多模态架构猜测"><a href="#新版-GPT-4o-多模态架构猜测" class="headerlink" title="新版 GPT-4o 多模态架构猜测"></a>新版 GPT-4o 多模态架构猜测</h3><p>首先，可以确定 GPT-4o 一定包含了扩散模型。多项事实可以印证这一点。</p>
+<ul>
+<li>介绍 GPT-4o 新版图像生成功能的官方网站（<a target="_blank" rel="noopener" href="https://openai.com/index/introducing-4o-image-generation/">https://openai.com/index/introducing-4o-image-generation/</a> ）上，第一组 prompt 包含以下内容。这说明自回归 Transformer 之后接了一个扩散模型</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Fixes:</span><br><span class="line">* model compressed representations</span><br><span class="line">* compose autoregressive prior with a powerful decoder&quot;</span><br><span class="line"></span><br><span class="line">On the bottom right of the board, she draws a diagram:</span><br><span class="line">&quot;tokens -&gt; [transformer] -&gt; [diffusion] -&gt; pixels&quot;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>根据经验，从图片质量上来看，纯自回归模型做不到这么好</li>
+</ul>
+<p>为了进一步验证模型中是否含扩散模型，在 GPT-4o 图像生成评测报告中，作者借助了神经网络的帮助——作者先用一个 VAR 和一个扩散模型分别生成大量图片，以训练一个分辨图像是否来自扩散模型的二分类器，再用这个分类器来区别 GPT-4o 生成的图片。结果显示，GPT-4o 的输出更像是扩散模型生成的。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/11.jpg" alt></p>
+<p>得知 GPT-4o 大概率含有扩散模型之后，下一步我们需要猜测这个扩散模型放在了模型的哪一部分。根据上一节的讨论，我们能够猜测 GPT-4o 里的扩散模型可能出现在以下几处：</p>
+<ol>
+<li>将解码器完全换成扩散模型</li>
+<li>将图像生成任务从自回归换成全序列扩散模型</li>
+<li>仍然使用自回归生成，但是参考 MAR，把离散的类别分布换成连续的像素级扩散模型建模的分布（扩散模型一次只输出一个像素，而不是一次输出整个图像）</li>
+</ol>
+<p>由于 1 是 GPT-4o 此前的技术路线，即直接把 DALL·E 当作图像解码器（生成器），我们可以排除可能 1。</p>
+<p>那么，是否 GPT-4o 也像 Transfusion 一样，在图像生成时使用了全序列扩散模型呢？根据用户在 X 上分享的观察 (<a target="_blank" rel="noopener" href="https://x.com/jie_liu1/status/1905761704195346680">https://x.com/jie_liu1/status/1905761704195346680</a> )，使用 GPT-4o 生成图像时，网页会依次传输以下几张图片（网页上的动画是靠前端程序实现的）。可以看出，图像确实是从上到下依次生成的。因此，猜想 2 完全不用自回归也不太可能。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/12.jpg" alt></p>
+<p>那么，经排除法，只剩下猜想 3 了：GPT-4o 没有使用离散视觉 token，而是在建模单个视觉 token 分布时使用了像素级扩散模型。评测报告的作者也是这样认为的。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/13.jpg" alt></p>
+<p>我们的探索还没有结束。在思考 GPT-4o 原理时，我突然想到了一个实验：输入一张图片，用 prompt 让模型输出一张一模一样的图片会怎么样？如果让 Gemini 2.5 来做，会得到以下结果：输出图片和输入图片完全不一样。这是因为 Gemini 使用了 Imagen 3 来生成图片（作为解码器），图像生成模型和自回归 Transformer 比较独立，难以维持图片的一致性。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/14.jpg" alt></p>
+<p>而 GPT-4o 则不同，在相同任务下，GPT-4o 的输出一致性高了很多，起码画风是对的，文字也几乎没变。这也是上述猜想 1（将解码器换成扩散模型）不成立的另一个证明。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/15.jpg" alt></p>
+<p>上面这样实验其实不止我做过，其他人也尝试过类似的事。比如，在评测报告里，作者在「缺点」一节展示了差不多的例子。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/16.jpg" alt></p>
+<p>但我的实验还在继续：接着上面的对话，我又再次要求 GPT-4o 画一张一模一样的图片。这次，图像的相似度提高了很多。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/17.jpg" alt></p>
+<p>为了防止多轮对话导致的测试环境不同，我新建对话并要求 GPT-4o 做了两个重绘任务：第一次输入的是 GPT-4o 自己生成的图像，第二次输入的是一张非常简单的图像。在这两种情况下，GPT-4o 的重绘一致性都很不错。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/18.jpg" alt></p>
+<p>从这个现象中，能得出哪些结论呢？第一，我认为，GPT-4o 并不是不能做重建任务。GPT-4o 的真正问题是输出图像的多样性较低。这一点可以通过 GPT-4o 能够较好地重建自己生成的图像及简单图像反映。开发者可能用了某些特殊手段，比如在高质量数据集上后训练模型，让 GPT-4o 只能输出高质量图片，代价是牺牲多样性。</p>
+<p>第二，GPT-4o 一定使用了某种重建任务，让图像解码器能够重建编码器的输出，即让图像的编码器和解码器构成一个自编码器。如上一节的第 5 个设计维度所示，在多模态模型中，既可以用预训练的自编码器来将图像传入 Transformer，也可以单独用预训练的图像编码器、解码器。用预训练模型的好处在于节约训练成本，比如我们可以复用 CLIP 的图像理解能力和 Stable Diffusion 的图像生成能力。但这样做的弊端在于编码器的「输出语言」和解码器的「输入语言」不是同一种语言，Transformer 无法融会贯通地处理图像数据，也无法对生成的图像做多轮编辑。从 OpenAI 官方透露出来的信息「使用更强大的解码器」（见上文中官方网站里的示例 prompt）中，我猜测 GPT-4o 在编码图像时用到了某种程度的 low-level 编码器（保留图像局部特征，使图像有足够的信息被完美重建），并特意以重建任务重新训练了一个强大的解码器。</p>
+<p>我再多猜一点，这个解码器可能是 ViT 架构的。因为在自回归生成的过程中，所有 token 并没有生成完，但我们依然能得到完整的中间图像。在 Transformer 中，如果我们使用经典的 encoder-decoder 架构，无论输入 token 数是多是少，输出的 token 数都是一样多的。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/12.jpg" alt></p>
+<p>最后再分享一点实验结果。我还测试了 GPT-4o 对同一张图片，不同分辨率下的重绘结果。惊人的是，在输入分辨率是 256x256 左右时，文字的重建结果比 1024x1024 左右的输入还要好。这是不是说明模型原生的分辨率就是 256x256 ？ GPT-4o 是否对输入图片都做了预处理？在输出 1024x1024 的图片时是否做了 4 倍超分辨率？</p>
+<p><img src="/2025/04/24/20250412-gpt4o/19.jpg" alt></p>
+<p>总结一下，我认为 GPT-4o 在处理图像时用到了能够保留图像局部特征的编码器，并以重建任务重新训练了一个解码器。图像以连续 token 的形式传入 Transformer，以经典的下一 token 预测学习自回归图像生成，每个 token 的分布是用像素级扩散模型建模的。模型在高质量图像数据上后训练过，以牺牲多样性为代价，保证输出图像总是高质量的。</p>
+<h2 id="评测报告概览"><a href="#评测报告概览" class="headerlink" title="评测报告概览"></a>评测报告概览</h2><p>讲完我自己的一些猜想后，我们来看一下 GPT-4o 评测报告 (<em>GPT-ImgEval: A Comprehensive Benchmark for Diagnosing GPT4o in Image Generation</em>) 里的一些内容。</p>
+<p>先看一下文生图模型都会测试的 GenEval 指标。这个指标反映了模型在多种任务下的指令跟随度。这些任务包括单个物体、两个物体、指定物体数量、指定颜色、指定位置等。GPT-4o 在这个指标上一骑绝尘，战胜所有纯文生图模型和多模态模型。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/20.jpg" alt></p>
+<p>再看一下反映图像编辑能力的 Reason-Edit 指标。这个指标要求编辑方法能够理解一些复杂的编辑指令，往往要求模型具有一定的文本推理能力。GPT-4o 同样比之前的方法好了很多。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/21.jpg" alt></p>
+<p>最后，评测报告还分析了 WISE 指标上的结果。WISE 指标不仅要求模型能够理解文字，还要有一定的常识。比如，如果输入是「章鱼面对危险时的举动」，那么模型应该画出一个正在喷墨的章鱼。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/22.jpg" alt></p>
+<p>在这个指标上，GPT-4o 也遥遥领先，远强于此前最强的 FLUX.1 模型。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/23.jpg" alt></p>
+<p>以上指标都不涉及图像质量，评价图像质量的最好指标还是社区反馈。在靠用户打分的文生图模型竞技场里，GPT-4o 目前高居榜首。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/24.jpg" alt></p>
+<p>从上述评测结果中可知，GPT-4o 在几乎所有图像评测指标上都领先于之前的模型。</p>
+<p>当然，这些评测指标并不能反映 GPT-4o 在所有任务下的表现。在需要精细编辑的任务中，仍然需要使用专门的图像模型。评测报告分享了 GPT-4o 的一些缺点。其中，a, b, d 都是指输出和输入的一致性不够高，c 说明模型在处理非英文文字时不够好，e 说明 GPT-4o 在笔刷编辑任务上做得还不够好。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/25.jpg" alt></p>
+<p>当然，我认为这些缺点都不是很严重。我们完全可以通过定制化 GPT-4o 来完成某种特定任务。接下来，我来从科研和应用两个方面谈一谈 GPT-4o 的前景。</p>
+<h2 id="多模型图像生成未来畅想"><a href="#多模型图像生成未来畅想" class="headerlink" title="多模型图像生成未来畅想"></a>多模型图像生成未来畅想</h2><h3 id="科研方面"><a href="#科研方面" class="headerlink" title="科研方面"></a>科研方面</h3><p>很多人认为，新版 GPT-4o 出来了，是不是很多图像编辑工作都没有做下去的必要了？在这类「是否悲观看待新技术取代旧技术」的问题上，我的回答永远是积极的。之前的方法不行了，我们就基于 GPT-4o 开发新编辑方法。新的技术虽然会导致部分旧的方案不再可行，但同时也会带来新的可能。我们应该积极地寻求改变，寻找新的方向。从另一个角度来看，GPT-4o 的效果好，也不代表旧的方法就完全没有可取之处。我认为科研工作并不应该以效果好为唯一目的，更重要的是能否带来科研上的启发。</p>
+<p>在讨论 GPT-4o 对科研的影响时，其实我觉得最重要的不是谈论哪些任务会被 GPT-4o 直接解决，而是是否有一个像 GPT-4o 一样强大的开源多模态模型供大家研究。去年 Sora 出来时，大家也担心视频生成任务是否就没有做的价值了。但后来以 CogVideoX 为代表的开源视频模型推出后，还是陆陆续续有不少无需训练的视频生成工作发表的。因此，我们可以根据去年的经验，先积攒一些和多模态模型相关的科研想法。等几个月有开源模型出来后，我们再快速上手做实验。</p>
+<p>接下来我再谈一些具体的科研想法。思考新科研方向时，最容易的做法是寻找现有方法的缺陷。在 GPT-4o 图像生成中，最明显的缺陷是无法做精细的（比如像素级）编辑，且模型输入输出的一致性不够高。或许这可以通过加数据来解决，但我觉得这个问题可能涉及视觉神经网络的一些本质缺陷：在下采样过程中，图像的像素级特征不可避免地丢失。我会倾向于从更本质入手，分析这个问题出现在模型的哪一块，并加以解决。</p>
+<p>GPT-4o 另一个明显的问题是仅有英文生成得比较好。这应该是在大量数据训练下的结果。其他语言效果不好，仅仅是因为数据不够多。我们能不能单独设计一套文字生成方法，再把文字生成融入到图像中呢？当然，这个问题看起来更偏向工程一些。</p>
+<p>还有一些子问题也值得探索。比如，就现在的技术趋势来看，我们无法以相同的方式处理文本和图像，无约束图像生成仍是一个有研究价值的子问题。继续研究扩散模型以及自回归和扩散模型的结合方式，仍能帮助多模态模型的发展。另外，我觉得多模态模型的高性能训练一定是一个有价值的方向。如果以后模型大到只有大公司才能微调，学校实验室都无法做微调实验的话，这个领域一定是发展不下去的。</p>
+<p>我还想单独谈谈评测的问题。似乎现在在文本任务和图像理解任务上的指标很多，但是在图像生成方面的指标很少。我觉得这篇 GPT-4o 评测报告里用到的指标还不够全面，多数时候我觉得文生图竞技场里的用户体验排名更有说服力。就像现在大家往往用数学题和编程题来检测大语言模型的思考能力一样，我们也需要提出一些更加全面、公正的指标。另外，就无约束图像生成上，我觉得 ImageNet-256 FID 这项指标已经被大家刷得差不多了，很多时候在这个指标上表现好也不能代表同一个模型在大型文生图任务上就表现好。为了加速技术迭代，我们在简单的无约束图像生成上也需要寻找更有挑战性、不增加太多计算量、不容易被暴力过拟合的指标。</p>
+<h3 id="应用方面"><a href="#应用方面" class="headerlink" title="应用方面"></a>应用方面</h3><p>在思考一项技术的应用时，我完全不会考虑它能不能发论文，而是会考虑有多少用户喜欢这种应用，以及做出了应用能不能赚钱。就目前 GPT-4o 的表现来看，我认为未来多模态大模型有着广阔的应用空间。</p>
+<p>在谈这些之前，我想聊另一件事。从开发难度来看，我会把所有基于大模型的应用分为三类：</p>
+<ol>
+<li>像谷歌、OpenAI 一样从头训练基础模型</li>
+<li>完全不修改模型，仅通过调用 API 和编程来开发应用</li>
+<li>为某一项任务定制数据和方法，微调预训练模型，再开发应用</li>
+</ol>
+<p>三类应用的本质区别在于花多少资源去训练模型。如果是要创业的话，在我看来，第一个方向太拥挤了，各个公司的模型同质化严重，且需要耗费大量资源，很没有意思。而剩下两个方向可以集百家之长，让大公司开发出来的大模型给自己打工。这两个方向的核心竞争力都在于应用的创意，以及能否早一步抢占市场，吸引用户，以用户社区为壁垒。如果是我自己的话，考虑到我的技术背景，我会选择赛道不那么拥挤的第三个方向，做一些别人不那么容易做出来，同时对用户来说很有帮助的应用。</p>
+<p>谈回大模型应用本身。GPT-4o 能带来哪些新应用呢？</p>
+<p>我的第一感是开发更加强大、通用的图像编辑应用，以取代 PhotoShop。目前，PhotoShop 在使用上还是有不少门槛，而 GPT-4o 仅需文本指令即可实现编辑。但 GPT-4o 及现在所有 AI 绘画模型，都在可控性上存在着严重的不足，使得它们在功能上还取代不了 PhotoShop。因此，我们要提升多模态模型的可控性。我的一些初步想法是：像 SAM 一样，先允许用户通过鼠标点击或者文本提示，选中输入图像中的某一物体。之后，我们通过文本提示，指出要修改的物体属性，比如位置、大小、亮度等。模型一次性输出某属性从 0~1 逐渐变化的所有输出，我们最后只需要调整滚动条，从中选择一个效果最好的输出即可。</p>
+<p>另外，我们也可以思考多模态模型带来的全新功能。从 GPT-4o 当前的多轮编辑结果中，我们发现 GPT-4o 能一定程度地组合不同图像中的内容，比如实现经典的风格迁移任务，把图像 A 的风格迁移到图像 B 的内容上。这一功能对 2D 游戏美术资源生成来说十分有用。一般 2D 游戏都会进行素材的排列组合，以复用资源，并让玩家产生亲切感。比如在《塞尔达传说》一代中，多数怪物都有红色和蓝色两个版本，两个版本的怪物有着类似的行动模式。如果先画出所有怪物的红色版本，给一组怪物的蓝色版本的示例，GPT-4o 可能就能自动把剩下的怪物也变成蓝色版本。推而广之，不止是颜色，我们可以把角色/怪物的所有组成部分进行拆解，比如拆解成头盔、武器、盾牌、衣服等，先让多模态模型分别生成大量部件，再让模型根据某一种排列组合方案，自动生成最终的结果。在 GPT-4o 之前，或许也有方法能做类似的事，但这些方法难以维持多组输出结果的风格一致性；而多模态模型支持多轮对话，通过参考上下文，模型能够理解多轮编辑都是在做同一件事。可以预见，多模态模型一定是未来图像编辑的研究重点。</p>
+<p><img src="/2025/04/24/20250412-gpt4o/26.jpg" alt></p>
+<p>从上述这个简单应用中，我们能够提炼出一套设计新应用的思考方式：</p>
+<ul>
+<li>从现有方法的角度，思考大模型在哪些地方做得不够好。比如，PhotoShop 可以做精细编辑，而大模型只有粗略的文本提示，缺乏可控性。</li>
+<li>从大模型的功能出发，思考能够设计哪些新颖的交互方式，以贴合用户的需求。比如多模态大模型能理解图像内容并对内容进行组合，那么我们就基于已有素材，让模型自动生成素材排列组合后的结果。</li>
+</ul>
+<p>欢迎大家从这两个方向思考，探索多模态模型的新的可能。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>我之前的博文：</p>
+<p><a href>速览多模态模型 Transfusion 和 Show-o：用 Transformer + 扩散模型同时处理文本和图像</a></p>
+<p><a href>解读何恺明团队新作：不用向量离散化的自回归图像生成</a></p>
+<p>链接/论文：</p>
+<ul>
+<li><p>评测报告：GPT-ImgEval: A Comprehensive Benchmark for Diagnosing GPT4o in Image Generation</p>
+</li>
+<li><p>GPT-4o 新版图像生成官方公告：<a target="_blank" rel="noopener" href="https://openai.com/index/introducing-4o-image-generation/">https://openai.com/index/introducing-4o-image-generation/</a></p>
+</li>
+<li><p>Emu 系列多模态模型：<a target="_blank" rel="noopener" href="https://github.com/baaivision/Emu">https://github.com/baaivision/Emu</a></p>
+</li>
+<li><p>Chameleon 论文：Chameleon: Mixed-Modal Early-Fusion Foundation Models</p>
+</li>
+<li><p>Tranfusion 论文：Transfusion: Predict the Next Token and Diffuse Images with One Multi-Modal Model</p>
+</li>
+<li><p>Show-o 论文：One Single Transformer to Unify Multimodal Understanding and Generation</p>
+</li>
+<li><p>MaskGIT 论文：MaskGIT: Masked Generative Image Transformer</p>
+</li>
+<li><p>MAR 论文：Autoregressive Image Generation without Vector Quantization</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+              <a href="/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/" rel="tag"># 自回归</a>
+              <a href="/tags/%E5%A4%9A%E6%A8%A1%E6%80%81/" rel="tag"># 多模态</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/04/05/20250314-afldm/" rel="prev" title="CVPR 2025 Oral | Alias-Free LDM: 从平移等变性的角度提升潜扩散模型生成稳定性">
+      <i class="fa fa-chevron-left"></i> CVPR 2025 Oral | Alias-Free LDM: 从平移等变性的角度提升潜扩散模型生成稳定性
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E7%89%88-GPT-4o-%E7%9A%84%E5%86%85%E7%BD%AE%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90"><span class="nav-number">1.</span> <span class="nav-text">新版 GPT-4o 的内置图像生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E7%89%88-GPT-4o-%E7%9A%84%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">新版 GPT-4o 的模型架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%A8%A1%E6%80%81%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90%E8%8C%83%E5%BC%8F%E5%9B%9E%E9%A1%BE"><span class="nav-number">2.1.</span> <span class="nav-text">多模态图像生成范式回顾</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B0%E7%89%88-GPT-4o-%E5%A4%9A%E6%A8%A1%E6%80%81%E6%9E%B6%E6%9E%84%E7%8C%9C%E6%B5%8B"><span class="nav-number">2.2.</span> <span class="nav-text">新版 GPT-4o 多模态架构猜测</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%84%E6%B5%8B%E6%8A%A5%E5%91%8A%E6%A6%82%E8%A7%88"><span class="nav-number">3.</span> <span class="nav-text">评测报告概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E6%A8%A1%E5%9E%8B%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90%E6%9C%AA%E6%9D%A5%E7%95%85%E6%83%B3"><span class="nav-number">4.</span> <span class="nav-text">多模型图像生成未来畅想</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A7%91%E7%A0%94%E6%96%B9%E9%9D%A2"><span class="nav-number">4.1.</span> <span class="nav-text">科研方面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E6%96%B9%E9%9D%A2"><span class="nav-number">4.2.</span> <span class="nav-text">应用方面</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">5.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">152</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">66</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

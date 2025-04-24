@@ -168,6 +168,170 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/11/12/DLS-note-summary-4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/11/12/DLS-note-summary-4/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》第四阶段总结与第五阶段预览</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-12 19:36:35" itemprop="dateCreated datePublished" datetime="2022-11-12T19:36:35+08:00">2022-11-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="《卷积神经网络》总结"><a href="#《卷积神经网络》总结" class="headerlink" title="《卷积神经网络》总结"></a>《卷积神经网络》总结</h2><p>前几周，我们学完了《深度学习专项》第四门课《卷积神经网络》。这门课的知识点太多了，想详细地整理出来并不容易。我打算较为宏观地概括一下这门课的主要内容。</p>
+<p>《卷积神经网络》先从细节入手，介绍了卷积神经网络(CNN)的<strong>基础构件</strong>与运算方式。之后，这门课展示了一些图像分类中的经典网络，通过示例介绍了<strong>构筑CNN的一般方法</strong>。最后，这门课拓展介绍了CNN在目标检测、图像分割、人类识别、风格迁移等具体任务中的应用。在学习时，我们应该着重关注前两部分的内容，应用部分以了解为主。</p>
+<h3 id="卷积层"><a href="#卷积层" class="headerlink" title="卷积层"></a>卷积层</h3><ul>
+<li>相比全连接层的优势：参数量变少、平移不变性</li>
+<li>卷积的运算方法（灰度图、多通道图）</li>
+<li><a href>卷积的参数</a>（填充、步幅）</li>
+<li>卷积层的运算方法（如何加上bias并送入激活函数）</li>
+</ul>
+<h3 id="CNN"><a href="#CNN" class="headerlink" title="CNN"></a>CNN</h3><ul>
+<li>三大构件：卷积层、池化层、全连接层</li>
+<li>构建方式：卷积接池化，最后全连接</li>
+<li>图像尺寸变小，通道数变大</li>
+</ul>
+<h3 id="经典网络（LeNet-AlexNet-VGG）"><a href="#经典网络（LeNet-AlexNet-VGG）" class="headerlink" title="经典网络（LeNet, AlexNet, VGG）"></a>经典网络（LeNet, AlexNet, VGG）</h3><ul>
+<li>卷积接池化，最后全连接；图像尺寸变小，通道数变大</li>
+<li>平均池化进化成最大池化</li>
+<li>tanh进化到ReLU</li>
+<li>逐渐使用更简单的3x3卷积，2x2池化</li>
+</ul>
+<h3 id="ResNet"><a href="#ResNet" class="headerlink" title="ResNet"></a>ResNet</h3><ul>
+<li>待解决的问题：网络深度增加而性能退化</li>
+<li>解决问题的方法：学习一个靠近全等映射的残差</li>
+<li>2层残差块的结构、计算公式</li>
+<li>常用的ResNet的结构（ResNet-18, ResNet-50)</li>
+</ul>
+<p>一般的网络只要学习其有关知识就行了。而ResNet不同，它已经被使用得太广泛了，必须要认真学习一下它的结构。</p>
+<h3 id="Inception"><a href="#Inception" class="headerlink" title="Inception"></a>Inception</h3><ul>
+<li>1x1卷积的用法</li>
+<li>如果利用1x1卷积降低运算量（bottleneck)</li>
+<li>Inception模块</li>
+</ul>
+<h3 id="MobileNet"><a href="#MobileNet" class="headerlink" title="MobileNet"></a>MobileNet</h3><ul>
+<li>逐深度可分卷积</li>
+<li>MobileNetv2降低运算量的bottleneck结构</li>
+</ul>
+<h3 id="CNN实现使用技巧"><a href="#CNN实现使用技巧" class="headerlink" title="CNN实现使用技巧"></a>CNN实现使用技巧</h3><ul>
+<li>使用开源代码</li>
+<li>利用迁移学习（获取预训练模型，在数据集上微调）</li>
+<li>数据增强</li>
+<li>打比赛时，用多个模型的平均输出提高精度</li>
+</ul>
+<h3 id="目标检测"><a href="#目标检测" class="headerlink" title="目标检测"></a>目标检测</h3><ul>
+<li>任务定义：从目标定位到目标检测</li>
+<li>从滑动窗口算法到基于卷积的滑动窗口算法</li>
+<li>YOLO</li>
+<li>NMS</li>
+<li>区域提案（region proposal）</li>
+</ul>
+<h3 id="语义分割"><a href="#语义分割" class="headerlink" title="语义分割"></a>语义分割</h3><ul>
+<li>任务定义</li>
+<li>反卷积</li>
+<li>U-Net架构</li>
+</ul>
+<h3 id="人脸识别"><a href="#人脸识别" class="headerlink" title="人脸识别"></a>人脸识别</h3><ul>
+<li>任务定义：人脸验证与人脸识别</li>
+<li>单样本学习</li>
+<li>孪生网络</li>
+<li>三元组误差</li>
+</ul>
+<h3 id="神经网络风格迁移"><a href="#神经网络风格迁移" class="headerlink" title="神经网络风格迁移"></a>神经网络风格迁移</h3><ul>
+<li>CNN的“可视化”</li>
+<li>任务定义</li>
+<li>内容误差与风格误差</li>
+</ul>
+<p>入门基于深度学习的计算机视觉相关研究，一定要把图像分类的经典网络学扎实。这些网络是其他任务的基石，英文用backbone来称呼它们。学会了通用的知识后，再去学习某任务特有的知识。</p>
+<h2 id="《序列模型》预览"><a href="#《序列模型》预览" class="headerlink" title="《序列模型》预览"></a>《序列模型》预览</h2><p>深度学习的第五门课——也是最后一门课——的标题是《序列模型》。更确切地来说，这门课主要围绕人工智能中另一大领域——自然语言处理（NLP），介绍如何用RNN, Transformer等模型处理以序列形式输入输出的数据。</p>
+<p>这门课的主要内容有：</p>
+<h3 id="RNN"><a href="#RNN" class="headerlink" title="RNN"></a>RNN</h3><ul>
+<li>序列任务的输入输出形式</li>
+<li>RNN的计算方式</li>
+<li>GRU</li>
+<li>LSTM</li>
+<li>双向RNN</li>
+<li>深层RNN</li>
+</ul>
+<h3 id="词嵌入"><a href="#词嵌入" class="headerlink" title="词嵌入"></a>词嵌入</h3><ul>
+<li>问题定义</li>
+<li>Word2Vec</li>
+<li>负采样</li>
+<li>GloVe</li>
+</ul>
+<h3 id="RNN的应用"><a href="#RNN的应用" class="headerlink" title="RNN的应用"></a>RNN的应用</h3><ul>
+<li>语言模型</li>
+<li>机器翻译</li>
+<li>Beam Search</li>
+<li>Bleu Score</li>
+</ul>
+<h3 id="注意力"><a href="#注意力" class="headerlink" title="注意力"></a>注意力</h3><ul>
+<li>注意力模型</li>
+<li>自注意力</li>
+<li>Transformer</li>
+</ul>
+<p>不同于CNN，序列模型能够用另一种方式对问题建模，尤其擅长于处理和序列数据相关的问题。如果你的研究方向是CV，也不要错过这一门课的学习。很多序列模型都在CV中得到了应用。比如光流模型RAFT就使用到了GRU，很多主流CV backbone都使用到了transformer。</p>
+<p>未来的几周我也会继续分享这方面的笔记。不过，我的研究方向不是NLP，代码项目会稍微潦草一些。我打算只用PyTorch复现课堂上讲过的一些简单项目。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/10/13/20221012-entropy/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1951,173 +2115,6 @@ a^{< t >} &= g_1(W_{ax} x^{< t >} + W_{aa} a^{< t - 1 >} + b_a) \\
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/08/15/20220813-SRGAN/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/08/15/20220813-SRGAN/" class="post-title-link" itemprop="url">图像超分经典网络 SRGAN 解析 ~ 如何把 GAN 运用在其他视觉任务上</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-08-15 17:10:46" itemprop="dateCreated datePublished" datetime="2022-08-15T17:10:46+08:00">2022-08-15</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>生成对抗网络(GAN)是一类非常有趣的神经网络。借助GAN，计算机能够生成逼真的图片。近年来有许多“AI绘画”的新闻，这些应用大多是通过GAN实现的。实际上，GAN不仅能做图像生成，还能辅助其他输入信息不足的视觉任务。比如SRGAN，就是把GAN应用在超分辨率(SR)任务上的代表之作。</p>
-<p>在这篇文章中，我将主要面向深度学习的初学者，介绍SRGAN[1]这篇论文，同时分享以下知识：</p>
-<ul>
-<li>GAN的原理与训练过程</li>
-<li>感知误差(Perceptual Loss)</li>
-<li>基于的GAN的SR模型框架</li>
-</ul>
-<p>讲完了知识后，我还会解读一下MMEditing的SRGAN的训练代码。看懂这份代码能够加深对SRGAN训练算法的理解。</p>
-<h2 id="SRGAN-核心思想"><a href="#SRGAN-核心思想" class="headerlink" title="SRGAN 核心思想"></a>SRGAN 核心思想</h2><p>早期超分辨率方法的优化目标都是降低低清图像和高清图像之间的均方误差。降低均方误差，确实让增强图像和原高清图像的相似度更高。但是，图像的相似度指标高并不能代表图像的增强质量就很高。下图显示了插值、优化均方误差、SRGAN、原图这四个图像输出结果（括号里的相似度指标是PSNR和SSIM）。</p>
-<p><img src="/2022/08/15/20220813-SRGAN/1.jpg" alt></p>
-<p>从图中可以看出，优化均方误差虽然能让相似度指标升高，但图像的细节十分模糊，尤其是纹理比较密集的高频区域。相比之下，SRGAN增强出来的图像虽然相似度不高，但看起来更加清晰。</p>
-<p>为什么SRGAN的增强结果那么清楚呢？这是因为SRGAN使用了一套新的优化目标。SRGAN使用的损失函数既包括了<strong>GAN误差</strong>，也包括了<strong>感知误差</strong>。这套新的优化目标能够让网络生成看起来更清楚的图片，而不仅仅是和原高清图像相似度更高的图片。</p>
-<p>下面，我们来一步一步学习SRGAN的框架。</p>
-<h2 id="GAN-的原理"><a href="#GAN-的原理" class="headerlink" title="GAN 的原理"></a>GAN 的原理</h2><p>GAN[2]是一套搭建神经网络的框架。给定一个图片数据集$p_g$，GAN的目的是训练出一个<strong>生成网络</strong>$G$，使得G能够凭空生成出和$p_g$中大多数图片都类似的图片。比如说$p_g$是一个小猫图片数据集，那么$G$就应该能凭空生成出小猫图片。当然，$G$不是真的没有任何输入，真的能够凭空生成一幅图片。为了生成出不一样的图片，$G$要求输入一个随机量，这个随机量叫做噪声$z$。这样，只要输入的噪声$z$变了，$G$的输出$G(z)$就变了，就能画出长相不一样的小猫了。</p>
-<p>为了指导图像生成，$G$应该有一个“老师”告诉它该怎么画出更像的图片。这个“老师”叫做<strong>判别网络</strong>$D$。$D$就是一个二分类网络，它能够严格地判定出一幅图片是否来自数据集$p_g$。如果$p_g$是一个小猫数据集，那么$D$就应该能判定一张图片是不是小猫。这样，如果$G$生成出来的图片$G(z)$已经非常逼真，连$D$都觉得$G(z)$来自数据集$p_g$，那么$G$就是一个很成功的网络了。</p>
-<p>如果只是生成小猫，我们直接拿小猫图片和其他图片就能训练出一个$D$了。问题是，大多数情况下我们只有数据集$p_g$，而难以获得一个$p_g$的反例数据集。GAN的想法，则巧妙地解决了这个问题：刚开始，$G$生成出来的图片肯定是很差的，这些图片肯定不像$p_g$。所以，我们以$G(z)$为反例，和$p_g$一起训练出一个$D$来。等$D$的判定能力强了以后，又拿$D$回头训练$G$。这样，$D$的审美水平逐渐提高，$G$的绘画能力也逐渐提高。最终，$D$能成功分辨出一幅图片是否来自$p_g$，而$G$生成出来的图片和$p_g$中的看起来完全相同，连$D$也分辨不出来。就这样，我们得到了一个很棒的生成网络$G$。</p>
-<p>规范地来说，给定一个数据集$p_g$，我们希望训练出两个网络$D, G$。$D$能够判断一幅输入图片是否来自$p_g$:</p>
-<script type="math/tex; mode=display">
-D(x) = \left\{
-\begin{aligned}
-&1 & x \in p_g \\
-&0 & x \notin p_g
-\end{aligned}
-\right.</script><p>$G$则能够根据来自噪声分布$p_z$的$z$生成一个真假难辨的图片$G(z)$，使得$D(G(z))=1$。</p>
-<p>为了达到这个目标，二分类器$D$应该最小化这样一个的交叉熵误差：</p>
-<script type="math/tex; mode=display">L(\hat{y}, y)=-(y \ log\hat{y} + (1-y) \ log(1-\hat{y}))</script><p>其中，$\hat{y}=D(x)$是预测结果为真的概率，$y$是0或1的标签。</p>
-<p>对于来自数据集的图片$x \sim p_g$，$D$使用的标签$y$应该是1，误差公式化简为：</p>
-<script type="math/tex; mode=display">
-L(x)=-logD(x), x \sim p_g</script><p>对于$G$生成的图片$G(z)$，$D$使用的标签$y$应该是0，误差公式化简为：</p>
-<script type="math/tex; mode=display">
-L(z)=-log(1-D(G(z))), z \sim p_z</script><p>我们每步拿一张真图$x$和一张假图$G(z)$训练$D$。这样，每步的误差公式就是上面两个式子加起来：</p>
-<script type="math/tex; mode=display">
-L_D(x, z)=-(logD(x) + log(1-D(G(z)))), x \sim p_g, z \sim p_z</script><p>反过来，$G$应该和$D$对抗，最大化上面那个误差，想办法骗过$D$。这个“对抗”就是GAN的名称“生成对抗网络”的由来。但是，$G$不能改变$D(x)$那一项。因此，$G$使用的误差函数是：</p>
-<script type="math/tex; mode=display">
-L_G(z)=log(1-D(G(z))), z \sim p_z</script><p>使用上面这两种误差，就可以训练神经网络了。训练GAN时，每轮一般会训练$k(k&gt;=1)$次$D$，再训练1次$G$。这是为了先得到一个好的判别器，再用判别器去指导生成器。</p>
-<p>GAN只是一套通用的框架，并没有指定神经网络$D, G$的具体结构。在不同任务中，$D, G$一般有不同的结构。</p>
-<h2 id="基于GAN的超分辨率网络"><a href="#基于GAN的超分辨率网络" class="headerlink" title="基于GAN的超分辨率网络"></a>基于GAN的超分辨率网络</h2><p>如前文所述，以优化均方误差为目标的超分辨率模型难以复原图像的细节。其实，超分辨率任务和图像生成任务类似，都需要一个“老师”来指导优化目标。SRGAN把GAN框架运用到了超分辨率任务上。原来的生成器$G$随机生成图像，现在用来输出高清图像；原来的判定器$D$用来判定图像是否属于某数据集，现在$D$用来判断一幅图像是否是高清图像。</p>
-<p>具体来说，相比基础的GAN，在SRGAN中，$D$的输入是高清图像$I^{HR}$。而$G$的输入从随机噪声$z$变成了高清图像退化后的低清图像$I^{LR}$。这样，$G$就不是在随机生成图像，而是在根据一幅低清图像生成一幅高清图像了。它们的误差函数分别是：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-L_D&=-(logD(I^{HR}) + log(1-D(G(I^{LR}))))\\
-L_G&=log(1-D(G(I^{LR})))
-\end{aligned}</script><p>借助GAN的架构，SRGAN能够利用$D$指导高清图像生成。但是，超分辨率任务毕竟和图像生成任务有一些区别，不能只用这种对抗误差来约束网络。因此，除了使用对抗误差外，SRGAN还使用了一种内容误差。这种内容误差用于让低清图片和高清图片的内容对齐，起到了和原均方误差一样的作用。</p>
-<h2 id="基于感知的内容误差"><a href="#基于感知的内容误差" class="headerlink" title="基于感知的内容误差"></a>基于感知的内容误差</h2><p>在介绍SRGAN的内容误差之前，需要对“内容误差”和“感知误差”这两个名词做一个澄清。在SRGAN的原文章中，作者把内容误差和对抗误差之和叫做感知误差。但是，后续的大部分文献只把这种内容误差叫做感知误差，不会把内容误差和对抗误差放在一起称呼。在后文中，我也会用“感知误差”来指代SRGAN中的“内容误差”。</p>
-<p>在深度卷积神经网络（CNN）火起来后，人们开始研究为什么CNN能够和人类一样识别出图像。经实验，人们发现两幅图像经VGG（一个经典的CNN）的某些中间层的输出越相似，两幅图像从观感上也越相似。这种相似度并不是基于某种数学指标，而是和人的感知非常类似。</p>
-<p>VGG的这种“感知性”被运用在了风格迁移等任务上。也有人考虑把这种感知上的误差运用到超分辨率任务上，并取得了不错的结果[3]。下图是真值、插值、基于逐像素误差、基于感知误差的四个超分辨率结果。</p>
-<p><img src="/2022/08/15/20220813-SRGAN/2.jpg" alt></p>
-<p>SRGAN也使用了这种感知误差，以取代之前常常使用的逐像素均方误差。这种感知误差的计算方法如下：VGG有很多中间层，用于计算感知误差的中间层$i$是可调的。假如我们用$\phi_{i}(I)$表示图像$I$经VGG的第$i$层的中间输出结果，$\phi_{i}(I)_{x, y}$表示中间输出结果在坐标$(x, y)$处的值，则感知误差的公式如下：</p>
-<script type="math/tex; mode=display">
-L_{p}(I^{HR}, I^{LR})_{i}=\frac{1}{WH}\Sigma_{x=1}^{W}\Sigma_{y=1}^{H}(\phi_{i}(I^{HR})_{x, y}-\phi_{i}(G(I^{LR}))_{x, y})^2</script><p>直观上解释这个公式，就是先把高清图像$I^{HR}$送入VGG，再把高清图像退化出来的低清图像$I^{LR}$送入生成器，并把生成器的输出$G(I^{LR})$也送入VGG。两幅图片经VGG第$i$层生成的中间结果的逐像素均方误差，就是感知误差。</p>
-<p>算上之前的对抗误差，一个图像超分辨率网络的总误差如下：</p>
-<script type="math/tex; mode=display">
-L_{SR}=L_p + w L_G</script><p>这里的$w$用于调整两个误差的相对权重，原论文使用$w=10^{-3}$。</p>
-<h2 id="SRGAN的其他模块"><a href="#SRGAN的其他模块" class="headerlink" title="SRGAN的其他模块"></a>SRGAN的其他模块</h2><p>定义好了误差函数，只要在决定好网络结构就可以开始训练网络了。SRGAN使用的生成网络和判别网络的结构如下：</p>
-<p><img src="/2022/08/15/20220813-SRGAN/3.jpg" alt></p>
-<p>判别网络就是一个平平无奇的二分类网络，架构上没有什么创新。而生成网络则先用几个残差块提取特征，最后用一种超分辨率任务中常用的上采样模块PixelShuffle对原图像的尺寸翻倍两次，最后输出一个边长放大4倍的高清图像。</p>
-<p>SRGAN的这种网络结构在当时确实取得了不错的结果。但是，很快就有后续研究提出了更好的网络架构。比如ESRGAN[4]去掉了生成网络的BN层，提出了一种叫做RRDB的高级模块。基于RRDB的生成网络有着更好的生成效果。</p>
-<p>不仅是网络架构，SRGAN的其他细节也得到了后续研究的改进。GAN误差的公式、总误差的公式、高清图像退化成低清图像的数据增强算法……这些子模块都被后续研究改进了。但是，SRGAN这种基于GAN的训练架构一直没有发生改变。有了SRGAN的代码，想复现一些更新的超分辨率网络时，往往只需要换一下生成器的结构，或者改一改误差的公式就行了。大部分的训练代码是不用改变的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>SRGAN是把GAN运用在超分辨率任务上的开山之作。如正文所述，SRGAN中的部分设计虽然已经过时，但它的整体训练架构被一直沿用了下来。现在去回顾SRGAN这篇论文时，只需要关注以下几点即可:</p>
-<ul>
-<li>如何把GAN套用在超分辨率任务上</li>
-<li>GAN误差</li>
-<li>感知误差</li>
-</ul>
-<p>通过阅读这篇论文，我们不仅应该学会GAN是怎样运用在SR上的，也应该能总结出如何把GAN应用在其他任务上。GAN的本质是去学习一个分布，令生成的$G(z)$看上去是来自分布$p_g$，而不是像图像分类等任务去学习一个$x \to y$的映射关系。因此，GAN会记忆一些和数据集相关的信息。在输入信息就已经比较完备的图像分类、目标检测等任务中，GAN可能没有什么用武之地。但是，在输入信息不足的超分辨率、图像补全等任务中，GAN记忆的数据集信息有很有用了。很多时候，GAN会“脑补”出输入图像中不够清楚的部分。</p>
-<p>决定了要在某个任务中使用GAN时，我们可以在一个不使用GAN的架构上做以下改动：</p>
-<ul>
-<li>定义一个分类网络$D$。</li>
-<li>在原loss中加一项由$D$算出来的GAN loss。</li>
-<li>在训练流程中，加入训练$D$的逻辑。</li>
-</ul>
-<p>看完正文后，如果你对GAN在SR上的训练逻辑还是不太清楚，欢迎阅读附录中有关SRGAN训练代码的解读。</p>
-<h2 id="附录：MMEditing-中的-SRGAN"><a href="#附录：MMEditing-中的-SRGAN" class="headerlink" title="附录：MMEditing 中的 SRGAN"></a>附录：MMEditing 中的 SRGAN</h2><p>MMEditing中的SRGAN写在<code>mmedit/models/restorers/srgan.py</code>这个文件里。学习训练逻辑时，我们只需要关注<code>SRGAN</code>类的<code>train_step</code>方法即可。</p>
-<p>以下是<code>train_step</code>的源代码（我的mmedit版本是v0.15.1）。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train_step</span>(<span class="params">self, data_batch, optimizer</span>):</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;Train step.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        data_batch (dict): A batch of data.</span></span><br><span class="line"><span class="string">        optimizer (obj): Optimizer.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        dict: Returned output.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># data</span></span><br><span class="line">    lq = data_batch[<span class="string">&#x27;lq&#x27;</span>]</span><br><span class="line">    gt = data_batch[<span class="string">&#x27;gt&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># generator</span></span><br><span class="line">    fake_g_output = self.generator(lq)</span><br><span class="line"></span><br><span class="line">    losses = <span class="built_in">dict</span>()</span><br><span class="line">    log_vars = <span class="built_in">dict</span>()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># no updates to discriminator parameters.</span></span><br><span class="line">    set_requires_grad(self.discriminator, <span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (self.step_counter % self.disc_steps == <span class="number">0</span></span><br><span class="line">            <span class="keyword">and</span> self.step_counter &gt;= self.disc_init_steps):</span><br><span class="line">        <span class="keyword">if</span> self.pixel_loss:</span><br><span class="line">            losses[<span class="string">&#x27;loss_pix&#x27;</span>] = self.pixel_loss(fake_g_output, gt)</span><br><span class="line">        <span class="keyword">if</span> self.perceptual_loss:</span><br><span class="line">            loss_percep, loss_style = self.perceptual_loss(</span><br><span class="line">                fake_g_output, gt)</span><br><span class="line">            <span class="keyword">if</span> loss_percep <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                losses[<span class="string">&#x27;loss_perceptual&#x27;</span>] = loss_percep</span><br><span class="line">            <span class="keyword">if</span> loss_style <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                losses[<span class="string">&#x27;loss_style&#x27;</span>] = loss_style</span><br><span class="line">        <span class="comment"># gan loss for generator</span></span><br><span class="line">        fake_g_pred = self.discriminator(fake_g_output)</span><br><span class="line">        losses[<span class="string">&#x27;loss_gan&#x27;</span>] = self.gan_loss(</span><br><span class="line">            fake_g_pred, target_is_real=<span class="literal">True</span>, is_disc=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># parse loss</span></span><br><span class="line">        loss_g, log_vars_g = self.parse_losses(losses)</span><br><span class="line">        log_vars.update(log_vars_g)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># optimize</span></span><br><span class="line">        optimizer[<span class="string">&#x27;generator&#x27;</span>].zero_grad()</span><br><span class="line">        loss_g.backward()</span><br><span class="line">        optimizer[<span class="string">&#x27;generator&#x27;</span>].step()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># discriminator</span></span><br><span class="line">    set_requires_grad(self.discriminator, <span class="literal">True</span>)</span><br><span class="line">    <span class="comment"># real</span></span><br><span class="line">    real_d_pred = self.discriminator(gt)</span><br><span class="line">    loss_d_real = self.gan_loss(</span><br><span class="line">        real_d_pred, target_is_real=<span class="literal">True</span>, is_disc=<span class="literal">True</span>)</span><br><span class="line">    loss_d, log_vars_d = self.parse_losses(<span class="built_in">dict</span>(loss_d_real=loss_d_real))</span><br><span class="line">    optimizer[<span class="string">&#x27;discriminator&#x27;</span>].zero_grad()</span><br><span class="line">    loss_d.backward()</span><br><span class="line">    log_vars.update(log_vars_d)</span><br><span class="line">    <span class="comment"># fake</span></span><br><span class="line">    fake_d_pred = self.discriminator(fake_g_output.detach())</span><br><span class="line">    loss_d_fake = self.gan_loss(</span><br><span class="line">        fake_d_pred, target_is_real=<span class="literal">False</span>, is_disc=<span class="literal">True</span>)</span><br><span class="line">    loss_d, log_vars_d = self.parse_losses(<span class="built_in">dict</span>(loss_d_fake=loss_d_fake))</span><br><span class="line">    loss_d.backward()</span><br><span class="line">    log_vars.update(log_vars_d)</span><br><span class="line"></span><br><span class="line">    optimizer[<span class="string">&#x27;discriminator&#x27;</span>].step()</span><br><span class="line"></span><br><span class="line">    self.step_counter += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    log_vars.pop(<span class="string">&#x27;loss&#x27;</span>)  <span class="comment"># remove the unnecessary &#x27;loss&#x27;</span></span><br><span class="line">    outputs = <span class="built_in">dict</span>(</span><br><span class="line">        log_vars=log_vars,</span><br><span class="line">        num_samples=<span class="built_in">len</span>(gt.data),</span><br><span class="line">        results=<span class="built_in">dict</span>(lq=lq.cpu(), gt=gt.cpu(), output=fake_g_output.cpu()))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> outputs</span><br></pre></td></tr></table></figure></p>
-<p>一开始，图像输出都在词典<code>data_batch</code>里。函数先把低清图<code>lq</code>和高清的真值<code>gt</code>从词典里取出。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># data</span></span><br><span class="line">lq = data_batch[<span class="string">&#x27;lq&#x27;</span>]</span><br><span class="line">gt = data_batch[<span class="string">&#x27;gt&#x27;</span>]</span><br></pre></td></tr></table></figure>
-<p>之后，函数计算了$G(I^{lq})$，为后续loss的计算做准备。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># generator</span></span><br><span class="line">fake_g_output = self.generator(lq)</span><br></pre></td></tr></table></figure>
-<p>接下来，是优化生成器<code>self.generator</code>的逻辑。这里面有一些函数调用，我们可以不管它们的实现，大概理解整段代码的意思就行了。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">losses = <span class="built_in">dict</span>()</span><br><span class="line">log_vars = <span class="built_in">dict</span>()</span><br><span class="line"></span><br><span class="line"><span class="comment"># no updates to discriminator parameters.</span></span><br><span class="line">set_requires_grad(self.discriminator, <span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (self.step_counter % self.disc_steps == <span class="number">0</span></span><br><span class="line">        <span class="keyword">and</span> self.step_counter &gt;= self.disc_init_steps):</span><br><span class="line">    <span class="keyword">if</span> self.pixel_loss:</span><br><span class="line">        losses[<span class="string">&#x27;loss_pix&#x27;</span>] = self.pixel_loss(fake_g_output, gt)</span><br><span class="line">    <span class="keyword">if</span> self.perceptual_loss:</span><br><span class="line">        loss_percep, loss_style = self.perceptual_loss(</span><br><span class="line">            fake_g_output, gt)</span><br><span class="line">        <span class="keyword">if</span> loss_percep <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            losses[<span class="string">&#x27;loss_perceptual&#x27;</span>] = loss_percep</span><br><span class="line">        <span class="keyword">if</span> loss_style <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            losses[<span class="string">&#x27;loss_style&#x27;</span>] = loss_style</span><br><span class="line">    <span class="comment"># gan loss for generator</span></span><br><span class="line">    fake_g_pred = self.discriminator(fake_g_output)</span><br><span class="line">    losses[<span class="string">&#x27;loss_gan&#x27;</span>] = self.gan_loss(</span><br><span class="line">        fake_g_pred, target_is_real=<span class="literal">True</span>, is_disc=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># parse loss</span></span><br><span class="line">    loss_g, log_vars_g = self.parse_losses(losses)</span><br><span class="line">    log_vars.update(log_vars_g)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># optimize</span></span><br><span class="line">    optimizer[<span class="string">&#x27;generator&#x27;</span>].zero_grad()</span><br><span class="line">    loss_g.backward()</span><br><span class="line">    optimizer[<span class="string">&#x27;generator&#x27;</span>].step()</span><br></pre></td></tr></table></figure>
-<p>为了只训练生成器，要用下面的代码关闭判别器的训练。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># no updates to discriminator parameters.</span></span><br><span class="line">set_requires_grad(self.discriminator, <span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
-<p>正文说过，训练GAN时一般要先训好判别器，且训练判别器多于训练生成器。因此，下面的if语句可以让判别器训练了<code>self.disc_init_steps</code>步后，每训练<code>self.disc_steps</code>步判别器再训练一步生成器。<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">if (self.step_counter % self.disc_steps == 0</span><br><span class="line">    and self.step_counter &gt;= self.disc_init_steps):</span><br></pre></td></tr></table></figure><br>if语句块里分别计算了逐像素误差（比如均方误差和L1误差）、感知误差、GAN误差。虽然SRGAN完全抛弃了逐像素误差，但实际训练时我们还是可以按一定比例加上这个误差。这些误差最后会用于训练生成器。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> self.pixel_loss:</span><br><span class="line">    losses[<span class="string">&#x27;loss_pix&#x27;</span>] = self.pixel_loss(fake_g_output, gt)</span><br><span class="line"><span class="keyword">if</span> self.perceptual_loss:</span><br><span class="line">    loss_percep, loss_style = self.perceptual_loss(</span><br><span class="line">        fake_g_output, gt)</span><br><span class="line">    <span class="keyword">if</span> loss_percep <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        losses[<span class="string">&#x27;loss_perceptual&#x27;</span>] = loss_percep</span><br><span class="line">    <span class="keyword">if</span> loss_style <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        losses[<span class="string">&#x27;loss_style&#x27;</span>] = loss_style</span><br><span class="line"><span class="comment"># gan loss for generator</span></span><br><span class="line">fake_g_pred = self.discriminator(fake_g_output)</span><br><span class="line">losses[<span class="string">&#x27;loss_gan&#x27;</span>] = self.gan_loss(</span><br><span class="line">    fake_g_pred, target_is_real=<span class="literal">True</span>, is_disc=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># parse loss</span></span><br><span class="line">loss_g, log_vars_g = self.parse_losses(losses)</span><br><span class="line">log_vars.update(log_vars_g)</span><br><span class="line"></span><br><span class="line"><span class="comment"># optimize</span></span><br><span class="line">optimizer[<span class="string">&#x27;generator&#x27;</span>].zero_grad()</span><br><span class="line">loss_g.backward()</span><br><span class="line">optimizer[<span class="string">&#x27;generator&#x27;</span>].step()</span><br></pre></td></tr></table></figure></p>
-<p>训练完生成器后，要训练判别器。和生成器的误差计算方法类似，判别器的训练代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment"># discriminator</span></span><br><span class="line">set_requires_grad(self.discriminator, <span class="literal">True</span>)</span><br><span class="line"><span class="comment"># real</span></span><br><span class="line">real_d_pred = self.discriminator(gt)</span><br><span class="line">loss_d_real = self.gan_loss(</span><br><span class="line">    real_d_pred, target_is_real=<span class="literal">True</span>, is_disc=<span class="literal">True</span>)</span><br><span class="line">loss_d, log_vars_d = self.parse_losses(<span class="built_in">dict</span>(loss_d_real=loss_d_real))</span><br><span class="line">optimizer[<span class="string">&#x27;discriminator&#x27;</span>].zero_grad()</span><br><span class="line">loss_d.backward()</span><br><span class="line">log_vars.update(log_vars_d)</span><br><span class="line"><span class="comment"># fake</span></span><br><span class="line">fake_d_pred = self.discriminator(fake_g_output.detach())</span><br><span class="line">loss_d_fake = self.gan_loss(</span><br><span class="line">    fake_d_pred, target_is_real=<span class="literal">False</span>, is_disc=<span class="literal">True</span>)</span><br><span class="line">loss_d, log_vars_d = self.parse_losses(<span class="built_in">dict</span>(loss_d_fake=loss_d_fake))</span><br><span class="line">loss_d.backward()</span><br><span class="line">log_vars.update(log_vars_d)</span><br><span class="line"></span><br><span class="line">optimizer[<span class="string">&#x27;discriminator&#x27;</span>].step()</span><br></pre></td></tr></table></figure>
-<p>这段代码有两个重点：</p>
-<ol>
-<li>在训练判别器时，要用<code>set_requires_grad(self.discriminator, True)</code>开启判别器的梯度计算。</li>
-<li><code>fake_d_pred = self.discriminator(fake_g_output.detach())</code>这一行的<code>detach()</code>很关键。<code>detach()</code>可以中断某张量的梯度跟踪。<code>fake_g_output</code>是由生成器算出来的，如果不把这个张量的梯度跟踪切断掉，在优化判别器时生成器的参数也会跟着优化。</li>
-</ol>
-<p>函数的最后部分是一些和MMEditing其他代码逻辑的交互，和SRGAN本身没什么关联。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">self.step_counter += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">log_vars.pop(<span class="string">&#x27;loss&#x27;</span>)  <span class="comment"># remove the unnecessary &#x27;loss&#x27;</span></span><br><span class="line">outputs = <span class="built_in">dict</span>(</span><br><span class="line">    log_vars=log_vars,</span><br><span class="line">    num_samples=<span class="built_in">len</span>(gt.data),</span><br><span class="line">    results=<span class="built_in">dict</span>(lq=lq.cpu(), gt=gt.cpu(), output=fake_g_output.cpu()))</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> outputs</span><br></pre></td></tr></table></figure>
-<p>只要理解了本文的误差计算公式，再看懂了这段代码是如何训练判别器和生成器的，就算是完全理解了SRGAN的核心思想了。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>[1] (SRGAN): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1609.04802">Photo-Realistic Single Image Super-Resolution Using a Generative Adversarial Network</a></p>
-<p>[2] (GAN): <a target="_blank" rel="noopener" href="http://papers.neurips.cc/paper/5423-generative-adversarial-nets.pdf">Generative Adversarial Nets</a></p>
-<p>[3] (Perceptual Loss)：<a target="_blank" rel="noopener" href="https://arxiv.org/abs/1603.08155">Perceptual Losses for Real-Time Style Transfer and Super-Resolution</a></p>
-<p>[4] (ESRGAN): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1809.00219">ESRGAN: Enhanced Super-Resolution Generative Adversarial Networks</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2187,7 +2184,7 @@ L_{SR}=L_p + w L_G</script><p>这里的$w$用于调整两个误差的相对权�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">151</span>
+          <span class="site-state-item-count">152</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2200,7 +2197,7 @@ L_{SR}=L_p + w L_G</script><p>这里的$w$用于调整两个误差的相对权�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-count">66</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

@@ -168,6 +168,173 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/24/DLS-note-10-4/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》代码实战（十）：3.用 NumPy 复现参数一致的 torch.conv2d 前向传播</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-24 00:30:59" itemprop="dateCreated datePublished" datetime="2022-07-24T00:30:59+08:00">2022-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>《深度学习专项》只介绍了卷积的stride, padding这两个参数。实际上，编程框架中常用的卷积还有其他几个参数。在这篇文章里，我会介绍如何用NumPy复现PyTorch中的二维卷积<code>torch.conv2d</code>的前向传播。如果大家也想多学一点的话，建议看完本文后也<strong>自己动手</strong>写一遍卷积，彻底理解卷积中常见的参数。</p>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN</a></p>
+<p>本文代码在<code>dldemos/BasicCNN/np_conv.py</code>这个文件里。</p>
+<h2 id="卷积参数介绍"><a href="#卷积参数介绍" class="headerlink" title="卷积参数介绍"></a>卷积参数介绍</h2><p>与<code>torch.conv2d</code>类似，在这份实现中，我们的卷积应该有类似如下的函数定义（张量的形状写在docstring中）：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">conv2d</span>(<span class="params"><span class="built_in">input</span>: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">           weight: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">           stride: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           padding: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           dilation: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           groups: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           bias: np.ndarray = <span class="literal">None</span></span>) -&gt; np.ndarray:</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        input (np.ndarray): The input NumPy array of shape (H, W, C).</span></span><br><span class="line"><span class="string">        weight (np.ndarray): The weight NumPy array of shape</span></span><br><span class="line"><span class="string">            (C&#x27;, F, F, C / groups).</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string">        dilation (int): The space between kernel elements.</span></span><br><span class="line"><span class="string">        groups (int): Split the input to groups.</span></span><br><span class="line"><span class="string">        bias (np.ndarray | None): The bias NumPy array of shape (C&#x27;).</span></span><br><span class="line"><span class="string">            Default: None.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        np.ndarray: The output NumPy array of shape (H&#x27;, W&#x27;, C&#x27;)</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure></p>
+<p>我们知道，对于不加任何参数的卷积，其计算方式如下：</p>
+<p><img src="/2022/07/24/DLS-note-10-4/1.gif" alt></p>
+<p>此图中，下面蓝色的区域是一张$4 \times 4$的输入图片，输入图片上深蓝色的区域是一个$3 \times 3$的卷积核。这样，会生成上面那个$2 \times 2$的绿色的输出图片。每轮计算输出图片上一个深绿色的元素时，卷积核所在位置会标出来。</p>
+<p>接下来，使用类似图例，我们来看看卷积各参数的详细解释。</p>
+<h3 id="stride（步幅）"><a href="#stride（步幅）" class="headerlink" title="stride（步幅）"></a>stride（步幅）</h3><p><img src="/2022/07/24/DLS-note-10-4/2.gif" alt></p>
+<p>每轮计算后，卷积核向右或向下移动多格，而不仅仅是1格。每轮移动的格子数用stride表示。上图是stride=2的情况。</p>
+<h3 id="padding（填充数）"><a href="#padding（填充数）" class="headerlink" title="padding（填充数）"></a>padding（填充数）</h3><p><img src="/2022/07/24/DLS-note-10-4/3.gif" alt></p>
+<p>卷积开始前，向输入图片四周填充数字（最常见的情况是填充0），填充的数字个数用padding表示。这样，输出图片的边长会更大一些。一般我们会为了让输出图片和输入图片一样大而调整padding，比如上图那种padding=1的情况。</p>
+<h3 id="dilation（扩充数）"><a href="#dilation（扩充数）" class="headerlink" title="dilation（扩充数）"></a>dilation（扩充数）</h3><p><img src="/2022/07/24/DLS-note-10-4/4.gif" alt></p>
+<p>被卷积的相邻像素之间有间隔，这个间隔等于dilation。等价于在卷积核相邻位置之间填0，再做普通的卷积。上图是dilation=2的情况。</p>
+<blockquote>
+<p>dliated convolution 被翻译成空洞卷积。</p>
+</blockquote>
+<h3 id="groups（分组数）"><a href="#groups（分组数）" class="headerlink" title="groups（分组数）"></a>groups（分组数）</h3><p>下图展示了输入通道数12，输出通道数6的卷积在两种不同groups下的情况。左边是group=1的普通卷积，右边是groups=3的分组卷积。在具体看分组卷积的介绍前，大家可以先仔细观察这张图，看看能不能猜出分组卷积是怎么运算的。</p>
+<p><img src="/2022/07/24/DLS-note-10-4/1.png" alt></p>
+<p>当输入图片有多个通道时，卷积核也应该有相同数量的通道。输入图片的形状是(H, W, C)的话，卷积核的形状就应该是(f, f, C)。</p>
+<p>但是，这样一轮运算只能算出一张单通道的图片。为了算多通道的图片，应该使用多个卷积核。因此，如果输入图片的形状是(H, W, C)，想要生成(H, W, C’)的输出图片，则应该有C’个形状为(f, f, C)的卷积核，或者说卷积核组的形状是(C’, f, f, C)。</p>
+<p>如分组卷积示意图的左图所示，对于普通卷积，每一个输出通道都需要用到所有输入通道的数据。为了减少计算量，我们可以把输入通道和输出通道分组。每组的输出通道仅由该组的输入通道决定。如示意图的右图所示，我们令分组数groups=3，这样，一共有6个卷积核，每组的输入通道有4个，输出通道有2个（即使用2个卷积核）。这时候，卷积核组的形状应该是(C’=6, f, f, C=4)。</p>
+<blockquote>
+<p>groups最常见的应用是令groups=C，即depth-wise convolution。《深度学习专项》第四门课第二周会介绍有关的知识。</p>
+</blockquote>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><p>理解了所有参数，下面让我们来用NumPy实现这样一个卷积。</p>
+<p>完整的代码是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">conv2d</span>(<span class="params"><span class="built_in">input</span>: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">           weight: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">           stride: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           padding: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           dilation: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           groups: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           bias: np.ndarray = <span class="literal">None</span></span>) -&gt; np.ndarray:</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        input (np.ndarray): The input NumPy array of shape (H, W, C).</span></span><br><span class="line"><span class="string">        weight (np.ndarray): The weight NumPy array of shape</span></span><br><span class="line"><span class="string">            (C&#x27;, F, F, C / groups).</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string">        dilation (int): The space between kernel elements.</span></span><br><span class="line"><span class="string">        groups (int): Split the input to groups.</span></span><br><span class="line"><span class="string">        bias (np.ndarray | None): The bias NumPy array of shape (C&#x27;).</span></span><br><span class="line"><span class="string">            Default: None.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        np.ndarray: The output NumPy array of shape (H&#x27;, W&#x27;, C&#x27;)</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    h_i, w_i, c_i = <span class="built_in">input</span>.shape</span><br><span class="line">    c_o, f, f_2, c_k = weight.shape</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> (f == f_2)</span><br><span class="line">    <span class="keyword">assert</span> (c_i % groups == <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">assert</span> (c_o % groups == <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">assert</span> (c_i // groups == c_k)</span><br><span class="line">    <span class="keyword">if</span> bias <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">assert</span> (bias.shape[<span class="number">0</span>] == c_o)</span><br><span class="line"></span><br><span class="line">    f_new = f + (f - <span class="number">1</span>) * (dilation - <span class="number">1</span>)</span><br><span class="line">    weight_new = np.zeros((c_o, f_new, f_new, c_k), dtype=weight.dtype)</span><br><span class="line">    <span class="keyword">for</span> i_c_o <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">        <span class="keyword">for</span> i_c_k <span class="keyword">in</span> <span class="built_in">range</span>(c_k):</span><br><span class="line">            <span class="keyword">for</span> i_f <span class="keyword">in</span> <span class="built_in">range</span>(f):</span><br><span class="line">                <span class="keyword">for</span> j_f <span class="keyword">in</span> <span class="built_in">range</span>(f):</span><br><span class="line">                    i_f_new = i_f * dilation</span><br><span class="line">                    j_f_new = j_f * dilation</span><br><span class="line">                    weight_new[i_c_o, i_f_new, j_f_new, i_c_k] = \</span><br><span class="line">                        weight[i_c_o, i_f, j_f, i_c_k]</span><br><span class="line"></span><br><span class="line">    input_pad = np.pad(<span class="built_in">input</span>, [(padding, padding), (padding, padding), (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">cal_new_sidelngth</span>(<span class="params">sl, s, f, p</span>):</span></span><br><span class="line">        <span class="keyword">return</span> (sl + <span class="number">2</span> * p - f) // s + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    h_o = cal_new_sidelngth(h_i, stride, f_new, padding)</span><br><span class="line">    w_o = cal_new_sidelngth(w_i, stride, f_new, padding)</span><br><span class="line"></span><br><span class="line">    output = np.empty((h_o, w_o, c_o), dtype=<span class="built_in">input</span>.dtype)</span><br><span class="line"></span><br><span class="line">    c_o_per_group = c_o // groups</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">        <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">            <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">                i_g = i_c // c_o_per_group</span><br><span class="line">                h_lower = i_h * stride</span><br><span class="line">                h_upper = i_h * stride + f_new</span><br><span class="line">                w_lower = i_w * stride</span><br><span class="line">                w_upper = i_w * stride + f_new</span><br><span class="line">                c_lower = i_g * c_k</span><br><span class="line">                c_upper = (i_g + <span class="number">1</span>) * c_k</span><br><span class="line">                input_slice = input_pad[h_lower:h_upper, w_lower:w_upper,</span><br><span class="line">                                        c_lower:c_upper]</span><br><span class="line">                kernel_slice = weight_new[i_c]</span><br><span class="line">                output[i_h, i_w, i_c] = np.<span class="built_in">sum</span>(input_slice * kernel_slice)</span><br><span class="line">                <span class="keyword">if</span> bias:</span><br><span class="line">                    output[i_h, i_w, i_c] += bias[i_c]</span><br><span class="line">    <span class="keyword">return</span> output</span><br></pre></td></tr></table></figure>
+<p>先回顾一下我们要用到的参数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">conv2d</span>(<span class="params"><span class="built_in">input</span>: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">           weight: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">           stride: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           padding: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           dilation: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           groups: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">           bias: np.ndarray = <span class="literal">None</span></span>) -&gt; np.ndarray:</span></span><br></pre></td></tr></table></figure>
+<p>再次提醒，<code>input</code>的形状是<code>(H, W, C)</code>，卷积核组<code>weight</code>的形状是<code>(C&#39;, H, W, C_k)</code>。其中<code>C_k = C / groups</code>。同时<code>C&#39;</code>也必须能够被<code>groups</code>整除。<code>bias</code>的形状是<code>(C&#39;)</code>。</p>
+<p>一开始，把要用到的形状从<code>shape</code>里取出来，并检查一下形状是否满足要求。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">h_i, w_i, c_i = <span class="built_in">input</span>.shape</span><br><span class="line">c_o, f, f_2, c_k = weight.shape</span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> (f == f_2)</span><br><span class="line"><span class="keyword">assert</span> (c_i % groups == <span class="number">0</span>)</span><br><span class="line"><span class="keyword">assert</span> (c_o % groups == <span class="number">0</span>)</span><br><span class="line"><span class="keyword">assert</span> (c_i // groups == c_k)</span><br><span class="line"><span class="keyword">if</span> bias <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">    <span class="keyword">assert</span> (bias.shape[<span class="number">0</span>] == c_o)</span><br></pre></td></tr></table></figure>
+<p>回忆一下，空洞卷积可以用卷积核扩充实现。因此，在开始卷积前，可以先预处理好扩充后的卷积核。我们先算好扩充后卷积核的形状，并创建好新的卷积核，最后用多重循环给新卷积核赋值。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">f_new = f + (f - <span class="number">1</span>) * (dilation - <span class="number">1</span>)</span><br><span class="line">    weight_new = np.zeros((c_o, f_new, f_new, c_k), dtype=weight.dtype)</span><br><span class="line">    <span class="keyword">for</span> i_c_o <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">        <span class="keyword">for</span> i_c_k <span class="keyword">in</span> <span class="built_in">range</span>(c_k):</span><br><span class="line">            <span class="keyword">for</span> i_f <span class="keyword">in</span> <span class="built_in">range</span>(f):</span><br><span class="line">                <span class="keyword">for</span> j_f <span class="keyword">in</span> <span class="built_in">range</span>(f):</span><br><span class="line">                    i_f_new = i_f * dilation</span><br><span class="line">                    j_f_new = j_f * dilation</span><br><span class="line">                    weight_new[i_c_o, i_f_new, j_f_new, i_c_k] = \</span><br><span class="line">                        weight[i_c_o, i_f, j_f, i_c_k]</span><br></pre></td></tr></table></figure>
+<p>接下来，我们要考虑padding。<code>np.pad</code>就是填充操作使用的函数。该函数第一个参数是输入，第二个参数是填充数量，要分别写出每个维度上左上和右下的填充数量。我们只填充图片的前两维，并且左上和右下填的数量一样多。因此，填充的写法如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">input_pad = np.pad(<span class="built_in">input</span>, [(padding, padding), (padding, padding), (<span class="number">0</span>, <span class="number">0</span>)])</span><br></pre></td></tr></table></figure>
+<p>预处理都做好了，马上要开始卷积计算了。在计算开始前，我们还要把算出输出张量的形状并将其初始化。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">cal_new_sidelngth</span>(<span class="params">sl, s, f, p</span>):</span></span><br><span class="line">    <span class="keyword">return</span> (sl + <span class="number">2</span> * p - f) // s + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">h_o = cal_new_sidelngth(h_i, stride, f_new, padding)</span><br><span class="line">w_o = cal_new_sidelngth(w_i, stride, f_new, padding)</span><br><span class="line"></span><br><span class="line">output = np.empty((h_o, w_o, c_o), dtype=<span class="built_in">input</span>.dtype)</span><br></pre></td></tr></table></figure>
+<p>为严谨起见，我这里用统一的函数计算了卷积后的宽高。不考虑dilation的边长公式由<code>cal_new_sidelngth</code>表示。如果对这个公式不理解，可以自己推一推。而考虑dilation时，只需要把原来的卷积核长度<code>f</code>换成新卷积核长度<code>f_new</code>即可。</p>
+<blockquote>
+<p>初始化<code>output</code>时，我没有像前面初始化<code>weight_new</code>一样使用<code>np.zeros</code>，而是用了<code>np.empty</code>。这是因为<code>weight_new</code>会有一些地方不被访问到，这些地方都应该填0。而<code>output</code>每一个元素都会被访问到并赋值，可以不用令它们初值为0。理论上，<code>np.empty</code>这种不限制初值的初始化方式是最快的，只是使用时一定别忘了要先给每个元素赋值。这种严谨的算法实现思维还是挺重要的，尤其是在用C++实现高性能的底层算法时。</p>
+</blockquote>
+<p>终于，可以进行卷积计算了。这部分的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">c_o_per_group = c_o // groups</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">    <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">        <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">            i_g = i_c // c_o_per_group</span><br><span class="line">            h_lower = i_h * stride</span><br><span class="line">            h_upper = i_h * stride + f_new</span><br><span class="line">            w_lower = i_w * stride</span><br><span class="line">            w_upper = i_w * stride + f_new</span><br><span class="line">            c_lower = i_g * c_k</span><br><span class="line">            c_upper = (i_g + <span class="number">1</span>) * c_k</span><br><span class="line">            input_slice = input_pad[h_lower:h_upper, w_lower:w_upper,</span><br><span class="line">                                    c_lower:c_upper]</span><br><span class="line">            kernel_slice = weight_new[i_c]</span><br><span class="line">            output[i_h, i_w, i_c] = np.<span class="built_in">sum</span>(input_slice * kernel_slice)</span><br><span class="line">            <span class="keyword">if</span> bias:</span><br><span class="line">                output[i_h, i_w, i_c] += bias[i_c]</span><br></pre></td></tr></table></figure>
+<p>来一点一点看这段代码。</p>
+<p><code>c_o_per_group = c_o // groups</code>预处理了每组的输出通道数，后面会用到这个数。</p>
+<p>为了填入输出张量每一处的值，我们应该遍历输出张量的每一个元素的下标：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">    <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">        <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br></pre></td></tr></table></figure>
+<p>做卷积时，我们要获取两个东西：被卷积的原图像上的数据、卷积用的卷积核。所以，下一步应该去获取原图像上的数据切片。这个切片可以这样表示</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">input_slice = input_pad[h_lower:h_upper, w_lower:w_upper,</span><br><span class="line">                                    c_lower:c_upper]</span><br></pre></td></tr></table></figure>
+<p>宽和高上的截取范围很好计算。只要根据<code>stride</code>确认截取起点，再加上<code>f_new</code>就得到了截取终点。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">h_lower = i_h * stride</span><br><span class="line">h_upper = i_h * stride + f_new</span><br><span class="line">w_lower = i_w * stride</span><br><span class="line">w_upper = i_w * stride + f_new</span><br></pre></td></tr></table></figure>
+<p>比较难想的是考虑groups后，通道上的截取范围该怎么获得。这里，不妨再看一次分组卷积的示意图：</p>
+<p><img src="/2022/07/24/DLS-note-10-4/1.png" alt></p>
+<p>获取通道上的截取范围，就是获取右边那幅图中的输入通道组。究竟是红色的1-4，还是绿色的5-8，还是黄色的9-12。为了知道是哪一个范围，我们要算出当前输出通道对应的组号（颜色），这个组号由下面的算式获得：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">i_g = i_c // c_o_per_group</span><br></pre></td></tr></table></figure>
+<p>有了组号，就可以方便地计算通道上的截取范围了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">c_lower = i_g * c_k</span><br><span class="line">c_upper = (i_g + <span class="number">1</span>) * c_k</span><br></pre></td></tr></table></figure>
+<p>整个获取输入切片的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">i_g = i_c // c_o_per_group</span><br><span class="line">h_lower = i_h * stride</span><br><span class="line">h_upper = i_h * stride + f_new</span><br><span class="line">w_lower = i_w * stride</span><br><span class="line">w_upper = i_w * stride + f_new</span><br><span class="line">c_lower = i_g * c_k</span><br><span class="line">c_upper = (i_g + <span class="number">1</span>) * c_k</span><br><span class="line">input_slice = input_pad[h_lower:h_upper, w_lower:w_upper,</span><br><span class="line">                        c_lower:c_upper]</span><br></pre></td></tr></table></figure>
+<p>而卷积核就很容易获取了，直接选中第<code>i_c</code>个卷积核即可：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kernel_slice = weight_new[i_c]</span><br></pre></td></tr></table></figure>
+<p>最后是卷积运算，别忘了加上bias。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">output[i_h, i_w, i_c] = np.<span class="built_in">sum</span>(input_slice * kernel_slice)</span><br><span class="line"><span class="keyword">if</span> bias:</span><br><span class="line">    output[i_h, i_w, i_c] += bias[i_c]</span><br></pre></td></tr></table></figure>
+<p>写完了所有东西，返回输出结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> output</span><br></pre></td></tr></table></figure>
+<h2 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h2><p>为了方便地进行单元测试，我使用了pytest这个单元测试库。可以直接pip一键安装：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pytest</span><br></pre></td></tr></table></figure>
+<p>之后就可以用pytest执行我的这份代码，代码里所有以<code>test_</code>开头的函数会被认为是单元测试的主函数。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pytest dldemos/BasicCNN/np_conv.py</span><br></pre></td></tr></table></figure>
+<p>完整代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;c_i, c_o&#x27;</span>, [(<span class="params"><span class="number">3</span>, <span class="number">6</span></span>), (<span class="params"><span class="number">2</span>, <span class="number">2</span></span>)]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;kernel_size&#x27;</span>, [<span class="number">3</span>, <span class="number">5</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;stride&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;padding&#x27;</span>, [<span class="number">0</span>, <span class="number">1</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;dilation&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;groups&#x27;</span>, [<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;all&#x27;</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;bias&#x27;</span>, [<span class="literal">False</span>]</span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">              dilation: <span class="built_in">int</span>, groups: <span class="built_in">str</span>, bias: <span class="built_in">bool</span></span>):</span></span><br><span class="line">    <span class="keyword">if</span> groups == <span class="string">&#x27;1&#x27;</span>:</span><br><span class="line">        groups = <span class="number">1</span></span><br><span class="line">    <span class="keyword">elif</span> groups == <span class="string">&#x27;all&#x27;</span>:</span><br><span class="line">        groups = c_i</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> bias:</span><br><span class="line">        bias = np.random.randn(c_o)</span><br><span class="line">        torch_bias = torch.from_numpy(bias)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        bias = <span class="literal">None</span></span><br><span class="line">        torch_bias = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">    weight = np.random.randn(c_o, kernel_size, kernel_size, c_i // groups)</span><br><span class="line"></span><br><span class="line">    torch_input = torch.from_numpy(np.transpose(<span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>)</span><br><span class="line">    torch_weight = torch.from_numpy(np.transpose(weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>)))</span><br><span class="line">    torch_output = torch.conv2d(torch_input, torch_weight, torch_bias, stride,</span><br><span class="line">                                padding, dilation, groups).numpy()</span><br><span class="line">    torch_output = np.transpose(torch_output.squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    numpy_output = conv2d(<span class="built_in">input</span>, weight, stride, padding, dilation, groups,</span><br><span class="line">                          bias)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br></pre></td></tr></table></figure>
+<p>其中，单元测试函数的定义如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;c_i, c_o&#x27;</span>, [(<span class="params"><span class="number">3</span>, <span class="number">6</span></span>), (<span class="params"><span class="number">2</span>, <span class="number">2</span></span>)]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;kernel_size&#x27;</span>, [<span class="number">3</span>, <span class="number">5</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;stride&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;padding&#x27;</span>, [<span class="number">0</span>, <span class="number">1</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;dilation&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;groups&#x27;</span>, [<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;all&#x27;</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;bias&#x27;</span>, [<span class="literal">False</span>]</span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">              dilation: <span class="built_in">int</span>, groups: <span class="built_in">str</span>, bias: <span class="built_in">bool</span></span>):</span></span><br></pre></td></tr></table></figure>
+<p>先别管上面那一堆装饰器，先看一下单元测试中的输入参数。在对某个函数进行单元测试时，要测试该函数的参数在不同取值下的表现。我打算测试我们的<code>conv2d</code>在各种输入通道数、输出通道数、卷积核大小、步幅、填充数、扩充数、分组数、是否加入bias的情况。</p>
+<p><code>@pytest.mark.parametrize</code>用于设置单元测试参数的可选值。我设置了6组参数，每组参数有2个可选值，经过排列组合后可以生成<code>2^6=64</code>个单元测试，pytest会自动帮我们执行不同的测试。</p>
+<p>在测试函数内，我先预处理了一下输入的参数，并生成了随机的输入张量，使这些参数和<code>conv2d</code>的参数一致。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">              dilation: <span class="built_in">int</span>, groups: <span class="built_in">str</span>, bias: <span class="built_in">bool</span></span>):</span></span><br><span class="line">    <span class="keyword">if</span> groups == <span class="string">&#x27;1&#x27;</span>:</span><br><span class="line">        groups = <span class="number">1</span></span><br><span class="line">    <span class="keyword">elif</span> groups == <span class="string">&#x27;all&#x27;</span>:</span><br><span class="line">        groups = c_i</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> bias:</span><br><span class="line">        bias = np.random.randn(c_o)</span><br><span class="line">        torch_bias = torch.from_numpy(bias)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        bias = <span class="literal">None</span></span><br><span class="line">        torch_bias = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">    weight = np.random.randn(c_o, kernel_size, kernel_size, c_i // groups)</span><br></pre></td></tr></table></figure>
+<p>为了确保我们实现的卷积和<code>torch.conv2d</code>是对齐的，我们要用<code>torch.conv2d</code>算一个结果，作为正确的参考值。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">torch_input = torch.from_numpy(np.transpose(<span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>)</span><br><span class="line">torch_weight = torch.from_numpy(np.transpose(weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>)))</span><br><span class="line">torch_output = torch.conv2d(torch_input, torch_weight, torch_bias, stride,</span><br><span class="line">                            padding, dilation, groups).numpy()</span><br><span class="line">torch_output = np.transpose(torch_output.squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br></pre></td></tr></table></figure>
+<p>由于<code>torch</code>里张量的形状格式是NCHW，weight的形状是C’Cff，我这里做了一些形状上的转换。</p>
+<p>之后，调用我们自己的卷积函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">numpy_output = conv2d(<span class="built_in">input</span>, weight, stride, padding, dilation, groups,</span><br><span class="line">                          bias)</span><br></pre></td></tr></table></figure>
+<p>最后，验证一下两个结果是否对齐：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br></pre></td></tr></table></figure>
+<p>运行前面提到的单元测试命令，pytest会输出很多测试的结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pytest dldemos/BasicCNN/np_conv.py</span><br></pre></td></tr></table></figure>
+<p>如果看到了类似的输出，就说明我们的代码是正确的。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">========== 64 passed in 1.20s ===============</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了<code>torch.conv2d</code>的等价NumPy实现。同时，我还详细说明了卷积各参数(stride, padding, dilation, groups)的意义。通过阅读本文，相信大家能够深刻地理解一轮卷积是怎么完成的。</p>
+<p>如果你也想把这方面的基础打牢，一定一定要自己动手从头写一份代码。在写代码，调bug的过程中，一定会有很多收获。</p>
+<p>相比torch里的卷积，这份卷积实现还不够灵活。torch里可以自由输入卷积核的宽高、stride的宽高。而我们默认卷积核是正方形，宽度和高度上的stride是一样的。不过，要让卷积更灵活一点，只需要稍微修改一些预处理数据的代码即可，卷积的核心实现代码是不变的。</p>
+<p>其实，在编程框架中，卷积的实现都是很高效的，不可能像我们这样先扩充卷积核，再填充输入图像。这些操作都会引入很多冗余的计算量。为了尽可能利用并行加速卷积的运算，卷积的GPU实现使用了一种叫做im2col的算法。这种算法会把每次卷积乘加用到的输入图像上的数据都放进列向量中，把卷积乘加转换成一次矩阵乘法。有兴趣的话欢迎搜索这方面的知识。</p>
+<p>这篇文章仅介绍了卷积操作的正向传播。有了正向传播，反向传播倒没那么了难了。之后有时间的话我会再分享一篇用NumPy实现卷积反向传播的文章。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>本文中的动图来自于 <a target="_blank" rel="noopener" href="https://github.com/vdumoulin/conv_arithmetic">https://github.com/vdumoulin/conv_arithmetic</a></p>
+<p>本文中分组卷积的图来自于论文 <a target="_blank" rel="noopener" href="https://www.researchgate.net/publication/321325862_CondenseNet_An_Efficient_DenseNet_using_Learned_Group_Convolutions">https://www.researchgate.net/publication/321325862_CondenseNet_An_Efficient_DenseNet_using_Learned_Group_Convolutions</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1835,148 +2002,6 @@ F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/01/20220625-stylegan-introduction/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/07/01/20220625-stylegan-introduction/" class="post-title-link" itemprop="url">用18支画笔作画的AI ~ StyleGAN特点浅析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-07-01 21:30:13" itemprop="dateCreated datePublished" datetime="2022-07-01T21:30:13+08:00">2022-07-01</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>GAN（生成对抗网络）是一种能够自动生成内容的神经网络模型。近年来，许多图像生成的研究都基于GAN。</p>
-<p>以人脸生成任务为例，一类常见图像GAN的原理如下：模型先要学会辨别一张图像是不是人脸。之后，模型会把一个个高维实数向量表示的“身份证号”映射成一幅幅图像，并根据辨别人脸的知识学习如何让图像长得更像人脸。最终，学习结束后，每一个“身份证号”都会映射到一张逼真的人脸上。只需要给模型一个随机的高维向量，模型就会生成一张人脸。</p>
-<p>但是，使用这类图像GAN时，我们不能对图像生成的过程加以干预。也就是说，我们不知道神经网络是怎么把一个个向量映射成一张张栩栩如生的人脸的，而只能将其视作一个黑盒。因此，这些GAN只能用来随机地画出几张漂亮的画，搞搞大新闻，难以产生更加实际的应用。</p>
-<p>对此，英伟达提出了可控的图像生成网络StyleGAN，引发了无数研究者的关注。在这个模型生成完一幅图像后，我们可以对图片进行由粗至精共18种微调：同样以人脸生成为例，我们既可以调整性别、年龄这种更宏观的属性，也能调整肤色、发色这种更具体的属性。下图是论文中展示的结果：</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/1.jpg" alt></p>
-<p>最左侧一列是生成的图集A，最上方一行是生成的图集B。前三行、中间两行、最后一行分别是把图集B图像的高级、中级、低级属性混合进图集A图像得到的结果。</p>
-<p>可以看出，混入高级属性，人脸的肤色得以保留，而五官、性别等特征被修改了；混入中级属性，人脸的性别、年龄得以保留，而脸部的轮廓被修改了；混入低级属性，人脸的样子几乎不变，而发色、肤色被修改了。StyleGAN确实能神奇地修改生成图像的各类属性。</p>
-<p>那么，StyleGAN是如何用这18支“画笔”作画的呢？StyleGAN还有哪些出色的特性呢？我们能用StyleGAN开发出怎样的应用呢？在这篇文章里，让我们来认识一下StyleGAN的主要特点，并快速地用开源项目运行一下StyleGAN。</p>
-<blockquote>
-<p>本文不会对StyleGAN的原理进行详细的解读。在后续文章中，我会系统地讲解StyleGAN的论文及开源实现的使用方法。</p>
-</blockquote>
-<h1 id="原理讲解"><a href="#原理讲解" class="headerlink" title="原理讲解"></a>原理讲解</h1><h2 id="控制图像的风格"><a href="#控制图像的风格" class="headerlink" title="控制图像的风格"></a>控制图像的风格</h2><p>StyleGAN的名字里有一个”style”，该单词是“风格”的意思。这个单词在图像领域有一个特别的含义：一项神经网络风格迁移（Neural Style Transfer）的研究曾指出，图像可以看成是内容与风格的结合。即使是同一幅风景，不同艺术家也会画出不同风格的作品：</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/2.jpg" alt></p>
-<blockquote>
-<p>如果对神经网络风格迁移的经典论文感兴趣，欢迎阅读我之前写的<a href="https://zhouyifan.net/2022/06/01/20220531-styletransfer/">解读文章</a>。</p>
-</blockquote>
-<p>在那项研究中，人们发现，在由很多卷积层堆成的卷积神经网络中，越浅的层能表示越实际的风格，越深的层能表示越抽象的风格。受此启发，StyleGAN也使用了卷积神经网络来生成图像，并把“控制信号”放在了每个卷积层后。这样，只要调整“控制信号”，就能改变图像的风格了。StyleGAN的生成网络的部分结构如下：</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/3-2.jpg" alt></p>
-<p>在这个网络中，”Const 4x4x512”表示一个恒定的数据块，该数据块的分辨率是4x4。网络会通过一系列操作，把这个数据块逐渐放大成一幅1024x1024的图像。”AdaIN”是一种运算，该运算受到表示风格的“控制信号”A的影响。”Conv 3x3”是普通的3x3卷积层。”Upsample”表示图像上采样2倍。</p>
-<p>把图像从4x4翻倍放大至1024x1024，要翻倍8次，一共涉及9个模块的运算（一个模块就是图中的一个灰框）。而每个模块里又有2个AdaIN，所以，一共有18个调整图像风格的“控制信号”。这就是为什么我们可以说AI在用18支画笔作画。</p>
-<p>那么，如何像开头所展示得一样，混合不同人脸的风格呢？这就要详细介绍一下“控制信号”的由来了。前面也提过，通常图像GAN需要输入一个高维实数向量，模型会根据这个向量来生成图像。在StyleGAN中，“控制信号”就来自于这个高维向量。默认情况下，所有“控制信号”都来自同一个高维向量。而如果令某些层的“控制信号”来自于另一个高维向量，就能产生<strong>风格混合</strong>的效果。前面提到把图像B的低级、高级特征混入图像A，其实就是用图像B代替图像A在网络的浅层、深层的“控制信号”。</p>
-<p>为什么调整不同层的风格能够对图像产生不同程度的改变呢？可以这样想象：浅层的数据分辨率较低，只能记录图像的年龄、姿态这种更宏观的信息；而随着数据的分辨率不断放大，深层的数据已经逐渐记录下了人脸的形状，只剩下肤色、发色这种更具体的信息可供更改了。</p>
-<p>实际上，从开头展示出来的图片中能够看出，风格混合并不是真的混合了图像的绘画风格，而是混合了图像的各种属性。出于对之前「神经风格迁移」论文中“风格”一词的统一描述，StyleGAN的论文沿用了“风格”一词。</p>
-<p>除此之外，StyleGAN还有哪些特性呢？让我们看下去。</p>
-<h2 id="随机调整图像细节"><a href="#随机调整图像细节" class="headerlink" title="随机调整图像细节"></a>随机调整图像细节</h2><p>在让计算机生成图像时，除了要求图像足够像某种事物外，最好还要能够随机改变图像的细节。比如对于一幅人脸照片来说，如果几束头发的位置发生了偏移，我们还是会认为这是原来那张照片。因此，我们希望生成出来的人脸在头发上的细节可以随机一点。</p>
-<p>在传统的图像生成方法中，研究者总是得构造出一些巧妙的参数，通过随机改变这些参数让图像在内容大致不变的前提下调整细节。构造这些参数的过程是非常困难的。而对于StyleGAN来说，它的结构特别适合插入能够修改图像细节的<strong>噪声</strong>，让我们看一看StyleGAN生成网络完整的结构图：</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/3.jpg" alt></p>
-<p>其实，在输入层或者卷积层后，还有一个与噪声B的加法操作。其中，B通常是从标准正态分布中随机生成的。对于同一个高维向量生成出的图像，改变噪声B会修改图像的细节：</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/4.jpg" alt></p>
-<p>如图所示，改变噪声会改变头发的细节。实际上，噪声几乎不会影响整幅图片的观感，而只会改变头发、胡须、衣领等小细节。</p>
-<p>通过改变噪声，我们能够从一幅照片的多个版本中找出一个细节最好的。此外，通过连续改变噪声，我们能够让图像发生连续的变化。这一特性很适合制作简单的2D动画。</p>
-<h2 id="靠近平均图像"><a href="#靠近平均图像" class="headerlink" title="靠近平均图像"></a>靠近平均图像</h2><p>StyleGAN还有一个很好玩的应用：让生成的某张脸更加靠近大众脸。这一功能是怎么实现的呢？</p>
-<p>对数字求平均值，得到的是所有数字的平均水平；对坐标求平均值，得到是一个平均位置。可是，该怎么对照片求平均值呢？如果只是把所有照片的像素值加到一起，再求平均值，肯定只会得到一幅乱糟糟的图像。而StyleGAN则提供了一种求平均图像的方法。</p>
-<p>前面提过，GAN是靠一个高维向量表示的“身份证号”来生成图像的。StyleGAN通过一些映射操作，让高维向量的距离与生成出来的图片的相似度相关。也就是说，越近的向量，生成出来的图片就越像。因此，我们可以求出一堆向量的平均值，从而得到一幅平均图像。</p>
-<p>有了平均图像，接下来就是如何让另一幅图像更靠近平均图像了。和前面一样的道理，相似的向量能生成相似的图像，那么两个向量的平均值，就能几乎均等地表示两幅图的特性。理想情况下，如果一个向量表示“白发萝莉”，另一个向量表示“黑发熟女”，那么它们的平均向量应该表示“银发少女”。当然，如果不使用平均值，而是使用其他和为1的加权方式，就能让中间的图像更靠近另外某幅图像了。这一操作叫做图像插值。</p>
-<p>有了平均图像，有了图像插值方法，就可以一幅图像更靠近平均图像了。下面是几个插值示例图，其中$\psi$表示原图像的加权权重：</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/5.jpg" alt></p>
-<p>$\psi=1$表示随机生成的原图像，$\psi=0$就是平均图像，$\psi&lt;0$表示图像往平均图像“相反”的方向移动得到的图像。</p>
-<p>可以看出，随着人像不断靠近平均，甚至往反的方向移动，人像的整体内容都在平滑地改变。比较有趣的是，当人像反向后，人物的性别都反过来了。</p>
-<p>从这个例子能看出，StyleGAN使用的输入向量隐含了语义上的信息。通过对输入向量进行简单的数学操作，就能让生成出来的图像朝有意义的方向改变。</p>
-<h2 id="总结与展望"><a href="#总结与展望" class="headerlink" title="总结与展望"></a>总结与展望</h2><p>通过认识StyleGAN的网络结构，我们了解了StyleGAN的两大输入：表示风格的高维向量与随机扰动图像的噪声。通过修改这些输入，图像会发生不同程度的改变。</p>
-<p>基于这些基本操作，我们可以开发出许多图像编辑应用，比如风格混合、简单动画、图像插值、语义反向等。正是因为这些五花八门的图像编辑效果，许多研究者都尝试对StyleGAN的功能进行改进与拓展，发表了很多有趣的科研工作。</p>
-<p>令一方面，由于GAN的生成内容取决于训练数据。如果我们用人脸以外的图片作为训练集，就可以让AI画出其他物体来，比如动漫头像、小猫、汽车、酒店房间。这样，就可以开发出人脸编辑之外的应用了。</p>
-<p>如果你想直观地体会StyleGAN的效果，可以查看StyleGAN作者发布的视频（在外网）。</p>
-<p>如果你想立刻跑一跑StyleGAN，别走开。在附录中，我会介绍如何利用开源项目快速运行StyleGAN。</p>
-<p>这篇文章只是对StyleGAN非常粗浅的一个介绍。如果你想认真研究StyleGAN，欢迎阅读我之后发布的StyleGAN论文精读。</p>
-<h1 id="快速运行StyleGAN"><a href="#快速运行StyleGAN" class="headerlink" title="快速运行StyleGAN"></a>快速运行StyleGAN</h1><p><a target="_blank" rel="noopener" href="https://github.com/open-mmlab">OpenMMLab</a>的<a target="_blank" rel="noopener" href="https://github.com/open-mmlab/mmgeneration">MMGeneration</a>用PyTorch实现了StyleGAN并提供了模型权重文件。让我们看看该怎样快速运行StyleGAN。</p>
-<blockquote>
-<p>我使用的MMGen版本是0.7.1</p>
-</blockquote>
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>访问<a target="_blank" rel="noopener" href="https://mmgeneration.readthedocs.io/en/latest/get_started.html">官方文档</a>，按照教程装好mmgen。</p>
-<p>安装大致分以下几步：</p>
-<ol>
-<li>装PyTorch。</li>
-<li>装mmcv。</li>
-<li>装mmgen。</li>
-</ol>
-<h2 id="下模型权重文件"><a href="#下模型权重文件" class="headerlink" title="下模型权重文件"></a>下模型权重文件</h2><p>在<a target="_blank" rel="noopener" href="https://github.com/open-mmlab/mmgeneration/tree/master/configs/styleganv1">这个网站</a>里找到模型的下载链接。</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/6.jpg" alt></p>
-<p>模型名称中最后的数字表示生成图像的分辨率。按照需要，点击某个模型后面的”model”，下载权重文件。</p>
-<p>权重文件下载好了后，推荐放到代码仓库的<code>checkpoints</code>目录下。</p>
-<h2 id="运行模型"><a href="#运行模型" class="headerlink" title="运行模型"></a>运行模型</h2><p>在某目录下（比如代码仓库的<code>work_dirs</code>目录下）新建并编写Python文件：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> mmgen.apis <span class="keyword">import</span> init_model, sample_unconditional_model</span><br><span class="line"><span class="keyword">import</span> mmcv</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> utils</span><br><span class="line"></span><br><span class="line">config_file = <span class="string">&quot;configs/styleganv1/styleganv1_ffhq_1024_g8_25Mimg.py&quot;</span></span><br><span class="line">checkpoint_file = <span class="string">&quot;checkpoints/styleganv1_ffhq_1024_g8_25Mimg_20210407_161627-850a7234.pth&quot;</span></span><br><span class="line">device = <span class="string">&quot;cuda:0&quot;</span></span><br><span class="line"></span><br><span class="line">model = init_model(config_file, checkpoint_file, device)</span><br><span class="line">results = sample_unconditional_model(model, <span class="number">16</span>)</span><br><span class="line">results = (results[:, [<span class="number">2</span>, <span class="number">1</span>, <span class="number">0</span>]] + <span class="number">1.</span>) / <span class="number">2.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># save images</span></span><br><span class="line">mmcv.mkdir_or_exist(<span class="string">&#x27;work_dirs/styleganv1&#x27;</span>)</span><br><span class="line">utils.save_image(results, <span class="string">&#x27;work_dirs/styleganv1/output.png&#x27;</span>, nrow=<span class="number">4</span>)</span><br></pre></td></tr></table></figure>
-<p>稍微解释一下这段代码。<code>init_model</code>用于新建一个模型，该函数有三个参数：配置文件<code>config_file</code>、权重文件<code>checkpoint_file</code>、运行设备<code>device</code>。配置文件放在仓库的<code>configs/styleganv1</code>目录下，根据刚刚下载的权重文件，选择配套的配置文件，修改<code>config_file</code>即可。<code>checkpoint_file</code>要填写刚刚下载好的权重文件的路径。<code>device</code>是运行的设备，有GPU的话写<code>cuda:0</code>即可。</p>
-<p><code>sample_unconditional_model</code>用于随机生成一些向量，并用这些向量来生成图片。该函数第一个参数是模型，第二个参数是生成图像的数量。</p>
-<p>图像生成完毕后，数据范围是<code>(-1, 1)</code>，我们要把它转换成数据范围是<code>(0, 1)</code>的图像。同时，为了兼容输出图像的API，我们还要把颜色通道反向。</p>
-<p>最后，调用创建文件夹和保存图片的API，把所有输出图片以网格形式保存到某个文件中。</p>
-<p>执行这个Python脚本后，我们就能得到分布在4x4网格中的16幅人脸图像了。我得到的一个结果是：</p>
-<p><img src="/2022/07/01/20220625-stylegan-introduction/6.png" alt></p>
-<p>注意！虽然大部分情况下生成器的表现都挺不错，但它偶尔会生成一些很吓人的图像（比如右上角那张史莱姆人）。大家看输出结果前一定要做好心理准备！</p>
-<hr>
-<p>这段代码仅仅展示了StyleGAN生成图像的基本功能。在后续的论文解读文章中，我还会继续介绍如何利用mmgen实现StyleGAN的各种花式应用。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2046,7 +2071,7 @@ F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">151</span>
+          <span class="site-state-item-count">152</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2059,7 +2084,7 @@ F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-count">66</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
