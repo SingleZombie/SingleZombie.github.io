@@ -168,6 +168,254 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/05/30/DLS-note-4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/05/30/DLS-note-4/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记+代码实战（四）：深层神经网络</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-30 19:30:24" itemprop="dateCreated datePublished" datetime="2022-05-30T19:30:24+08:00">2022-05-30</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>体验完了“浅度”神经网络后，我们终于等到了这门课的正题——深度神经网络了。</p>
+<p>其实这节课并没有引入太多新的知识，只是把上节课的2层网络拓展成了L层网络。对于编程能力强的同学（或者认真研究了我上节课的编程实战代码的同学，嘿嘿嘿），学完了上节课的内容后，就已经有能力完成这节课的作业了。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="深度神经网络概述与符号标记"><a href="#深度神经网络概述与符号标记" class="headerlink" title="深度神经网络概述与符号标记"></a>深度神经网络概述与符号标记</h2><p><img src="/2022/05/30/DLS-note-4/1.jpg" alt></p>
+<p>所谓<strong>深度</strong>神经网络，只是神经网络的隐藏层数量比较多而已，它的本质结构和前两课中的神经网络是一样的。让我们再复习一下神经网络中的标记：</p>
+<p><img src="/2022/05/30/DLS-note-4/2.jpg" alt></p>
+<p>$L$表示网络的层数。</p>
+<blockquote>
+<p>在这个网络中，$L=4$。（注意：输入层并不计入层数，但可以用第“0”层称呼输入层）</p>
+</blockquote>
+<p>上标中括号的标号$l (l \in [0, L])$表示和第$l$层相关的数据。比如, $n^{[l]}$是神经网络第$l$层的神经元数（即每层输出向量的长度）。</p>
+<blockquote>
+<p>这幅图里 $n^{[1]}=5$, $n^{[3]}=3$，以此类推。值得注意的是，$n^{[0]}=n_x=3$。回想第二课的知识，$n_x$是输入向量的长度。</p>
+</blockquote>
+<p>再比如，$a^{[l]}$是第$l$层的输出向量。$a^{[l]}=g^{[l]}(z^{[l]})$，其中$g^{[l]}$是第$l$层的激活函数，$z^{[l]}$是第$l$层的中间运算结果。$W[l], b[l]$是第$l$层的参数。</p>
+<p>和上节课的单隐层神经网络类似，对于$L$层的网络，我们如下方法对<strong>单样本</strong>做前向传播（推理）：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+a^{[l]} & \gets g^{[l]}(W^{[l]}a^{[l - 1]}+b^{[l]}) \\
+
+for \ l & \in [1, 2, ... L]
+\end{align*}</script><p>其中，输入输出分别为：$x=a^{[0]}, \hat{y}=a^{[L]}$。</p>
+<p>当我们考虑全体样本$X, Y$时，上面的算式可以写成：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+A^{[l]} & \gets g^{[l]}(W^{[l]}A^{[l - 1]}+b^{[l]}) \\
+
+for \ l & \in [1, 2, ... L]
+\end{align*}</script><p>其中，输入输出分别为：$X=A^{[0]}, \hat{Y}=A^{[L]}$。</p>
+<blockquote>
+<p>从公式上看，使用向量化计算全体样本只是把小写字母换成了大写字母而已。用代码实现时，我们甚至也只需要照搬上述公式就行。但我们要记住，全体样本是把每个样本以列向量的形式横向堆叠起来，堆成了一个矩阵。我们心中对$X, Y$的矩阵形状要有数。</p>
+<p>在实现深度神经网络时，我们不可避免地引入了一个新的for循环：循环遍历网络的每一层。这个for循环是无法消除的。要记住，我们要消除的for循环，只有向量化计算中的for循环。它们之所以能被消除，是因为向量化计算可以使用并行加速，而不是for循环本身有问题。我们甚至可以把“向量化加法”、“向量化乘法”这些运算视为最小的运算单元。而在写其他代码时，不用刻意去规避for循环。</p>
+</blockquote>
+<p>参数矩阵的形状是：$W^{[l]}: (n^{[l]} , n^{[l-1]}), b^{[l]} : (n^{[l]} , 1)$</p>
+<p>每一层的输入输出矩阵形状是：$A^{[l]} : (n^{[l]} , m)$</p>
+<blockquote>
+<p>如果忘了$W$的形状，就拿矩阵乘法形状规则$(a , b) \cdot (b , c)=(a , c)$推一下。</p>
+</blockquote>
+<p>某张量的梯度张量与其形状相同。比如$dW$的形状也是$(n^{[l]} , n^{[l-1]})$。</p>
+<h2 id="为什么用更深的网络"><a href="#为什么用更深的网络" class="headerlink" title="为什么用更深的网络"></a>为什么用更深的网络</h2><p><img src="/2022/05/30/DLS-note-4/3.jpg" alt></p>
+<p>这里给出一种不严谨、出于直觉的解释：网络中越靠前的层，捕捉的信息越初级；越深的层，捕捉的信息越高级。比如对于上图所示的人脸检测网络，网络的第一层可能识别的是图片的边缘，第二层识别的是人的五官，第三层识别的是整个人脸。更深的网络有助于捕捉更高层次的特征。</p>
+<p>另外，从计算复杂度的角度来看，用更深的网络，而不是在同一层网络里叠加更多神经元，往往能更轻易地拟合出一个函数。比如要拟合函数a+b+c+d，我们可以先算(a+b)和(c+d)，再算(a+b)+(c+d)。这只需要2“层”计算。如果把上面4个数相加变成$n$个数相加，我们只需要构造$logn$层网络。但如果用单层网络拟合$n$个数相加，网络可能要尝试尝试$a, b, a+b, c, a+b+c, …$这一共$O(2^n)$种公式，需要在1层里放$O(2^n)$个神经元。</p>
+<blockquote>
+<p>这一章反正不是严谨的科学证明，内容听听就好。深度神经网络好不好用，究竟用多少层的网络，这些决定都取决于实际的问题。只不过大多数任务用深度神经网络实现都能生效。</p>
+</blockquote>
+<h2 id="深度神经网络的训练流程"><a href="#深度神经网络的训练流程" class="headerlink" title="深度神经网络的训练流程"></a>深度神经网络的训练流程</h2><p>前两节课，我们的网络只有1层或2层。我们或许可以直接写出它们的训练步骤。现在，对于$L$层的网络，我们必须系统化地写出它们的训练流程。</p>
+<p>首先是前向传播；</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+A^{[0]} & = X \\
+A^{[1]} & \gets g^{[1]}(Z^{[1]})=g^{[1]}(W^{[1]}A^{[0]}+b^{[1]}) \\
+... & \\
+A^{[l]} & \gets g^{[l]}(Z^{[l]})=g^{[l]}(W^{[l]}A^{[l - 1]}+b^{[l]})
+\end{align*}</script><p>在前向传播时，我们要缓存(cache)一些临时变量，以辅助反向传播：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+A^{[0]} &  = X \\
+A^{[1]} & \gets g^{[1]}(Z^{[1]}) \ cache \ A^{[1]}, Z^{[1]},W^{[1]}, b^{[1]}  \\
+... & \\
+A^{[l]} & \gets g^{[l]}(Z^{[l]}) \ cache \ A^{[l]}, Z^{[l]},W^{[l]}, b^{[l]} 
+\end{align*}</script><p>反向传播则按下面的步骤计算（注意观察被缓存的变量是怎么使用的）：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+dA^{[L]} &  =  -\frac{y}{a} + \frac{1 - y}{1 - a} \\
+... & \\
+dZ^{[l]} & \gets dA^{[l]} \ast g^{[l]'}(Z^{[l]}) &use \  Z^{[l]} \\
+dW^{[l]} & \gets \frac{1}{m}dZ^{[l]} A^{[l-1]T} &use \  A^{[l]} \\
+db^{[l]} & \gets np.mean(dZ^{[l]}, axis=1, keepdims=True) \\
+update & \ W^{[l]}, b^{[l]} &use \ W^{[l]}, b^{[l]}\\ 
+dA^{[l-1]} & \gets W^{[l]T}dZ^{[l]} &use \ W^{[l]} \\
+...
+\end{align*}</script><p>上面的公式里，默认损失函数$L(a, y) = -(y  loga + (1-y)  log(1-a))$</p>
+<blockquote>
+<p>记不住公式没关系，编程的时候对着翻译就行。</p>
+<p>从算法的角度来看，梯度下降法只需要用反向传播算法。我们这里之所以做一遍正向传播，是因为反向传播要用到正向传播的中间运算结果。从逻辑关系来看，是反向传播函数调用了正向传播函数，而不是“先正向传播，再反向传播”的并列关系，虽然编程时是用后者来表达。</p>
+</blockquote>
+<h2 id="参数与超参数"><a href="#参数与超参数" class="headerlink" title="参数与超参数"></a>参数与超参数</h2><p>之前，我们在不经意间就已经接触了“超参数”这个词，但一直没有对它下一个定义。现在，我们来正式介绍超参数这个概念，以及它和参数的关系。</p>
+<p>对于我们之前的神经网络，参数包括：</p>
+<ul>
+<li>$W$</li>
+<li>$b$</li>
+</ul>
+<p>这些参数和数学里的参数意义一样，表示函数的参数。</p>
+<p>而超参数则包括：</p>
+<ul>
+<li>学习率 $\alpha$</li>
+<li>训练迭代次数</li>
+<li>网络层数 $L$</li>
+</ul>
+<p>我们直接从超参数的作用来给超参数下定义。超参数的取值会决定参数$W, b$的取值，它们往往只参与训练，而不参与最后的推理计算。可以说，除了网络中要<strong>学习</strong>的参数外，网络中剩下的可以变动的数值，都是超参数。</p>
+<p>一个简单区别超参数的方法是：超参数一般是我们手动调的。我们常说“调参”，说的是超参数。</p>
+<p>吴恩达老师鼓励我们多尝试调参，对于不同的问题可以尝试不同的超参数。</p>
+<h2 id="神经网络与大脑"><a href="#神经网络与大脑" class="headerlink" title="神经网络与大脑"></a>神经网络与大脑</h2><p>生物的神经由“树突”，“轴突”等部分组成。生物信号会通过这些部分在神经里传播。神经网络的工作原理和生物神经的原理<strong>有那么一点类似</strong>。</p>
+<p>但迄今为止，生物神经的原理还没有被破解。我们把神经网络当成一个$x \to y$的映射就好了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这一课主要是介绍编程实现的思路，没有过多的知识点：</p>
+<ul>
+<li>实现任意层数的神经网络<ul>
+<li>前向传播</li>
+<li>反向传播</li>
+<li>缓存信息</li>
+</ul>
+</li>
+<li>为什么用更深的网络</li>
+<li>分辨超参数与参数</li>
+</ul>
+<p>如果大家对神经网络的前向传播或反向传播还有问题，欢迎去回顾上一篇笔记：<a href="https://zhouyifan.net/2022/05/23/DLS-note-3/。">https://zhouyifan.net/2022/05/23/DLS-note-3/。</a></p>
+<h1 id="代码实战"><a href="#代码实战" class="headerlink" title="代码实战"></a>代码实战</h1><p>说实话，这堂课的编程作业只能称为“体验写代码的感觉”，不能堂堂正正地称为“写程序”。整个框架都搭好了，每行输入输出的变量都给好了，只要填一填函数调用就行了。这样编程实在是不好玩，没有难度，学不到东西。</p>
+<p>所以，是时候自己动手写代码了！</p>
+<p>两周前，使用逻辑回归做小猫分类并不成功。看看这周换了“深度”神经网络后，我们能不能在小猫分类上取得更好的成绩。</p>
+<h2 id="通用分类器类"><a href="#通用分类器类" class="headerlink" title="通用分类器类"></a>通用分类器类</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BaseRegressionModel</span>(<span class="params">metaclass=abc.ABCMeta</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, X: np.ndarray, train_mode=<span class="literal">True</span></span>) -&gt; np.ndarray:</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">backward</span>(<span class="params">self, Y: np.ndarray</span>) -&gt; np.ndarray:</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span>(<span class="params">self, learning_rate: <span class="built_in">float</span></span>) -&gt; np.ndarray:</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">save</span>(<span class="params">self, filename: <span class="built_in">str</span></span>):</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">load</span>(<span class="params">self, filename: <span class="built_in">str</span></span>):</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">self, Y: np.ndarray, Y_hat: np.ndarray</span>) -&gt; np.ndarray:</span></span><br><span class="line">        <span class="keyword">return</span> np.mean(-(Y * np.log(Y_hat) + (<span class="number">1</span> - Y) * np.log(<span class="number">1</span> - Y_hat)))</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">evaluate</span>(<span class="params">self, X: np.ndarray, Y: np.ndarray, return_loss=<span class="literal">False</span></span>):</span></span><br><span class="line">        Y_hat = self.forward(X, train_mode=<span class="literal">False</span>)</span><br><span class="line">        Y_hat_predict = np.where(Y_hat &gt; <span class="number">0.5</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">        accuracy = np.mean(np.where(Y_hat_predict == Y, <span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line">        <span class="keyword">if</span> return_loss:</span><br><span class="line">            loss = self.loss(Y, Y_hat)</span><br><span class="line">            <span class="keyword">return</span> accuracy, loss</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> accuracy</span><br></pre></td></tr></table></figure>
+<p>这次我们还是用基于这个通用分类器类编写代码。相比上篇笔记中的代码，这个类有以下改动：</p>
+<ul>
+<li>由于这次模型要训练很久，我给模型加入了<code>save</code>,<code>load</code>用于保存和读取模型。</li>
+<li><code>evaluate</code> 不再直接输出结果，而是返回一些评测结果，供调用其的函数使用。注意，这次我们不仅算了测试集上的准确率，还算了<strong>测试集上的损失函数</strong>。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">train</span>(<span class="params">model: BaseRegressionModel,</span></span></span><br><span class="line"><span class="params"><span class="function">          X,</span></span></span><br><span class="line"><span class="params"><span class="function">          Y,</span></span></span><br><span class="line"><span class="params"><span class="function">          step,</span></span></span><br><span class="line"><span class="params"><span class="function">          learning_rate,</span></span></span><br><span class="line"><span class="params"><span class="function">          print_interval=<span class="number">100</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">          test_X=<span class="literal">None</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">          test_Y=<span class="literal">None</span></span>):</span></span><br><span class="line">    <span class="keyword">for</span> s <span class="keyword">in</span> <span class="built_in">range</span>(step):</span><br><span class="line">        Y_hat = model.forward(X)</span><br><span class="line">        model.backward(Y)</span><br><span class="line">        model.gradient_descent(learning_rate)</span><br><span class="line">        <span class="keyword">if</span> s % print_interval == <span class="number">0</span>:</span><br><span class="line">            loss = model.loss(Y, Y_hat)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;Step: <span class="subst">&#123;s&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;Train loss: <span class="subst">&#123;loss&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">if</span> test_X <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span> <span class="keyword">and</span> test_Y <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                accuracy, loss = model.evaluate(test_X,</span><br><span class="line">                                                test_Y,</span><br><span class="line">                                                return_loss=<span class="literal">True</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;Test loss: <span class="subst">&#123;loss&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;Test accuracy: <span class="subst">&#123;accuracy&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>模型训练的代码和上篇笔记中的也几乎完全相同，只是多输出了一点调试信息。</p>
+<h2 id="工具函数"><a href="#工具函数" class="headerlink" title="工具函数"></a>工具函数</h2><p>这次我们希望能够更灵活地使用激活函数。因此，我编写了两个根据字符串获取激活函数、激活函数梯度的函数。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_activation_func</span>(<span class="params">name</span>):</span></span><br><span class="line">    <span class="keyword">if</span> name == <span class="string">&#x27;sigmoid&#x27;</span>:</span><br><span class="line">        <span class="keyword">return</span> sigmoid</span><br><span class="line">    <span class="keyword">elif</span> name == <span class="string">&#x27;relu&#x27;</span>:</span><br><span class="line">        <span class="keyword">return</span> relu</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> KeyError(<span class="string">f&#x27;No such activavtion function <span class="subst">&#123;name&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_activation_de_func</span>(<span class="params">name</span>):</span></span><br><span class="line">    <span class="keyword">if</span> name == <span class="string">&#x27;sigmoid&#x27;</span>:</span><br><span class="line">        <span class="keyword">return</span> sigmoid_de</span><br><span class="line">    <span class="keyword">elif</span> name == <span class="string">&#x27;relu&#x27;</span>:</span><br><span class="line">        <span class="keyword">return</span> relu_de</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> KeyError(<span class="string">f&#x27;No such activavtion function <span class="subst">&#123;name&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure></p>
+<h2 id="实现任意层数的神经网络"><a href="#实现任意层数的神经网络" class="headerlink" title="实现任意层数的神经网络"></a>实现任意层数的神经网络</h2><p>上篇笔记中，我们实现了一个单隐层的神经网络。而这周，我们要实现一个更加通用的神经网络。这个神经网络的层数、每层的神经元数、激活函数都可以修改。还是照着上次的思路，让我们看看这个子类的每个方法是怎么实现的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DeepNetwork</span>(<span class="params">BaseRegressionModel</span>):</span></span><br></pre></td></tr></table></figure>
+<h3 id="模型初始化"><a href="#模型初始化" class="headerlink" title="模型初始化"></a>模型初始化</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, neuron_cnt: <span class="type">List</span>[<span class="built_in">int</span>], activation_func: <span class="type">List</span>[<span class="built_in">str</span>]</span>):</span></span><br><span class="line">    <span class="keyword">assert</span> <span class="built_in">len</span>(neuron_cnt) - <span class="number">1</span> == <span class="built_in">len</span>(activation_func)</span><br><span class="line">    self.num_layer = <span class="built_in">len</span>(neuron_cnt) - <span class="number">1</span></span><br><span class="line">    self.neuron_cnt = neuron_cnt</span><br><span class="line">    self.activation_func = activation_func</span><br><span class="line">    self.W: <span class="type">List</span>[np.ndarray] = []</span><br><span class="line">    self.b: <span class="type">List</span>[np.ndarray] = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">        self.W.append(</span><br><span class="line">            np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) * <span class="number">0.2</span>)</span><br><span class="line">        self.b.append(np.zeros((neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>)))</span><br></pre></td></tr></table></figure>
+<p>我们要在模型初始化时确定模型的结构，因此我们需要刚刚提到的<strong>神经网络的层数、每层的神经元数、激活函数</strong>这三个信息。在初始化函数中，我们只需要传入每层神经元数的列表、激活函数名的列表即可，神经网络的层数可以通过列表长度来获取。</p>
+<p>注意，在构建神经网络时，我们不仅要设置每一层的神经元数，还需要设置输入层的向量长度（回忆一下，输入层虽然不计入网络的层数，但我们还需要根据输入的向量长度设置参数矩阵W的形状）。因此，神经元数列表比激活函数名列表多了一个元素：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">assert</span> <span class="built_in">len</span>(neuron_cnt) - <span class="number">1</span> == <span class="built_in">len</span>(activation_func)</span><br></pre></td></tr></table></figure></p>
+<p>获取了构建模型所需信息（超参数）后，我们按照公式，根据这些信息初始化模型的参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">    self.W.append(</span><br><span class="line">        np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) * <span class="number">0.2</span>)</span><br><span class="line">    self.b.append(np.zeros((neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>)))</span><br></pre></td></tr></table></figure>
+<p>别忘了，我们要随机初始化<code>W</code>，且令<code>W</code>为一个较小的值。这里我随便取了个0.2。后面的课程会介绍这个值该怎么设置。</p>
+<p>此外，我们还要先准备好缓存的列表：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">self.Z_cache = [<span class="literal">None</span>] * self.num_layer</span><br><span class="line">self.A_cache = [<span class="literal">None</span>] * (self.num_layer + <span class="number">1</span>)</span><br><span class="line">self.dW_cache = [<span class="literal">None</span>] * self.num_layer</span><br><span class="line">self.db_cache = [<span class="literal">None</span>] * self.num_layer</span><br></pre></td></tr></table></figure><br>由于输入层(<code>A0</code>)的信息也要保留，因此<code>A_cache</code>的长度要多1。</p>
+<h3 id="前向传播"><a href="#前向传播" class="headerlink" title="前向传播"></a>前向传播</h3><p>回忆这节课提到的前向传播公式：</p>
+<script type="math/tex; mode=display">
+A^{[l]} \gets g^{[l]}(Z^{[l]})=g^{[l]}(W^{[l]}A^{[l - 1]}+b^{[l]}) \\ \ cache \ A^{[l]}, Z^{[l]},W^{[l]}, b^{[l]}</script><p>我们只需要按照公式做运算并缓存变量即可（下标和公式不完全对应）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">forward</span>(<span class="params">self, X, train_mode=<span class="literal">True</span></span>):</span></span><br><span class="line">    <span class="keyword">if</span> train_mode:</span><br><span class="line">        self.m = X.shape[<span class="number">1</span>]</span><br><span class="line">    A = X</span><br><span class="line">    self.A_cache[<span class="number">0</span>] = A</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">        Z = np.dot(self.W[i], A) + self.b[i]</span><br><span class="line">        A = get_activation_func(self.activation_func[i])(Z)</span><br><span class="line">        <span class="keyword">if</span> train_mode:</span><br><span class="line">            self.Z_cache[i] = Z</span><br><span class="line">            self.A_cache[i + <span class="number">1</span>] = A</span><br><span class="line">    <span class="keyword">return</span> A</span><br></pre></td></tr></table></figure>
+<p>注意，虽然公式里写了要缓存模型参数<code>W, b</code>，但实际上在代码实现时，模型参数本来就是类的成员属性，不需要额外去缓存它们。</p>
+<h3 id="反向传播"><a href="#反向传播" class="headerlink" title="反向传播"></a>反向传播</h3><p>同样，按照公式翻译反向传播即可：</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+dA^{[L]} &  =  -\frac{y}{a} + \frac{1 - y}{1 - a} \\
+... & \\
+dZ^{[l]} & \gets dA^{[l]} \ast g^{[l]'}(Z^{[l]}) &use \  Z^{[l]} \\
+dW^{[l]} & \gets \frac{1}{m}dZ^{[l]} A^{[l-1]T} &use \  A^{[l]} \\
+db^{[l]} & \gets np.mean(dZ^{[l]}, axis=1, keepdims=True) \\
+dA^{[l-1]} & \gets W^{[l]T}dZ^{[l]} &use \ W^{[l]} \\
+...
+\end{align*}</script><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">backward</span>(<span class="params">self, Y</span>):</span></span><br><span class="line">    dA = -Y / self.A_cache[-<span class="number">1</span>] + (<span class="number">1</span> - Y) / (<span class="number">1</span> - self.A_cache[-<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">assert</span> (self.m == Y.shape[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer - <span class="number">1</span>, -<span class="number">1</span>, -<span class="number">1</span>):</span><br><span class="line">        dZ = dA * get_activation_de_func(self.activation_func[i])(</span><br><span class="line">            self.Z_cache[i])</span><br><span class="line">        dW = np.dot(dZ, self.A_cache[i].T) / self.m</span><br><span class="line">        db = np.mean(dZ, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>)</span><br><span class="line">        dA = np.dot(self.W[i].T, dZ)</span><br><span class="line">        self.dW_cache[i] = dW</span><br><span class="line">        self.db_cache[i] = db</span><br></pre></td></tr></table></figure>
+<p>这里除了第一个<code>dA</code>要由误差函数的导数单独算出来外，其他的梯度直接照着公式算就可以了。由于我们把反向传播和更新参数分成了两步，这里额外缓存了<code>dW, db</code>的值。</p>
+<h3 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h3><p>这次，梯度下降需要循环对所有参数进行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gradient_descent</span>(<span class="params">self, learning_rate</span>):</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">        self.W[i] -= learning_rate * self.dW_cache[i]</span><br><span class="line">        self.b[i] -= learning_rate * self.db_cache[i]</span><br></pre></td></tr></table></figure>
+<h3 id="存取模型"><a href="#存取模型" class="headerlink" title="存取模型"></a>存取模型</h3><p>在介绍存取模型的函数之前，我们要认识两个新的numpy API。</p>
+<p>第一个API是<code>np.savez(filename, a_name=a, b_name=b, ...)</code>。它可以把<code>ndarray</code>类型的数据<code>a, b, ...</code>以键值对的形式记录进一个<code>.npz</code>文件中，其中键值对的键是数据的名称，值是数据的值。</p>
+<p>第二个API是<code>np.load(filename)</code>。它可以从<code>.npz</code>里读取出一个词典。词典中存储的键值对就是我们刚刚保存的键值对。</p>
+<p>比如，我们可以用如下方法存取<code>W, b</code>两个<code>ndarray</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">W = np.zeros((<span class="number">1</span>, <span class="number">1</span>))</span><br><span class="line">b = np.zeros((<span class="number">1</span>, <span class="number">1</span>))</span><br><span class="line">np.savez(<span class="string">&#x27;a.npz&#x27;</span>, W=W, b=b)</span><br><span class="line">params = np.load(<span class="string">&#x27;a.npz&#x27;</span>)</span><br><span class="line"><span class="keyword">assert</span> W == params[<span class="string">&#x27;W&#x27;</span>]</span><br><span class="line"><span class="keyword">assert</span> b == params[<span class="string">&#x27;b&#x27;</span>]</span><br></pre></td></tr></table></figure>
+<p>学会了这两个API的用法后，我们来看看该怎么存取神经网络的参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save</span>(<span class="params">self, filename: <span class="built_in">str</span></span>):</span></span><br><span class="line">    save_dict = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(self.W)):</span><br><span class="line">        save_dict[<span class="string">&#x27;W&#x27;</span> + <span class="built_in">str</span>(i)] = self.W[i]</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(self.b)):</span><br><span class="line">        save_dict[<span class="string">&#x27;b&#x27;</span> + <span class="built_in">str</span>(i)] = self.b[i]</span><br><span class="line">    np.savez(filename, **save_dict)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load</span>(<span class="params">self, filename: <span class="built_in">str</span></span>):</span></span><br><span class="line">    params = np.load(filename)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(self.W)):</span><br><span class="line">        self.W[i] = params[<span class="string">&#x27;W&#x27;</span> + <span class="built_in">str</span>(i)]</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(self.b)):</span><br><span class="line">        self.b[i] = params[<span class="string">&#x27;b&#x27;</span> + <span class="built_in">str</span>(i)]</span><br></pre></td></tr></table></figure>
+<p>和刚刚介绍的用法一样，这里我们要给神经网络中每一个参数取一个独一无二的名字，再把所有名字和值合并成键值对。保存和读取，就是对键值对的写和读。</p>
+<p>这里我使用了<code>**save_dict</code>这种传参方式。在Python中，<code>func(**dict)</code>的作用是把一个词典的值当作函数的键值对参数。比如我要写<code>func(a=a, b=b)</code>，我可以定义一个词典<code>d=&#123;&#39;a&#39;:a, &#39;b&#39;:b&#125;</code>，再用<code>func(**d)</code>把词典传入函数的键值对参数。</p>
+<h2 id="小猫分类器"><a href="#小猫分类器" class="headerlink" title="小猫分类器"></a>小猫分类器</h2><p>这次，我们还是使用和第二篇笔记中相同的猫狗数据集，作为这次任务的训练集和测试集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span>():</span></span><br><span class="line">    train_X, train_Y, test_X, test_Y = get_cat_set(</span><br><span class="line">        <span class="string">&#x27;dldemos/LogisticRegression/data/archive/dataset&#x27;</span>, train_size=<span class="number">1500</span>)</span><br><span class="line">    <span class="comment"># train_X: [n_x, m]</span></span><br><span class="line">    <span class="comment"># train_Y: [1, m]</span></span><br></pre></td></tr></table></figure>
+<p>这次我直接在<code>get_cat_set</code>函数里把输入数据的形状调好了，总算不用在main函数看乱糟糟的代码了。</p>
+<p>之后，我们根据输入的向量长度，初始化一个较深的神经网络：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">n_x = train_X.shape[<span class="number">0</span>]</span><br><span class="line">model = DeepNetwork([n_x, <span class="number">30</span>, <span class="number">30</span>, <span class="number">20</span>, <span class="number">20</span>, <span class="number">1</span>],</span><br><span class="line">                    [<span class="string">&#x27;relu&#x27;</span>, <span class="string">&#x27;relu&#x27;</span>, <span class="string">&#x27;relu&#x27;</span>, <span class="string">&#x27;relu&#x27;</span>, <span class="string">&#x27;sigmoid&#x27;</span>])</span><br></pre></td></tr></table></figure><br>如这段代码所示，我创建了一个有4个隐藏层的神经网络，其中隐藏层的通道数分别为<code>30, 30, 20, 20</code>。除了最后一层用<code>sigmoid</code>以外，每一层都用<code>relu</code>作为激活函数。</p>
+<p>初始化完模型后，我们可以开始训练模型了：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">model.load(<span class="string">&#x27;work_dirs/model.npz&#x27;</span>)</span><br><span class="line">train(model,</span><br><span class="line">      train_X,</span><br><span class="line">      train_Y,</span><br><span class="line">      <span class="number">500</span>,</span><br><span class="line">      learning_rate=<span class="number">0.01</span>,</span><br><span class="line">      print_interval=<span class="number">10</span>,</span><br><span class="line">      test_X=test_X,</span><br><span class="line">      test_Y=test_Y)</span><br><span class="line">model.save(<span class="string">&#x27;work_dirs/model.npz&#x27;</span>)</span><br></pre></td></tr></table></figure><br>其中，模型是否要读取和保存是可以“灵活地”注释掉的。只需要简单地调用<code>train</code>函数，我们的模型就可以训起来了。</p>
+<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><p>本来，写完了代码，讨论实验结果，是一件令人心情愉悦的事情：忙了大半天，总算能看一看自己的成果了。但是，在深度学习项目中，实验其实是最烦人的部分。</p>
+<p>如第一课所述，深度学习是一个以实验为主的研究方向，深度学习项目是建立在“实验-开发”这一循环上的。一旦实验效果不佳，你就得去重新调代码。普通的编程项目，你能预计程序有怎样的输出，出了问题你能顺藤摸瓜找到bug。而对于深度学习项目，模型效果不佳，可能是代码有bug，也可能是模型不行。哪怕是知道是模型不行，你也很难确切地知道应该怎么去提升模型。因此，对于深度学习项目，开始实验，仅仅是麻烦的开始。</p>
+<p>这不，在开启这周的小猫分类任务实验时，我是满怀期待的：上次用的逻辑回归确实太烂了。这周换了一个这么强大的模型，应该没问题了吧。</p>
+<p>结果呢，模型跑了半天，精度还比不过逻辑回归。</p>
+<p>我也不好去直接debug啊。我只好对着屏幕大眼瞪小眼，硬生生地用我的人脑编译器去调试代码。</p>
+<p>我看了很久，屏幕都快被我眼睛发出的射线射穿了，我还是找不到bug。</p>
+<p>我只好断定：这不是代码的问题，是模型或数据的问题。</p>
+<p>调了半天超参数后，开始训练。模型用蜗牛般的速度训练了一个小时后，总算达到了 <strong>60.5%</strong> 的准确率。还好，这个模型没有太丢人，总算比之前逻辑回归的 <strong>57.5%</strong> 要高上一点点了。</p>
+<p>可又过了半小时，这模型的准确率又只有 <strong>58.5%</strong> 了，准确度就再也上不去了。</p>
+<p>这个结果实在是太气人了。相比逻辑回归，这么深的网络竟然只有这么小的提升。</p>
+<p>消气后，我冷静地分析了下为什么这个“深度”神经网络的提升这么小：</p>
+<ol>
+<li>上次逻辑回归使用的测试集太小，结果不准确。模型可能碰巧多猜对了几次。</li>
+<li>还有很多训练优化的手段我没有用上。</li>
+</ol>
+<p>还有一些其他方面的原因。现在所有运算都是在CPU上运行的，速度特别慢。如果放到GPU上运算，模型的训练会快上很多。实验速度快了，就有更多的机会去调试模型的超参数，得到更优的模型。</p>
+<p>其实，我已经学完了后面几周的课程，知道该怎么优化神经网络的训练；我也知道该怎么在GPU上训练模型。但是，出于教学的考虑，为了让使用的知识尽可能少，我没有提前去使用一些更高级的优化方法和编程手段。我大概只发挥了一成的模型优化水平，使用GPU后实验速度保守估计提升10倍。这样算来，我现在展示的实力，最多只有真实实力的1%。一旦我稍稍拿出5成实力，这个模型的性能就会有显著提升；一旦我释放所有能量，再去多看几篇论文，使用更加优秀的分类模型，那我的模型在这个数据集上的分类精度就可以登顶全球了。只是这样太张扬了不太好。</p>
+<p>这样一想，我也没有必要为这个模型的垃圾性能而生气。后面还有的是改进的机会。希望在后面的编程实战中，我们能一点一点见证这个分类模型的提升。</p>
+<p>代码链接：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/DeepNetwork">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/DeepNetwork</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/05/23/DLS-note-3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2202,164 +2450,6 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2021/12/25/20211207-Inscryption/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/12/25/20211207-Inscryption/" class="post-title-link" itemprop="url">《邪恶冥刻》简评：虎头蛇尾</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-12-25 21:33:46" itemprop="dateCreated datePublished" datetime="2021-12-25T21:33:46+08:00">2021-12-25</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/%E4%BD%9C%E5%93%81%E8%B5%8F%E6%9E%90/" itemprop="url" rel="index"><span itemprop="name">作品赏析</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>做为天才卡牌游戏玩家兼设计师，我十分热爱卡牌游戏，经常向他人安利我喜欢的卡牌游戏。</p>
-<p>一天，我的好朋友和我讲：“最近出了款叫《邪恶冥刻》的卡牌游戏，融合了”炉石”、”万智牌”、”游戏王”的玩法，还有《杀戮尖塔》中的Roguelike机制，强烈推荐你去玩。”</p>
-<p>“这是款对称卡牌游戏吗？”做为资深卡牌游戏玩家，我立马提出了这个问题。所谓对称卡牌游戏，就是每个玩家的规则都是一样的，用同样的方式击败对手。而非对称卡牌游戏一般出现在PVE（人对战电脑）中，玩家一般使用卡牌作战，而boss只有血量和技能，不使用卡牌战斗。</p>
-<p>“是的，但这款游戏做得很好。“朋友看出了我似乎有所顾虑，依然极力向我推荐着这款游戏。</p>
-<p>我将信将疑地去体验了这款游戏，结果不出我所料——游戏的平衡性出了大问题。</p>
-<p>最近我准备简单点评一些游戏。虽然我的点评可能会极度专业（我相信这个世界上没有多少人能提出像我这样专业的评论），且以批评、改进意见为主，但在介绍游戏的简况和优点时，我会用尽可能用通俗易懂的方式表达，让游戏经验较少的人也能读懂。《邪恶冥刻》给人的体验很糟糕。就像你去一家中端的饭店就餐，里面的装修、服务不输高档饭店。服务员热情地给你端上一块精美的一人餐蛋糕。虽说是一人餐，蛋糕上放满了琳琅满目的水果和巧克力。你舔了一口奶油，不禁感叹道：”太美味了！“你连忙又吃了几口，却发现这蛋糕越吃越没有味道。吃完之后，你发现肚子还是半饱。于是，你默默抱怨道：”有这个钱去装修饭店，不如在菜品上多下点功夫。“</p>
-<p>在我看来，《邪恶冥刻》是一款十分可惜的游戏。作者很有实力，有丰富的游戏制作经验。他做出了一款画面表现力强的大杂烩游戏。刚玩一会儿，你会觉得游戏的各个机制都很吸引人。但是，游戏的平衡性极差，你很快就觉得游戏没有挑战性了。玩完了一个又一个看起来很有新意的关卡后，你用十来个小时就通关了整款游戏，看着作者花了不少时间做出来的演出（即玩家不能交互，而是像看电影一样看游戏剧情），感到索然无味。整款游戏可以用虎头蛇尾来评价，甚至是”虎头蛇身“。作者明明有丰富的游戏设计经验，却浪费了很多时间与资源去做冗余的游戏机制和演出，真的很令人惋惜。整款游戏的创意运用得好的话，这将是一部足以记入卡牌游戏历史的游戏。可能是因为卡牌游戏本身的平衡太难掌握了吧。</p>
-<p>下面我将按照老规矩，先介绍游戏的亮点，再详细列出游戏的缺点。</p>
-<p><strong>本文有一定剧透，虽然游戏不是由剧情主导的，被剧透也没啥关系</strong></p>
-<h2 id="卡牌游戏大杂烩"><a href="#卡牌游戏大杂烩" class="headerlink" title="卡牌游戏大杂烩"></a>卡牌游戏大杂烩</h2><p>”我的回合！抽取一张松鼠牌！献祭一张松鼠，召唤一张狼崽。狼崽会在下一回合，变成3攻2血的狼，并在回合结束时朝前方自动攻击。失败的天平，会向你那边倾斜3点。“</p>
-<p>”战斗胜利，我选择移动主角，朝左边的路前进，在篝火处升级我的狼崽。现在狼崽的生命，从1点变成了3点。”</p>
-<p>如果玩家需要在游玩的同时描述游戏内容，我一定会这样进行解说。</p>
-<p>有经验的卡牌游戏玩家在看完上面两段描述后，一定会露出会心的微笑：《邪恶冥刻》借鉴了许多游戏，包括”游戏王“的献祭系统、《炉石传说》的攻击与血量、《Artifact》的自动攻击、《杀戮尖塔》的Roguelike卡牌系统。</p>
-<p>加入游戏机制是一件简单的事情。但难能可贵的是，《邪恶冥刻》把各个机制结合起来，创造了一套小而精的卡牌游戏规则：说它小，是因为游戏战场小，卡牌数量少，战斗结束得块；说它精，是因为游戏规则有趣且自洽。</p>
-<p>小的游戏，做精自然容易。但这样的游戏往往会面临游戏内容不足的情况（比如《陷阵之志》（”into the breach”)，体量小而近乎完美）。作者似乎意识到了这一点，他用一种特别的方式来添加游戏内容：通过大幅度改变游戏的玩法来创造新的关卡。</p>
-<h2 id="游戏系统大杂烩"><a href="#游戏系统大杂烩" class="headerlink" title="游戏系统大杂烩"></a>游戏系统大杂烩</h2><p>除了最初的Roguelike卡牌系统外，作者在保持核心玩法是卡牌对战的前提下，还引入数个不同的游戏系统。”像素画面“、”开卡包“、”向上下左右四个方向拓展地图的塞尔达式2D地图“。这些本不可能在同一部游戏中出现的元素，奇迹般地出现在了这同一部游戏里。作者的初衷算是达到了——随着游戏内容的增加，玩家的游戏时间确实得到了延长。</p>
-<p>除了一些常见的”对战“、”冒险“游戏机制外，《邪恶冥刻》还把解谜要素（在我的定义里，”解密“指打开隐藏砖块、用钥匙打开门、发现boss弱点这种轻度的需要玩家动脑的游戏机制，”解谜“则指独特、高难度的谜题机制，需要玩家认真思考，这些机制一般是游戏的核心玩法）融入了游戏的所有章节里。在完成卡牌游戏的挑战之余，玩家一定要通过解谜来推动游戏的进度。这些解谜没有冗余之感，是玩家在激烈的卡牌对战过后的完美调剂品。</p>
-<p>在一部游戏中塞入数个大的游戏系统，这是一般的游戏不敢做的事情。也只有有经验的独立游戏作者，敢于在自己的作品里炫技。很难得，这些游戏系统融合得不错，过度没有很突兀，值得游戏经验不是很丰富的设计师学习。</p>
-<h2 id="成也卡牌，败也卡牌"><a href="#成也卡牌，败也卡牌" class="headerlink" title="成也卡牌，败也卡牌"></a>成也卡牌，败也卡牌</h2><p>卡牌游戏的特点是什么？</p>
-<p>从玩家的角度出发，卡牌游戏最大的特点就是趣味性。简单的规则，狭小的战场，就能演绎出一部部精彩的对局。如前文所讲，得益于卡牌游戏本身的特性，《邪恶冥刻》设计了一种简单而趣味性极强的卡牌游戏机制。如何打出强力卡牌，怎么摆放卡牌，怎么样造成有效伤害……卡牌游戏的每一个机制都引入了思考。在一切都确认完毕后，玩家就能双手离开键盘，看着卡牌自动攻击，并触发卡牌效果的联动，最终获得游戏的胜利（或者翻车），体验着思考带来的成就感。（关于卡牌游戏的认真研究将会出现在以后的文章）</p>
-<p>但从设计师的角度来看，卡牌游戏的设计难度是极大的。卡牌本身具有的随机性，加上卡牌间难以量化的联动效果，让卡牌游戏的平衡性成为了一个难题。《邪恶冥刻》主要就输在了平衡性这一点上——游戏在后期实在太简单了，战斗胜利丝毫不能给玩家带来乐趣。</p>
-<p>越是机制精致、联动性强的卡牌游戏，越能给玩家带来耳目一新之感，也越难维持平衡性。这真是一件矛盾的事情。</p>
-<p>这里将先分章节，再从宏观到具体，逐条列出<strong>我还能记住的</strong>游戏平衡性上的具体问题。这些内容是写给玩过游戏的玩家看的。</p>
-<h3 id="总体"><a href="#总体" class="headerlink" title="总体"></a>总体</h3><h4 id="游戏机制"><a href="#游戏机制" class="headerlink" title="游戏机制"></a>游戏机制</h4><ol>
-<li>血量差为5点的胜利条件，对于先手行动的玩家来说，过于容易触发。反过来，boss太强，玩家就会被秒杀。这是游戏的核心机制，也是一切平衡问题的根源，确实不好改进，不然游戏就完全变了。一些可能的改进意见会在后文提及。</li>
-<li>缺乏对手牌臃肿的惩罚。一般情况下，卡牌游戏要求卡组精简，不然抽到关键牌的概率会缩小，卡组整体强度降低。做为一个每回合抽一张卡的游戏，理论上卡组臃肿带来的影响是很大的。但因为第1条胜利和失败都过于简单，为了让玩家在前几回合不被秒杀，作者在设计时让对手的卡组进攻性不至于太强，其结果玩家卡手几回合都没什么关系。这无论在单机卡牌游戏还是多人卡牌游戏中都是不允许的。</li>
-<li>缺乏抽牌上的联动。这一条导致了第2条问题，玩家容易卡手，对手强度不敢太强，玩家卡手反而不被惩罚。</li>
-<li>对手下回合策略已知。这条由《杀戮尖塔》发扬的机制是回合制游戏的一项历史性突破，我非常喜欢它，且赞同这条机制出现在卡牌游戏里。但无疑这条机制令游戏的难度又降了一层。</li>
-<li>游戏中，有”站场“这个概念，即上回合生存的生物，下回合还能进行攻击。这是一条滚雪球的机制，有场面的玩家会一直扩大优势。而对手对于场面的控制极差。这导致玩家控制场面后很容易获得胜利。</li>
-</ol>
-<h4 id="细节"><a href="#细节" class="headerlink" title="细节"></a>细节</h4><ol>
-<li>部分卡牌效果过强。如”检索牌库中的一张牌“。</li>
-</ol>
-<h3 id="第一章"><a href="#第一章" class="headerlink" title="第一章"></a>第一章</h3><h4 id="游戏机制-1"><a href="#游戏机制-1" class="headerlink" title="游戏机制"></a>游戏机制</h4><ol>
-<li>”检索牌库中的一张牌“与无限资源之间的组合过于BT。比如令所有松鼠牌具有”检索“效果，这等于让玩家自由地控制手牌，所有战斗都失去了难度。作者保留这些强大的组合，可能是想让玩家觉得游戏很有趣。但是，还是那句话，卡牌游戏是以难度恰到好处的战斗为核心。一旦玩家无敌了，后面的战斗都是垃圾时间，有什么趣味可言呢？</li>
-<li>强行打脸牌过弱（飞行牌），这导致防守牌（防空牌）也没有价值了。可能作者想设计出面对对面的打脸牌，玩家可以用防空牌来防御，也可以用打脸牌还击这样的充满抉择的游戏体验。但是，战场就那么点大，血就那么多，战斗一下就一边倒了，这种抉择根本体现不出来。如果战场更大，血量更多，维持血量差的博弈才会更加明显。</li>
-<li>高费牌都难以打出，尤其是骨头牌。</li>
-<li>种族机制联动不足，一旦联动了又过于强大。</li>
-</ol>
-<h4 id="细节-1"><a href="#细节-1" class="headerlink" title="细节"></a>细节</h4><ol>
-<li>剧毒秒最终boss很有趣，但平衡性因此更加差劲了。</li>
-<li>第三关boss难度实在太低了，这是很明显的设计水平有问题。第二阶段，玩家至少可以拿走对方一张牌，而且玩家场面上是有牌的，至少有一张牌可以直接攻击到对面。玩家轻松就可以在第二阶段一开始秒杀boss。</li>
-<li>几大终极奖励的强度明显不一样。”每回合抽两张牌“、”抽牌变成检索“无疑是超强的能力，而”战斗开始获得8个骨头“的强度太低了。</li>
-</ol>
-<h3 id="第二章"><a href="#第二章" class="headerlink" title="第二章"></a>第二章</h3><h4 id="游戏机制-2"><a href="#游戏机制-2" class="headerlink" title="游戏机制"></a>游戏机制</h4><ol>
-<li>献祭机制配合几乎无消耗的骨头机制过强。高费献祭牌太容易被召唤了。</li>
-<li>高费骨头牌太难召唤了。</li>
-<li>宝石机制（万智牌机制）的强度过低。</li>
-<li>我现在根本记不住boss的卡组了。boss的卡组实在太弱了，且后面的boss不比前面厉害多少，我前期随便组的一套卡组就能打过所有的游戏内容。我虽然不能说出boss卡组设计上具体的问题，但很明显boss的卡组强度过低。</li>
-</ol>
-<h4 id="细节-2"><a href="#细节-2" class="headerlink" title="细节"></a>细节</h4><ol>
-<li>游戏的一场战斗是可以无限次进行的，这导致玩家可以获得无限多的金钱，进而获得无限多的卡牌。”能无限获得的资源，必然要有一个能无限输出的途径“，这是我在小学的时候就领悟的游戏设计原则。在这样一个卡牌游戏里，能无限获取卡牌就是不合理的。玩家可以刷无限的牌，让游戏的攒卡机制报废。虽然这游戏的平衡实在太烂，战斗太简单，玩家根本不需要去刷钱就能获取胜利。</li>
-<li>对应游戏机制的第1条，有张无消耗的牌，效果是能用一根骨头换一个骷髅。这张牌能瞬间产生大量的祭品，让高费献祭牌登场。这牌强度太高了。</li>
-</ol>
-<h3 id="第三章"><a href="#第三章" class="headerlink" title="第三章"></a>第三章</h3><h3 id="游戏机制-3"><a href="#游戏机制-3" class="headerlink" title="游戏机制"></a>游戏机制</h3><ol>
-<li>游戏流程过长，后期各种卡牌效果联动、堆叠，整套卡组的强度已经爆表了，多强的boss都打不过玩家。</li>
-<li>自定义卡牌很有趣，但这导致了第1条的效果堆叠问题。剧毒、顺劈、回手，这样一张无限资源的牌一旦摸到，游戏直接胜利。</li>
-<li>电路通路的太难触发了，而且到了游戏后期，其他牌已经过强了，这个机制变成了鸡肋。</li>
-</ol>
-<h4 id="细节-3"><a href="#细节-3" class="headerlink" title="细节"></a>细节</h4><ol>
-<li>有一个给卡牌加1攻，但卡牌死亡后永久被移除卡组的效果。这个效果的设计水平很低。这个效果的本意是加强一张卡，但要冒风险。但是，加1攻并不是多大的提升，反倒是移除一张卡能够提升整套卡组的质量。设计的本意很难达成。</li>
-<li>有一张低费卡，能够对初次出现的敌人造成1点伤害。这张牌效果的强度太高了，比不少高费牌还强，直接让防守变得特别简单。</li>
-</ol>
-<h3 id="提升平衡性的建议"><a href="#提升平衡性的建议" class="headerlink" title="提升平衡性的建议"></a>提升平衡性的建议</h3><p>游戏小而精的机制，令游戏平衡性很难提升。但在对卡牌游戏设计有诸多思考的我看来，在核心机制不变的前提下，游戏的平衡性仍然有很多提升的余地：</p>
-<h4 id="非对称性"><a href="#非对称性" class="headerlink" title="非对称性"></a>非对称性</h4><p>关于PVE卡牌的对称性上的思考，是我在比较《炉石传说》冒险模式和《杀戮尖塔》之后进行的。《炉石传说》本来是PVP游戏，凭借着玩家间的博弈，游戏的平衡性天然能够得到维持。所有卡牌都是为聪明的人类玩家设计的。但在炉石的PVE中，AI的水平很差，游戏的平衡性直接就崩溃了。由于游戏的胜负极大取决于对战双方的水平，哪怕给AI塞很多好卡来强行提升PVE对战的平衡性，玩家还是很难从PVE中获取足够的乐趣。反观《杀戮尖塔》，整套游戏就是基于非对称战斗的。只有玩家在使用卡牌，怪物只会按照简单的规则放技能。玩家不和对手博弈，只需要最大化自己卡组的能力即可。非对称的战斗，绝对更加适合PVE卡牌游戏。</p>
-<p>坚持使用对称卡牌机制是造成新游戏规则无法拓展、难做平衡的最重要的原因（所以说在玩游戏之前，我就很在意这是不是一款对称性卡牌游戏）。在《邪恶冥刻》中，游戏机制可以向非对称的方向修改。玩家的操作可以一直用卡牌来表示，但是敌人的表达形式可以多种多样。事实上，游戏中就有一些非对称的战斗：战斗的胜利不再是使血量差大于5，而是杀死特定的敌人。朝这个方向做就对了呀！</p>
-<h4 id="血量与场面"><a href="#血量与场面" class="headerlink" title="血量与场面"></a>血量与场面</h4><p>自始至终，游戏的胜利条件都是血量差大于等于5点。“血量差”这个概念令游戏的攻守之间的抉择非常有趣。但是，很明显，5点的血量差非常容易产生，boss战可能顷刻之间就结束了。</p>
-<p>提升胜利所需血量差是一个眼见的提升平衡性的手段。但如果无脑提升血量，并不能改善游戏的平衡性。游戏的胜利条件表面上是血量占优，但实际上只要控制住场面，再大的血量差都能产生。也就是说，游戏真正的胜利条件，是取得场面的胜利。</p>
-<p>在传统有卡牌战场的游戏里，血量这一机制的设定，其实是给游戏新增了一个胜利条件：我可以靠控制住场面，慢慢打死你；也可以通过快速造成伤害，在你的怪物还没召完前把你“抢血”抢死。这对应了传统卡牌游戏的控制卡组和快攻卡组。在《邪恶冥刻》中，设计师可能是为了让游戏多一种胜利条件，让快攻卡组可行，才令血量差这么小。</p>
-<p>可惜，游戏的胜利条件设置得太糟糕了。作者也注意到5点伤害太容易打出，所以给boss加了很多“嘲讽”（令对方单位无法直接对我方角色造成伤害）怪物。这反过来使玩家的快攻卡组几乎不可行了。血量差5点的设定，讽刺般的起到了反效果，游戏只剩下了控制场面这一种赢法。</p>
-<p>血量差5点是一个核心机制，几乎所有卡牌都围绕这一点做平衡，要改起来恐怕很难。但如果让我来对游戏修改的话，我会在游戏初期保持5点血量差的胜利条件，前期的弱卡以此为平衡标准进行设计。随着游戏进行，血量差的要求会逐渐放大，后续卡牌强度也逐渐增加，以新的血量差为平衡标准。</p>
-<p>但我不能保证这种修改是有效的，实际的平衡性还需要在测试中确定。可以想到，由于胜利条件是血量差而不是血量，玩家可以通过不断进攻来代替防守，使得防守变成了一个很没有意义的事情。想把这个机制下的平衡做好还是太难了。游戏做得小而精，就不得不面对这种平衡性上的重大挑战，这种游戏还是太难设计了。</p>
-<h4 id="技能卡"><a href="#技能卡" class="headerlink" title="技能卡"></a>技能卡</h4><p>游戏设置了许多新颖的机制，但令人意外的是技能卡（相对于怪物卡的概念，能立刻产生效果，用完立刻丢弃）这种基础机制竟然没有出现在游戏里。大概能够猜到，引入技能卡的话，游戏的平衡性将会更难维持。而且电脑的AI很不好写，想产生势均力敌的对称性战斗更难了。</p>
-<p>如果让我做的话，无论会引入多少新的困难，我都会加入技能卡的设定。技能卡是对游戏机制做加法，而且是对游戏内容维度上的提升，可以极大扩充游戏的设计空间。也就是说，设计师有更多的空间去设置卡牌的能力，更容易设计出不一样的卡来。只要把游戏最基础的平衡性搭好，后续添加新卡、维护新卡的平衡性都会简单很多。</p>
-<p>但估计还是出于维护那小而精的游戏机制，设计师没有向游戏里添加技能卡的设定。反正我是认为加入技能卡能大幅提升游戏的可玩性、平衡性。</p>
-<h4 id="手牌资源"><a href="#手牌资源" class="headerlink" title="手牌资源"></a>手牌资源</h4><p>卡牌游戏一大核心、一大可玩之处，就是抽牌系统。玩家牌库中哪怕有再强的牌，手牌数量不够，或者因为卡组臃肿抽不到想要的牌，都会导致当前的战斗陷入窘境。抽牌系统是卡牌游戏必须要做好的一点。</p>
-<p>理论上，卡牌间不仅要有场面上的交互机制，还应该有手牌上的交互机制：比如什么有某一种族就抽一张牌，抽一张同名牌等。玩家需要动脑去最大化抽牌效果。《邪恶冥刻》的手牌资源控制得极为糟糕：要么是无脑强而无聊的手牌资源机制，什么消耗一根骨头获得一张白板卡，什么亡语把卡牌回手，什么去牌库中检索一张牌；要么这张卡就和抽牌一点关系都没有。连”抽一张牌“这种再基础不过的效果都没有。设计师根本没有花心思在抽牌系统上，根本没有去想怎么样构建一套好玩的抽牌体系。</p>
-<p>没有考虑手牌资源，导致玩家的牌库很容易臃肿；牌库臃肿，玩家就容易卡手；玩家卡手，如果boss强度过大，玩家一两个回合就撑不住了。设计师很明显发现了这个问题，所以根本不敢给boss太强的卡组，以照顾那些很容易卡手的卡组。这让游戏的平衡性崩溃得一塌糊涂，让卡牌游戏的一大玩法——构筑精简的卡组彻底消失。</p>
-<p>让我来做的话，一定会考虑加入更多与手牌资源有关的机制，且和现有的种族、场面等机制结合起来。但同理，加入这些设定会让游戏发生翻天覆地的变化，很多东西都要重新设计。</p>
-<h3 id="平衡性总结"><a href="#平衡性总结" class="headerlink" title="平衡性总结"></a>平衡性总结</h3><p>我玩完游戏已经一个多月了，但我随手一列，还是能从机制和细节上列出这么多平衡性问题。可以看出作者对于卡牌游戏平衡性的把握是如此糟糕。这要放到一个PVP卡牌游戏中，设计师早就被玩家喷死了。</p>
-<p>成也卡牌，败也卡牌。基于有趣的卡牌游戏框架，设计师设计了一个简单的卡牌游戏系统，这个卡牌游戏玩个几盘感觉还不错。但是，设计师必须为这样一个简单的系统付出代价：这样的系统的平衡性非常难做，很难往里面添加有趣的新卡。糟糕的平衡性，会极大拖累游戏的可玩性。这样一个卡牌游戏系统，撑死了就只能支持10来个小时的游戏时间。等玩家稍微熟悉整套系统后，这个卡牌游戏就一点也不好玩了。</p>
-<h2 id="丰富性与平衡性的讨论"><a href="#丰富性与平衡性的讨论" class="headerlink" title="丰富性与平衡性的讨论"></a>丰富性与平衡性的讨论</h2><p>这一节，我就不理性地进行分析，而是发表下我个人的看法了。</p>
-<p>我喷了这么多平衡上的问题，也夸过游戏在丰富性的创新。综合而言，我对设计师的这种设计思想极度不满，对这部作品感到十分惋惜。</p>
-<p>你说你做一个小体量的卡牌游戏，游戏机制差不多自洽。哪怕内容不多，几小时就玩完了，玩家体验尚可。我会认为这游戏非常有新意，做得很值得学习。</p>
-<p>你说你做了一个小体量、平衡性极差，又臭又长的游戏，我会说这是个垃圾游戏，不用去玩。</p>
-<p>问题是《邪恶冥刻》在初期以一个新颖的卡牌游戏系统吸引了玩家的眼球，后来又用这个差劲的系统浪费了玩家很多时间，同时炫技般地不断加入丰富多彩的游戏系统。不管是大一点的构筑/roguelike/有限资源这样的游戏资源系统，还是爬塔式/塞尔达式/自由式的地图系统，还是小一点的自制卡牌、读取玩家电脑信息、修改卡牌、临时添加战斗机制等一系列在现有游戏机制上的装饰，都做得十分丰富。设计师真的是设计水平很高。这要换一个游戏框架，比如换一个2D平台游戏，游戏一定会非常好玩。</p>
-<p>但可惜，这就是一个卡牌游戏。卡牌游戏的趣味的核心，是恰到好处的难度。这种靠平衡性吃饭的游戏，就是考验设计师的硬实力，怎么样在设计好的游戏框架下，添加合理的游戏内容。加再多花里胡哨的装饰品，试图在游戏框架上扩充，而不去认真把框架内的东西填充好，是无法提升游戏的平衡性，无法做出一个足够好的游戏的。这就好比你写作文，内容乱七八糟，你说“我字写得很好看”；你写程序，逻辑混乱不堪，你说“我变量名取得好，注释写得清楚”；谈个恋爱，你长得不帅，没有钱，不会说话，你说“我程序写得很好”。这有用吗？最核心的评价指标达不到，其他的东西做得再好，有什么用呢？</p>
-<p>我不会推荐，甚至会大力阻止别人去玩这款游戏。不是因为我不喜欢这款游戏。我从这个游戏里学到了很多东西：无论是好的设计思路，还是需要规避的缺点。我也十分认可设计师本身的水平。但是我太喜欢这款游戏了，以至于我会不断想象这款游戏如果是我做出来的会怎么样。如果是我做出了这样的游戏，我会非常难过：明明很有水平，也很有想法，却做得这么不好玩。这比做出了一款纯粹的烂游戏更加令人心疼。我这种矛盾的心理，令我对《邪恶冥刻》给出了极低的评价。这事关一个艺术家、一个设计师的尊严：费尽心思却做得有失水准的东西，宁可扔掉，也不该拿出来展示。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2429,7 +2519,7 @@ db &= \frac{1}{m} \Sigma_{i=1}^m dZ^{(i)}
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">152</span>
+          <span class="site-state-item-count">153</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

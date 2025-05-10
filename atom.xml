@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2025-04-24T09:22:08.603Z</updated>
+  <updated>2025-05-10T19:18:12.552Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -17,11 +17,42 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>CFG-Zero*：流匹配时代的新版 Classifier-Free Guidance</title>
+    <link href="https://zhouyifan.net/2025/05/11/20250425-cfgzero/"/>
+    <id>https://zhouyifan.net/2025/05/11/20250425-cfgzero/</id>
+    <published>2025-05-10T19:18:12.000Z</published>
+    <updated>2025-05-10T19:18:12.552Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;如果你玩过图像扩散模型，那你一定不会对 “guidance_scale=7.5” 这个参数感到陌生。这个 “guidance” 指的就是 Classifier-Free Guidance (无需分类器指引，CFG)。忽略其背后的数学原理，CFG</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+  </entry>
+  
+  <entry>
     <title>GPT-4o 图像生成漫谈：功能总结、多模态模型概述、原理猜测、未来畅想</title>
     <link href="https://zhouyifan.net/2025/04/24/20250412-gpt4o/"/>
     <id>https://zhouyifan.net/2025/04/24/20250412-gpt4o/</id>
     <published>2025-04-24T09:22:08.000Z</published>
-    <updated>2025-04-24T09:22:08.603Z</updated>
+    <updated>2025-04-28T08:54:21.583Z</updated>
     
     
       
@@ -609,37 +640,6 @@
     
     
     <category term="游戏设计" scheme="https://zhouyifan.net/tags/%E6%B8%B8%E6%88%8F%E8%AE%BE%E8%AE%A1/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Stable Diffusion 3「精神续作」FLUX.1 源码深度前瞻解读</title>
-    <link href="https://zhouyifan.net/2024/09/03/20240809-flux1/"/>
-    <id>https://zhouyifan.net/2024/09/03/20240809-flux1/</id>
-    <published>2024-09-03T06:41:19.000Z</published>
-    <updated>2024-09-03T06:41:19.445Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;前几个月，推出了著名文生图模型 Stable Diffusion 的 Stability AI 公司曝出了核心团队集体离职的消息。一时间，AI 从业者们议论纷纷，不知道这究竟是团队出现了矛盾，还是这些员工觉得文生图模型做下去没有前途了。而近期，该核心团队重新组建的创业团队</summary>
-        
-      
-    
-    
-    
-    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
     
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     

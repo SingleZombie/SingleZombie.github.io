@@ -168,6 +168,144 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/01/27/20240123-SD-Attn/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/01/27/20240123-SD-Attn/" class="post-title-link" itemprop="url">Stable Diffusion 中的自注意力替换技术与 Diffusers 实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-01-27 16:48:55" itemprop="dateCreated datePublished" datetime="2024-01-27T16:48:55+08:00">2024-01-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在使用预训练 Stable Diffusion (SD) 生成图像时，如果将其 U-Net 的自注意力层在某去噪时刻的输入 K, V 替换成另一幅参考图像的，则输出图像会和参考图像更加相似。许多无需训练的 SD 编辑科研工作都运用了此性质。尤其对于是对于视频编辑任务，如果在生成某一帧时将注意力输入替换成之前帧的，则输出视频会更加连贯。在这篇文章中，我们将快速学习 SD 自注意力替换技术的原理，并在 Diffusers 里实现一个基于此技术的视频编辑流水线。</p>
+<h2 id="注意力计算"><a href="#注意力计算" class="headerlink" title="注意力计算"></a>注意力计算</h2><p>我们先来回顾一下 Transformer 论文中提出的注意力机制。所有注意力机制都基于一种叫做放缩点乘注意力（Scaled Dot-Product Attention）的运算：</p>
+<script type="math/tex; mode=display">
+Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><p>其中，$Q \in \mathbb{R}^{a \times d_k}, K \in \mathbb{R}^{b \times d_k}, V \in \mathbb{R}^{b \times d_v}$。注意力计算可以理解成先算 $a$ 个长度为 $d_k$ 的向量对 $b$ 个长度为 $d_k$ 的向量的相似度，再以此相似度为权重算 $a$ 个向量对 $b$ 个长度为 $d_v$ 的向量的加权和。</p>
+<p>注意力计算是没有可学习参数的。为了加入参数，Transformer 设计了如下所示的注意力层，其中 $W^Q, W^K, W^V, W^O$ 都是参数。</p>
+<script type="math/tex; mode=display">
+AttnLayer(Q, K, V) = Attention(QW^Q, KW^K, VW^V)W^O</script><p>一般在使用注意力层时，会让$K=V$。这种注意力叫做交叉注意力。交叉注意力可以理解成数据 $A$ 想从数据 $B$ 里提取信息，提取的根据是 $A$ 里每个向量和 $B$ 里每个向量的相似度。 </p>
+<script type="math/tex; mode=display">
+CrossAttnLayer(A, B) = Attention(AW^Q, BW^K, BW^V)W^O</script><p>交叉注意力的特例是自注意力，此时 $Q=K=V$ 。这表示数据里的向量两两之间交换了一次信息。</p>
+<script type="math/tex; mode=display">
+SelfAttnLayer(A) = Attention(AW^Q, AW^K, AW^V)W^O</script><h2 id="SD-中的自注意力替换"><a href="#SD-中的自注意力替换" class="headerlink" title="SD 中的自注意力替换"></a>SD 中的自注意力替换</h2><p>SD 的 U-Net 既用到了自注意力，也用到了交叉注意力。自注意力用于图像特征自己内部信息聚合。交叉注意力用于让生成图像对齐文本，其 Q 来自图像特征，K, V 来自文本编码。</p>
+<p><img src="/2024/01/27/20240123-SD-Attn/1.png" alt></p>
+<p>由于自注意力其实可以看成一种特殊的交叉注意力，我们可以把自注意力的 K, V 替换成来自另一幅参考图像的特征。这样，扩散模型的生成图片会既和原本要生成的图像相似，又和参考图像相似。当然，用来替换的特征必须和原来的特征「格式一致」，不然就生成不了有意义的结果了。</p>
+<p><img src="/2024/01/27/20240123-SD-Attn/2.png" alt></p>
+<p>什么叫「格式一致」呢？我们知道，扩散模型在采样时有很多步，U-Net 中又有许多自注意力层。每一步时的每一个自注意力层的输入都有自己的「格式」。也就是说，如果你要把某时刻某自注意力层的 K, V 替换，就得先生成参考图像，用生成参考图像过程中此时刻此自注意力层的输入替换，而不能用其他时刻或者其他自注意力层的。</p>
+<p><img src="/2024/01/27/20240123-SD-Attn/3.png" alt></p>
+<p><img src="/2024/01/27/20240123-SD-Attn/4.png" alt></p>
+<p>一般这种编辑技术只会用在自注意力层而不是交叉注意力层上，这是因为 SD 中的交叉注意力是用来关联图像与文字的，另一幅图像的信息无法输入。当然，除了 SD，只要是用到了自注意力模块的扩散模型，都能用此方法编辑，只不过大部分工作都是基于 SD 开发的。</p>
+<h2 id="自注意力替换的应用"><a href="#自注意力替换的应用" class="headerlink" title="自注意力替换的应用"></a>自注意力替换的应用</h2><p>自注意力替换最常见的应用是提升 SD 视频编辑的连续性。在此任务中，一般会先正常编辑第一帧，再将后续帧的自注意力的 K, V 替换成第一帧的。这种技术在文献中一般被称为帧间注意力（cross-frame attention）。较早提出此论文的工作是 Text2Video-Zero。</p>
+<p>自注意力替换也可以用于提升单幅图像编辑的保真度。一个例子是拖拽单幅图像的 DragonDiffusion。此应用可以拓展到图像插值上，比如 DiffMorpher 在图像插值时对两幅参考图像的自注意力输入等比例插值，再替换掉对应插值图像的自注意力的 K, V。</p>
+<h2 id="在-Diffusers-里实现自注意力替换"><a href="#在-Diffusers-里实现自注意力替换" class="headerlink" title="在 Diffusers 里实现自注意力替换"></a>在 Diffusers 里实现自注意力替换</h2><p>Diffusers 的 U-Net 专门提供了用于修改注意力计算的 <code>AttentionProcessor</code> 类。借助相关接口，我们可以方便地修改注意力的计算方法。在这个示例项目中，我们来用 Diffusers 实现一个参考第一帧和上一帧的注意力输入的 SD 视频编辑流水线。相比逐帧生成编辑图片，该流水线的结果会更加平滑一点。项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DiffusersExample/tree/main/ReplaceAttn">https://github.com/SingleZombie/DiffusersExample/tree/main/ReplaceAttn</a> 。</p>
+<h3 id="AttentionProcessor"><a href="#AttentionProcessor" class="headerlink" title="AttentionProcessor"></a><code>AttentionProcessor</code></h3><p>在 Diffusers 中，U-Net 的每一个注意力模块都有一个 <code>AttentionProcessor</code> 类的实例。<code>AttentionProcessor</code> 类的 <code>__call__</code> 方法描述了注意力计算的过程。如果我们想修改某些注意力模块的计算，就需要自己定义一个注意力处理类，其 <code>__call__</code> 方法的参数需与 <code>AttentionProcessor</code> 的兼容。之后，我们再调用相关接口把原来的处理类换成我们自己写的处理类。下面我们将先看一下 <code>AttentionProcessor</code> 类的实现细节，再实现我们自己的<br>注意力处理类。</p>
+<p><code>AttentionProcessor</code> 类在 <code>diffusers/models/attention_processor.py</code> 文件里。它只有一个 <code>__call__</code> 方法，其主要内容如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AttnProcessor</span>:</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="function">        self,</span></span></span><br><span class="line"><span class="params"><span class="function">        attn: Attention,</span></span></span><br><span class="line"><span class="params"><span class="function">        hidden_states: torch.FloatTensor,</span></span></span><br><span class="line"><span class="params"><span class="function">        encoder_hidden_states: <span class="type">Optional</span>[torch.FloatTensor] = <span class="literal">None</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        attention_mask: <span class="type">Optional</span>[torch.FloatTensor] = <span class="literal">None</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        temb: <span class="type">Optional</span>[torch.FloatTensor] = <span class="literal">None</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        scale: <span class="built_in">float</span> = <span class="number">1.0</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">    </span>) -&gt; torch.Tensor:</span></span><br><span class="line">        residual = hidden_states</span><br><span class="line">        query = attn.to_q(hidden_states, *args)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> encoder_hidden_states <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            encoder_hidden_states = hidden_states</span><br><span class="line"></span><br><span class="line">        key = attn.to_k(encoder_hidden_states, *args)</span><br><span class="line">        value = attn.to_v(encoder_hidden_states, *args)</span><br><span class="line"></span><br><span class="line">        query = attn.head_to_batch_dim(query)</span><br><span class="line">        key = attn.head_to_batch_dim(key)</span><br><span class="line">        value = attn.head_to_batch_dim(value)</span><br><span class="line"></span><br><span class="line">        attention_probs = attn.get_attention_scores(query, key, attention_mask)</span><br><span class="line">        hidden_states = torch.bmm(attention_probs, value)</span><br><span class="line">        hidden_states = attn.batch_to_head_dim(hidden_states)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># linear proj</span></span><br><span class="line">        hidden_states = attn.to_out[<span class="number">0</span>](hidden_states, *args)</span><br><span class="line">        <span class="comment"># dropout</span></span><br><span class="line">        hidden_states = attn.to_out[<span class="number">1</span>](hidden_states)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> attn.residual_connection:</span><br><span class="line">            hidden_states = hidden_states + residual</span><br><span class="line"></span><br><span class="line">        hidden_states = hidden_states / attn.rescale_output_factor</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> hidden_states</span><br></pre></td></tr></table></figure>
+<p>方法参数中，<code>hidden_states</code> 是 Q， <code>encoder_hidden_states</code> 是 K, V。如果 K, V 没有传入（为 <code>None</code>），则 K, V 会被赋值成 Q。该方法的实现细节和 Tranformer 中的注意力层完全一样，此处就不多加解释了。一般替换注意力的输入时，我们不用改这个方法的实现，只会在需要的时候调用这个方法。</p>
+<script type="math/tex; mode=display">
+AttnLayer(Q, K, V) = Attention(QW^Q, KW^K, VW^V)W^O</script><p><code>attention_processor.py</code> 文件中还有一个功能类似的类 <code>AttnProcessor2_0</code>，它和 <code>AttentionProcessor</code> 的区别在于它调用了 PyTorch 2.0 起启用的算子 <code>F.scaled_dot_product_attention</code> 代替手动实现的注意力计算。这个算子更加高效，如果你确定 PyTorch 版本至少为 2.0，就可以用 <code>AttnProcessor2_0</code> 代替 <code>AttentionProcessor</code>。</p>
+<p>看完了 <code>AttentionProcessor</code> 类后，我们来看该怎么在 U-Net 里将原注意力处理类替换成我们自己写的。U-Net 类的 <code>attn_processors</code> 属性会返回一个词典，它的 key 是每个处理类所在位置，比如 <code>down_blocks.0.attentions.0.transformer_blocks.0.attn1.processor</code>，它的 value 是每个处理类的实例。为了替换处理类，我们需要构建一个格式一样的词典<code>attn_processor_dict</code>，再调用 <code>unet.set_attn_processor(attn_processor_dict)</code> ，取代原来的 <code>attn_processors</code>。假如我们自己实现了处理类 <code>MyAttnProcessor</code>，我们可以编写下面的代码来实现替换：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">attn_processor_dict = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> k <span class="keyword">in</span> unet.attn_processors.keys():</span><br><span class="line">    <span class="keyword">if</span> we_want_to_modify(k):</span><br><span class="line">        attn_processor_dict[k] = MyAttnProcessor()</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        attn_processor_dict[k] = AttnProcessor()</span><br><span class="line"></span><br><span class="line">unet.set_attn_processor(attn_processor_dict)</span><br></pre></td></tr></table></figure>
+<h3 id="实现帧间注意力处理类"><a href="#实现帧间注意力处理类" class="headerlink" title="实现帧间注意力处理类"></a>实现帧间注意力处理类</h3><p>熟悉了 <code>AttentionProcessor</code> 类的相关内容，我们来编写自己的帧间注意力处理类。在处理第一帧时，该类的行为不变。对于之后的每一帧，该类的 K, V 输入会被替换成视频第一帧和上一帧的输入在序列长度维度上的拼接结果，即：</p>
+<script type="math/tex; mode=display">
+CrossFrameAttn(A, A_1, A_{prev}) = CrossAttnLayer(A, [A_1, A_{prev}])</script><blockquote>
+<p>你是否会感到疑惑：为什么 K, V 的序列长度可以修改？别忘了，在注意力计算中，Q, K, V 的形状分别是：$Q \in \mathbb{R}^{a \times d_k}, K \in \mathbb{R}^{b \times d_k}, V \in \mathbb{R}^{b \times d_v}$。注意力计算只要求 K，V 的序列长度 $b$ 相同，并没有要求 Q, K 的序列长度相同。</p>
+</blockquote>
+<p>现在，注意力计算不再是一个没有状态的计算，它的运算结果取决于第一帧和上一帧的输入。因此，我们在注意力处理类中需要额外维护这两个变量。我们可以按照如下代码编写类的构造函数。除了处理继承外，我们还需要创建两个数据词典来存储不同时间戳下第一帧和上一帧的注意力输入。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CrossFrameAttnProcessor</span>(<span class="params">AttnProcessor</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.first_maps = &#123;&#125;</span><br><span class="line">        self.prev_maps = &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>在运行方法中，我们根据 <code>encoder_hidden_states</code> 是否为空来判断该注意力是自注意力还是交叉注意力。我们仅修改自注意力。当该注意力为自注意力时，假设我们知道了当前时刻 <code>t</code>，我们就可以根据 <code>t</code> 获取当前时刻第一帧和前一帧的输入，并将它们拼接起来得到 <code>cross_map</code>。以此 <code>cross_map</code> 为当前注意力的 K, V，我们就实现了帧间注意力。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params">self, attn: Attention, hidden_states, encoder_hidden_states=<span class="literal">None</span>, **kwargs</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> encoder_hidden_states <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="comment"># Is self attention</span></span><br><span class="line">        cross_map = torch.cat(</span><br><span class="line">            (self.first_maps[t], self.prev_maps[t]), dim=<span class="number">1</span>)</span><br><span class="line">        res = <span class="built_in">super</span>().__call__(attn, hidden_states, cross_map, **kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="comment"># Is cross attention</span></span><br><span class="line">        res = <span class="built_in">super</span>().__call__(attn, hidden_states, encoder_hidden_states, **kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>由于 Diffusers 经常修改函数接口，在调用普通的注意力计算接口时，最好原封不动地按照 <code>super().__call__(..., **kwargs)</code> 写，不然这份代码就不能兼容后续版本的 Diffusers。</p>
+</blockquote>
+<p>上述代码只描述了后续帧的行为。如前所述，我们的注意力计算有两种行为：对于第一帧，我们不修改注意力的计算过程，只缓存其输入；对于之后每一帧，我们替换注意力的输入，同时维护当前「上一帧」的输入。既然注意力在不同情况下有不同行为，我们就应该用一个变量来记录当前状态，让 <code>__call__</code> 能根据此变量决定当前的行为。相关的伪代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params">self, attn: Attention, hidden_states, encoder_hidden_states=<span class="literal">None</span>, **kwargs</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> encoder_hidden_states <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="comment"># Is self attention</span></span><br><span class="line">        <span class="keyword">if</span> self.state == FIRST_FRAME:</span><br><span class="line">            res = <span class="built_in">super</span>().__call__(attn, hidden_states, cross_map, **kwargs)</span><br><span class="line">            <span class="comment"># update maps</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            cross_map = torch.cat(</span><br><span class="line">                (self.first_maps[t], self.prev_maps[t]), dim=<span class="number">1</span>)</span><br><span class="line">            res = <span class="built_in">super</span>().__call__(attn, hidden_states, cross_map, **kwargs)</span><br><span class="line">            <span class="comment"># update maps</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="comment"># Is cross attention</span></span><br><span class="line">        res = <span class="built_in">super</span>().__call__(attn, hidden_states, encoder_hidden_states, **kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>在伪代码中，<code>self.state</code> 表示当前注意力的状态，它的值表明注意力计算是在处理第一帧还是后续帧。在视频编辑流水线中，我们应按照下面的伪代码，先编辑第一帧，再修改注意力状态后编辑后续帧。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">edit(frames[<span class="number">0</span>])</span><br><span class="line">set_attn_state(SUBSEQUENT_FRAMES)</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="built_in">len</span>(frames)):</span><br><span class="line">    edit(frames[i])</span><br></pre></td></tr></table></figure>
+<p>现在，有一个问题：我们该怎么修改怎么每一个注意力模块的处理器的状态呢？显然，最直接的方式是想办法访问每一个注意力模块的处理器，再直接修改对象的属性。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">modules = unet.get_attn_moduels</span><br><span class="line"><span class="keyword">for</span> module <span class="keyword">in</span> modules:</span><br><span class="line">    <span class="keyword">if</span> we_want_to_modify(module):</span><br><span class="line">        module.processor.state = ...</span><br></pre></td></tr></table></figure>
+<p>但是，每次都去遍历所有模块会让代码更加凌乱。同时，这样写也会带来代码维护上的问题：我们每次遍历注意力模块时，都可能要判断该注意力模块是否应该修改。而在用前面讲过的处理类替换方法 <code>unet.set_attn_processor</code> 时，我们也得判断一遍。同一段逻辑重复写在两个地方，非常不利于代码更新。</p>
+<p>一种更优雅的实现方式是：我们定义一个状态管理类，所有注意力处理器都从同一个全局状态管理类对象里获取当前的状态信息。想修改每一个处理器的状态，不需要遍历所有对象，只需要改一次全局状态管理类对象就行了。</p>
+<p>按照这种实现方式，我们先编写一个状态类。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AttnState</span>:</span></span><br><span class="line">    STORE = <span class="number">0</span></span><br><span class="line">    LOAD = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.reset()</span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">state</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.__state</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">reset</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.__state = AttnState.STORE</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">to_load</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.__state = AttnState.LOAD</span><br></pre></td></tr></table></figure>
+<p>在注意力处理类中，我们在初始化时保存状态类对象的引用，在运行时根据状态类对象获取当前状态。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CrossFrameAttnProcessor</span>(<span class="params">AttnProcessor</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, attn_state: AttnState</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.attn_state = attn_state</span><br><span class="line">        self.first_maps = &#123;&#125;</span><br><span class="line">        self.prev_maps = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params">self, attn: Attention, hidden_states, encoder_hidden_states=<span class="literal">None</span>, **kwargs</span>):</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> encoder_hidden_states <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="comment"># Is self attention</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> self.attn_state.state == AttnState.STORE:</span><br><span class="line">                res = <span class="built_in">super</span>().__call__(attn, hidden_states, encoder_hidden_states, **kwargs)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                cross_map = torch.cat(</span><br><span class="line">                    (self.first_maps[t], self.prev_maps[t]), dim=<span class="number">1</span>)</span><br><span class="line">                res = <span class="built_in">super</span>().__call__(attn, hidden_states, cross_map, **kwargs)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="comment"># Is cross attention</span></span><br><span class="line">            res = <span class="built_in">super</span>().__call__(attn, hidden_states, encoder_hidden_states, **kwargs)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>到目前为止，假设已经维护好了之前的输入，我们的注意力处理类能执行两种不同的行为了。现在，我们来实现之前输入的维护。使用之前的注意力输入时，我们其实需要知道当前的时刻 <code>t</code>。当前的时刻也算是另一个状态，最好是也在状态管理类里维护。但为了简化我们的代码，我们可以偷懒让每个处理类自己维护当前时刻。具体做法是：如果知道了去噪迭代的总时刻数，我们就可以令当前时刻从0开始不断自增，直到最大时刻时，再重置为0。加入了时刻处理及之前输入维护的完整代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AttnState</span>:</span></span><br><span class="line">    STORE = <span class="number">0</span></span><br><span class="line">    LOAD = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.reset()</span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">state</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.__state</span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">timestep</span>(<span class="params">self</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.__timestep</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">set_timestep</span>(<span class="params">self, t</span>):</span></span><br><span class="line">        self.__timestep = t</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">reset</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.__state = AttnState.STORE</span><br><span class="line">        self.__timestep = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">to_load</span>(<span class="params">self</span>):</span></span><br><span class="line">        self.__state = AttnState.LOAD</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CrossFrameAttnProcessor</span>(<span class="params">AttnProcessor</span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, attn_state: AttnState</span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.attn_state = attn_state</span><br><span class="line">        self.cur_timestep = <span class="number">0</span></span><br><span class="line">        self.first_maps = &#123;&#125;</span><br><span class="line">        self.prev_maps = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params">self, attn: Attention, hidden_states, encoder_hidden_states=<span class="literal">None</span>, **kwargs</span>):</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> encoder_hidden_states <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="comment"># Is self attention</span></span><br><span class="line"></span><br><span class="line">            tot_timestep = self.attn_state.timestep</span><br><span class="line">            <span class="keyword">if</span> self.attn_state.state == AttnState.STORE:</span><br><span class="line">                self.first_maps[self.cur_timestep] = hidden_states.detach()</span><br><span class="line">                self.prev_maps[self.cur_timestep] = hidden_states.detach()</span><br><span class="line">                res = <span class="built_in">super</span>().__call__(attn, hidden_states, encoder_hidden_states, **kwargs)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                tmp = hidden_states.detach()</span><br><span class="line">                cross_map = torch.cat(</span><br><span class="line">                    (self.first_maps[self.cur_timestep], self.prev_maps[self.cur_timestep]), dim=<span class="number">1</span>)</span><br><span class="line">                res = <span class="built_in">super</span>().__call__(attn, hidden_states, cross_map, **kwargs)</span><br><span class="line">                self.prev_maps[self.cur_timestep] = tmp</span><br><span class="line"></span><br><span class="line">            self.cur_timestep += <span class="number">1</span></span><br><span class="line">            <span class="keyword">if</span> self.cur_timestep == tot_timestep:</span><br><span class="line">                self.cur_timestep = <span class="number">0</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="comment"># Is cross attention</span></span><br><span class="line">            res = <span class="built_in">super</span>().__call__(attn, hidden_states, encoder_hidden_states, **kwargs)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>代码中，<code>tot_timestep</code> 为总时刻数，<code>cur_timestep</code> 为当前时刻。每运算一次，<code>cur_timestep</code> 加一，直至总时刻时再归零。在处理第一帧时，我们把当前时刻的输入同时存入第一帧缓存 <code>first_maps</code> 和上一帧缓存 <code>prev_maps</code> 中。对于后续帧，我们先做替换过输入的注意力计算，再更新上一帧缓存 <code>prev_maps</code>。</p>
+<h3 id="视频编辑流水线"><a href="#视频编辑流水线" class="headerlink" title="视频编辑流水线"></a>视频编辑流水线</h3><p>准备好了我们自己写的帧间注意力处理类后，我们来编写一个简单的 Diffusers 视频处理流水线。该流水线基于 ControlNet 与图生图流水线，其主要代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">VideoEditingPipeline</span>(<span class="params">StableDiffusionControlNetImg2ImgPipeline</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="function">        self,</span></span></span><br><span class="line"><span class="params"><span class="function">        ...</span></span></span><br><span class="line"><span class="params"><span class="function">    </span>):</span></span><br><span class="line">        <span class="built_in">super</span>().__init__(...)</span><br><span class="line">        self.attn_state = AttnState()</span><br><span class="line">        attn_processor_dict = &#123;&#125;</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> unet.attn_processors.keys():</span><br><span class="line">            <span class="keyword">if</span> k.startswith(<span class="string">&quot;up&quot;</span>):</span><br><span class="line">                attn_processor_dict[k] = CrossFrameAttnProcessor(</span><br><span class="line">                    self.attn_state)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                attn_processor_dict[k] = AttnProcessor()</span><br><span class="line"></span><br><span class="line">        self.unet.set_attn_processor(attn_processor_dict)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params">self, *args, images=<span class="literal">None</span>, control_images=<span class="literal">None</span>,  **kwargs</span>):</span></span><br><span class="line">        self.attn_state.reset()</span><br><span class="line">        self.attn_state.set_timestep(</span><br><span class="line">            <span class="built_in">int</span>(kwargs[<span class="string">&#x27;num_inference_steps&#x27;</span>] * kwargs[<span class="string">&#x27;strength&#x27;</span>]))</span><br><span class="line">        outputs = [<span class="built_in">super</span>().__call__(</span><br><span class="line">            *args, **kwargs, image=images[<span class="number">0</span>], control_image=control_images[<span class="number">0</span>]).images[<span class="number">0</span>]]</span><br><span class="line">        self.attn_state.to_load()</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="built_in">len</span>(images)):</span><br><span class="line">            image = images[i]</span><br><span class="line">            control_image = control_images[i]</span><br><span class="line">            outputs.append(<span class="built_in">super</span>().__call__(</span><br><span class="line">                *args, **kwargs, image=image, control_image=control_image).images[<span class="number">0</span>])</span><br><span class="line">        <span class="keyword">return</span> outputs</span><br></pre></td></tr></table></figure>
+<p>在构造函数中，我们创建了一个全局注意力状态对象 <code>attn_state</code>。它的引用会传给每一个帧间注意力处理对象。一般修改自注意力模块时，只会修改 U-Net 上采样部分的，而不会动下采样部分和中间部分的。因此，在过滤注意力模块时，我们的判断条件是 <code>k.startswith(&quot;up&quot;)</code>。把新的注意力处理器词典填完后，用 <code>unet.set_attn_processor</code> 更新所有的处理类对象。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">self.attn_state = AttnState()</span><br><span class="line">attn_processor_dict = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> k <span class="keyword">in</span> unet.attn_processors.keys():</span><br><span class="line">    <span class="keyword">if</span> k.startswith(<span class="string">&quot;up&quot;</span>):</span><br><span class="line">        attn_processor_dict[k] = CrossFrameAttnProcessor(</span><br><span class="line">            self.attn_state)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        attn_processor_dict[k] = AttnProcessor()</span><br><span class="line"></span><br><span class="line">self.unet.set_attn_processor(attn_processor_dict)</span><br></pre></td></tr></table></figure>
+<p>在 <code>__call__</code> 方法中，我们要基于原图像编辑流水线 <code>super().__call__()</code>，实现我们的视频编辑流水线。在这个过程中，我们的主要任务是维护好注意力管理对象中的状态。一开始，我们要把管理类重置，根据参数设置最大去噪时刻数。经重置后，注意力处理器的状态默认为 <code>STORE</code>，即会保存第一帧的输入。处理完第一帧后，我们运行 <code>attn_state.to_load()</code> 改变注意力处理器的状态，让它们每次做注意力运算时先读第一帧和上一帧的输入，再维护上一帧输入的缓存。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">__call__</span>(<span class="params">self, *args, images=<span class="literal">None</span>, control_images=<span class="literal">None</span>,  **kwargs</span>):</span></span><br><span class="line">    self.attn_state.reset()</span><br><span class="line">    self.attn_state.set_timestep(</span><br><span class="line">        <span class="built_in">int</span>(kwargs[<span class="string">&#x27;num_inference_steps&#x27;</span>] * kwargs[<span class="string">&#x27;strength&#x27;</span>]))</span><br><span class="line">    outputs = [<span class="built_in">super</span>().__call__(</span><br><span class="line">        *args, **kwargs, image=images[<span class="number">0</span>], control_image=control_images[<span class="number">0</span>]).images[<span class="number">0</span>]]</span><br><span class="line">    self.attn_state.to_load()</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="built_in">len</span>(images)):</span><br><span class="line">        image = images[i]</span><br><span class="line">        control_image = control_images[i]</span><br><span class="line">        outputs.append(<span class="built_in">super</span>().__call__(</span><br><span class="line">            *args, **kwargs, image=image, control_image=control_image).images[<span class="number">0</span>])</span><br><span class="line">    <span class="keyword">return</span> outputs</span><br></pre></td></tr></table></figure>
+<p>运行该流水线的示例脚本在项目根目录下的 <code>replace_attn.py</code> 文件中。示例中使用的视频可以在 <code>https://github.com/williamyang1991/Rerender_A_Video/blob/main/videos/pexels-koolshooters-7322716.mp4</code> 下载，下载后应重命名为 <code>woman.mp4</code>。不使用和使用新注意力处理器的输出结果如下：</p>
+<p><img src="/2024/01/27/20240123-SD-Attn/output.gif" alt></p>
+<p>可以看出，虽然注意力替换不能解决生成视频的闪烁问题，但帧间的一致性提升了不少。将注意力替换技术和其他技术结合起来的话，我们就能得到一个不错的 SD 视频生成工具。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>扩散模型中的自注意力替换是一种常见的提升图片一致性的技术。该技术的实现方法是将扩散模型 U-Net 中自注意力的 K, V 输入替换成另一幅图片的。在这篇文章中，我们学习了一个较为复杂的基于 Diffusers 开发的自注意力替换示例项目，用于提升 SD 视频生成的一致性。在这个过程中，我们学习了和 <code>AttentionProcessor</code> 相关接口函数的使用，并了解了如何基于全局管理类实现一个代码可维护性强的多行为注意力处理类。如果你能看懂这篇文章的示例，那你在开发 Diffusers 的注意力处理类时基本上不会碰到任何难题。</p>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DiffusersExample/tree/main/ReplaceAttn">https://github.com/SingleZombie/DiffusersExample/tree/main/ReplaceAttn</a></p>
+<p>如果你想进一步学习 Diffusers 中视频编辑流水线的开发，可以参考我给 Diffusers 写的流水线：<a target="_blank" rel="noopener" href="https://github.com/huggingface/diffusers/tree/main/examples/community#Rerender_A_Video">https://github.com/huggingface/diffusers/tree/main/examples/community#Rerender_A_Video</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/01/23/20240114-SD-LoRA/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2296,160 +2434,6 @@ softmax = \frac{e^{-\infty}}{e^{-\infty} + e^{-\infty} + ... e^{-\infty}}</scrip
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2023/06/06/20230527-VQVAE/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2023/06/06/20230527-VQVAE/" class="post-title-link" itemprop="url">轻松理解 VQ-VAE：首个提出 codebook 机制的生成模型</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-06-06 23:15:59" itemprop="dateCreated datePublished" datetime="2023-06-06T23:15:59+08:00">2023-06-06</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>近两年，有许多图像生成类任务的前沿工作都使用了一种叫做”codebook”的机制。追溯起来，codebook机制最早是在VQ-VAE论文中提出的。相比于普通的VAE，VQ-VAE能利用codebook机制把图像编码成离散向量，为图像生成类任务提供了一种新的思路。VQ-VAE的这种建模方法启发了无数的后续工作，包括声名远扬的Stable Diffusion。</p>
-<p>在这篇文章中，我将先以易懂的逻辑带领大家一步一步领悟VQ-VAE的核心思想，再介绍VQ-VAE中关键算法的具体形式，最后把VQ-VAE的贡献及其对其他工作的影响做一个总结。通过阅读这篇文章，你不仅能理解VQ-VAE本身的原理，更能知道如何将VQ-VAE中的核心机制活学活用。</p>
-<h2 id="从-AE-到-VQ-VAE"><a href="#从-AE-到-VQ-VAE" class="headerlink" title="从 AE 到 VQ-VAE"></a>从 AE 到 VQ-VAE</h2><p>为什么VQ-VAE想要把图像编码成离散向量？让我们从最早的自编码器（Autoencoder, AE）开始一步一步谈起。AE是一类能够把图片压缩成较短的向量的神经网络模型，其结构如下图所示。AE包含一个编码器$e()$和一个解码器$d()$。在训练时，输入图像$\mathbf{x}$会被编码成一个较短的向量$\mathbf{z}$，再被解码回另一幅长得差不多的图像$\hat{\mathbf{x}}$。网络的学习目标是让重建出来的图像$\hat{\mathbf{x}}$和原图像$\mathbf{x}$尽可能相似。</p>
-<p><img src="/2023/06/06/20230527-VQVAE/1.jpg" alt></p>
-<p>解码器可以把一个向量解码成图片。换一个角度看，解码器就是一个图像生成模型，因为它可以根据向量来生成图片。那么，AE可不可以用来做图像生成呢？很可惜，AE的编码器编码出来的向量空间是不规整的。也就是说，解码器只认识经编码器编出来的向量，而不认识其他的向量。如果你把自己随机生成出来的向量输入给解码器，解码器是生成不出有意义的图片的。AE不能够随机生成图片，所以它不能很好地完成图像生成任务，只能起到把图像压缩的作用。</p>
-<p>AE离图像生成只差一步了。只要AE的编码空间比较规整，符合某个简单的数学分布（比如最常见的标准正态分布），那我们就可以从这个分布里随机采样向量，再让解码器根据这个向量来完成随机图片生成了。VAE就是这样一种改进版的AE。它用一些巧妙的方法约束了编码向量$\mathbf{z}$，使得$\mathbf{z}$满足标准正态分布。这样，解码器不仅认识编码器编出的向量，还认识其他来自标准正态分布的向量。训练完成后，我们就可以扔掉编码器，用来自标准正态分布的随机向量和解码器来实现随机图像生成了。</p>
-<p><img src="/2023/06/06/20230527-VQVAE/2.jpg" alt></p>
-<p>VAE的实现细节就不在这里赘述了，是否理解它对理解VQ-VAE没有影响。我们只需知道VAE可以把图片编码成符合标准正态分布的向量即可。让向量符合标准正态分布的原因是方便随机采样。同时，需要强调的是，VAE编码出来的向量是<strong>连续向量</strong>，也就是向量的每一维都是浮点数。如果把向量的某一维稍微改动0.0001，解码器还是认得这个向量，并且会生成一张和原向量对应图片差不多的图片。</p>
-<p>但是，VAE生成出来的图片都不是很好看。VQ-VAE的作者认为，VAE的生成图片之所以质量不高，是因为图片被编码成了连续向量。而实际上，把图片编码成<strong>离散向量</strong>会更加自然。比如我们想让画家画一个人，我们会说这个是男是女，年龄是偏老还是偏年轻，体型是胖还是壮，而不会说这个人性别是0.5，年龄是0.6，体型是0.7。因此，VQ-VAE会把图片编码成离散向量，如下图所示。</p>
-<p><img src="/2023/06/06/20230527-VQVAE/3.jpg" alt></p>
-<p>把图像编码成离散向量后，又会带来两个新的问题。第一个问题是，神经网络会默认输入满足一个连续的分布，而不善于处理离散的输入。如果你直接输入0, 1, 2这些数字，神经网络会默认1是一个处于0, 2中间的一种状态。为了解决这一问题，我们可以借鉴NLP中对于离散单词的处理方法。为了处理离散的输入单词，NLP模型的第一层一般都是词嵌入层，它可以把每个输入单词都映射到一个独一无二的连续向量上。这样，每个离散的数字都变成了一个特别的连续向量了。</p>
-<p><img src="/2023/06/06/20230527-VQVAE/3.5.jpg" alt></p>
-<p>我们可以把类似的嵌入层加到VQ-VAE的解码器前。这个嵌入层在VQ-VAE里叫做”embedding space（嵌入空间）”，在后续文章中则被称作”codebook”。</p>
-<p><img src="/2023/06/06/20230527-VQVAE/4.jpg" alt></p>
-<p>离散向量的另一个问题是它不好采样。回忆一下，VAE之所以把图片编码成符合正态分布的连续向量，就是为了能在图像生成时把编码器扔掉，让随机采样出的向量也能通过解码器变成图片。现在倒好，VQ-VAE把图片编码了一个离散向量，这个离散向量构成的空间是不好采样的。VQ-VAE不是面临着和AE一样的问题嘛。</p>
-<p>这个问题是无解的。没错！VQ-VAE根本不是一个图像生成模型。它和AE一样，只能很好地完成图像压缩，把图像变成一个短得多的向量，而不支持随机图像生成。VQ-VAE和AE的唯一区别，就是VQ-VAE会编码出离散向量，而AE会编码出连续向量。</p>
-<p>可为什么VQ-VAE会被归类到图像生成模型中呢？这是因为VQ-VAE的作者利用VQ-VAE能编码离散向量的特性，使用了一种特别的方法对VQ-VAE的离散编码空间采样。VQ-VAE的作者之前设计了一种图像生成网络，叫做PixelCNN。PixelCNN能拟合一个离散的分布。比如对于图像，PixelCNN能输出某个像素的某个颜色通道取0~255中某个值的概率分布。这不刚好嘛，VQ-VAE也是把图像编码成离散向量。换个更好理解的说法，VQ-VAE能把图像映射成一个「小图像」。我们可以把PixelCNN生成图像的方法搬过来，让PixelCNN学习生成「小图像」。这样，我们就可以用PixelCNN生成离散编码，再利用VQ-VAE的解码器把离散编码变成图像。</p>
-<p>让我们来整理一下VQ-VAE的工作过程。</p>
-<ol>
-<li>训练VQ-VAE的编码器和解码器，使得VQ-VAE能把图像变成「小图像」，也能把「小图像」变回图像。</li>
-<li>训练PixelCNN，让它学习怎么生成「小图像」。</li>
-<li>随机采样时，先用PixelCNN采样出「小图像」，再用VQ-VAE把「小图像」翻译成最终的生成图像。</li>
-</ol>
-<p>到这里，我们已经学完了VQ-VAE的核心思想。让我们来总结一下。VQ-VAE不是一个VAE，而是一个AE。它的目的是把图像压缩成离散向量。或者换个角度说，它提供了把大图像翻译成「小图像」的方法，也提供了把「小图像」翻译成大图像的方法。这样，一个随机生成大图像的问题，就被转换成了一个等价的随机生成一个较小的「图像」的问题。有一些图像生成模型，比如PixelCNN，更适合拟合离散分布。可以用它们来完成生成「小图像」的问题，填补上VQ-VAE生成图片的最后一片空缺。</p>
-<h2 id="VQ-VAE-设计细节"><a href="#VQ-VAE-设计细节" class="headerlink" title="VQ-VAE 设计细节"></a>VQ-VAE 设计细节</h2><p>在上一节中，我们虽然认识了VQ-VAE的核心思想，但略过了不少实现细节，比如：</p>
-<ul>
-<li>VQ-VAE的编码器怎么输出离散向量。</li>
-<li>VQ-VAE怎么优化编码器和解码器。</li>
-<li>VQ-VAE怎么优化嵌入空间。</li>
-</ul>
-<p>在这一节里，我们来详细探究这些细节。</p>
-<h3 id="输出离散编码"><a href="#输出离散编码" class="headerlink" title="输出离散编码"></a>输出离散编码</h3><p>想让神经网络输出一个整数，最简单的方法是和多分类模型一样，输出一个Softmax过的概率分布。之后，从概率分布里随机采样一个类别，这个类别的序号就是我们想要的整数。比如在下图中，我们想得到一个由3个整数构成的离散编码，就应该让编码器输出3组logit，再经过Softmax与采样，得到3个整数。</p>
-<p><img src="/2023/06/06/20230527-VQVAE/5.jpg" alt></p>
-<p>但是，这么做不是最高效的。得到离散编码后，下一步我们又要根据嵌入空间把离散编码转回一个向量。可见，获取离散编码这一步有一点多余。能不能把编码器的输出张量（它之前的名字叫logit）、解码器的输入张量embedding、嵌入空间直接关联起来呢？</p>
-<p><img src="/2023/06/06/20230527-VQVAE/6.jpg" alt></p>
-<p>VQ-VAE使用了如下方式关联编码器的输出与解码器的输入：假设嵌入空间已经训练完毕，对于编码器的每个输出向量$z_e(x)$，找出它在嵌入空间里的最近邻$z_q(x)$，把$z_e(x)$替换成$z_q(x)$作为解码器的输入。</p>
-<blockquote>
-<p>求最近邻，即先计算向量与嵌入空间$K$个向量每个向量的距离，再对距离数组取一个<code>argmin</code>，求出最近的下标（比如图中的0, 1, 1），最后用下标去嵌入空间里取向量。下标构成的数组（比如图中的[0, 1, 1]）也正是VQ-VAE的离散编码。</p>
-</blockquote>
-<p><img src="/2023/06/06/20230527-VQVAE/7.jpg" alt></p>
-<p>就这样，我们知道了VQ-VAE是怎么生成离散编码的。VQ-VAE的编码器其实不会显式地输出离散编码，而是输出了多个「假嵌入」$z_e(x)$。之后，VQ-VAE对每个$z_e(x)$在嵌入空间里找最近邻，得到真正的嵌入$z_q(x)$，把$z_q(x)$作为解码器的输入。</p>
-<p>虽然我们现在能把编码器和解码器拼接到一起，但现在又多出了一个问题：怎么让梯度从解码器的输入$z_q(x)$传到$z_e(x)$？从$z_e(x)$到$z_q(x)$的变换是一个从数组里取值的操作，这个操作是求不了导的。我们在下一小节里来详细探究一下怎么优化VQ-VAE的编码器和解码器。</p>
-<h3 id="优化编码器和解码器"><a href="#优化编码器和解码器" class="headerlink" title="优化编码器和解码器"></a>优化编码器和解码器</h3><p>为了优化编码器和解码器，我们先来制订一下VQ-VAE的整体优化目标。由于VQ-VAE其实是一个AE，误差函数里应该只有原图像和目标图像的重建误差。</p>
-<blockquote>
-<p>或者非要从VAE的角度说也行。VQ-VAE相当于输出了一个one-hot离散分布。假设输入图像$x$的离散编码$z$是$k$，则分布中仅有$q(z=k|x)=1$，$q(z=others|x)=0$。令离散编码$z$的先验分布是均匀分布（假设不知道输入图像$x$，每个离散编码取到的概率是等同的），则先验分布$q(z)$和后验分布$q(z|x)$的KL散度是常量。因此，KL散度项不用算入损失函数里。理解此处的数学推导意义不大，还不如直接理解成VQ-VAE其实是一个AE。</p>
-</blockquote>
-<script type="math/tex; mode=display">
-L_{reconstruct} = ||x - decoder(z_q(x))||_2^2</script><p>但直接拿这个误差来训练是不行的。误差中，$z_q(x)$是解码器的输入。从编码器输出$z_e(x)$到$z_q(x)$这一步是不可导的，误差无法从解码器传递到编码器上。要是可以把$z_q(x)$的梯度直接原封不动地复制到$z_e(x)$上就好了。</p>
-<p>VQ-VAE使用了一种叫做”straight-through estimator”的技术来完成梯度复制。这种技术是说，前向传播和反向传播的计算可以不对应。你可以为一个运算随意设计求梯度的方法。基于这一技术，VQ-VAE使用了一种叫做$sg$(stop gradient，停止梯度)的运算：</p>
-<script type="math/tex; mode=display">
-sg(x) = \left\{
-    \begin{aligned}
-        &x  \ (in \ forward \ propagation)\\
-        &0  \ (in \ backward \ propagation)
-    \end{aligned}
-\right.</script><p>也就是说，前向传播时，$sg$里的值不变；反向传播时，$sg$按值为0求导，即此次计算无梯度。（反向传播其实不会用到式子的值，只会用到式子的梯度。反向传播用到的loss值是在前向传播中算的）。</p>
-<p>基于这种运算，我们可以设计一个把梯度从$z_e(x)$复制到$z_q(x)$的误差：</p>
-<script type="math/tex; mode=display">
-L_{reconstruct} = ||x - decoder(z_e(x) + sg(z_q(x) - z_e(x)))||_2^2</script><p>也就是说，前向传播时，就是拿解码器输入$z_q(x)$来算梯度。</p>
-<script type="math/tex; mode=display">
-L_{reconstruct} = ||x - decoder(z_q(x))||_2^2</script><p>而反向传播时，按下面这个公式求梯度，等价于把解码器的梯度全部传给$z_e(x)$。</p>
-<script type="math/tex; mode=display">
-L_{reconstruct} = ||x - decoder(z_e(x))||_2^2</script><p>这部分的PyTorch实现如下所示。在PyTorch里，<code>(x).detach()</code>就是$sg(x)$，它的值在前向传播时取<code>x</code>，反向传播时取<code>0</code>。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">L = x - decoder(z_e + (z_q - z_e).detach())</span><br></pre></td></tr></table></figure>
-<p>通过这一技巧，我们完成了梯度的传递，可以正常地训练编码器和解码器了。</p>
-<h3 id="优化嵌入空间"><a href="#优化嵌入空间" class="headerlink" title="优化嵌入空间"></a>优化嵌入空间</h3><p>到目前为止，我们的讨论都是建立在嵌入空间已经训练完毕的前提上的。现在，我们来讨论一下嵌入空间的训练方法。</p>
-<p>嵌入空间的优化目标是什么呢？嵌入空间的每一个向量应该能概括一类编码器输出的向量，比如一个表示「青年」的向量应该能概括所有14-35岁的人的照片的编码器输出。因此，嵌入空间的向量应该和其对应编码器输出尽可能接近。如下面的公式所示，$z_e(x)$是编码器的输出向量，$z_q(x)$是其在嵌入空间的最近邻向量。</p>
-<script type="math/tex; mode=display">
-L_e = ||z_e(x) - z_q(x)||_2^2</script><p>但作者认为，编码器和嵌入向量的学习速度应该不一样快。于是，他们再次使用了停止梯度的技巧，把上面那个误差函数拆成了两部分。其中，$\beta$控制了编码器的相对学习速度。作者发现，算法对$\beta$的变化不敏感，$\beta$取0.1~2.0都差不多。</p>
-<script type="math/tex; mode=display">
-L_e = ||sg(z_e(x)) - z_q(x)||_2^2 + \beta||z_e(x) - sg(z_q(x))||_2^2</script><blockquote>
-<p>其实，在论文中，作者分别讨论了上面公式里的两个误差。第一个误差来自字典学习算法里的经典算法Vector Quantisation(VQ)，也就是VQ-VAE里的那个VQ，它用于优化嵌入空间。第二个误差叫做专注误差，它用于约束编码器的输出，不让它跑到离嵌入空间里的向量太远的地方。</p>
-</blockquote>
-<p>这样，VQ-VAE总体的损失函数可以写成：（由于算上了重建误差，我们多加一个$\alpha$用于控制不同误差之间的比例）</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-L = &||x - decoder(z_e(x) + sg(z_q(x) - z_e(x)))||_2^2 \\
-&+ \alpha ||sg(z_e(x)) - z_q(x)||_2^2 + \beta||z_e(x) - sg(z_q(x))||_2^2
-\end{aligned}</script><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>VQ-VAE是一个把图像编码成离散向量的图像压缩模型。为了让神经网络理解离散编码，VQ-VAE借鉴了NLP的思想，让每个离散编码值对应一个嵌入，所有的嵌入都存储在一个嵌入空间（又称”codebook”）里。这样，VQ-VAE编码器的输出是若干个「假嵌入」，「假嵌入」会被替换成嵌入空间里最近的真嵌入，输入进解码器里。</p>
-<p>VQ-VAE的优化目标由两部分组成：重建误差和嵌入空间误差。重建误差为输入图片和重建图片的均方误差。为了让梯度从解码器传到编码器，作者使用了一种巧妙的停止梯度算子，让正向传播和反向传播按照不同的方式计算。嵌入空间误差为嵌入和其对应的编码器输出的均方误差。为了让嵌入和编码器以不同的速度优化，作者再次使用了停止梯度算子，把嵌入的更新和编码器的更新分开计算。</p>
-<p>训练完成后，为了实现随机图像生成，需要对VQ-VAE的离散分布采样，再把采样出来的离散向量对应的嵌入输入进解码器。VQ-VAE论文使用了PixelCNN来采样离散分布。实际上，PixelCNN不是唯一一种可用的拟合离散分布的模型。我们可以把它换成Transformer，甚至是diffusion模型。如果你当年看完VQ-VAE后立刻把PixelCNN换成了diffusion模型，那么恭喜你，你差不多提前设计出了Stable Diffusion。</p>
-<p>可见，VQ-VAE最大的贡献是提供了一种图像压缩思路，把生成大图像的问题转换成了一个更简单的生成「小图像」的问题。图像压缩成离散向量时主要借助了嵌入空间，或者说”codebook”这一工具。这种解决问题的思路可以应用到所有图像生成类任务上，比如超分辨率、图像修复、图像去模糊等。所以近两年我们能看到很多使用了codebook的图像生成类工作。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>PixelCNN的介绍可以参见我之前的文章：详解PixelCNN大家族。</p>
-<p>VQ-VAE的论文为<em>Neural Discrete Representation Learning</em>。这篇文章不是很好读懂，建议直接读我的这篇解读。再推荐另一份还不错的中文解读 <a target="_blank" rel="noopener" href="https://www.spaces.ac.cn/archives/6760。">https://www.spaces.ac.cn/archives/6760。</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2519,7 +2503,7 @@ L = &||x - decoder(z_e(x) + sg(z_q(x) - z_e(x)))||_2^2 \\
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">152</span>
+          <span class="site-state-item-count">153</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

@@ -168,6 +168,158 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/24/DLS-note-10-5/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》代码实战（十）：4. 算子反向传播的实现思路（以NumPy版卷积为例）</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-24 00:31:03" itemprop="dateCreated datePublished" datetime="2022-07-24T00:31:03+08:00">2022-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在之前的文章中，我介绍了<a href>如何用NumPy实现卷积正向传播</a>。<br>在这篇文章里，我会继续介绍如何用NumPy复现二维卷积的反向传播，并用PyTorch来验证结果的正确性。通过阅读这篇文章，大家不仅能进一步理解卷积的实现原理，更能领悟到一般算子的反向传播实现是怎么推导、编写出来的。</p>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN</a></p>
+<p>本文代码在<code>dldemos/BasicCNN/np_conv_backward.py</code>这个文件里。</p>
+<h2 id="实现思路"><a href="#实现思路" class="headerlink" title="实现思路"></a>实现思路</h2><p>回忆一下，在正向传播中，我们是这样做卷积运算的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">    <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">        <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">            h_lower = i_h * stride</span><br><span class="line">            h_upper = i_h * stride + f</span><br><span class="line">            w_lower = i_w * stride</span><br><span class="line">            w_upper = i_w * stride + f</span><br><span class="line">            input_slice = input_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">            kernel_slice = weight[i_c]</span><br><span class="line">            output[i_h, i_w, i_c] = np.<span class="built_in">sum</span>(input_slice * kernel_slice)</span><br><span class="line">            output[i_h, i_w, i_c] += bias[i_c]</span><br></pre></td></tr></table></figure>
+<p>我们遍历输出图像的每一个位置，选择该位置对应的输入图像切片和卷积核，做一遍乘法，再加上bias。</p>
+<p>其实，一轮运算写成数学公式的话，就是一个线性函数<code>y=wx+b</code>。对<code>w, x, b</code>求导非常简单：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dw_i = x * dy</span><br><span class="line">dx_i = w * dy</span><br><span class="line">db_i = dy</span><br></pre></td></tr></table></figure>
+<p>在反向传播中，我们只需要遍历所有这样的线性运算，计算这轮运算对各参数的导数的贡献即可。最后，累加所有的贡献，就能得到各参数的导数。当然，在用代码实现这段逻辑时，可以不用最后再把所有贡献加起来，而是一算出来就加上。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dw += x * dy</span><br><span class="line">dx += w * dy</span><br><span class="line">db += dy</span><br></pre></td></tr></table></figure>
+<p>这里要稍微补充一点。在前向传播的实现中，我加入了<code>dilation, groups</code>这两个参数。为了简化反向传播的实现代码，只展示反向传播中最精华的部分，我在这份卷积实现中没有使用这两个参数。</p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><p>在开始实现反向传播之前，我们先思考一个问题：反向传播的函数应该有哪些参数？从数学上来讲，反向传播和正向传播的参数是相反的。设正向传播的输入是<code>A_prev, W, b</code>（输入图像、卷积核组、偏差），则应该输出<code>Z</code>（输出图像）。那么，在反向传播中，应该输入<code>dZ</code>，输出<code>dA_prev, dW, db</code>。可是，在写代码时，我们还需要一些其他的输入参数。</p>
+<p>我的反向传播函数的函数定义如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">conv2d_backward</span>(<span class="params">dZ: np.ndarray, cache: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray], stride: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                    padding: <span class="built_in">int</span></span>) -&gt; <span class="type">Tuple</span>[np.ndarray, np.ndarray, np.ndarray]:</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Backward Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        dZ: (np.ndarray): The derivative of the output of conv.</span></span><br><span class="line"><span class="string">        cache (Dict[str, np.ndarray]): Record output &#x27;Z&#x27;, weight &#x27;W&#x27;, bias &#x27;b&#x27;</span></span><br><span class="line"><span class="string">            and input &#x27;A_prev&#x27; of forward function.</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        Tuple[np.ndarray, np.ndarray, np.ndarray]: The derivative of W, b,</span></span><br><span class="line"><span class="string">            A_prev.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>虽然我这里把所有参数都写在了一起，但从逻辑上来看，这些参数应该分成三个类别。在编程框架中，这三类参数会储存在不同的地方。</p>
+<ul>
+<li><code>dZ</code>: 反向传播函数真正的输入。</li>
+<li><code>cache</code>: 正向传播中的一些中间变量<code>Z, W, b</code>。由于我们必须在一个独立的函数里完成反向传播，这些中间变量得以输入参数的形式供函数访问。</li>
+<li><code>stride, padding</code>: 这两个参数是卷积的属性。如果卷积层是用一个类表示的话，这些参数应该放在类属性里，而不应该放在反向传播的输入里。</li>
+</ul>
+<p>给定这三类参数，就足以完成反向传播计算了。下面我来介绍<code>conv2d_backward</code>的具体实现。</p>
+<p>首先，获取<code>cache</code>中的参数，并且新建储存梯度的张量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">W = cache[<span class="string">&#x27;W&#x27;</span>]</span><br><span class="line">b = cache[<span class="string">&#x27;b&#x27;</span>]</span><br><span class="line">A_prev = cache[<span class="string">&#x27;A_prev&#x27;</span>]</span><br><span class="line">dW = np.zeros(W.shape)</span><br><span class="line">db = np.zeros(b.shape)</span><br><span class="line">dA_prev = np.zeros(A_prev.shape)</span><br><span class="line"></span><br><span class="line">_, _, c_i = A_prev.shape</span><br><span class="line">c_o, f, f_2, c_k = W.shape</span><br><span class="line">h_o, w_o, c_o_2 = dZ.shape</span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> (f == f_2)</span><br><span class="line"><span class="keyword">assert</span> (c_i == c_k)</span><br><span class="line"><span class="keyword">assert</span> (c_o == c_o_2)</span><br></pre></td></tr></table></figure>
+<p>之后，为了实现填充操作，我们要把<code>A_prev</code>和<code>dA_prev</code>都填充一下。注意，算完了所有梯度后，别忘了要重新把<code>dA_prev</code>从<code>dA_prev_pad</code>里抠出来。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">A_prev_pad = np.pad(A_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line">dA_prev_pad = np.pad(dA_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                (<span class="number">0</span>, <span class="number">0</span>)])</span><br></pre></td></tr></table></figure>
+<p>接下来，就是梯度的计算了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">    <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">        <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">            h_lower = i_h * stride</span><br><span class="line">            h_upper = i_h * stride + f</span><br><span class="line">            w_lower = i_w * stride</span><br><span class="line">            w_upper = i_w * stride + f</span><br><span class="line"></span><br><span class="line">            input_slice = A_prev_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">            <span class="comment"># forward</span></span><br><span class="line">            <span class="comment"># kernel_slice = W[i_c]</span></span><br><span class="line">            <span class="comment"># Z[i_h, i_w, i_c] = np.sum(input_slice * kernel_slice)</span></span><br><span class="line">            <span class="comment"># Z[i_h, i_w, i_c] += b[i_c]</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># backward</span></span><br><span class="line">            dW[i_c] += input_slice * dZ[i_h, i_w, i_c]</span><br><span class="line">            dA_prev_pad[h_lower:h_upper,</span><br><span class="line">                        w_lower:w_upper, :] += W[i_c] * dZ[i_h, i_w, i_c]</span><br><span class="line">            db[i_c] += dZ[i_h, i_w, i_c]</span><br></pre></td></tr></table></figure>
+<p>在算导数时，我们应该对照着正向传播的计算，算出每一条计算对导数的贡献。如前文所述，卷积操作只是一个简单的<code>y=wx+b</code>，把对应的<code>w, x, b</code>从变量里正确地取出来并做运算即可。</p>
+<p>最后，要把这些导数返回。别忘了把填充后的<code>dA_prev</code>恢复一下。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> padding &gt; <span class="number">0</span>:</span><br><span class="line">    dA_prev = dA_prev_pad[padding:-padding, padding:-padding, :]</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    dA_prev = dA_prev_pad</span><br><span class="line"><span class="keyword">return</span> dW, db, dA_prev</span><br></pre></td></tr></table></figure>
+<p>这里有一个细节：如果<code>padding==0</code>，则在取切片时范围会变成<code>[0:-0]</code>，这样会取出一个长度为<code>0</code>的切片，而不是我们期望的原长度的切片。因此，要特判一下<code>padding&lt;=0</code>的情况。</p>
+<h2 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h2><p>为了方便地进行单元测试，我使用了pytest这个单元测试库。可以直接pip一键安装：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pytest</span><br></pre></td></tr></table></figure>
+<p>之后就可以用pytest执行我的这份代码，代码里所有以<code>test_</code>开头的函数会被认为是单元测试的主函数。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pytest dldemos/BasicCNN/np_conv_backward.py</span><br></pre></td></tr></table></figure>
+<p>单元测试函数的定义如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;c_i, c_o&#x27;</span>, [(<span class="params"><span class="number">3</span>, <span class="number">6</span></span>), (<span class="params"><span class="number">2</span>, <span class="number">2</span></span>)]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;kernel_size&#x27;</span>, [<span class="number">3</span>, <span class="number">5</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;stride&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;padding&#x27;</span>, [<span class="number">0</span>, <span class="number">1</span>]</span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span></span>):</span></span><br></pre></td></tr></table></figure>
+<p><code>@pytest.mark.parametrize</code>用于设置单元测试参数的可选值。我设置了4组参数，每组参数有2个可选值，经过排列组合后可以生成<code>2^4=16</code>个单元测试，pytest会自动帮我们执行不同的测试。</p>
+<p>在单元测试中，我打算测试<code>conv2d</code>在各种输入通道数、输出通道数、卷积核大小、步幅、填充数的情况。</p>
+<p>测试函数是这样写的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span></span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Preprocess</span></span><br><span class="line">    <span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">    weight = np.random.randn(c_o, kernel_size, kernel_size, c_i)</span><br><span class="line">    bias = np.random.randn(c_o)</span><br><span class="line"></span><br><span class="line">    torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">        <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br><span class="line">    torch_weight = torch.from_numpy(np.transpose(</span><br><span class="line">        weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>))).requires_grad_()</span><br><span class="line">    torch_bias = torch.from_numpy(bias).requires_grad_()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># forward</span></span><br><span class="line">    torch_output_tensor = torch.conv2d(torch_input, torch_weight, torch_bias,</span><br><span class="line">                                       stride, padding)</span><br><span class="line">    torch_output = np.transpose(</span><br><span class="line">        torch_output_tensor.detach().numpy().squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    cache = conv2d_forward(<span class="built_in">input</span>, weight, bias, stride, padding)</span><br><span class="line">    numpy_output = cache[<span class="string">&#x27;Z&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># backward</span></span><br><span class="line">    torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">    torch_sum.backward()</span><br><span class="line">    torch_dW = np.transpose(torch_weight.grad.numpy(), (<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>))</span><br><span class="line">    torch_db = torch_bias.grad.numpy()</span><br><span class="line">    torch_dA_prev = np.transpose(torch_input.grad.numpy().squeeze(<span class="number">0</span>),</span><br><span class="line">                                 (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    dZ = np.ones(numpy_output.shape)</span><br><span class="line">    dW, db, dA_prev = conv2d_backward(dZ, cache, stride, padding)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dW, torch_dW)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(db, torch_db)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dA_prev, torch_dA_prev)</span><br></pre></td></tr></table></figure>
+<p>整个测试函数可以分成三部分：变量预处理、前向传播、反向传播。在前向传播和反向传播中，我们要分别用刚编写的卷积核PyTorch中的卷积进行计算，并比较两个运算结果是否相同。</p>
+<p>预处理时，我们要创建NumPy和PyTorch的输入。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Preprocess</span></span><br><span class="line"><span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">weight = np.random.randn(c_o, kernel_size, kernel_size, c_i)</span><br><span class="line">bias = np.random.randn(c_o)</span><br><span class="line"></span><br><span class="line">torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">    <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br><span class="line">torch_weight = torch.from_numpy(np.transpose(</span><br><span class="line">    weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>))).requires_grad_()</span><br><span class="line">torch_bias = torch.from_numpy(bias).requires_grad_()</span><br></pre></td></tr></table></figure>
+<p>之后是正向传播。计算结果和中间变量会被存入<code>cache</code>中。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># forward</span></span><br><span class="line">torch_output_tensor = torch.conv2d(torch_input, torch_weight, torch_bias,</span><br><span class="line">                                    stride, padding)</span><br><span class="line">torch_output = np.transpose(</span><br><span class="line">    torch_output_tensor.detach().numpy().squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">cache = conv2d_forward(<span class="built_in">input</span>, weight, bias, stride, padding)</span><br><span class="line">numpy_output = cache[<span class="string">&#x27;Z&#x27;</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br></pre></td></tr></table></figure>
+<p>最后是反向传播。在那之前，要补充说明一下如何在PyTorch里手动求一些数据的导数。在PyTorch中，各个张量默认是不可训练的。为了让框架知道我们想求哪几个参数的导数，我们要执行张量的<code>required_grad_()</code>方法，如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">        <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br></pre></td></tr></table></figure>
+<p>这样，在正向传播时，PyTorch就会自动把对可训练参数的运算搭成计算图了。</p>
+<p>正向传播后，对结果张量调用<code>backward()</code>即可执行反向传播。但是，PyTorch要求调用<code>backward()</code>的张量必须是一个标量，也就是它不能是矩阵，不能是任何长度大于1的数据。而这里PyTorch的卷积结果又是一个四维张量。因此，我把PyTorch卷积结果做了求和，得到了一个标量，用它来调用<code>backward()</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">torch_sum.backward()</span><br></pre></td></tr></table></figure>
+<p>这样，就可以用<code>tensor.grad</code>获取<code>tensor</code>的导数了，如</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">torch_weight.grad</span><br><span class="line">torch_bias.grad</span><br><span class="line">torch_input.grad</span><br></pre></td></tr></table></figure>
+<p>整个反向传播测试的代码如下。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># backward</span></span><br><span class="line">torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">torch_sum.backward()</span><br><span class="line">torch_dW = np.transpose(torch_weight.grad.numpy(), (<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>))</span><br><span class="line">torch_db = torch_bias.grad.numpy()</span><br><span class="line">torch_dA_prev = np.transpose(torch_input.grad.numpy().squeeze(<span class="number">0</span>),</span><br><span class="line">                                (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">dZ = np.ones(numpy_output.shape)</span><br><span class="line">dW, db, dA_prev = conv2d_backward(dZ, cache, stride, padding)</span><br></pre></td></tr></table></figure>
+<p>再补充一下，在求导时，运算结果的导数是1。因此，新建<code>dZ</code>时，我用的是<code>np.ones</code>（全1张量）。同理，PyTorch也会默认运算结果的导数为1，即这里<code>torch_sum.grad==1</code>。而执行加法运算不会改变导数，所以<code>torch_output_tensor.grad</code>也是一个全是1的张量，和NumPy的<code>dZ</code>的值是一模一样的。</p>
+<p>写完单元测试函数后，运行前面提到的单元测试命令，pytest就会输出很多测试的结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pytest dldemos/BasicCNN/np_conv_backward.py</span><br></pre></td></tr></table></figure>
+<p>如果看到了类似的输出，就说明我们的代码是正确的。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">==== 16 passed in 1.04s ====</span><br></pre></td></tr></table></figure>
+<h2 id="反向传播的编写思路"><a href="#反向传播的编写思路" class="headerlink" title="反向传播的编写思路"></a>反向传播的编写思路</h2><p>通过阅读上面的实现过程，相信大家已经明白如何编写卷积的反向传播了。接下来，我将总结一下实现一般算子的正向、反向传播的思路。无论是用NumPy，还是PyTorch等编程框架，甚至是纯C++，这种思路都是适用的。</p>
+<p>一开始，我们要明白，一个算子总共会涉及到这些参数：</p>
+<ul>
+<li>输入与输出：算子的输入张量和输出张量。正向传播和反向传播的输入输出恰好是相反的。</li>
+<li>属性：算子的超参数。比如卷积的<code>stride, padding</code>。</li>
+<li>中间变量：前向传播传递给反向传播的变量。</li>
+</ul>
+<p>一般情况下，我们应该编写一个算子类。在初始化算子类时，算子的属性就以类属性的形式存储下来了。</p>
+<p>在正向传播时，我们按照算子定义直接顺着写下去就行。这个时候，可以先准备好<code>cache</code>变量，但先不去管它，等写到反向传播的时候再处理。</p>
+<p>接着，编写反向传播。由于反向传播和正向传播的运算步骤相似，我们可以直接把正向传播的代码复制一份。在这个基础上，思考每一步正向传播运算产生了哪些导数，对照着写出导数计算的代码即可。这时，我们会用到一些正向传播的中间结果，这下就可以去正向传播代码里填写<code>cache</code>，在反向传播里取出来了。</p>
+<p>最后，写完了算子，一定要做单元测试。如果该算子有现成的实现，用现成的实现来对齐运算结果是最简单的一种实现单元测试的方式。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了以下内容：</p>
+<ul>
+<li>卷积反向传播的NumPy实现</li>
+<li>如何用PyTorch手动求导</li>
+<li>如何编写完整的算子单元测试</li>
+<li>实现算子正向传播、反向传播的思路</li>
+</ul>
+<p>如果你也想把代码基础打牢，一定一定要像这样自己动手从头写一份代码。在写代码，调bug的过程中，一定会有很多收获。</p>
+<p>由于现在的编程框架都比较成熟，搞科研时基本不会碰到自己动手写底层算子的情况。但是，如果你想出了一个特别棒的idea，想出了一个全新的神经网络模块，却在写代码时碰到了阻碍，那可就太可惜了。学一学反向传播的实现还是很有用的。</p>
+<p>在模型部署中，反向传播可能完全派不上用场。但是，一般框架在实现算子的正向传播时，是会照顾反向传播的。也就是说，如果抛掉反向传播，正向传播的实现或许可以写得更加高效。这样看来，了解反向传播的实现也是很有帮助的。我们可以用这些知识看懂别人的正向传播、反向传播的实现，进而优化代码的性能。</p>
+<h2 id="附录：完整代码"><a href="#附录：完整代码" class="headerlink" title="附录：完整代码"></a>附录：完整代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Dict</span>, <span class="type">Tuple</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> pytest</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">conv2d_forward</span>(<span class="params"><span class="built_in">input</span>: np.ndarray, weight: np.ndarray, bias: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">                   stride: <span class="built_in">int</span>, padding: <span class="built_in">int</span></span>) -&gt; <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray]:</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Forward Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        input (np.ndarray): The input NumPy array of shape (H, W, C).</span></span><br><span class="line"><span class="string">        weight (np.ndarray): The weight NumPy array of shape</span></span><br><span class="line"><span class="string">            (C&#x27;, F, F, C).</span></span><br><span class="line"><span class="string">        bias (np.ndarray | None): The bias NumPy array of shape (C&#x27;).</span></span><br><span class="line"><span class="string">            Default: None.</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        Dict[str, np.ndarray]: Cached data for backward prop.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    h_i, w_i, c_i = <span class="built_in">input</span>.shape</span><br><span class="line">    c_o, f, f_2, c_k = weight.shape</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> (f == f_2)</span><br><span class="line">    <span class="keyword">assert</span> (c_i == c_k)</span><br><span class="line">    <span class="keyword">assert</span> (bias.shape[<span class="number">0</span>] == c_o)</span><br><span class="line"></span><br><span class="line">    input_pad = np.pad(<span class="built_in">input</span>, [(padding, padding), (padding, padding), (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">cal_new_sidelngth</span>(<span class="params">sl, s, f, p</span>):</span></span><br><span class="line">        <span class="keyword">return</span> (sl + <span class="number">2</span> * p - f) // s + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    h_o = cal_new_sidelngth(h_i, stride, f, padding)</span><br><span class="line">    w_o = cal_new_sidelngth(w_i, stride, f, padding)</span><br><span class="line"></span><br><span class="line">    output = np.empty((h_o, w_o, c_o), dtype=<span class="built_in">input</span>.dtype)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">        <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">            <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">                h_lower = i_h * stride</span><br><span class="line">                h_upper = i_h * stride + f</span><br><span class="line">                w_lower = i_w * stride</span><br><span class="line">                w_upper = i_w * stride + f</span><br><span class="line">                input_slice = input_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">                kernel_slice = weight[i_c]</span><br><span class="line">                output[i_h, i_w, i_c] = np.<span class="built_in">sum</span>(input_slice * kernel_slice)</span><br><span class="line">                output[i_h, i_w, i_c] += bias[i_c]</span><br><span class="line"></span><br><span class="line">    cache = <span class="built_in">dict</span>()</span><br><span class="line">    cache[<span class="string">&#x27;Z&#x27;</span>] = output</span><br><span class="line">    cache[<span class="string">&#x27;W&#x27;</span>] = weight</span><br><span class="line">    cache[<span class="string">&#x27;b&#x27;</span>] = bias</span><br><span class="line">    cache[<span class="string">&#x27;A_prev&#x27;</span>] = <span class="built_in">input</span></span><br><span class="line">    <span class="keyword">return</span> cache</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">conv2d_backward</span>(<span class="params">dZ: np.ndarray, cache: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray], stride: <span class="built_in">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                    padding: <span class="built_in">int</span></span>) -&gt; <span class="type">Tuple</span>[np.ndarray, np.ndarray, np.ndarray]:</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Backward Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        dZ: (np.ndarray): The derivative of the output of conv.</span></span><br><span class="line"><span class="string">        cache (Dict[str, np.ndarray]): Record output &#x27;Z&#x27;, weight &#x27;W&#x27;, bias &#x27;b&#x27;</span></span><br><span class="line"><span class="string">            and input &#x27;A_prev&#x27; of forward function.</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        Tuple[np.ndarray, np.ndarray, np.ndarray]: The derivative of W, b,</span></span><br><span class="line"><span class="string">            A_prev.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    W = cache[<span class="string">&#x27;W&#x27;</span>]</span><br><span class="line">    b = cache[<span class="string">&#x27;b&#x27;</span>]</span><br><span class="line">    A_prev = cache[<span class="string">&#x27;A_prev&#x27;</span>]</span><br><span class="line">    dW = np.zeros(W.shape)</span><br><span class="line">    db = np.zeros(b.shape)</span><br><span class="line">    dA_prev = np.zeros(A_prev.shape)</span><br><span class="line"></span><br><span class="line">    _, _, c_i = A_prev.shape</span><br><span class="line">    c_o, f, f_2, c_k = W.shape</span><br><span class="line">    h_o, w_o, c_o_2 = dZ.shape</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> (f == f_2)</span><br><span class="line">    <span class="keyword">assert</span> (c_i == c_k)</span><br><span class="line">    <span class="keyword">assert</span> (c_o == c_o_2)</span><br><span class="line"></span><br><span class="line">    A_prev_pad = np.pad(A_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                 (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line">    dA_prev_pad = np.pad(dA_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                   (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">        <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">            <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">                h_lower = i_h * stride</span><br><span class="line">                h_upper = i_h * stride + f</span><br><span class="line">                w_lower = i_w * stride</span><br><span class="line">                w_upper = i_w * stride + f</span><br><span class="line"></span><br><span class="line">                input_slice = A_prev_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">                <span class="comment"># forward</span></span><br><span class="line">                <span class="comment"># kernel_slice = W[i_c]</span></span><br><span class="line">                <span class="comment"># Z[i_h, i_w, i_c] = np.sum(input_slice * kernel_slice)</span></span><br><span class="line">                <span class="comment"># Z[i_h, i_w, i_c] += b[i_c]</span></span><br><span class="line"></span><br><span class="line">                <span class="comment"># backward</span></span><br><span class="line">                dW[i_c] += input_slice * dZ[i_h, i_w, i_c]</span><br><span class="line">                dA_prev_pad[h_lower:h_upper,</span><br><span class="line">                            w_lower:w_upper, :] += W[i_c] * dZ[i_h, i_w, i_c]</span><br><span class="line">                db[i_c] += dZ[i_h, i_w, i_c]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> padding &gt; <span class="number">0</span>:</span><br><span class="line">        dA_prev = dA_prev_pad[padding:-padding, padding:-padding, :]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        dA_prev = dA_prev_pad</span><br><span class="line">    <span class="keyword">return</span> dW, db, dA_prev</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;c_i, c_o&#x27;</span>, [(<span class="params"><span class="number">3</span>, <span class="number">6</span></span>), (<span class="params"><span class="number">2</span>, <span class="number">2</span></span>)]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;kernel_size&#x27;</span>, [<span class="number">3</span>, <span class="number">5</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;stride&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;padding&#x27;</span>, [<span class="number">0</span>, <span class="number">1</span>]</span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span></span>):</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Preprocess</span></span><br><span class="line">    <span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">    weight = np.random.randn(c_o, kernel_size, kernel_size, c_i)</span><br><span class="line">    bias = np.random.randn(c_o)</span><br><span class="line"></span><br><span class="line">    torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">        <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br><span class="line">    torch_weight = torch.from_numpy(np.transpose(</span><br><span class="line">        weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>))).requires_grad_()</span><br><span class="line">    torch_bias = torch.from_numpy(bias).requires_grad_()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># forward</span></span><br><span class="line">    torch_output_tensor = torch.conv2d(torch_input, torch_weight, torch_bias,</span><br><span class="line">                                       stride, padding)</span><br><span class="line">    torch_output = np.transpose(</span><br><span class="line">        torch_output_tensor.detach().numpy().squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    cache = conv2d_forward(<span class="built_in">input</span>, weight, bias, stride, padding)</span><br><span class="line">    numpy_output = cache[<span class="string">&#x27;Z&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># backward</span></span><br><span class="line">    torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">    torch_sum.backward()</span><br><span class="line">    torch_dW = np.transpose(torch_weight.grad.numpy(), (<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>))</span><br><span class="line">    torch_db = torch_bias.grad.numpy()</span><br><span class="line">    torch_dA_prev = np.transpose(torch_input.grad.numpy().squeeze(<span class="number">0</span>),</span><br><span class="line">                                 (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    dZ = np.ones(numpy_output.shape)</span><br><span class="line">    dW, db, dA_prev = conv2d_backward(dZ, cache, stride, padding)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dW, torch_dW)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(db, torch_db)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dA_prev, torch_dA_prev)</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-4/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1713,295 +1865,6 @@ F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/02/20220702-gap-year/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/07/02/20220702-gap-year/" class="post-title-link" itemprop="url">风雨之巅尽是晴 | 985 CS 本科毕业放弃保研 gap 一年有感</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-07-02 19:47:57" itemprop="dateCreated datePublished" datetime="2022-07-02T19:47:57+08:00">2022-07-02</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/%E6%95%A3%E6%96%87/" itemprop="url" rel="index"><span itemprop="name">散文</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>​<br>只有保研生参加的说明会结束后，大家都围着辅导员，焦急而欣喜地确认着自己的前程。待人群散开后，我走到辅导员身边，询问放弃保研的流程。</p>
-<p>“只要写一张确认放弃保研的保证书即可。”</p>
-<p>拿出先前准备好的纸笔，我流畅地写了几行字，提交了本专业唯一一份保研放弃书。</p>
-<hr>
-<p>2022年6月，没有季节之分的新加坡，却到了毒蚊肆虐的高峰期。我不幸感染病毒，前往南洋理工大学的校医院就诊。</p>
-<p>诊断结束后，医生关切地说道：“你这几天就不要去听课了。我给你开假条。”</p>
-<p>我笑道：“我是员工，不是学生。”</p>
-<p>是啊，不论穿着、相貌、言行多像一名学生，现在的我，确确实实是一名员工。</p>
-<p>离开诊所，望了望晴朗的天空，我忽然意识到，夏天来了。</p>
-<p>如果是在国内的话，已经是夏天了吧？</p>
-<p>应该是这样没错。去年的这个时候，学校里可热了。</p>
-<p>全体学生聚在操场上的那一天，阳光正盛……</p>
-<hr>
-<p>去年，我还是学生。</p>
-<p>糊里糊涂地完成了毕业设计，通过了答辩，时间已经悄悄来到了六月。</p>
-<p>这一天，太阳不遗余力地展示起了夏天的风采。火辣辣的阳光直射在北京理工大学中关村校区的操场上，我穿着严实的学士服，感到异常闷热。我一会儿调整着学士帽的角度以遮挡阳光，一会儿又摘下帽子当扇子扇风。</p>
-<p>不一会儿，主持人宣布了毕业典礼的开始。在酷热的今天，哪怕是一向讨厌集会的我，也静了下来，默默地听着演讲。</p>
-<p>主持人开始念起各专业毕业学生的名单了。理论上，名单是包含了每一位同学的名字的。可为了节约时间，主持人念完前几位学生的名字后，就会以“等人”来略过后面的名字。</p>
-<p>一个个陌生的名字，就像一声声倒计时。我深深地感受到了毕业离校的临近。</p>
-<p>有的人保研成功，已经去实验室待了几个月。</p>
-<p>有的人面试成功，正在做正式入职的准备。</p>
-<p>有的人考研成功，和未来的导师刚打完招呼。</p>
-<p>可我呢？</p>
-<p>我该去哪呢？</p>
-<p>造成现在的局面，真的都是我自己的错吗？</p>
-<hr>
-<p>不，我很早就想好自己的出路了。</p>
-<p>早在大一，我就做好了出国留学的打算。</p>
-<p>托福与GRE，硕士与博士。这些信息都我来说就如常识一般。</p>
-<p>“先尝试科研，适合就读博士，不适合就读硕士。”</p>
-<p>这是在综合了无数份信息后，得到的平均答案。</p>
-<p>“大三开始在做科研，暑假去参加暑研。托福考试只有两年的有效期，也只能大三之后考。”</p>
-<p>这也是平均而言的结论。</p>
-<p>既然大家这么说，我也就这么做吧。</p>
-<p>在快乐的算法竞赛中，我度过了大学的前两年。</p>
-<hr>
-<p>大三到了，该做留学的准备了。</p>
-<p>刚从竞赛暑期集训中缓过来的我，错过了，或者说压根就没注意过某个学校官方的大三暑研项目。“错过就错过吧，反正大家的暑研都是自己找的。到寒假了再找吧。”我勉强安慰着迷茫的自己。</p>
-<p>按照计划，我去找了本校的老师做科研，提前看一看自己是否适合做研究。老师本来说让一个博士生带我做点项目，后来渐渐就没了音讯。大三课业繁重，又有最后半年竞赛要打，我也无暇顾及科研的事情了。</p>
-<p>熬过上半学期，在留学上毫无进展的我，开始回家过寒假。我计划一边套磁（方言，意为“套近乎”，特指在申请出国留学时，提前给导师发邮件推荐自己）暑研，一边开始语言考试的准备，希望能在下半学期考完语言考试。</p>
-<p>突如其来的一场疫情，打乱了我的计划。</p>
-<p>当然，之前那个官方暑研项目也泡汤了。我只能以此来安慰自己。</p>
-<p>为了让自己看上去在做一些什么，每天一个人在楼下上完网课后，我总会去套磁一个教授。</p>
-<p>之所以每天只向一个教授发邮件，是因为我害怕发邮件这件事。</p>
-<p>点开学校主页，找到教授的研究方向，在一堆陌生的名词中拎出一两个，组织成一封“我对你的研究感兴趣，请让我参与暑研”的邮件。这一过程对我来说，是一件很惶恐而绝望的事情。</p>
-<p>每看完一个教授的简历后，我就隐隐感到自己的背景是绝不可能申请上他的暑研的。可是，正如坠落山崖的人总想抓住什么一样，我还是不得不把邮件发出去。每发出一封邮件，我就像了了一桩大事一般，如释重负。可是，每发出一封邮件，我又能意识到，又少了一个可以套磁的教授，无教授可找的绝望又离我近了一分。</p>
-<p>就这样，为了消化套磁每天带来的压力，我只敢一天发一封邮件。</p>
-<p>每天向不同的人告白，告白前就已经意识到了失败。可是，还是要为明天的告白做准备。大概就是这样痛苦的感觉吧。</p>
-<p>虽然我还没有可以自由选择方向的资格，但我只想做图形学的研究。可是，我之前几乎没有任何相关科研经历，也没有任何人脉。纯粹做图形学的教授也越来越少。想找到暑研的难度是极大的。</p>
-<p>我的心情很矛盾。一方面，我为做图形学的教授很少，没有套磁目标而担忧；另一方面，我又为做图形学的教授很少，可以过滤掉一批做其他方向的教授以逃避发邮件而感到释怀。或许，我所谓“热爱图形学”只是一块遮羞布而已。我害怕前途未卜的未来，我害怕在黑暗中迷失，但我又害怕迈出脚步。我选择图形学，或许只是图形学的教授很少，套磁失败起来很快而已。套磁完所有只做图形学的教授，失败了，我就可以以“我已经努力过了”来安慰自己。、</p>
-<p>事实也确实如我所预料得一样，只有一个教授回了我邮件——一封找了一个温柔而拙劣的理由把我拒绝的邮件。我再也不用去套磁了，再也不用忍受发邮件的煎熬了。可是，我所担心的没有去处的未来，正在向我一步一步逼近。</p>
-<hr>
-<p>大三下学期，我以“优等生”的姿态活着。</p>
-<p>即使是网课，我也认真听着老师的讲解，认真完成着大作业。课余时间，我还继续在本校老师那做一点“科研”。</p>
-<p>但是，我在留学上没有任何进展。</p>
-<p>以“大三的作业太多”、“回学校后一切就能好起来”为借口，我暂时忘掉了留学这件事，舒服地过了几个月。</p>
-<p>2020年年中，特朗普的一纸10043总统令，禁止某些中国高校的学生去美国留学，粉碎了无数学子的留学梦。历史的尘埃，恰恰就砸在了我们学校上。</p>
-<p>听到这个消息，我的第一反应不是愤慨，不是焦虑，而是释怀：这下好了，大家都去不了美国了。</p>
-<p>虽然我之前一直只打算申请美国的学校，但这个令我规划彻底失效的消息却使我获得了某种程度上的解脱。</p>
-<p>是真的解脱了吗？还只是受到巨大打击之后的应激反应呢？</p>
-<p>我不知道。</p>
-<p>我只知道我必须要做一点什么，一定要迈出脚步。</p>
-<p>我不想被无路可走的黑暗吞没。</p>
-<p>有人说，这个留学禁令只会持续一年，明年的留学生肯定不受影响。我根本来不及仔细思考，立刻把这个判断奉为真理，继续之前的留学准备。</p>
-<hr>
-<p>我一直都在做一点什么。</p>
-<p>没有暑研，我就在学期结束后立刻返校，捣鼓我那怎么都没有成果的“科研”。</p>
-<p>正式开学后，我立刻开启了托福的准备。</p>
-<p>我一直都在做一点什么。</p>
-<p>但我真的什么都不想做。</p>
-<p>但凡做起和留学相关的事，我就感到无比煎熬。开始做了一会儿后，巨大的负担就压在了我的心上。没办法，我必须要逃避。我的炉石传说酒馆战棋打到了一万多分。</p>
-<p>但我还是觉得该做一些什么。</p>
-<p>我勉强考出了过线的GRE，快要过线的托福。</p>
-<p>我参与了本校教授和国外教授的合作科研项目。两位美国老教授高风亮节，视如己出，言传身教，令我彻底下定决心去读博士。他们虽然颇有名誉，但和我不是一个专业，在留学上给不了我功利性的帮助。即使如此，我依然非常感激他们。</p>
-<p>我急匆匆地做好了材料准备，提交了数个学校的博士申请。</p>
-<p>12月中旬，我提交完了所有美国学校的申请。</p>
-<p>一切都结束了。</p>
-<p>我不用再做一些什么了吧？</p>
-<hr>
-<p>只申请美国，只申请图形学，只申请博士。</p>
-<p>我恐怕根本不是奔着成功留学去的，只是想做什么就做了什么而已。所谓“眼高手低”，大抵如此吧。</p>
-<p>我是真的眼高手低吗？</p>
-<p>聪明绝顶的我怎么可能没有对自己的一个客观认识。我知道，申请成功的概率微乎其微；我知道，六月之后即迎来“失学”的未来；我知道，我害怕失败，害怕无路可走的绝望。</p>
-<p>但是，我更清楚我想要什么，不想要什么。</p>
-<p>成功，不是美国顶尖学校的博士录取通知书，不是4.0的绩点，不是110分以上的托福分数，不是330分以上的GRE分数，不是光鲜亮丽的获奖记录，不是琳琅满目的论文发表记录。</p>
-<p>成功，不是奖学金获得记录，不是年级第一的成绩，不是饱满的社会工作经历，不是“努力”、“感人”的苦学经历。当然，也不是我唯一能展示出来的，ACM金牌的获得记录。</p>
-<p>成功，不是金钱，不是地位，不是权力，不是名誉，不是异性缘，不是房子，不是车子，不是你在哪国生活，不是你的照片多好看，不是你展示出来自己的生活过得有多好。</p>
-<p>成功，是：我觉得成功，就是成功。</p>
-<p>我觉得，只有做自己喜欢的事情，在自己喜欢的领域做出了令自己满意的成就，才叫成功。</p>
-<p>打了三年左右的竞赛，大奖我拿的确实不多。但是，在这段时间里，我过得很开心。我触摸到了灵魂的兴奋点，初次体会到了人生的意义。</p>
-<p>我害怕。</p>
-<p>我害怕未来。</p>
-<p>我害怕上不了学的未来。</p>
-<p>我害怕申请失败上不了学的未来。</p>
-<p>我害怕因为套磁不够积极导致申请失败上不了学的未来。</p>
-<p>我害怕因为方向选得不够多套磁不够积极导致申请失败上不了学的未来。</p>
-<p>因此，</p>
-<p>我放弃。</p>
-<p>我放弃思考。</p>
-<p>我放弃人生规划的思考。</p>
-<p>我放弃留学相关人生规划的思考。</p>
-<p>我放弃寻找更合适的国内研究项目人生规划的思考。</p>
-<p>我放弃套磁更多方向的教授寻找更合适的国内研究项目人生规划的思考。</p>
-<p>但是，</p>
-<p>我坚持。</p>
-<p>我坚持底线。</p>
-<p>我坚持人生价值的底线。</p>
-<p>我坚持不随留学结果变动的人生价值的底线。</p>
-<p>我坚持不肯妥协不随留学结果变动的人生价值的底线。</p>
-<p>我坚持不肯妥协不随留学结果变动只为自己开心的人生价值的底线。</p>
-<p>最终，我任性而顽固地在焦虑中失败了。不过，我也很庆幸，不管我的感受有多么糟糕，我在潜意识里依旧坚持了自己的底线。我没有为了留学而留学，也丝毫没有怀疑过自己对人生目标的判断。</p>
-<hr>
-<p>后来，我依然焦急地寻找着出路。</p>
-<p>我知道自己为逃避选择而产生的任性是很不合理的。赶在截止日期之前，我去尝试申请了其他国家的学校，尝试申请了可以转成博士的研究型硕士。结果，时间已晚，剩余的机会并不多，我也没有申请成功。</p>
-<p>我已经在积累压力和释放压力中循环多次了。写套磁信时积累压力，发邮件时释放压力；申请学校时积累压力，申请季结束后释放压力；等结果时积累压力，收到拒信时释放压力。这就像一个溺水的人，反复挣扎出水面，难得呼吸到一两口新鲜空气一样。那么，收到最后一封拒信时，就是我最后一次能够离开水面了。</p>
-<p>但是，我依然没有放弃“生的希望”。或许在很早之前，我就已经在心里默认自己会踏上这条退路了。</p>
-<p>这条退路就是gap，去实验室先当科研助理，积累背景，再去申请博士。</p>
-<p>gap是一个从国外传来的词，表示毕业后不去上学，而是去玩个一两年。用中文来说的话，gap year可以翻译成“间隔年”。到了国内留学圈，gap的意思就变了。毕业之后，不管你是不是在享受没有学业的人生，只要你没有上学，就可以称为gap。当科研助理，是一种最常见的gap方式。</p>
-<p>从大一就开始看留学经验分享的我，很早就知道了gap的存在。通过分析他人的gap经验，我也欣然接受了gap，做好了心理准备。或许我在留学季的种种挣扎，不过是自我欺骗而已。我内心早就放弃了本科直接申请博士。由于有这个底牌的存在，我可以索性破罐子破摔，只去追求小概率的自己想要的结果。</p>
-<p>虽说是早就做好了心理准备，但被压力挤得喘不过气的我，还是慢慢吞吞而消极地进行着gap的计划。我本来做好了去一家公司的准备，就没有去找第二个选择了。可是，毕业前我想了解入职事项时，却发现我莫名其妙地被鸽了。</p>
-<p>毕业典礼即将到来，我选择享受最后一刻的本科时光，搁置了gap的事。</p>
-<p>本科毕业后，作为无业游民的我回到了家里，立刻开始了科研助理的套磁。</p>
-<p>和之前的暑研套磁一样，申请科研助理也要用同样的方式发邮件申请岗位。一想起暑研，整个留学过程给我带来的压力的总和就扑面而来。同样，我的心理承受能力只允许我一天只发一两封邮件。</p>
-<p>待在家里天天吃干饭，我肯定会被无尽的压力给冲垮。恰巧同学邀请我去毕业旅行，我欣然答应。不知怎地，我就是有一种能在旅游中申请成功的自信。</p>
-<p>由于美国的学校都去不了了，现在我只能从其他国家入手。这次，我不再头铁了，从对ACM竞赛认可度最高的华人圈开始申请。同时，由于做图形学的人太少了，我决定扩大范围，也申请计算机视觉方向的研究。计算机视觉我也不讨厌，我会让自己尽快喜欢上这个领域，并且尽可能选择和图形学相关的细分方向。</p>
-<p>我认真套了几个香港的教授，杳无音讯。我又看到南洋理工大学在招聘平台上正式招募科研助理，就顺手投了一份简历。正当我为没收到任何回信，准备进一步扩大方向的选择范围时，我申请得最不认真的南洋理工大学竟然向我发出了面试邀请。</p>
-<p>说是面试，但这毕竟不是庄重的博士申请。能给科研助理的申请发面试机会，基本上就是决定要你了。我本来还准备了英文ppt和英文演讲腹稿，谁知面试开始后，老师亲切地对我说可以说中文。谈起选择我的理由时，老师说，像我这样有扎实的底层编程基础的人不多，而且我的博客写得很好。在轻松的氛围中，我们聊了聊我过去的经历，敲定了科研助理一事。由于疫情，新加坡签证管得严，我要等半年才能拿到签证。老师帮我先安排了一个和他的实验室有合作的国内工作岗位，就当是为之后的学习打基础。</p>
-<p>没想到，这一次，如我所愿地，我在旅行中完成了套磁、科研助理面试、国内工作岗位面试。旅行的时间不短，在享受完旅行后没在家躺几天，我就得动身前往上海办入职了。</p>
-<hr>
-<p>七月底，我去上海人工智能实验室的OpenMMLab以全职员工的身份“实习”。也就是说，工资按正式员工的发，但是和实习生一样不待很长时间。大概六个月后，签证就会办好。</p>
-<p>总算，我也是从学校迈向社会了。很幸运，OpenMMLab是混沌社会中的一块净土。OpenMMLab主要做的是开源项目，不以业务为导向，没有什么KPI的压力。同时，由于大组刚刚成立不久，同事的素质都很高。全职员工大多是名校硕士，实习生中有名校本科生，也有在读博士的科研大佬。</p>
-<p>站在徐汇西岸智塔的高层，俯视着蓝天下的黄浦江，我有一种说不出来的畅快。这样开阔的风景，是矮小的校园里所见不到的。从这里望出去，哪怕是上海交通大学，也不过我眼睛里的一点而已。</p>
-<p>公司里见到的，都是年轻的面孔。于其说是同事，倒是更像大学里的同学。可是，多数同事都已经工作多年，早已褪去了学生的稚嫩。从他们口中，听到的更多是人情冷暖。房子、车子、伴侣……尽是些我插不上嘴的话题。</p>
-<p>作为工资可观，又随时准备走人的单身程序员，我的日子倒是逍遥得很。可是，同事们比我有更多的可待之物。即使公司的工作环境比其他许多地方都要舒适，他们依然觉得上班养家是一件很不容易的事情。从他们身上，我看到了自己可能的一个未来：我就这样一辈子生活在上海，结婚生子，悠闲度日……</p>
-<p>然而，现在安逸的生活让我忘记了本科申请时的所有烦恼。我以前所未有的高效率生活着，对未来的人生也有了更多的期冀。既然看到了校园内看不到的风景，那就要树立本科时想不到的理想。</p>
-<hr>
-<p>说是全国最大的开源算法体系，也不过如此嘛。</p>
-<p>不然，为什么重构代码库的事情，会让工作时间不过四个月的我来承担呢？</p>
-<p>刚到公司时，我确实是懵懵懂懂的。我配开发环境配了一两天，给我开通企业微信又花了一周多，好不容易才安顿下来。</p>
-<p>第一次小组会，我是以一个听众的身份参加的。ONNX Runtime、TensorRT、ncnn……这些犹如外星语的名词一个一个蹦出，令唯一一个听众感到战战兢兢：“这么多复杂的技术，我能学得过来吗？”</p>
-<p>我们小组负责模型部署代码库的开发。学了一段时间的相关知识后，我发现，模型部署，可是光鲜的“算法”项目中最脏最累的活。对内，我们要对接数个计算机视觉的开源库；对外，我们又要使用数个运行深度学习模型的推理引擎。其他各个代码库之间不一致的地方，就要靠我们来硬生生地焊接起来。</p>
-<p>这么琐碎的工作，自然也容易出现纰漏。正在学习我们的代码库时，我发现了一个bug。正好，我决定修复这个bug，作为我对我们组的第一份贡献。</p>
-<p>提交代码，必须要使用到代码管理工具。本科时，我只会用傻瓜式的图形界面来使用Git这项代码管理工具。我们是做开源项目的，自然要把代码放到基于Git技术的GitHub开源代码平台上。由于经验不足，我只能在实践中慢慢学习Git的用法。</p>
-<p>和组里的同时讨教过后，我修完了bug，并在自己电脑上完成了代码管理。之后，只剩下把代码提交到小组的代码平台，并把我写的那部分代码合入到整个代码库里了。我接下来的操作会改动代码库，一旦出了纰漏，肯定会引起很严重的后果。因此，我小心翼翼地进行着提交代码的操作。</p>
-<p>提交完成后，代码库网站上突然出现了一个大大的红叉。这可把我吓坏了。我连忙向同事求救，一面拜托他们快点撤销掉我的操作，一面询问着正确的操作方法。还好，我错误的操作没有什么破坏性。原来，在使用Git和GitHub时，我不能直接向主代码库提交代码，而是应该先向自己克隆出的代码库提交代码。只要按照正确的步骤，重新操作一次就好了。</p>
-<p>有惊无险地，我的第一份代码总算合入了整个项目中。虽然代码上的改动只有四五行，但我还是很骄傲地在下次组会上汇报了我的成就。小组领导也在会议记录上欣然记录下了我的这项产出，与其他人涉及上百行代码修改的成果一起。</p>
-<p>提交完第一次代码之后，原先像城堡一样复杂的开源代码，在我眼里就成了一排排的破房子。我们的工作，不过是立几根杆子撑住快要倒塌的房子，又去旁边的土地上新建几座房子而已。</p>
-<p>从提交几行代码修复小bug，到对接一个视觉算法库，我的贡献度逐渐向其他同事靠拢。几个月后，把略有难度的重构任务交给我，也算是自然而然的事。</p>
-<p>为了完成重构，不阻碍他人的工作进度，我高压工作了几天。不过，我倒是不怎么感到疲惫——</p>
-<p>我们的代码库要开源了。</p>
-<hr>
-<p>2021年的平安夜，上海下着小雨。街头的树上挂着灯饰，点亮了黑夜，也点亮了路旁的积水。街道仿佛笼罩在一片白雪之中，就和人们印象中的圣诞节一样。</p>
-<p>到处都是圣诞节的氛围。我从公司楼下的商场走出，一路上看到了不少情侣。恰逢本周最后一个工作日，大家都早早地下班过节。不知怎地，在这种氛围的感染下，我望着天空，感到一丝惆怅。</p>
-<p>大概是因为，下周一，我们的项目就要开源了吧。</p>
-<p>虽说我们的项目叫做“开源项目”，但是在代码功能尚未齐全的早期，项目是在私有账号下闭源开发的。在基本功能差不多完备了后，大组领导会择一良辰吉日，隆重向世人宣布开源。最后一次开源评审的通过、宣传视频终稿的提交、暂停开发工作后无聊而紧张的查缺补漏……一切都预示着项目开源的到来。</p>
-<p>周一的晚上，一切准备就绪。小组的各位都聚在同一台电脑前。</p>
-<p>这些代码是属于谁的呢？</p>
-<p>作为员工，这些代码应该是属于公司的吧。</p>
-<p>作为开源项目，这些代码又应该属于整个开源社区的吧。</p>
-<p>但是，此时此刻，这些代码就是只属于我们的作品。</p>
-<p>按下确认开源代码库的按钮后，大家纷纷鼓起了掌。</p>
-<p>随后，大家不约而同地转发了我们代码库开源的宣传文章。</p>
-<p>我想，现在，其他几位同事的感受，应该和我是一样的。</p>
-<p>过了几天，仗着OpenMMLab的名气，我们的代码库登上了GitHub Trending榜第一。</p>
-<p>之后，我们的身份从纯粹的开发者，变成了时而回答社区问题的客服人员。</p>
-<p>再之后，就过年了。</p>
-<p>过年回来，没待两周，我就收到了新加坡签证通过的消息。我很快办好了离职。</p>
-<p>虽说是离职了，但我也没能立刻就离开上海。我心安理得地放了一周的假，像相恋多年和平分手却又一时不习惯分离的情侣一样，天天在公司里吃了一顿又一顿的散伙饭。</p>
-<p>在香港转机时，我们需要在机场就地过夜。</p>
-<p>在明亮的大厅里，我睡不着，又想起了同样明亮的那个夜晚。</p>
-<p>原来，令我惆怅的，是一月份的到来。从一月往前数六个月，就是由热转凉的七月啊。</p>
-<hr>
-<p>到了新加坡后，我很快就熟悉了学校里的生活。</p>
-<p>去食堂点菜，刚掏出员工卡时，总有店家会向我确认道：“付款方式是学生卡吧？”我也总是点头默认。</p>
-<p>被别人当成学生时，我总会很开心。 或许，我一直向往“学生”般天真烂漫、无拘无束的生活吧。</p>
-<p>很幸运，现在，我正享受着这种生活。</p>
-<p>我当了十六年学生，一直对众人口中所谓的“学习”嗤之以鼻。没想到，我却在不是学生的今天，体会到了真正的学习：没有家长，没有作业，没有考试，我可以出于热爱，为了自己而学习。在导师的计划下，除了完成实验室的项目外，我的主要任务就是从头认真学一遍深度学习，为以后的科研打下基础。</p>
-<p>做着喜欢的事情，朝着理想一步一步迈进，这是我梦寐以求的生活。</p>
-<p>没有学业的约束，没有最晚起床时间，能整天都抱着电脑。</p>
-<p>其实，我现在有的条件，去年大四时也有。</p>
-<p>这一年来，究竟是哪改变了呢？</p>
-<p>我想，应该是心境吧。</p>
-<hr>
-<p>去年，我一直带着“前途未卜”这项异常状态。</p>
-<p>虽说是一直有这么个东西压在心上，可从客观上来看，我大四一年的生活都没受到任何影响。该考试考试，该写论文写论文，该毕业毕业。一切都正常地进行着。</p>
-<p>可是，毕业，对没有去处的我来说就像是世界末日一样。仿佛一毕业，一盆水就浇到了我人生的水彩画上，我拥有的一切都将褪色，消逝。我根本不敢考虑之后的事情。</p>
-<p>我的感受，完全是自己创造出来的。我惧怕未来，所以给自己创造了一个险恶的心理环境。虽然我想挣扎着逃出，可每一项努力的失败，又在我心中下起了一阵阵暴雨。我在自己给自己设下的绝境中，无法自拔。</p>
-<p>我口口声声说着自己不忌惮世俗的眼光，可到头来还是难以免俗。分数、论文数量、录取学校，这些东西都成我心中挥之不去的阴影。</p>
-<p>我所谓做好了gap的准备，不过是自欺欺人。连现在的东西都不肯割舍，连未来的方向都不敢主动去寻找。我只是一直在被外界推着前进，而难以自己迈出脚步。</p>
-<p>阻碍我的，是我自己的心境。</p>
-<p>可是，当时的我真的就有能力去改变自己的心境吗？</p>
-<p>做不到的。</p>
-<p>当时的我，只能看到那些东西。</p>
-<p>从学校到公司不过一个多月，我的心情就大有转变。显然，并不是我聪明了多少，或是坚强了多少。一切，都只是环境变了。</p>
-<p>找到出路，不过是让我能够从泥潭中走出。而在半年的实习经验，则洗净了我身上的泥。</p>
-<p>人的思考方式不可能在短期改变，能够快速改变的，只有身处的环境。环境的改变，有时更能让人产生思考、心境上的转变。</p>
-<p>正是因为见到了从未见过的东西，我才能认识到之前的浅薄。如果当年在学校时，我能够多找一些有相同境遇的人交流，或是提前去社会里看看，又或是暂别学校好好清醒几天，说不定早就能够走出心理上的牢笼。</p>
-<p>心境决定了感觉上的好恶，环境又很大程度上影响了心境。</p>
-<p>面对心里的险境，一方面要看开一点，在更广的时间和空间上看待目前的处境；另一方面，不必去苛责自己，说不定换一个环境，一切都会好起来。</p>
-<p>这世上所有与内心的苦难所斗争的人啊：</p>
-<p>你们千万不要气馁。</p>
-<p>人的一生，必然是伴随苦难的。小时候，有做不完的假期作业，父母老师的责骂，吓人的期末考试；长大了，有千军万马过独木桥的高考、考研，有毕业后逃不开的就业；再往后，还可能有破产、众叛亲离、疾病缠身。</p>
-<p>苦难压得人喘不过气，让人想要逃避。</p>
-<p>可是，逃避又有什么错呢？</p>
-<p>遭遇苦难，必然是在追求自我超越的路途之中的。敢于去挑战困难，本来就不是一件容易的事。</p>
-<p>那么，短暂的逃避，也不过是出于自我保护，为了让干涸的心灵多浸润几滴甘露而已。</p>
-<p>真正的勇士，从来都不是一帆风顺的人。有拼搏，有苦难，有逃避，有自责，有前进。这样的人，才称得上是勇敢的。</p>
-<p>我想，笼中之鸟，也梦想过展翅翱翔；井底之蛙，也畅想过圆形以外的世界。不论现状多么糟糕，不论视野多么受限，大家都不会放弃对美好的期盼。这时，不妨转换一下环境，调整自己的心境。说不定现在看来天都快塌下来的事情，在未来只是一桩笑谈。</p>
-<p>未来，随着我能做到的越来越多，肯定会经历更大的挫折，面对更难的挑战。我也不能保证自己就不会再次陷入心情的低谷中。但是，无论何时，我都会坚持自己的追求。不论是从主观上改变对困难本身的看法，还是改变客观的环境让自己冷静下来，我会用种种手段来摆脱困境。因此，在未来，只会留下更多我战胜困难的事迹。</p>
-<hr>
-<p>保研说明会是在大四开学不久后召开的。当时，我连语言考试都没有准备好。说明会一结束，我就回去练听力了。如果能让现在的我给当时的自己带一句话，我会说：</p>
-<p>池中寄卧又何妨，风雨之巅尽是晴。</p>
-<h1 id="我的评论"><a href="#我的评论" class="headerlink" title="我的评论"></a>我的评论</h1><p>我本来是打算取得了某些成就后，再认真总结留学的心得的。恰逢上个月CSDN办了一场征文活动（活动的质量烂得一塌糊涂），我就随手写了一篇人生感想。等我以后确实有成就了，再写一篇有关CS PhD留学的思路指南。</p>
-<p>这篇文章的质量很一般。用词还需要多加考究，事情完全贴合实际而少了一些阅读上的趣味，并且很多文字我是以演讲者的视角写的，念起来通顺但不严格符合语法。文章分了几次写完，行文中有不连贯之处。说理时略显僵硬，明明有很多方面的感想，却只能勉强揉成一团表达出来。倒是叙事结构上稍有构想，略微超出了我的平均写作水平。</p>
-<p>但是，这篇文章最重要的，是文章内容中传递出来的“我”的心理活动，以及文字写作中传递出来的我的心理活动。这些感受都是很真切的。我觉得这是本文最宝贵的地方。</p>
-<p>顺带一提，我是不怎么读书的，文学积累严重不足。为了写本文最后的诗句，我还特意去查一下格律，确保平仄没有写错。这两句话质量如何，我现在评价不了。但还是一样，它们蕴含了我的志气。</p>
-<p>写这篇文章，我的主要目的是吹牛，试图收割流量。另外，我也很想把我的经历分享给更多的人。一方面，我知道大部分人都会经历和我类似的境遇，都会体会到孤立无援的感觉，相信这篇文章能给人启发；另一方面，我认为世界上广泛流传的价值观全是错的，我必须去宣传一些能让大家变得更好的思考方式。</p>
-<p>希望大家读后能有所收获。</p>
-<p>​</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2071,7 +1934,7 @@ F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">152</span>
+          <span class="site-state-item-count">153</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
