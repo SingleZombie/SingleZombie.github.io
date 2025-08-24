@@ -168,6 +168,223 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/08/24/20250511-flashattention-1/" class="post-title-link" itemprop="url">不会 CUDA 也能轻松看懂的 FlashAttention 教程（算法原理篇）</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-08-24 16:40:10" itemprop="dateCreated datePublished" datetime="2025-08-24T16:40:10+08:00">2025-08-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>以 Attention 计算为核心的 Transformer 模型是当今深度学习的基石。虽然 Attention 计算十分有效，但其高昂的计算成本往往成为了模型性能优化的瓶颈。为了在 GPU 上高效执行 Attention 计算，现在开发者们普遍都使用了 FlashAttention——一种高效的 Attention 并行实现算法。</p>
+<p>相信有不少 AI 研究者都想学习一下 FlashAttention，却往往因其较高的学习门槛望而却步：理解 FlashAttention 需要高性能计算知识，它和大家平时学习的 Transformer、大模型等深度学习知识截然不同。而我最近在自学 FlashAttention 时，凭借以前稍微学过的一点并行编程知识，成功地在没有完全弄清细节的前提下学懂了 FlashAttention 的核心思想，并就此明晰了后续的学习路线。在近期的几篇博文中，我想分享我学习 FlashAttention 的过程，<strong>并涉及尽可能少的基础知识，让没有 GPU 编程基础的读者轻松学会 FlashAttention</strong>。</p>
+<p>在这篇博文中，我会介绍理解 FlashAttention 所需的最简 GPU 编程知识，并通过逐步改进伪代码的方式，介绍 FlashAttention 的算法原理。在后续的文章中，我会继续介绍 FlashAttention 的前向传播、反向传播实现等进阶内容。为了方便读者的学习，我不会完全按照 FlashAttention 的论文的逻辑来介绍知识，也不会严谨地按论文里的算法来介绍，不使用 CUDA 编程术语（因为我也不是很懂），而是介绍一种尽可能简明的 FlashAttention 实现，帮助完全没有相关知识的读者入门 AI 高性能计算领域。</p>
+<h2 id="底层-GPU-编程模型"><a href="#底层-GPU-编程模型" class="headerlink" title="底层 GPU 编程模型"></a>底层 GPU 编程模型</h2><p>程序是由若干原子操作组成的。比如，对于高级语言而言，原子操作包括四则运算、if-else 构成的判断语句、函数定义等；而对于汇编语言而言，原子操作则由从地址读数据、写数据、程序跳转等操作组成。越是偏底层的语言，我们能够控制的细节越多，代码优化空间越大，但代价是开发的成本也越高。</p>
+<p>FlashAttention 中的部分优化策略需要用比高级语言更底层的 GPU 编程模型来描述。在这篇文章中，我们会使用一个尽可能简单的 GPU 编程模型。我们将从访存、并行计算这两个方面认识 GPU 编程的特点。</p>
+<h3 id="存储模型"><a href="#存储模型" class="headerlink" title="存储模型"></a>存储模型</h3><p>在学习计算机时，我们一般会将存储分为寄存器、内存、硬盘。它们的容量依次递增，读写速度依次递减。硬盘一般只负责存储数据，上面的数据不能做直接运算。内存存储了程序能直接「看到」的数据。使用高级编程语言时，内存是我们存储数据和对数据做运算的地方。但在最底层的运算实现中，程序实际上是先把数据从内存搬到寄存器上，再做运算，最后把数据搬回内存。只有在编写更底层的汇编语言时，我们才需要知道寄存器这一层。</p>
+<blockquote>
+<p>当然，实际上在寄存器和内存之间还有缓存（cache）这一层，但这属于硬件上的实现细节，它在编程模型中是不可见的，硬件会自动处理缓存的逻辑。</p>
+</blockquote>
+<p><img src="/2025/08/24/20250511-flashattention-1/6.jpg" alt></p>
+<p>类似地，在 GPU 上，也有类似的存储模型。CPU 内存 (DRAM) 上的数据不能直接用 GPU 运算，必须要放到 GPU HBM 里，就像对 CPU 中硬盘和内存的关系一样。GPU HBM 就是我们常说的「显存」。使用高级语言（如 PyTorch）编写 GPU 程序时，我们可以认为数据全是在 HBM 上运算的。同样，在更底层，我们需要先把数据从 GPU HBM 读取到 GPU SRAM （类似于 CPU 中的寄存器）上，做运算，再把数据写回 GPU HBM。</p>
+<blockquote>
+<p>下图的存储模型及命名方式出自 FlashAttention 论文。同样，下图只是一个逻辑模型，实际硬件中 GPU SRAM 既包括了寄存器，也包括了缓存。但在学习 FlashAttention 时，我们只需要了解这个逻辑模型，而不需要将其与实际的硬件对应。</p>
+</blockquote>
+<p><img src="/2025/08/24/20250511-flashattention-1/7.jpg" alt></p>
+<p>认识了存储模型后，我们来看 GPU 编程模型相比高级语言的编程模型有哪些变化。</p>
+<p>在高级语言中，如果要把两个变量相加得到第三个变量，只需要编写如下代码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c = a + b</span><br></pre></td></tr></table></figure>
+<p>而加入了「访存」这一概念后，我们需要在计算前后加入变量的读取和存储指令。此外，如果计算中产生了新的变量，需要为新变量新建空间。如下面的代码所示，<code>a_mem</code>, <code>b_mem</code>, 是在 GPU HBM 上的变量，我们用需要用 <code>load</code> 把它们读入到 SRAM 中，得到 SRAM 上的变量 <code>a</code>, <code>b</code>。之后，我们在 SRAM 上创建新变量 <code>c</code>, 并用它存储加法结果。最后把 <code>c</code> 写回 HBM 的 <code>c_mem</code> 里。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">c_mem = new_hbm_memory()</span><br><span class="line"></span><br><span class="line">a = a_mem.load()</span><br><span class="line">b = b_mem.load()</span><br><span class="line"></span><br><span class="line">c = new_sram_memory()</span><br><span class="line">c = a + b</span><br><span class="line"></span><br><span class="line">c_mem = c.store()</span><br></pre></td></tr></table></figure>
+<p>可以看出，为了实现一次加法，我们做了两次读取，一次存储，访存带来的时间开销不可忽略。</p>
+<p>除此之外，这里为新变量创建空间的操作出现了两次：一次是在 HBM，一次是在 SRAM。上面这个例子比较简单，输入输出都只有一个变量，没有空间不足的问题。但一般来说，算子的输入都是很长的数组。我们默认 HBM 的存储空间一定足够，但 SRAM 的空间不一定足够。因此，我们需要用到「分块」操作，一块一块地把输入从 HBM 读入到 SRAM 并运算。稍后我们会看到一个更具体的例子。</p>
+<p>FlashAttention 的主要贡献就是减少了 Attention 的内存操作开销（读取、存储、新建空间）。</p>
+<h3 id="算子融合与访存优化"><a href="#算子融合与访存优化" class="headerlink" title="算子融合与访存优化"></a>算子融合与访存优化</h3><p>通过上面的例子，我们发现，算上了访存后，哪怕是实现一个简单的加法都十分费劲。因此，大多数程序员都只会编写高级语言，并让编译器来自动补全访存的逻辑。比如对于 <code>c=a+b</code> 而言，编译器会自动生成两个读取指令，一个存储指令。</p>
+<p>可是，编译器自动生成的 GPU 代码一定是最优的吗？这显然不是。考虑下面这个高级语言中的函数 <code>add_more</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add_more</span>(<span class="params">a, b, c, d</span>):</span><br><span class="line">  a1 = a + b</span><br><span class="line">  a2 = a + c</span><br><span class="line">  a3 = a + d</span><br><span class="line">  <span class="keyword">return</span> a1, a2, a3</span><br></pre></td></tr></table></figure>
+<p>如果让编译器按照最直接的方式翻译这段高级语言，那么翻译出的 GPU 程序中会包含如下的指令（为只关注读写次数，我们不写变量在 HBM 上的名称，默认所有变量都在 SRAM 上，且忽略新建空间操作）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">load a, b</span><br><span class="line">a1 = a + b</span><br><span class="line">store a1</span><br><span class="line"></span><br><span class="line">load a, c</span><br><span class="line">a2 = a + c</span><br><span class="line">store a2</span><br><span class="line"></span><br><span class="line">load a, d</span><br><span class="line">a3 = a + d</span><br><span class="line">store a3</span><br></pre></td></tr></table></figure>
+<p>但仔细观察这些读写指令，我们会发现部分读写指令是多余的：<code>a</code> 只要被读取一次就行了。最优的程序应为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">load a, b, c, d</span><br><span class="line">a1 = a + b</span><br><span class="line">a2 = a + c</span><br><span class="line">a3 = a + d</span><br><span class="line">store a1, a2, a3</span><br></pre></td></tr></table></figure>
+<p>由于我们知道了 <code>add_more</code> 函数的某些特性，我们可以通过手写 GPU 程序，而不是让编译器死板地逐行翻译算子的方式，实现一个更高效的「大型算子」。这种做法被称为 「算子融合」(operator fusion)。由于 GPU 上的函数一般被称为 kernel，所以这种做法也会称为「核融合」(kernel fusion)。</p>
+<p>再看另一个例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add_twice</span>(<span class="params">a, b, c</span>):</span><br><span class="line">  d = a + b</span><br><span class="line">  e = d + c</span><br><span class="line">  <span class="keyword">return</span> e</span><br></pre></td></tr></table></figure>
+<p>如果使用自动编译，会得到下面的 GPU 程序：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">load a, b</span><br><span class="line">d = a + b</span><br><span class="line">store d</span><br><span class="line"></span><br><span class="line">load d, c</span><br><span class="line">e = d + c</span><br><span class="line">store e</span><br></pre></td></tr></table></figure>
+<p>但我们可以发现，<code>d</code> 只是中间变量，不用写进 HBM 又读回去。更高效的程序如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">load a, b</span><br><span class="line">d = a + b</span><br><span class="line"></span><br><span class="line">load c</span><br><span class="line">e = d + c</span><br><span class="line">store e</span><br></pre></td></tr></table></figure>
+<p>从上面两个例子中，我们能总结出算子融合提高效率的原理：如果连续的多个运算都要用到同一批数据，我们可以对这批数据只读写一次，以减少访存开销；此外，我们应该将中间结果尽可能保留到 SRAM 上，不要反复在 HBM 上读写。</p>
+<h3 id="并行编程"><a href="#并行编程" class="headerlink" title="并行编程"></a>并行编程</h3><p>和使用高级语言编程相比，在进行 GPU 编程时，我们除了要考虑访存，还需要编写可以<strong>并行执行</strong>的程序。我们说 GPU 比 CPU 快，并不是因为 GPU 里的计算单元比 CPU 的高级，而是因为 GPU 里的计算单元更多。用一个常见的比喻，GPU 编程就像是把复杂的数学运算拆成简单的加减乘除，再交给许许多多的小学生来完成。作为 GPU 程序员，我们不仅要决定运算的过程，还需要像「小学老师」一样，知道如何把整个运算拆成若干个更简单、可并行执行的运算。</p>
+<blockquote>
+<p>「计算单元」在不同的硬件模型、编程模型中有不同的所指。这里我们笼统地用「计算单元」来表示一个有独立计算资源（存储、运算器）的单元，可以独立地运行一段程序。</p>
+</blockquote>
+<p>为了快速入门并行编程，我们先通过一个简单的例子来了解一般并行程序的写法，再通过一个反例认识怎样的运算是不能并行的。最后，我们会简要总结并行编程的设计方式。</p>
+<p>考虑这样一个向量加法任务：假设向量数组 <code>a, b, c</code> 的长度都是 <code>16</code>，我们要在 4 个 GPU 计算单元上实现 <code>c=a+b</code> 的操作，应该怎么为每个计算单元编写程序呢？</p>
+<p>最直观的想法肯定是把向量平均拆成四组，让每个计算单元计算 4 个分量的加法结果。这是因为如果任务分配不均匀，任务完成的总时间会取决于任务最多的那个计算单元，这个时间会比平均分更久。因此，我们可以为每个计算单元各自编写如下所示的程序。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/8.jpg" alt></p>
+<p>为每个计算单元单独写一段程序太累了，能不能只写一段程序，然后让所有计算单元都执行同一段程序呢？这当然可以，但还有一个小小的额外要求：由于现在所有计算单元共用一段程序，我们需要额外输入当前计算单元的 ID 来告知程序正在哪个计算单元上运行。得知了这个额外信息后，我们就可以自动算出当前计算单元应该处理的数据范围，写出下面的程序。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/9.jpg" alt></p>
+<p>有了这段通用的程序，我们其实就可以实现任意长向量的加法运算。比如当向量的长度变成 32 时，我们可以分配 8 个计算单元来计算。可见，并行编程的目标就是写一段通用的程序，并根据计算单元的 ID 选取同样数量的数据做计算。</p>
+<p>在上面的例子中，我们让每个计算单元都计算 4 个数据。实际情况中，应该给每个计算单元分配多少数据呢？一般来说，一个计算单元的并行计算器和存储空间都是有限的，应该尽可能用满它的计算资源。比如一个计算单元最多能并行算 4 个数据，且内存也只够存 4 个数据，那么我们就给它分配 4 个数据。</p>
+<p>在学习和设计并行算法时，我们不需要知道每个计算单元具体分配多少数据，但要设计把数据拆分进每个计算单元的方式。比如对于形状为 $N \times M$ 的二维矩阵，计算单元一次能计算 $d$ 个数据，我们要决定是把数据在两个维度上拆分，得到 $ \frac{N}{\sqrt{d}} \times \frac{M}{\sqrt{d}}$ 组，还是只在第二维上拆分，得到 $N \times \frac{M}{d}$ 组。</p>
+<p>向量加法只是一个非常简单的运算，由于每个分量之间的计算是<strong>独立</strong>的，它天然就支持并行计算。而其他的运算就不一定满足这个性质了。比如向量求和：对于一个长度 16 的向量，我们要求出其 16 个分量之和。如果是串行算法，我们会写成这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sum</span> = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">16</span>):</span><br><span class="line">   <span class="built_in">sum</span> = <span class="built_in">sum</span> + a[i]</span><br></pre></td></tr></table></figure>
+<p>在每一步运算中，我们都需要读取当前的 <code>sum</code>，并更新 <code>sum</code> 的值。每步运算之间不是独立的，实现并行计算的方式不是很直观。</p>
+<p>用 GPU 编程实现更复杂的算子时，我们要仔细分析运算的过程，区分哪块运算像向量加法一样，是互相独立的；而哪些运算像向量求和一样，不好进行并行计算。之后，我们就要巧妙地对数据拆分，分配到各个计算单元中。比如，我们要求二维矩阵第二维（每一行）的和，我们发现矩阵每行之间的运算是独立的。因此，我们可以在第一维把数据拆分，让每个计算单元串行计算矩阵某一行的和。</p>
+<h3 id="GPU-编程新知识总结"><a href="#GPU-编程新知识总结" class="headerlink" title="GPU 编程新知识总结"></a>GPU 编程新知识总结</h3><p>相比使用高级语言编程，在 GPU 编程时，我们要多考虑两件事：1）访存开销；2）将可并行的运算拆分。具体的知识点有：</p>
+<ul>
+<li>GPU 的存储从顶到底分为三层： GPU SRAM, GPU HBM, CPU DRAM，它们的访存速度依次递减。编程时我们一般只考虑前两层之间的读写开销。</li>
+<li>通过观察算子本身的性质，我们可以利用算子融合技术减少访存开销。不反复读取同一批数据、不读写中间结果是两个常见的优化场景。</li>
+<li>GPU 由许多独立的计算单元组成，且每个计算单元本身也可以并行计算多个数据。但每个计算单元一次能并行处理的数据是有限的。如果数据量超过了计算单元的显存，要设法拆分数据。</li>
+<li>实现并行编程，实际上就是写一个输入参数包含计算单元 ID 的程序。我们要根据 ID 选取同样长度的一段数据，仅考虑这段数据该如何运算。</li>
+<li>并行编程的一大难点在于观察哪些运算是独立的，并把可以独立运算的部分分配仅不同计算单元。</li>
+</ul>
+<h2 id="Attention-运算"><a href="#Attention-运算" class="headerlink" title="Attention 运算"></a>Attention 运算</h2><p>Attention 运算建模了一个常见的场景：已有数据 $a$，该如何从数据集合 $B=\{b_i\}$ 中提取信息。比如一个像素要从图像中所有像素中提取信息，或者一个句子里的 token （词元）从另一个句子的所有 token 中提取信息。</p>
+<p>Attention 具体实现方式如下图所示：我们先算出 $a$ 对 $b_i$ 的相似度 $s_i$，它描述了 $a$ 对 $B$ 里第 $i$ 项数据的 「注意力」。之后，假设 $b_i$ 里存储的值 (value) 是 $v(b_i)$，我们用 $s_iv(b_i)$ 算出从单项数据中提取的信息。对所有提取出的信息求和，就能得到 Attention 操作的输出。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/1.jpg" alt></p>
+<p>那么，数据间的相似度应该怎么求呢？在标准 Attention 运算中，我们用向量内积来反映数据间的相似度。但下一个问题又来了：该怎么从数据 $a$, $b_i$ 中提取出一个用于计算相似度的向量呢？在实际的 Transformer 模型中，我们一般通过线性层来实现这件事。但在这篇文章中，我们假设每项数据的所有属性已经算好了。我们用 $q(a)$, $k(b_i)$ 来分别表示 $a$, $b_i$ 的用于算相似度的向量 （q 表示 query，k 表示 key），$v(b_i)$ 表示 $b_i$ 中的信息。 </p>
+<p><img src="/2025/08/24/20250511-flashattention-1/2.jpg" alt></p>
+<p>这个计算还不完美：假如内积相似度 $s_i$ 之和 $\sum{s_i}$ 大于 1，那么 Attention 输出向量里的数值会越来越大，让神经网络的计算变得不稳定。因此，我们希望用归一化让相似度之和为 1。</p>
+<p>最容易想到的归一化方法是线性归一化：先算出每个相似度及相似度之和，再除以相似度之和。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+s_i &\gets q(a)k(b_i) \\
+s_i &\gets \frac{s_i}{\sum{s_i}}
+\end{aligned}</script><p>但标准 Attention 运算用了一种更高级的 softmax 归一化：先对相似度求自然指数，再做线性归一化。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+s_i &\gets q(a)k(b_i) \\
+s_i &\gets e^{s_i}\\
+s_i &\gets \frac{s_i}{\sum{s_i}}
+\end{aligned}</script><p>最后，我们得到了 Transformer 论文中的标准 Attention 运算。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/3.jpg" alt></p>
+<blockquote>
+<p>在多数 Attention 实现中，我们会对 softmax 前的相似度乘一个系数 $1/\sqrt{d}$。在这篇文章的讨论中，我们会忽略这个缩放系数。</p>
+</blockquote>
+<p>为了简化上述公式，我们可以把 key, value 向量的集合合并成矩阵。各项数据的形状及合并后的公式如下所示。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/4.jpg" alt></p>
+<p>假设现在不止是数据 $a$，而是有 $n$ 个数据 $\{a_i | i \leq n\}$ 要从 B 中查询信息，那么我们可以把上述运算重复 $n$ 次，得到 $n$ 个结果 $Attn(a_i, B)$。如果我们把 $a_i$ 的相关属性 （即 query） 也合并成矩阵，就可以得到我们最熟悉的 Attention 公式。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/5.jpg" alt></p>
+<p>我们花了不少时间来回顾 Attention 运算。不管读者此前是否熟悉 Attention 运算，我都建议在学习 FlashAttention 前把 Attention 的计算细节回顾一遍。</p>
+<p>通过上面的回顾，我们发现 Attention 计算有一些特别的性质：</p>
+<ul>
+<li><p>不同 $q$ 之间的计算是独立的。而对于同一个 $q$，算它的 Attention 输出时最复杂的一步是计算 softmax 相似度。</p>
+</li>
+<li><p>由于 softmax 归一化的存在，我们只有在算完了 $qk$ 的所有内积相似度后，才能计算 softmax 的输出。</p>
+</li>
+</ul>
+<p>在后文的算法设计中，我们会用到这些性质。</p>
+<h2 id="自行设计-FlashAttention"><a href="#自行设计-FlashAttention" class="headerlink" title="自行设计 FlashAttention"></a>自行设计 FlashAttention</h2><p>简要了解 GPU 编程和 Attention 运算后，我们已经能够自行设计出一种比较高效的 FlashAttention 了。在这一节中，我们将由浅至深地了解 Attention 的实现细节。我们会先看其 PyTorch 实现，再看加入了访存操作后的 GPU 实现。随后，我们来尝试优化这份实现，最终设计出一版简易版的 FlashAttention。</p>
+<h3 id="PyTorch-版-Attention-及其访存操作"><a href="#PyTorch-版-Attention-及其访存操作" class="headerlink" title="PyTorch 版 Attention 及其访存操作"></a>PyTorch 版 Attention 及其访存操作</h3><p>PyTorch 版 Attention 的代码如下所示。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/10.jpg" alt></p>
+<p>光看 PyTorch 代码，我们还看不出哪里还有优化空间。因此，我们可以把访存操作加进去。假设一行 PyTorch 代码对应一个标准库里的 GPU 算子，要加入的 IO 操作如下。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/11.jpg" alt></p>
+<p>这样，我们就能立刻发现一个可优化项：中间变量 <code>s</code>, <code>p</code> 前脚刚写入 HBM，后脚又被读回了 SRAM。如果能用算子融合技术，把整个 Attention 运算放到同一个 GPU 算子里，就能规避这些额外的访存操作。</p>
+<p>需要注意的是，如果中间变量不多，多读写两次并不会浪费多少时间。然而，此处的 <code>s</code>, <code>p</code> 是两个数据量很大的变量。这是因为在当今大模型的 Transformer 中，（多头注意力的）特征维度 <code>D</code> 一般只是 <code>32</code>, <code>64</code> 这样比较小的数，而序列长度 <code>SL</code> 至少是 $10^4$ 这个数量级。所以，形状为 <code>[SL, SL]</code> 的中间变量 <code>s, p</code> 比形状为 <code>[SL, D]</code> 的输入输出要大得多，它们的访存开销严重拖慢了普通 Attention 的速度。</p>
+<h3 id="拆分数据读写"><a href="#拆分数据读写" class="headerlink" title="拆分数据读写"></a>拆分数据读写</h3><p>现在，我们来考虑如何把 Attention 都在同一个 GPU 算子里实现。如前文所述，每个 GPU 程序描述了一个计算单元上的运算。而由于计算单元本身的 SRAM 存储是有限的，我们需要根据程序 ID，拆分数据，仅处理部分数据。这里，我们假设每个计算单元能存储量级为 <code>D</code> 的数据，但无法存储量级为 <code>SL</code> 的数据。</p>
+<p>基于这一限制，我们来继续修改上面的程序。现在，我们不能一次读写形状为 <code>[SL, D]</code> 的数据了，该怎么拆分任务呢？在前文有关注意力运算的回顾中，我们知道，每个 query 之间的运算是独立的。因此，我们可以在上一份代码的基础上修改，只不过这一次我们只在一个并行程序里处理一个 query 和一个 output 的计算。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/12.jpg" alt></p>
+<p>当然，除了 <code>Q, O</code>，我们也不能一次性读写全部 <code>K, V</code> 了。既然如此，我们只能使用循环，在每一步迭代里读一个 <code>k</code> 或 <code>v</code>。改写后的程序如下。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/13.jpg" alt></p>
+<p>可是，程序中还有一处超出了内存限制：通过拆分运算，我们将中间变量 <code>s, p</code> 的形状从 <code>[SL, SL]</code> 降低到了 <code>[SL]</code>，但它们依然超过了内存限制。能否优化它们的内存占用呢？这一步优化，正是 FlashAttention 的核心贡献。</p>
+<h3 id="拆解-softmax"><a href="#拆解-softmax" class="headerlink" title="拆解 softmax"></a>拆解 softmax</h3><p>在进行算子融合时，并不是把几个算子拼接起来就做好了。我们往往要深入原算子的计算过程，看看是否能通过交换计算顺序或结合运算，提升整体的计算效率。这里也是同理。我们在优化和 softmax 相关的 <code>s, p</code> 变量时碰到了瓶颈，那我们就要拆解 softmax 的计算过程，看它和前后的两次点乘操作能否融合到一起以优化性能。</p>
+<p>softmax 的定义如下：</p>
+<script type="math/tex; mode=display">
+softmax(x_i) = \frac{e^{x_i}}{\sum_{i} e^{x_i}}</script><p>它的计算可以拆成三步：</p>
+<ol>
+<li>算 exp，得到分子</li>
+<li>向量求和，得到分母</li>
+<li>分子除以分母</li>
+</ol>
+<p>因此，softmax 在 attention 中的实现如下。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/14.jpg" alt></p>
+<p>拆分了 softmax 之后，我们立刻就能发现一个可优化项：变量 <code>s[i]</code> 被求了一次 exp 后就再也没用过了。既然如此，我们不必再用一个循环求 <code>numerator</code>，只需要求出了 <code>q</code>, <code>k</code> 的点乘 <code>s</code> 后，立刻求 <code>numerator[i] = exp(s[i])</code> 即可。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/15.jpg" alt></p>
+<p>类似地，我们也不用在另一个循环里对分母求和，一边算一边求和即可。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/16.jpg" alt></p>
+<p>做完这些优化后，我们确实消除了 softmax 的部分冗余运算。然而，最关键的问题还是没有解决：中间变量 <code>numerator</code>, <code>p</code> 的长度依然是 <code>SL</code>，该怎么接着优化呢？</p>
+<h3 id="消除长度为-SL-的中间变量"><a href="#消除长度为-SL-的中间变量" class="headerlink" title="消除长度为 SL 的中间变量"></a>消除长度为 <code>SL</code> 的中间变量</h3><p>刚刚我们把 softmax 的部分操作和 <code>q</code>, <code>k</code> 点乘合并了。能否顺着这个思路，把剩余操作和 <code>p</code>, <code>v</code> 的乘法合并呢？</p>
+<p>直观上看，这些操作不能合并。这是因为 <code>p</code> 的分母要在跑完了长度为 <code>SL</code> 的循环后才能算出。算出了正确的 <code>p</code>，我们才能接着算 <code>p</code>, <code>v</code> 的乘法。</p>
+<p>可见，问题的瓶颈在 <code>p</code> 的分母上。如果不需要除以那个 softmax 的分母，就没那么多限制了。我们先尝试忽略除法那一行，看看代码能优化多少。这时，可以把后面的循环和前面的循环合并起来，得到下面的代码。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/17.jpg" alt></p>
+<p>接着，我们来回头纠正输出。这个错误的 <code>O</code> 和之前正确的结果差了多少？其实就是少除以了一个 <code>denominator</code>。并且，修改了代码后，有关 <code>denominator</code> 的计算完全没变过。循环结束后，<code>denominator</code> 也就算出来了。所以，我们完全可以在循环结束后再除以分母。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/18.jpg" alt></p>
+<p>改完代码后，我们发现，<code>p</code> 不用再算了，只剩最后一个长度为 <code>SL</code> 的变量了——<code>numerator</code>。仔细观察代码，现在我们每次只需要用到 <code>numerator[i]</code>，不需要重新访问整个 <code>numerator</code> 向量。既然如此，我们可以把 <code>numerator</code> 向量换成一个临时变量。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/19.jpg" alt></p>
+<p>终于，这份程序成为了一段满足内存限制的可运行 GPU 程序。相比各个运算用独立算子表示的 PyTorch 版 Attention，这份高效 Attention 实现规避了形状为 <code>[SL, SL]</code> 的中间变量的读写开销，大大提升了运行效率。这版 Attention 就是一种简易的 FlashAttention。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/20.jpg" alt></p>
+<h3 id="优化思路总结"><a href="#优化思路总结" class="headerlink" title="优化思路总结"></a>优化思路总结</h3><p>让我们回顾一下优化 Attention 的过程。</p>
+<ul>
+<li>由于 Attention softmax 输出的内存占用过高，我们希望利用算子融合技术，避免将中间变量从 SRAM 写入 HBM。</li>
+<li>GPU 程序需要设计数据的拆分方式以决定并行计算方式。恰好 Attention 每个 query 的计算是独立的。我们让一个 GPU 程序只处理一个 query 的计算。</li>
+<li>一个计算单元无法存下长度高达 <code>SL</code> 的数据。因此，我们只能用长度为 <code>SL</code> 的循环来逐个处理 key, value 的运算。但是，softmax 的输出长度仍为 <code>SL</code>。</li>
+<li>为了进一步优化，我们需要拆解并优化 softmax 的计算。softmax 的部分运算可以和 query, key 的点乘合并。但由于 softmax 分母需要遍历所有 key 后才能算出，仍需存储长度为 <code>SL</code> 的 softmax 分子。</li>
+<li>通过观察，我们发现 softmax 的除法运算不影响后面与 value 的乘法运算。因此，我们可以在一个循环里直接算完 query, key, value 的乘法，并维护 softmax 的分母。循环结束后，我们再除以分母。这样，就不再需要长度为 <code>SL</code> 的中间变量了。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我们先了解了学习 GPU 编程的必须知识，并回顾了 Attention 的运算过程。之后，我们通过逐步优化代码的方式，实现了一个没有过长中间变量、可以在 SRAM 上运行的算子融合版 Attention，即简易版 FlashAttention。在这个过程中，我们理解了 FlashAttention 的设计动机和优化方向：普通 Attention 会产生长度为序列长度平方的中间变量，它的访存时间严重拖慢了 Attention 的运算速度。在优化该运算时，我们的关键发现是 softmax 的除法运算并不影响 q, k, v 的矩阵乘法运算。因此，我们可以在同一个循环里算 q, k, v 乘法，并同时维护 softmax 的分母。这样，就不用维护一个过长的中间变量了。</p>
+<p>在学习过程中，我们或许能发现，GPU 编程比 PyTorch 编程要复杂得多，可能光看这篇博文还看不太懂。之后有时间的话，我会介绍 FlashAttention 的 Triton 实现，让读者能够亲身体会 GPU 编程方式及其带来的优化效果。这篇文章介绍的并不是真正的 FlashAttention 算法，也欢迎读者去阅读原论文和其他文章来深入学习 FlashAttention。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/05/11/20250425-cfgzero/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1859,136 +2076,6 @@ sim(q, k) = ReLU(q)ReLU(k)</script><p>ReLU 函数用于让相似度非负。</p>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/01/04/20250104-pycco/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2025/01/04/20250104-pycco/" class="post-title-link" itemprop="url">用 Pycco 为 Python 代码快速创建双列注释网页</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2025-01-04 23:02:57" itemprop="dateCreated datePublished" datetime="2025-01-04T23:02:57+08:00">2025-01-04</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E5%B7%A5%E5%85%B7%E7%94%A8%E6%B3%95%E6%8C%87%E5%8D%97/" itemprop="url" rel="index"><span itemprop="name">工具用法指南</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>最近，我在网上看到了一个专门介绍深度学习源代码的网站（<a target="_blank" rel="noopener" href="https://nn.labml.ai/index.html">https://nn.labml.ai/index.html</a> ），各类流行网络架构一应俱全。这个网站最吸引我的，是它的双列式结构。如下所示，每个页面右边显示代码，左边显示每段代码对应的注释。</p>
-<p><img src="/2025/01/04/20250104-pycco/1.jpg" alt></p>
-<p>一直以来，我在博客中介绍代码时，都是先写描述文字，再贴一段代码。这种方式对作者和读者来说都十分低效。受到上面那个网站的启发，我决定以后也采用这种方式介绍源代码。很可惜，上面那个网站是由 labml.ai 这个组织维护的，似乎并没有提供开源的、可定制的注释网站搭建方式。为此，我找到了一个替代品：Pycco。它可以方便地为 Python 代码生成双列带注释的静态页面。</p>
-<h2 id="Pycco-安装与使用"><a href="#Pycco-安装与使用" class="headerlink" title="Pycco 安装与使用"></a>Pycco 安装与使用</h2><p>Pycco 是页面生成工具 Docco 的 Python 实现版。它们都是「快而脏」的文档生成器：源代码只有几百行，没有多余封装，直观而暴力地生成 HTML 页面的所有内容。它们为初学者只提供了一个文档页面，这个文档页面讲的是它们的源代码，且文档页面就是由它们本身创建出来的。Pycco 的官方文档页面如下所示。一开始介绍完 Pycco 的背景信息和安装方式后，文档就会直接开始介绍源代码。</p>
-<p><img src="/2025/01/04/20250104-pycco/2.jpg" alt></p>
-<p>根据文档的指示，我们可以通过下面的命令在 <code>pip</code> 里安装 Pycco：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pycco</span><br></pre></td></tr></table></figure>
-<p>在使用 Pycco 时，我们完全不用去理解其源代码的意思，只需要准备一个带注释的 Python 源文件就行。Pycco 提供了一键式命令，帮我们把源文件里的注释和代码分离，并生成左侧为注释，右侧为代码的静态文档页面。这里的注释既包括了 <code>#</code> 开头的单行注释，也包括了 <code>&quot;&quot;&quot; &quot;&quot;&quot;&quot;</code> 包裹的多行注释。注意，三个单引号构成的多行注释 <code>&#39;&#39;&#39; &#39;&#39;&#39;</code> 不会被该工具识别。</p>
-<p>我们来看一个示例。假设我们有下面一个名为 <code>hello.py</code> 的 Python 源文件。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">Hello</span></span><br><span class="line"><span class="string">World</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> pycco</span><br><span class="line"></span><br><span class="line"><span class="comment"># Hello</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;hello world&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">End of file</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
-<p>我们用下面的命令为其生成文档页面。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pycco hello.py</span><br></pre></td></tr></table></figure>
-<p>页面会生成在目录下的 <code>docs</code> 子目录里，子目录包含一个 <code>hello.html</code> 文件和一个 <code>pycco.css</code> 文件。我们可以用浏览器打开 <code>.html</code> 网页，看到下图所示内容。</p>
-<p><img src="/2025/01/04/20250104-pycco/3.jpg" alt></p>
-<p>注释默认使用 Markdown 语法。如果平时就习惯用 Markdown 写博客的话可以无缝切换。但是，默认情况下网页无法渲染公式。</p>
-<p><img src="/2025/01/04/20250104-pycco/4.jpg" alt></p>
-<h2 id="页面跳转"><a href="#页面跳转" class="headerlink" title="页面跳转"></a>页面跳转</h2><p>除了普通的 Markdown 语法外，Pycco 还支持一个特殊的功能：文档跳转。我们可以把文件名写在 <code>[[ ]]</code> 内，实现源文件内部或源文件间的跳转。特别地，我们还可以在页面某处打上标签，并跳转到某页面的标签处。以下是一个示例。为了给「注释」加上注释，我别出心裁地把注释写进了代码部分。</p>
-<p><img src="/2025/01/04/20250104-pycco/5.jpg" alt></p>
-<h2 id="让页面渲染-LaTeX-公式"><a href="#让页面渲染-LaTeX-公式" class="headerlink" title="让页面渲染 LaTeX 公式"></a>让页面渲染 LaTeX 公式</h2><p>刚才我们发现，目前的 Pycco 页面并不支持公式渲染。而在解释深度学习代码时，很多时候不得不用到公式。因此，我决定给 Pycco 加上渲染公式的功能。</p>
-<p>Pycco 这种直观暴力的实现方法让网页开发者能够快速地修改页面生成逻辑。然而，我已经把 HTML 的知识快忘光了，配不上「网页开发者」这个名号。因此，我让 ChatGPT o1 来帮我开发这一功能。</p>
-<p>经指导，我认识了 MathJax 这个在网页上渲染公式的工具。只需要在 HTML 的 <code>head</code> 里导入一些包，网页就可以自动识别单行公式 <script type="math/tex"> </script> 和多行公式 $$$ $$$。我不记得 <code>head</code> 是什么了，但大概能猜到这个是一个相当于声明全局变量的语句块。</p>
-<p>我在 <code>pycco_resources\__init__.py</code> 文件里找到了设置 <code>head</code> 的地方。这个文件提供了生成网页的模板，包括了写死的 CSS 文件和部分 HTML 代码。打开这个文件的最快方式是在某处写 <code>import pycco_resources</code>，之后用 IDE 的代码跳转找到这个包在本地的位置。</p>
-<p>我们在该文件下图所示的位置插入和 MathJax 相关的代码。</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="title class_">MathJax</span> = &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="attr">tex</span>: &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="attr">inlineMath</span>: [ [<span class="string">&quot;$&quot;</span>,<span class="string">&quot;$&quot;</span>] ]</span></span><br><span class="line"><span class="language-javascript">      &#125;</span></span><br><span class="line"><span class="language-javascript">    &#125;;</span></span><br><span class="line"><span class="language-javascript">  </span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p><img src="/2025/01/04/20250104-pycco/6.jpg" alt></p>
-<p>修改模板后，重新生成网页，可以发现现在公式能够正确渲染了。</p>
-<p><img src="/2025/01/04/20250104-pycco/7.jpg" alt></p>
-<h2 id="高亮新增-删除代码"><a href="#高亮新增-删除代码" class="headerlink" title="高亮新增/删除代码"></a>高亮新增/删除代码</h2><p>在以后讲解代码的时候，我想高亮新增的或者删去的代码，就像 GitHub 里显示代码的更改一样。由于 Pycco 非常容易做二次开发，我又去请教 ChatGPT o1 该如何实现这样的功能。</p>
-<p>经指导，我了解到代码高亮可以通过设置背景颜色 style 来实现。为此，我需要做两件事：</p>
-<ol>
-<li>新增有关背景颜色的 CSS style</li>
-<li>想办法指定要高亮的代码块</li>
-</ol>
-<p>第一件事很简单，只需要打开模板文件 <code>pycco_resources\__init__.py</code>，添加背景颜色 style 即可。我添加了两种背景颜色，分别表示删去的和新增的代码块。我是在 VSCode 里找到想要的颜色值的。随便打开一个 CSS 文件，输入一个大概的颜色值，VSCode 就会弹出一个选择颜色的小窗口。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.highlighted-line-<span class="number">1</span> &#123;</span><br><span class="line">  background-color: <span class="comment">#fa53208c;</span></span><br><span class="line">&#125;</span><br><span class="line">.highlighted-line-<span class="number">2</span> &#123;</span><br><span class="line">  background-color: <span class="comment">#68fc5d;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2025/01/04/20250104-pycco/8.jpg" alt></p>
-<p>第二件事就比较难了。我需要先看懂目前高亮源代码的逻辑，再在其基础之上添加背景高亮的功能。Pycco 的主函数在文件 <code>pycco/main.py</code> 里，我们可以用导入 Python 包的方式快速找到这份源文件。原来的高亮关键字的逻辑如下，我在其中加入了一些代码用于输出中间结果。</p>
-<p><img src="/2025/01/04/20250104-pycco/9.jpg" alt></p>
-<p>函数的主要输入是列表 <code>sections</code>，函数的输出存储在列表项 <code>section</code> 的 <code>&quot;docs_html&quot;</code>, <code>&quot;code_html&quot;</code> 字段。 </p>
-<p><code>sections</code> 内容如下，可见其中是过了解析器的注释块和代码块。每一段注释都会对应一段代码。</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[&#123;&#x27;docs_text&#x27;: &#x27;=== BeGin ===\r\n\n&#x27;, &#x27;code_text&#x27;: &#x27;import torch\r\nimport pycco\r\n\r&#x27;&#125;, &#123;&#x27;docs_text&#x27;: &#x27;# Hello\r\n## World\r\nThis is a **Python** [code](https://www.python.org/).\r\nTry formula $\\epsilon$ .\r\n$$\r\n3 = 1 + 2\r\n$$\r\n\n\n&#x27;, &#x27;code_text&#x27;: &#x27;print(&quot;hello world&quot;)\r\n\r&#x27;&#125;, &#123;&#x27;docs_text&#x27;: &#x27;End of file\r\n\n&#x27;, &#x27;code_text&#x27;: &#x27;\n&#x27;&#125;]</span><br></pre></td></tr></table></figure>
-<p>函数的输出是完整 HTML 文件的一部分。</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;h3&gt;&lt;span id=&quot;begin&quot; href=&quot;begin&quot;&gt; BeGin &lt;/span&gt;&lt;/h3&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;torch&lt;/span&gt;</span><br><span class="line">&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pycco&lt;/span&gt;&lt;/pre&gt;&lt;/div&gt;</span><br><span class="line">&lt;h1&gt;Hello&lt;/h1&gt;</span><br><span class="line">&lt;h2&gt;World&lt;/h2&gt;</span><br><span class="line">&lt;p&gt;This is a &lt;strong&gt;Python&lt;/strong&gt; &lt;a href=&quot;https://www.python.org/&quot;&gt;code&lt;/a&gt;.</span><br><span class="line">Try formula $\epsilon$ .</span><br><span class="line">$$</span><br><span class="line">3 = 1 + 2</span><br><span class="line">$$&lt;/p&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;hello world&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/pre&gt;&lt;/div&gt;</span><br><span class="line">&lt;p&gt;End of file&lt;/p&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;/pre&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-<p>那么，我的目标就是修改这个文件。我需要先根据输入的原始代码块，判断这段代码是否要高亮，再修改 HTML 代码块的内容。</p>
-<p>首先，从用户的角度考虑，应该怎么指定要背景高亮的代码呢？既然现在代码被拆成了一块一块的，且每块代码对应一段注释，我决定用一些特殊注释来高亮一整块代码，就像前面的设置标签和跳转标签的特殊注释一样。我加入了以下判断：如果注释前几个字符是 <code>&#39;===ADD===&#39;</code> 或 <code>&#39;===DEL===&#39;</code>，就用对应的颜色高亮这段代码。</p>
-<p>判断了是否要高亮后，我还需要做对应的修改。我不仅要在 HTML 代码块里高亮代码，还需要把注释块里的特殊命令删掉。通过观察相关代码，我忽然回忆起了 HTML 的部分实现原理：背景高亮就是把一段 HTML 字符串封进一个带有背景高亮样式的标签 <code>&lt;div&gt;&lt;/div&gt;</code> 里。那剩下的删除注释也很简单，只需要对字符串做一点简单操作就行了。代码修改过程及使用示例如下所示。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Add following code</span></span><br><span class="line"></span><br><span class="line">delete_background_start = <span class="string">&#x27;&lt;div class=&quot;highlighted-line-1&quot;&gt;&#x27;</span></span><br><span class="line">add_background_start = <span class="string">&#x27;&lt;div class=&quot;highlighted-line-2&quot;&gt;&#x27;</span></span><br><span class="line">background_end = <span class="string">&#x27;&lt;/div&gt;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> section[<span class="string">&quot;docs_text&quot;</span>].startswith(<span class="string">&#x27;===ADD===&#x27;</span>):</span><br><span class="line">    section[<span class="string">&quot;docs_text&quot;</span>] = section[<span class="string">&quot;docs_text&quot;</span>][<span class="number">9</span>:]</span><br><span class="line">    section[<span class="string">&quot;code_html&quot;</span>] = add_background_start + section[<span class="string">&quot;code_html&quot;</span>] + background_end</span><br><span class="line"><span class="keyword">elif</span> section[<span class="string">&quot;docs_text&quot;</span>].startswith(<span class="string">&#x27;===DEL===&#x27;</span>):</span><br><span class="line">    section[<span class="string">&quot;docs_text&quot;</span>] = section[<span class="string">&quot;docs_text&quot;</span>][<span class="number">9</span>:]</span><br><span class="line">    section[<span class="string">&quot;code_html&quot;</span>] = delete_background_start + section[<span class="string">&quot;code_html&quot;</span>] + background_end</span><br></pre></td></tr></table></figure>
-<p><img src="/2025/01/04/20250104-pycco/10.png" alt></p>
-<h2 id="修正多行注释缩进"><a href="#修正多行注释缩进" class="headerlink" title="修正多行注释缩进"></a>修正多行注释缩进</h2><p>在写这篇博文的时候，我又发现 Pycco 的一个 bug：在多行注释带缩进时，HTML 页面上的注释也会缩进，导致页面布局完全乱套。</p>
-<p><img src="/2025/01/04/20250104-pycco/11.jpg" alt></p>
-<p>我找到了 <code>pycco/main.py</code> 里处理多行注释的代码。我把旧代码全部删掉，换了一种暴力的字符串处理方式：删除多行注释左侧所有空格及制表符。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docs_text += line.lstrip(<span class="string">&#x27;\t &#x27;</span>) + <span class="string">&#x27;\n&#x27;</span></span><br></pre></td></tr></table></figure>
-<p><img src="/2025/01/04/20250104-pycco/12.jpg" alt></p>
-<p>改完之后 bug 就修好了。</p>
-<p><img src="/2025/01/04/20250104-pycco/13.jpg" alt></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了 Pycco 这个为 Python 代码生成双列注释-代码静态页面的 Python 工具，并分享了我对其的三个修改：支持 MathJax 公式、支持背景高亮、修复多行注释缩进 bug。相比介绍开源项目的 readthedocs 等文档构建工具，Pycco 能够为每行 Python 代码写注释，尤其适合详细讲解深度学习代码。对于熟练的网页开发者，Pycco 的源代码很短，改起来很方便；但另一方面，Pycco 似乎比较小众，多年都没人维护，可能有各种 bug。主要推荐想在个人博客里讲解代码的朋友使用这个工具。我以后都会用它来讲解代码。 </p>
-<h2 id="ChatGPT-小插曲"><a href="#ChatGPT-小插曲" class="headerlink" title="ChatGPT 小插曲"></a>ChatGPT 小插曲</h2><p>ChatGPT 在指导我添加 MathJax 时，先叫我下载 <code>python-markdown-math</code> 这个 pip 包，让 Python 脚本里的 Markdown 解析器能够解析公式。但我在实践中发现不解析 $$$$ 符号，在正确导入 MathJax 包后，网页依然能够正确渲染。</p>
-<p>ChatGPT 一开始提供的 MathJax 导入代码是 MathJax V3 的。经过 <code>python-markdown-math</code> 解析后，双行注释被转换成了 <code>&lt;script type=&quot;math/tex; mode=display&quot;&gt;&lt;/script&gt;</code> 包裹的内容。这些公式没法成功渲染。我把添加双行公式的详细过程提供给 ChatGPT 后，它分析出这种 <code>&lt;script&gt;</code> 的写法是 MathJax V2 的，让我把 <code>head</code> 里的包改成 MathJax V2。修改过后，双行公式果然渲染成功了。然而，如上一段所述，我发现哪怕不用 <code>python-markdown-math</code> 也行。于是我又用回了 MathJax V3。可见 ChatGPT 有功有过，给我制造了一些麻烦，也算是能够帮我解决。</p>
-<p>在求助 ChatGPT 添加背景高亮功能时，它非常出色地分析了问题：先理解 Pycco 生成 HTML 的过程，再决定用户如何指定要高亮的内容，最后根据不同的方案做实现。但它给的三个信息输入方案都不尽如人意：(1) 在命令行里指定要高亮的行；(2) 在每行要高亮的代码前都加特殊注释；(3) 用另一个配置文件来指定要高亮的行。这些方法的用户体验都不好，且难于实现。当然，由于我没有把所有源代码给它，它或许没有发挥完整的实力。最后我还是靠自己理解了 Pycco 的页面生成逻辑，选了一种好实现且好用的方案。</p>
-<p>我从来没有用 ChatGPT 做过特别复杂的编程任务，这次稍微体会了一下。感觉它的能力有时候会出乎意料地强（比如发现 HTML 的风格是 MathJax V2 的），但不见得次次都靠谱。它的能力主要还是基于大量数据的「搜索」，加上一点浅显的思考。只是因为看过的数据过多，所以很多时候能从历史经验中直接给出很好的答案。当然，作为语言模型，它对于语言的理解能力极强，哪怕描述不完全也能准确理解用户的意图。做为使用者，我们要在用之前就想好能从 ChatGPT 那里获取到哪些帮助，并提供充足的信息，而不能全盘接受它的输出，就和我们日常和别人交流一样。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2058,7 +2145,7 @@ sim(q, k) = ReLU(q)ReLU(k)</script><p>ReLU 函数用于让相似度非负。</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-count">154</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

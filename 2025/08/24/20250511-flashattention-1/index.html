@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="以 Attention 计算为核心的 Transformer 模型是当今深度学习的基石。虽然 Attention 计算十分有效，但其高昂的计算成本往往成为了模型性能优化的瓶颈。为了在 GPU 上高效执行 Attention 计算，现在开发者们普遍都使用了 FlashAttention——一种高效的 Attention 并行实现算法。 相信有不少 AI 研究者都想学习一下 FlashAttentio">
+<meta property="og:type" content="article">
+<meta property="og:title" content="不会 CUDA 也能轻松看懂的 FlashAttention 教程（算法原理篇）">
+<meta property="og:url" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="以 Attention 计算为核心的 Transformer 模型是当今深度学习的基石。虽然 Attention 计算十分有效，但其高昂的计算成本往往成为了模型性能优化的瓶颈。为了在 GPU 上高效执行 Attention 计算，现在开发者们普遍都使用了 FlashAttention——一种高效的 Attention 并行实现算法。 相信有不少 AI 研究者都想学习一下 FlashAttentio">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/13.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/14.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/15.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/16.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/17.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/18.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/19.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/20.jpg">
+<meta property="article:published_time" content="2025-08-24T08:40:10.000Z">
+<meta property="article:modified_time" content="2025-08-24T08:40:10.199Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="高性能计算">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/6.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>不会 CUDA 也能轻松看懂的 FlashAttention 教程（算法原理篇） | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          不会 CUDA 也能轻松看懂的 FlashAttention 教程（算法原理篇）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-08-24 16:40:10" itemprop="dateCreated datePublished" datetime="2025-08-24T16:40:10+08:00">2025-08-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>以 Attention 计算为核心的 Transformer 模型是当今深度学习的基石。虽然 Attention 计算十分有效，但其高昂的计算成本往往成为了模型性能优化的瓶颈。为了在 GPU 上高效执行 Attention 计算，现在开发者们普遍都使用了 FlashAttention——一种高效的 Attention 并行实现算法。</p>
+<p>相信有不少 AI 研究者都想学习一下 FlashAttention，却往往因其较高的学习门槛望而却步：理解 FlashAttention 需要高性能计算知识，它和大家平时学习的 Transformer、大模型等深度学习知识截然不同。而我最近在自学 FlashAttention 时，凭借以前稍微学过的一点并行编程知识，成功地在没有完全弄清细节的前提下学懂了 FlashAttention 的核心思想，并就此明晰了后续的学习路线。在近期的几篇博文中，我想分享我学习 FlashAttention 的过程，<strong>并涉及尽可能少的基础知识，让没有 GPU 编程基础的读者轻松学会 FlashAttention</strong>。</p>
+<p>在这篇博文中，我会介绍理解 FlashAttention 所需的最简 GPU 编程知识，并通过逐步改进伪代码的方式，介绍 FlashAttention 的算法原理。在后续的文章中，我会继续介绍 FlashAttention 的前向传播、反向传播实现等进阶内容。为了方便读者的学习，我不会完全按照 FlashAttention 的论文的逻辑来介绍知识，也不会严谨地按论文里的算法来介绍，不使用 CUDA 编程术语（因为我也不是很懂），而是介绍一种尽可能简明的 FlashAttention 实现，帮助完全没有相关知识的读者入门 AI 高性能计算领域。</p>
+<h2 id="底层-GPU-编程模型"><a href="#底层-GPU-编程模型" class="headerlink" title="底层 GPU 编程模型"></a>底层 GPU 编程模型</h2><p>程序是由若干原子操作组成的。比如，对于高级语言而言，原子操作包括四则运算、if-else 构成的判断语句、函数定义等；而对于汇编语言而言，原子操作则由从地址读数据、写数据、程序跳转等操作组成。越是偏底层的语言，我们能够控制的细节越多，代码优化空间越大，但代价是开发的成本也越高。</p>
+<p>FlashAttention 中的部分优化策略需要用比高级语言更底层的 GPU 编程模型来描述。在这篇文章中，我们会使用一个尽可能简单的 GPU 编程模型。我们将从访存、并行计算这两个方面认识 GPU 编程的特点。</p>
+<h3 id="存储模型"><a href="#存储模型" class="headerlink" title="存储模型"></a>存储模型</h3><p>在学习计算机时，我们一般会将存储分为寄存器、内存、硬盘。它们的容量依次递增，读写速度依次递减。硬盘一般只负责存储数据，上面的数据不能做直接运算。内存存储了程序能直接「看到」的数据。使用高级编程语言时，内存是我们存储数据和对数据做运算的地方。但在最底层的运算实现中，程序实际上是先把数据从内存搬到寄存器上，再做运算，最后把数据搬回内存。只有在编写更底层的汇编语言时，我们才需要知道寄存器这一层。</p>
+<blockquote>
+<p>当然，实际上在寄存器和内存之间还有缓存（cache）这一层，但这属于硬件上的实现细节，它在编程模型中是不可见的，硬件会自动处理缓存的逻辑。</p>
+</blockquote>
+<p><img src="/2025/08/24/20250511-flashattention-1/6.jpg" alt></p>
+<p>类似地，在 GPU 上，也有类似的存储模型。CPU 内存 (DRAM) 上的数据不能直接用 GPU 运算，必须要放到 GPU HBM 里，就像对 CPU 中硬盘和内存的关系一样。GPU HBM 就是我们常说的「显存」。使用高级语言（如 PyTorch）编写 GPU 程序时，我们可以认为数据全是在 HBM 上运算的。同样，在更底层，我们需要先把数据从 GPU HBM 读取到 GPU SRAM （类似于 CPU 中的寄存器）上，做运算，再把数据写回 GPU HBM。</p>
+<blockquote>
+<p>下图的存储模型及命名方式出自 FlashAttention 论文。同样，下图只是一个逻辑模型，实际硬件中 GPU SRAM 既包括了寄存器，也包括了缓存。但在学习 FlashAttention 时，我们只需要了解这个逻辑模型，而不需要将其与实际的硬件对应。</p>
+</blockquote>
+<p><img src="/2025/08/24/20250511-flashattention-1/7.jpg" alt></p>
+<p>认识了存储模型后，我们来看 GPU 编程模型相比高级语言的编程模型有哪些变化。</p>
+<p>在高级语言中，如果要把两个变量相加得到第三个变量，只需要编写如下代码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c = a + b</span><br></pre></td></tr></table></figure>
+<p>而加入了「访存」这一概念后，我们需要在计算前后加入变量的读取和存储指令。此外，如果计算中产生了新的变量，需要为新变量新建空间。如下面的代码所示，<code>a_mem</code>, <code>b_mem</code>, 是在 GPU HBM 上的变量，我们用需要用 <code>load</code> 把它们读入到 SRAM 中，得到 SRAM 上的变量 <code>a</code>, <code>b</code>。之后，我们在 SRAM 上创建新变量 <code>c</code>, 并用它存储加法结果。最后把 <code>c</code> 写回 HBM 的 <code>c_mem</code> 里。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">c_mem = new_hbm_memory()</span><br><span class="line"></span><br><span class="line">a = a_mem.load()</span><br><span class="line">b = b_mem.load()</span><br><span class="line"></span><br><span class="line">c = new_sram_memory()</span><br><span class="line">c = a + b</span><br><span class="line"></span><br><span class="line">c_mem = c.store()</span><br></pre></td></tr></table></figure>
+<p>可以看出，为了实现一次加法，我们做了两次读取，一次存储，访存带来的时间开销不可忽略。</p>
+<p>除此之外，这里为新变量创建空间的操作出现了两次：一次是在 HBM，一次是在 SRAM。上面这个例子比较简单，输入输出都只有一个变量，没有空间不足的问题。但一般来说，算子的输入都是很长的数组。我们默认 HBM 的存储空间一定足够，但 SRAM 的空间不一定足够。因此，我们需要用到「分块」操作，一块一块地把输入从 HBM 读入到 SRAM 并运算。稍后我们会看到一个更具体的例子。</p>
+<p>FlashAttention 的主要贡献就是减少了 Attention 的内存操作开销（读取、存储、新建空间）。</p>
+<h3 id="算子融合与访存优化"><a href="#算子融合与访存优化" class="headerlink" title="算子融合与访存优化"></a>算子融合与访存优化</h3><p>通过上面的例子，我们发现，算上了访存后，哪怕是实现一个简单的加法都十分费劲。因此，大多数程序员都只会编写高级语言，并让编译器来自动补全访存的逻辑。比如对于 <code>c=a+b</code> 而言，编译器会自动生成两个读取指令，一个存储指令。</p>
+<p>可是，编译器自动生成的 GPU 代码一定是最优的吗？这显然不是。考虑下面这个高级语言中的函数 <code>add_more</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add_more</span>(<span class="params">a, b, c, d</span>):</span><br><span class="line">  a1 = a + b</span><br><span class="line">  a2 = a + c</span><br><span class="line">  a3 = a + d</span><br><span class="line">  <span class="keyword">return</span> a1, a2, a3</span><br></pre></td></tr></table></figure>
+<p>如果让编译器按照最直接的方式翻译这段高级语言，那么翻译出的 GPU 程序中会包含如下的指令（为只关注读写次数，我们不写变量在 HBM 上的名称，默认所有变量都在 SRAM 上，且忽略新建空间操作）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">load a, b</span><br><span class="line">a1 = a + b</span><br><span class="line">store a1</span><br><span class="line"></span><br><span class="line">load a, c</span><br><span class="line">a2 = a + c</span><br><span class="line">store a2</span><br><span class="line"></span><br><span class="line">load a, d</span><br><span class="line">a3 = a + d</span><br><span class="line">store a3</span><br></pre></td></tr></table></figure>
+<p>但仔细观察这些读写指令，我们会发现部分读写指令是多余的：<code>a</code> 只要被读取一次就行了。最优的程序应为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">load a, b, c, d</span><br><span class="line">a1 = a + b</span><br><span class="line">a2 = a + c</span><br><span class="line">a3 = a + d</span><br><span class="line">store a1, a2, a3</span><br></pre></td></tr></table></figure>
+<p>由于我们知道了 <code>add_more</code> 函数的某些特性，我们可以通过手写 GPU 程序，而不是让编译器死板地逐行翻译算子的方式，实现一个更高效的「大型算子」。这种做法被称为 「算子融合」(operator fusion)。由于 GPU 上的函数一般被称为 kernel，所以这种做法也会称为「核融合」(kernel fusion)。</p>
+<p>再看另一个例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add_twice</span>(<span class="params">a, b, c</span>):</span><br><span class="line">  d = a + b</span><br><span class="line">  e = d + c</span><br><span class="line">  <span class="keyword">return</span> e</span><br></pre></td></tr></table></figure>
+<p>如果使用自动编译，会得到下面的 GPU 程序：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">load a, b</span><br><span class="line">d = a + b</span><br><span class="line">store d</span><br><span class="line"></span><br><span class="line">load d, c</span><br><span class="line">e = d + c</span><br><span class="line">store e</span><br></pre></td></tr></table></figure>
+<p>但我们可以发现，<code>d</code> 只是中间变量，不用写进 HBM 又读回去。更高效的程序如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">load a, b</span><br><span class="line">d = a + b</span><br><span class="line"></span><br><span class="line">load c</span><br><span class="line">e = d + c</span><br><span class="line">store e</span><br></pre></td></tr></table></figure>
+<p>从上面两个例子中，我们能总结出算子融合提高效率的原理：如果连续的多个运算都要用到同一批数据，我们可以对这批数据只读写一次，以减少访存开销；此外，我们应该将中间结果尽可能保留到 SRAM 上，不要反复在 HBM 上读写。</p>
+<h3 id="并行编程"><a href="#并行编程" class="headerlink" title="并行编程"></a>并行编程</h3><p>和使用高级语言编程相比，在进行 GPU 编程时，我们除了要考虑访存，还需要编写可以<strong>并行执行</strong>的程序。我们说 GPU 比 CPU 快，并不是因为 GPU 里的计算单元比 CPU 的高级，而是因为 GPU 里的计算单元更多。用一个常见的比喻，GPU 编程就像是把复杂的数学运算拆成简单的加减乘除，再交给许许多多的小学生来完成。作为 GPU 程序员，我们不仅要决定运算的过程，还需要像「小学老师」一样，知道如何把整个运算拆成若干个更简单、可并行执行的运算。</p>
+<blockquote>
+<p>「计算单元」在不同的硬件模型、编程模型中有不同的所指。这里我们笼统地用「计算单元」来表示一个有独立计算资源（存储、运算器）的单元，可以独立地运行一段程序。</p>
+</blockquote>
+<p>为了快速入门并行编程，我们先通过一个简单的例子来了解一般并行程序的写法，再通过一个反例认识怎样的运算是不能并行的。最后，我们会简要总结并行编程的设计方式。</p>
+<p>考虑这样一个向量加法任务：假设向量数组 <code>a, b, c</code> 的长度都是 <code>16</code>，我们要在 4 个 GPU 计算单元上实现 <code>c=a+b</code> 的操作，应该怎么为每个计算单元编写程序呢？</p>
+<p>最直观的想法肯定是把向量平均拆成四组，让每个计算单元计算 4 个分量的加法结果。这是因为如果任务分配不均匀，任务完成的总时间会取决于任务最多的那个计算单元，这个时间会比平均分更久。因此，我们可以为每个计算单元各自编写如下所示的程序。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/8.jpg" alt></p>
+<p>为每个计算单元单独写一段程序太累了，能不能只写一段程序，然后让所有计算单元都执行同一段程序呢？这当然可以，但还有一个小小的额外要求：由于现在所有计算单元共用一段程序，我们需要额外输入当前计算单元的 ID 来告知程序正在哪个计算单元上运行。得知了这个额外信息后，我们就可以自动算出当前计算单元应该处理的数据范围，写出下面的程序。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/9.jpg" alt></p>
+<p>有了这段通用的程序，我们其实就可以实现任意长向量的加法运算。比如当向量的长度变成 32 时，我们可以分配 8 个计算单元来计算。可见，并行编程的目标就是写一段通用的程序，并根据计算单元的 ID 选取同样数量的数据做计算。</p>
+<p>在上面的例子中，我们让每个计算单元都计算 4 个数据。实际情况中，应该给每个计算单元分配多少数据呢？一般来说，一个计算单元的并行计算器和存储空间都是有限的，应该尽可能用满它的计算资源。比如一个计算单元最多能并行算 4 个数据，且内存也只够存 4 个数据，那么我们就给它分配 4 个数据。</p>
+<p>在学习和设计并行算法时，我们不需要知道每个计算单元具体分配多少数据，但要设计把数据拆分进每个计算单元的方式。比如对于形状为 $N \times M$ 的二维矩阵，计算单元一次能计算 $d$ 个数据，我们要决定是把数据在两个维度上拆分，得到 $ \frac{N}{\sqrt{d}} \times \frac{M}{\sqrt{d}}$ 组，还是只在第二维上拆分，得到 $N \times \frac{M}{d}$ 组。</p>
+<p>向量加法只是一个非常简单的运算，由于每个分量之间的计算是<strong>独立</strong>的，它天然就支持并行计算。而其他的运算就不一定满足这个性质了。比如向量求和：对于一个长度 16 的向量，我们要求出其 16 个分量之和。如果是串行算法，我们会写成这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sum</span> = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="number">16</span>):</span><br><span class="line">   <span class="built_in">sum</span> = <span class="built_in">sum</span> + a[i]</span><br></pre></td></tr></table></figure>
+<p>在每一步运算中，我们都需要读取当前的 <code>sum</code>，并更新 <code>sum</code> 的值。每步运算之间不是独立的，实现并行计算的方式不是很直观。</p>
+<p>用 GPU 编程实现更复杂的算子时，我们要仔细分析运算的过程，区分哪块运算像向量加法一样，是互相独立的；而哪些运算像向量求和一样，不好进行并行计算。之后，我们就要巧妙地对数据拆分，分配到各个计算单元中。比如，我们要求二维矩阵第二维（每一行）的和，我们发现矩阵每行之间的运算是独立的。因此，我们可以在第一维把数据拆分，让每个计算单元串行计算矩阵某一行的和。</p>
+<h3 id="GPU-编程新知识总结"><a href="#GPU-编程新知识总结" class="headerlink" title="GPU 编程新知识总结"></a>GPU 编程新知识总结</h3><p>相比使用高级语言编程，在 GPU 编程时，我们要多考虑两件事：1）访存开销；2）将可并行的运算拆分。具体的知识点有：</p>
+<ul>
+<li>GPU 的存储从顶到底分为三层： GPU SRAM, GPU HBM, CPU DRAM，它们的访存速度依次递减。编程时我们一般只考虑前两层之间的读写开销。</li>
+<li>通过观察算子本身的性质，我们可以利用算子融合技术减少访存开销。不反复读取同一批数据、不读写中间结果是两个常见的优化场景。</li>
+<li>GPU 由许多独立的计算单元组成，且每个计算单元本身也可以并行计算多个数据。但每个计算单元一次能并行处理的数据是有限的。如果数据量超过了计算单元的显存，要设法拆分数据。</li>
+<li>实现并行编程，实际上就是写一个输入参数包含计算单元 ID 的程序。我们要根据 ID 选取同样长度的一段数据，仅考虑这段数据该如何运算。</li>
+<li>并行编程的一大难点在于观察哪些运算是独立的，并把可以独立运算的部分分配仅不同计算单元。</li>
+</ul>
+<h2 id="Attention-运算"><a href="#Attention-运算" class="headerlink" title="Attention 运算"></a>Attention 运算</h2><p>Attention 运算建模了一个常见的场景：已有数据 $a$，该如何从数据集合 $B=\{b_i\}$ 中提取信息。比如一个像素要从图像中所有像素中提取信息，或者一个句子里的 token （词元）从另一个句子的所有 token 中提取信息。</p>
+<p>Attention 具体实现方式如下图所示：我们先算出 $a$ 对 $b_i$ 的相似度 $s_i$，它描述了 $a$ 对 $B$ 里第 $i$ 项数据的 「注意力」。之后，假设 $b_i$ 里存储的值 (value) 是 $v(b_i)$，我们用 $s_iv(b_i)$ 算出从单项数据中提取的信息。对所有提取出的信息求和，就能得到 Attention 操作的输出。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/1.jpg" alt></p>
+<p>那么，数据间的相似度应该怎么求呢？在标准 Attention 运算中，我们用向量内积来反映数据间的相似度。但下一个问题又来了：该怎么从数据 $a$, $b_i$ 中提取出一个用于计算相似度的向量呢？在实际的 Transformer 模型中，我们一般通过线性层来实现这件事。但在这篇文章中，我们假设每项数据的所有属性已经算好了。我们用 $q(a)$, $k(b_i)$ 来分别表示 $a$, $b_i$ 的用于算相似度的向量 （q 表示 query，k 表示 key），$v(b_i)$ 表示 $b_i$ 中的信息。 </p>
+<p><img src="/2025/08/24/20250511-flashattention-1/2.jpg" alt></p>
+<p>这个计算还不完美：假如内积相似度 $s_i$ 之和 $\sum{s_i}$ 大于 1，那么 Attention 输出向量里的数值会越来越大，让神经网络的计算变得不稳定。因此，我们希望用归一化让相似度之和为 1。</p>
+<p>最容易想到的归一化方法是线性归一化：先算出每个相似度及相似度之和，再除以相似度之和。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+s_i &\gets q(a)k(b_i) \\
+s_i &\gets \frac{s_i}{\sum{s_i}}
+\end{aligned}</script><p>但标准 Attention 运算用了一种更高级的 softmax 归一化：先对相似度求自然指数，再做线性归一化。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+s_i &\gets q(a)k(b_i) \\
+s_i &\gets e^{s_i}\\
+s_i &\gets \frac{s_i}{\sum{s_i}}
+\end{aligned}</script><p>最后，我们得到了 Transformer 论文中的标准 Attention 运算。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/3.jpg" alt></p>
+<blockquote>
+<p>在多数 Attention 实现中，我们会对 softmax 前的相似度乘一个系数 $1/\sqrt{d}$。在这篇文章的讨论中，我们会忽略这个缩放系数。</p>
+</blockquote>
+<p>为了简化上述公式，我们可以把 key, value 向量的集合合并成矩阵。各项数据的形状及合并后的公式如下所示。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/4.jpg" alt></p>
+<p>假设现在不止是数据 $a$，而是有 $n$ 个数据 $\{a_i | i \leq n\}$ 要从 B 中查询信息，那么我们可以把上述运算重复 $n$ 次，得到 $n$ 个结果 $Attn(a_i, B)$。如果我们把 $a_i$ 的相关属性 （即 query） 也合并成矩阵，就可以得到我们最熟悉的 Attention 公式。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/5.jpg" alt></p>
+<p>我们花了不少时间来回顾 Attention 运算。不管读者此前是否熟悉 Attention 运算，我都建议在学习 FlashAttention 前把 Attention 的计算细节回顾一遍。</p>
+<p>通过上面的回顾，我们发现 Attention 计算有一些特别的性质：</p>
+<ul>
+<li><p>不同 $q$ 之间的计算是独立的。而对于同一个 $q$，算它的 Attention 输出时最复杂的一步是计算 softmax 相似度。</p>
+</li>
+<li><p>由于 softmax 归一化的存在，我们只有在算完了 $qk$ 的所有内积相似度后，才能计算 softmax 的输出。</p>
+</li>
+</ul>
+<p>在后文的算法设计中，我们会用到这些性质。</p>
+<h2 id="自行设计-FlashAttention"><a href="#自行设计-FlashAttention" class="headerlink" title="自行设计 FlashAttention"></a>自行设计 FlashAttention</h2><p>简要了解 GPU 编程和 Attention 运算后，我们已经能够自行设计出一种比较高效的 FlashAttention 了。在这一节中，我们将由浅至深地了解 Attention 的实现细节。我们会先看其 PyTorch 实现，再看加入了访存操作后的 GPU 实现。随后，我们来尝试优化这份实现，最终设计出一版简易版的 FlashAttention。</p>
+<h3 id="PyTorch-版-Attention-及其访存操作"><a href="#PyTorch-版-Attention-及其访存操作" class="headerlink" title="PyTorch 版 Attention 及其访存操作"></a>PyTorch 版 Attention 及其访存操作</h3><p>PyTorch 版 Attention 的代码如下所示。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/10.jpg" alt></p>
+<p>光看 PyTorch 代码，我们还看不出哪里还有优化空间。因此，我们可以把访存操作加进去。假设一行 PyTorch 代码对应一个标准库里的 GPU 算子，要加入的 IO 操作如下。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/11.jpg" alt></p>
+<p>这样，我们就能立刻发现一个可优化项：中间变量 <code>s</code>, <code>p</code> 前脚刚写入 HBM，后脚又被读回了 SRAM。如果能用算子融合技术，把整个 Attention 运算放到同一个 GPU 算子里，就能规避这些额外的访存操作。</p>
+<p>需要注意的是，如果中间变量不多，多读写两次并不会浪费多少时间。然而，此处的 <code>s</code>, <code>p</code> 是两个数据量很大的变量。这是因为在当今大模型的 Transformer 中，（多头注意力的）特征维度 <code>D</code> 一般只是 <code>32</code>, <code>64</code> 这样比较小的数，而序列长度 <code>SL</code> 至少是 $10^4$ 这个数量级。所以，形状为 <code>[SL, SL]</code> 的中间变量 <code>s, p</code> 比形状为 <code>[SL, D]</code> 的输入输出要大得多，它们的访存开销严重拖慢了普通 Attention 的速度。</p>
+<h3 id="拆分数据读写"><a href="#拆分数据读写" class="headerlink" title="拆分数据读写"></a>拆分数据读写</h3><p>现在，我们来考虑如何把 Attention 都在同一个 GPU 算子里实现。如前文所述，每个 GPU 程序描述了一个计算单元上的运算。而由于计算单元本身的 SRAM 存储是有限的，我们需要根据程序 ID，拆分数据，仅处理部分数据。这里，我们假设每个计算单元能存储量级为 <code>D</code> 的数据，但无法存储量级为 <code>SL</code> 的数据。</p>
+<p>基于这一限制，我们来继续修改上面的程序。现在，我们不能一次读写形状为 <code>[SL, D]</code> 的数据了，该怎么拆分任务呢？在前文有关注意力运算的回顾中，我们知道，每个 query 之间的运算是独立的。因此，我们可以在上一份代码的基础上修改，只不过这一次我们只在一个并行程序里处理一个 query 和一个 output 的计算。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/12.jpg" alt></p>
+<p>当然，除了 <code>Q, O</code>，我们也不能一次性读写全部 <code>K, V</code> 了。既然如此，我们只能使用循环，在每一步迭代里读一个 <code>k</code> 或 <code>v</code>。改写后的程序如下。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/13.jpg" alt></p>
+<p>可是，程序中还有一处超出了内存限制：通过拆分运算，我们将中间变量 <code>s, p</code> 的形状从 <code>[SL, SL]</code> 降低到了 <code>[SL]</code>，但它们依然超过了内存限制。能否优化它们的内存占用呢？这一步优化，正是 FlashAttention 的核心贡献。</p>
+<h3 id="拆解-softmax"><a href="#拆解-softmax" class="headerlink" title="拆解 softmax"></a>拆解 softmax</h3><p>在进行算子融合时，并不是把几个算子拼接起来就做好了。我们往往要深入原算子的计算过程，看看是否能通过交换计算顺序或结合运算，提升整体的计算效率。这里也是同理。我们在优化和 softmax 相关的 <code>s, p</code> 变量时碰到了瓶颈，那我们就要拆解 softmax 的计算过程，看它和前后的两次点乘操作能否融合到一起以优化性能。</p>
+<p>softmax 的定义如下：</p>
+<script type="math/tex; mode=display">
+softmax(x_i) = \frac{e^{x_i}}{\sum_{i} e^{x_i}}</script><p>它的计算可以拆成三步：</p>
+<ol>
+<li>算 exp，得到分子</li>
+<li>向量求和，得到分母</li>
+<li>分子除以分母</li>
+</ol>
+<p>因此，softmax 在 attention 中的实现如下。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/14.jpg" alt></p>
+<p>拆分了 softmax 之后，我们立刻就能发现一个可优化项：变量 <code>s[i]</code> 被求了一次 exp 后就再也没用过了。既然如此，我们不必再用一个循环求 <code>numerator</code>，只需要求出了 <code>q</code>, <code>k</code> 的点乘 <code>s</code> 后，立刻求 <code>numerator[i] = exp(s[i])</code> 即可。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/15.jpg" alt></p>
+<p>类似地，我们也不用在另一个循环里对分母求和，一边算一边求和即可。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/16.jpg" alt></p>
+<p>做完这些优化后，我们确实消除了 softmax 的部分冗余运算。然而，最关键的问题还是没有解决：中间变量 <code>numerator</code>, <code>p</code> 的长度依然是 <code>SL</code>，该怎么接着优化呢？</p>
+<h3 id="消除长度为-SL-的中间变量"><a href="#消除长度为-SL-的中间变量" class="headerlink" title="消除长度为 SL 的中间变量"></a>消除长度为 <code>SL</code> 的中间变量</h3><p>刚刚我们把 softmax 的部分操作和 <code>q</code>, <code>k</code> 点乘合并了。能否顺着这个思路，把剩余操作和 <code>p</code>, <code>v</code> 的乘法合并呢？</p>
+<p>直观上看，这些操作不能合并。这是因为 <code>p</code> 的分母要在跑完了长度为 <code>SL</code> 的循环后才能算出。算出了正确的 <code>p</code>，我们才能接着算 <code>p</code>, <code>v</code> 的乘法。</p>
+<p>可见，问题的瓶颈在 <code>p</code> 的分母上。如果不需要除以那个 softmax 的分母，就没那么多限制了。我们先尝试忽略除法那一行，看看代码能优化多少。这时，可以把后面的循环和前面的循环合并起来，得到下面的代码。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/17.jpg" alt></p>
+<p>接着，我们来回头纠正输出。这个错误的 <code>O</code> 和之前正确的结果差了多少？其实就是少除以了一个 <code>denominator</code>。并且，修改了代码后，有关 <code>denominator</code> 的计算完全没变过。循环结束后，<code>denominator</code> 也就算出来了。所以，我们完全可以在循环结束后再除以分母。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/18.jpg" alt></p>
+<p>改完代码后，我们发现，<code>p</code> 不用再算了，只剩最后一个长度为 <code>SL</code> 的变量了——<code>numerator</code>。仔细观察代码，现在我们每次只需要用到 <code>numerator[i]</code>，不需要重新访问整个 <code>numerator</code> 向量。既然如此，我们可以把 <code>numerator</code> 向量换成一个临时变量。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/19.jpg" alt></p>
+<p>终于，这份程序成为了一段满足内存限制的可运行 GPU 程序。相比各个运算用独立算子表示的 PyTorch 版 Attention，这份高效 Attention 实现规避了形状为 <code>[SL, SL]</code> 的中间变量的读写开销，大大提升了运行效率。这版 Attention 就是一种简易的 FlashAttention。</p>
+<p><img src="/2025/08/24/20250511-flashattention-1/20.jpg" alt></p>
+<h3 id="优化思路总结"><a href="#优化思路总结" class="headerlink" title="优化思路总结"></a>优化思路总结</h3><p>让我们回顾一下优化 Attention 的过程。</p>
+<ul>
+<li>由于 Attention softmax 输出的内存占用过高，我们希望利用算子融合技术，避免将中间变量从 SRAM 写入 HBM。</li>
+<li>GPU 程序需要设计数据的拆分方式以决定并行计算方式。恰好 Attention 每个 query 的计算是独立的。我们让一个 GPU 程序只处理一个 query 的计算。</li>
+<li>一个计算单元无法存下长度高达 <code>SL</code> 的数据。因此，我们只能用长度为 <code>SL</code> 的循环来逐个处理 key, value 的运算。但是，softmax 的输出长度仍为 <code>SL</code>。</li>
+<li>为了进一步优化，我们需要拆解并优化 softmax 的计算。softmax 的部分运算可以和 query, key 的点乘合并。但由于 softmax 分母需要遍历所有 key 后才能算出，仍需存储长度为 <code>SL</code> 的 softmax 分子。</li>
+<li>通过观察，我们发现 softmax 的除法运算不影响后面与 value 的乘法运算。因此，我们可以在一个循环里直接算完 query, key, value 的乘法，并维护 softmax 的分母。循环结束后，我们再除以分母。这样，就不再需要长度为 <code>SL</code> 的中间变量了。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我们先了解了学习 GPU 编程的必须知识，并回顾了 Attention 的运算过程。之后，我们通过逐步优化代码的方式，实现了一个没有过长中间变量、可以在 SRAM 上运行的算子融合版 Attention，即简易版 FlashAttention。在这个过程中，我们理解了 FlashAttention 的设计动机和优化方向：普通 Attention 会产生长度为序列长度平方的中间变量，它的访存时间严重拖慢了 Attention 的运算速度。在优化该运算时，我们的关键发现是 softmax 的除法运算并不影响 q, k, v 的矩阵乘法运算。因此，我们可以在同一个循环里算 q, k, v 乘法，并同时维护 softmax 的分母。这样，就不用维护一个过长的中间变量了。</p>
+<p>在学习过程中，我们或许能发现，GPU 编程比 PyTorch 编程要复杂得多，可能光看这篇博文还看不太懂。之后有时间的话，我会介绍 FlashAttention 的 Triton 实现，让读者能够亲身体会 GPU 编程方式及其带来的优化效果。这篇文章介绍的并不是真正的 FlashAttention 算法，也欢迎读者去阅读原论文和其他文章来深入学习 FlashAttention。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" rel="tag"># 高性能计算</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/05/11/20250425-cfgzero/" rel="prev" title="CFG-Zero*：流匹配时代的新版 Classifier-Free Guidance">
+      <i class="fa fa-chevron-left"></i> CFG-Zero*：流匹配时代的新版 Classifier-Free Guidance
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%95%E5%B1%82-GPU-%E7%BC%96%E7%A8%8B%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">底层 GPU 编程模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">存储模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E5%AD%90%E8%9E%8D%E5%90%88%E4%B8%8E%E8%AE%BF%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-number">1.2.</span> <span class="nav-text">算子融合与访存优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E7%BC%96%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">并行编程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GPU-%E7%BC%96%E7%A8%8B%E6%96%B0%E7%9F%A5%E8%AF%86%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.</span> <span class="nav-text">GPU 编程新知识总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Attention-%E8%BF%90%E7%AE%97"><span class="nav-number">2.</span> <span class="nav-text">Attention 运算</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E8%A1%8C%E8%AE%BE%E8%AE%A1-FlashAttention"><span class="nav-number">3.</span> <span class="nav-text">自行设计 FlashAttention</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#PyTorch-%E7%89%88-Attention-%E5%8F%8A%E5%85%B6%E8%AE%BF%E5%AD%98%E6%93%8D%E4%BD%9C"><span class="nav-number">3.1.</span> <span class="nav-text">PyTorch 版 Attention 及其访存操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8B%86%E5%88%86%E6%95%B0%E6%8D%AE%E8%AF%BB%E5%86%99"><span class="nav-number">3.2.</span> <span class="nav-text">拆分数据读写</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8B%86%E8%A7%A3-softmax"><span class="nav-number">3.3.</span> <span class="nav-text">拆解 softmax</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E9%99%A4%E9%95%BF%E5%BA%A6%E4%B8%BA-SL-%E7%9A%84%E4%B8%AD%E9%97%B4%E5%8F%98%E9%87%8F"><span class="nav-number">3.4.</span> <span class="nav-text">消除长度为 SL 的中间变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93"><span class="nav-number">3.5.</span> <span class="nav-text">优化思路总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">154</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">66</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

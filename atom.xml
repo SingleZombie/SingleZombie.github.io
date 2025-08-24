@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2025-05-10T19:18:12.552Z</updated>
+  <updated>2025-08-24T08:40:10.199Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,35 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>不会 CUDA 也能轻松看懂的 FlashAttention 教程（算法原理篇）</title>
+    <link href="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/"/>
+    <id>https://zhouyifan.net/2025/08/24/20250511-flashattention-1/</id>
+    <published>2025-08-24T08:40:10.000Z</published>
+    <updated>2025-08-24T08:40:10.199Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;以 Attention 计算为核心的 Transformer 模型是当今深度学习的基石。虽然 Attention 计算十分有效，但其高昂的计算成本往往成为了模型性能优化的瓶颈。为了在 GPU 上高效执行 Attention 计算，现在开发者们普遍都使用了</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="高性能计算" scheme="https://zhouyifan.net/tags/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/"/>
+    
+  </entry>
   
   <entry>
     <title>CFG-Zero*：流匹配时代的新版 Classifier-Free Guidance</title>
@@ -610,36 +639,6 @@
     
     
     <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>锐评能模拟射击游戏的扩散模型 GameNGen</title>
-    <link href="https://zhouyifan.net/2024/09/03/20240829-GameNGen/"/>
-    <id>https://zhouyifan.net/2024/09/03/20240829-GameNGen/</id>
-    <published>2024-09-03T08:33:35.000Z</published>
-    <updated>2024-09-03T08:33:35.942Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;今天看到一则新闻，说 Google DeepMind 发布了一个叫做 GameNGen （英文读音 “game engine”，游戏引擎）的扩散模型，它可以仅用神经网络的生成结果，模拟经典射击游戏 DOOM。&lt;/p&gt;
-&lt;p&gt;项目网站：&lt;a</summary>
-        
-      
-    
-    
-    
-    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
-    
-    <category term="议论文" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E8%AE%AE%E8%AE%BA%E6%96%87/"/>
-    
-    
-    <category term="游戏设计" scheme="https://zhouyifan.net/tags/%E6%B8%B8%E6%88%8F%E8%AE%BE%E8%AE%A1/"/>
     
     <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
     

@@ -168,6 +168,136 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/01/04/20250104-pycco/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/01/04/20250104-pycco/" class="post-title-link" itemprop="url">用 Pycco 为 Python 代码快速创建双列注释网页</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-01-04 23:02:57" itemprop="dateCreated datePublished" datetime="2025-01-04T23:02:57+08:00">2025-01-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E5%B7%A5%E5%85%B7%E7%94%A8%E6%B3%95%E6%8C%87%E5%8D%97/" itemprop="url" rel="index"><span itemprop="name">工具用法指南</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>最近，我在网上看到了一个专门介绍深度学习源代码的网站（<a target="_blank" rel="noopener" href="https://nn.labml.ai/index.html">https://nn.labml.ai/index.html</a> ），各类流行网络架构一应俱全。这个网站最吸引我的，是它的双列式结构。如下所示，每个页面右边显示代码，左边显示每段代码对应的注释。</p>
+<p><img src="/2025/01/04/20250104-pycco/1.jpg" alt></p>
+<p>一直以来，我在博客中介绍代码时，都是先写描述文字，再贴一段代码。这种方式对作者和读者来说都十分低效。受到上面那个网站的启发，我决定以后也采用这种方式介绍源代码。很可惜，上面那个网站是由 labml.ai 这个组织维护的，似乎并没有提供开源的、可定制的注释网站搭建方式。为此，我找到了一个替代品：Pycco。它可以方便地为 Python 代码生成双列带注释的静态页面。</p>
+<h2 id="Pycco-安装与使用"><a href="#Pycco-安装与使用" class="headerlink" title="Pycco 安装与使用"></a>Pycco 安装与使用</h2><p>Pycco 是页面生成工具 Docco 的 Python 实现版。它们都是「快而脏」的文档生成器：源代码只有几百行，没有多余封装，直观而暴力地生成 HTML 页面的所有内容。它们为初学者只提供了一个文档页面，这个文档页面讲的是它们的源代码，且文档页面就是由它们本身创建出来的。Pycco 的官方文档页面如下所示。一开始介绍完 Pycco 的背景信息和安装方式后，文档就会直接开始介绍源代码。</p>
+<p><img src="/2025/01/04/20250104-pycco/2.jpg" alt></p>
+<p>根据文档的指示，我们可以通过下面的命令在 <code>pip</code> 里安装 Pycco：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pycco</span><br></pre></td></tr></table></figure>
+<p>在使用 Pycco 时，我们完全不用去理解其源代码的意思，只需要准备一个带注释的 Python 源文件就行。Pycco 提供了一键式命令，帮我们把源文件里的注释和代码分离，并生成左侧为注释，右侧为代码的静态文档页面。这里的注释既包括了 <code>#</code> 开头的单行注释，也包括了 <code>&quot;&quot;&quot; &quot;&quot;&quot;&quot;</code> 包裹的多行注释。注意，三个单引号构成的多行注释 <code>&#39;&#39;&#39; &#39;&#39;&#39;</code> 不会被该工具识别。</p>
+<p>我们来看一个示例。假设我们有下面一个名为 <code>hello.py</code> 的 Python 源文件。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">Hello</span></span><br><span class="line"><span class="string">World</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> pycco</span><br><span class="line"></span><br><span class="line"><span class="comment"># Hello</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;hello world&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">End of file</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>我们用下面的命令为其生成文档页面。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pycco hello.py</span><br></pre></td></tr></table></figure>
+<p>页面会生成在目录下的 <code>docs</code> 子目录里，子目录包含一个 <code>hello.html</code> 文件和一个 <code>pycco.css</code> 文件。我们可以用浏览器打开 <code>.html</code> 网页，看到下图所示内容。</p>
+<p><img src="/2025/01/04/20250104-pycco/3.jpg" alt></p>
+<p>注释默认使用 Markdown 语法。如果平时就习惯用 Markdown 写博客的话可以无缝切换。但是，默认情况下网页无法渲染公式。</p>
+<p><img src="/2025/01/04/20250104-pycco/4.jpg" alt></p>
+<h2 id="页面跳转"><a href="#页面跳转" class="headerlink" title="页面跳转"></a>页面跳转</h2><p>除了普通的 Markdown 语法外，Pycco 还支持一个特殊的功能：文档跳转。我们可以把文件名写在 <code>[[ ]]</code> 内，实现源文件内部或源文件间的跳转。特别地，我们还可以在页面某处打上标签，并跳转到某页面的标签处。以下是一个示例。为了给「注释」加上注释，我别出心裁地把注释写进了代码部分。</p>
+<p><img src="/2025/01/04/20250104-pycco/5.jpg" alt></p>
+<h2 id="让页面渲染-LaTeX-公式"><a href="#让页面渲染-LaTeX-公式" class="headerlink" title="让页面渲染 LaTeX 公式"></a>让页面渲染 LaTeX 公式</h2><p>刚才我们发现，目前的 Pycco 页面并不支持公式渲染。而在解释深度学习代码时，很多时候不得不用到公式。因此，我决定给 Pycco 加上渲染公式的功能。</p>
+<p>Pycco 这种直观暴力的实现方法让网页开发者能够快速地修改页面生成逻辑。然而，我已经把 HTML 的知识快忘光了，配不上「网页开发者」这个名号。因此，我让 ChatGPT o1 来帮我开发这一功能。</p>
+<p>经指导，我认识了 MathJax 这个在网页上渲染公式的工具。只需要在 HTML 的 <code>head</code> 里导入一些包，网页就可以自动识别单行公式 <script type="math/tex"> </script> 和多行公式 $$$ $$$。我不记得 <code>head</code> 是什么了，但大概能猜到这个是一个相当于声明全局变量的语句块。</p>
+<p>我在 <code>pycco_resources\__init__.py</code> 文件里找到了设置 <code>head</code> 的地方。这个文件提供了生成网页的模板，包括了写死的 CSS 文件和部分 HTML 代码。打开这个文件的最快方式是在某处写 <code>import pycco_resources</code>，之后用 IDE 的代码跳转找到这个包在本地的位置。</p>
+<p>我们在该文件下图所示的位置插入和 MathJax 相关的代码。</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="title class_">MathJax</span> = &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="attr">tex</span>: &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="attr">inlineMath</span>: [ [<span class="string">&quot;$&quot;</span>,<span class="string">&quot;$&quot;</span>] ]</span></span><br><span class="line"><span class="language-javascript">      &#125;</span></span><br><span class="line"><span class="language-javascript">    &#125;;</span></span><br><span class="line"><span class="language-javascript">  </span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/6.jpg" alt></p>
+<p>修改模板后，重新生成网页，可以发现现在公式能够正确渲染了。</p>
+<p><img src="/2025/01/04/20250104-pycco/7.jpg" alt></p>
+<h2 id="高亮新增-删除代码"><a href="#高亮新增-删除代码" class="headerlink" title="高亮新增/删除代码"></a>高亮新增/删除代码</h2><p>在以后讲解代码的时候，我想高亮新增的或者删去的代码，就像 GitHub 里显示代码的更改一样。由于 Pycco 非常容易做二次开发，我又去请教 ChatGPT o1 该如何实现这样的功能。</p>
+<p>经指导，我了解到代码高亮可以通过设置背景颜色 style 来实现。为此，我需要做两件事：</p>
+<ol>
+<li>新增有关背景颜色的 CSS style</li>
+<li>想办法指定要高亮的代码块</li>
+</ol>
+<p>第一件事很简单，只需要打开模板文件 <code>pycco_resources\__init__.py</code>，添加背景颜色 style 即可。我添加了两种背景颜色，分别表示删去的和新增的代码块。我是在 VSCode 里找到想要的颜色值的。随便打开一个 CSS 文件，输入一个大概的颜色值，VSCode 就会弹出一个选择颜色的小窗口。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.highlighted-line-<span class="number">1</span> &#123;</span><br><span class="line">  background-color: <span class="comment">#fa53208c;</span></span><br><span class="line">&#125;</span><br><span class="line">.highlighted-line-<span class="number">2</span> &#123;</span><br><span class="line">  background-color: <span class="comment">#68fc5d;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/8.jpg" alt></p>
+<p>第二件事就比较难了。我需要先看懂目前高亮源代码的逻辑，再在其基础之上添加背景高亮的功能。Pycco 的主函数在文件 <code>pycco/main.py</code> 里，我们可以用导入 Python 包的方式快速找到这份源文件。原来的高亮关键字的逻辑如下，我在其中加入了一些代码用于输出中间结果。</p>
+<p><img src="/2025/01/04/20250104-pycco/9.jpg" alt></p>
+<p>函数的主要输入是列表 <code>sections</code>，函数的输出存储在列表项 <code>section</code> 的 <code>&quot;docs_html&quot;</code>, <code>&quot;code_html&quot;</code> 字段。 </p>
+<p><code>sections</code> 内容如下，可见其中是过了解析器的注释块和代码块。每一段注释都会对应一段代码。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[&#123;&#x27;docs_text&#x27;: &#x27;=== BeGin ===\r\n\n&#x27;, &#x27;code_text&#x27;: &#x27;import torch\r\nimport pycco\r\n\r&#x27;&#125;, &#123;&#x27;docs_text&#x27;: &#x27;# Hello\r\n## World\r\nThis is a **Python** [code](https://www.python.org/).\r\nTry formula $\\epsilon$ .\r\n$$\r\n3 = 1 + 2\r\n$$\r\n\n\n&#x27;, &#x27;code_text&#x27;: &#x27;print(&quot;hello world&quot;)\r\n\r&#x27;&#125;, &#123;&#x27;docs_text&#x27;: &#x27;End of file\r\n\n&#x27;, &#x27;code_text&#x27;: &#x27;\n&#x27;&#125;]</span><br></pre></td></tr></table></figure>
+<p>函数的输出是完整 HTML 文件的一部分。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;h3&gt;&lt;span id=&quot;begin&quot; href=&quot;begin&quot;&gt; BeGin &lt;/span&gt;&lt;/h3&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;torch&lt;/span&gt;</span><br><span class="line">&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;pycco&lt;/span&gt;&lt;/pre&gt;&lt;/div&gt;</span><br><span class="line">&lt;h1&gt;Hello&lt;/h1&gt;</span><br><span class="line">&lt;h2&gt;World&lt;/h2&gt;</span><br><span class="line">&lt;p&gt;This is a &lt;strong&gt;Python&lt;/strong&gt; &lt;a href=&quot;https://www.python.org/&quot;&gt;code&lt;/a&gt;.</span><br><span class="line">Try formula $\epsilon$ .</span><br><span class="line">$$</span><br><span class="line">3 = 1 + 2</span><br><span class="line">$$&lt;/p&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;span class=&quot;nb&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;hello world&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/pre&gt;&lt;/div&gt;</span><br><span class="line">&lt;p&gt;End of file&lt;/p&gt;</span><br><span class="line">&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;/pre&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+<p>那么，我的目标就是修改这个文件。我需要先根据输入的原始代码块，判断这段代码是否要高亮，再修改 HTML 代码块的内容。</p>
+<p>首先，从用户的角度考虑，应该怎么指定要背景高亮的代码呢？既然现在代码被拆成了一块一块的，且每块代码对应一段注释，我决定用一些特殊注释来高亮一整块代码，就像前面的设置标签和跳转标签的特殊注释一样。我加入了以下判断：如果注释前几个字符是 <code>&#39;===ADD===&#39;</code> 或 <code>&#39;===DEL===&#39;</code>，就用对应的颜色高亮这段代码。</p>
+<p>判断了是否要高亮后，我还需要做对应的修改。我不仅要在 HTML 代码块里高亮代码，还需要把注释块里的特殊命令删掉。通过观察相关代码，我忽然回忆起了 HTML 的部分实现原理：背景高亮就是把一段 HTML 字符串封进一个带有背景高亮样式的标签 <code>&lt;div&gt;&lt;/div&gt;</code> 里。那剩下的删除注释也很简单，只需要对字符串做一点简单操作就行了。代码修改过程及使用示例如下所示。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Add following code</span></span><br><span class="line"></span><br><span class="line">delete_background_start = <span class="string">&#x27;&lt;div class=&quot;highlighted-line-1&quot;&gt;&#x27;</span></span><br><span class="line">add_background_start = <span class="string">&#x27;&lt;div class=&quot;highlighted-line-2&quot;&gt;&#x27;</span></span><br><span class="line">background_end = <span class="string">&#x27;&lt;/div&gt;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> section[<span class="string">&quot;docs_text&quot;</span>].startswith(<span class="string">&#x27;===ADD===&#x27;</span>):</span><br><span class="line">    section[<span class="string">&quot;docs_text&quot;</span>] = section[<span class="string">&quot;docs_text&quot;</span>][<span class="number">9</span>:]</span><br><span class="line">    section[<span class="string">&quot;code_html&quot;</span>] = add_background_start + section[<span class="string">&quot;code_html&quot;</span>] + background_end</span><br><span class="line"><span class="keyword">elif</span> section[<span class="string">&quot;docs_text&quot;</span>].startswith(<span class="string">&#x27;===DEL===&#x27;</span>):</span><br><span class="line">    section[<span class="string">&quot;docs_text&quot;</span>] = section[<span class="string">&quot;docs_text&quot;</span>][<span class="number">9</span>:]</span><br><span class="line">    section[<span class="string">&quot;code_html&quot;</span>] = delete_background_start + section[<span class="string">&quot;code_html&quot;</span>] + background_end</span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/10.png" alt></p>
+<h2 id="修正多行注释缩进"><a href="#修正多行注释缩进" class="headerlink" title="修正多行注释缩进"></a>修正多行注释缩进</h2><p>在写这篇博文的时候，我又发现 Pycco 的一个 bug：在多行注释带缩进时，HTML 页面上的注释也会缩进，导致页面布局完全乱套。</p>
+<p><img src="/2025/01/04/20250104-pycco/11.jpg" alt></p>
+<p>我找到了 <code>pycco/main.py</code> 里处理多行注释的代码。我把旧代码全部删掉，换了一种暴力的字符串处理方式：删除多行注释左侧所有空格及制表符。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docs_text += line.lstrip(<span class="string">&#x27;\t &#x27;</span>) + <span class="string">&#x27;\n&#x27;</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2025/01/04/20250104-pycco/12.jpg" alt></p>
+<p>改完之后 bug 就修好了。</p>
+<p><img src="/2025/01/04/20250104-pycco/13.jpg" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了 Pycco 这个为 Python 代码生成双列注释-代码静态页面的 Python 工具，并分享了我对其的三个修改：支持 MathJax 公式、支持背景高亮、修复多行注释缩进 bug。相比介绍开源项目的 readthedocs 等文档构建工具，Pycco 能够为每行 Python 代码写注释，尤其适合详细讲解深度学习代码。对于熟练的网页开发者，Pycco 的源代码很短，改起来很方便；但另一方面，Pycco 似乎比较小众，多年都没人维护，可能有各种 bug。主要推荐想在个人博客里讲解代码的朋友使用这个工具。我以后都会用它来讲解代码。 </p>
+<h2 id="ChatGPT-小插曲"><a href="#ChatGPT-小插曲" class="headerlink" title="ChatGPT 小插曲"></a>ChatGPT 小插曲</h2><p>ChatGPT 在指导我添加 MathJax 时，先叫我下载 <code>python-markdown-math</code> 这个 pip 包，让 Python 脚本里的 Markdown 解析器能够解析公式。但我在实践中发现不解析 $$$$ 符号，在正确导入 MathJax 包后，网页依然能够正确渲染。</p>
+<p>ChatGPT 一开始提供的 MathJax 导入代码是 MathJax V3 的。经过 <code>python-markdown-math</code> 解析后，双行注释被转换成了 <code>&lt;script type=&quot;math/tex; mode=display&quot;&gt;&lt;/script&gt;</code> 包裹的内容。这些公式没法成功渲染。我把添加双行公式的详细过程提供给 ChatGPT 后，它分析出这种 <code>&lt;script&gt;</code> 的写法是 MathJax V2 的，让我把 <code>head</code> 里的包改成 MathJax V2。修改过后，双行公式果然渲染成功了。然而，如上一段所述，我发现哪怕不用 <code>python-markdown-math</code> 也行。于是我又用回了 MathJax V3。可见 ChatGPT 有功有过，给我制造了一些麻烦，也算是能够帮我解决。</p>
+<p>在求助 ChatGPT 添加背景高亮功能时，它非常出色地分析了问题：先理解 Pycco 生成 HTML 的过程，再决定用户如何指定要高亮的内容，最后根据不同的方案做实现。但它给的三个信息输入方案都不尽如人意：(1) 在命令行里指定要高亮的行；(2) 在每行要高亮的代码前都加特殊注释；(3) 用另一个配置文件来指定要高亮的行。这些方法的用户体验都不好，且难于实现。当然，由于我没有把所有源代码给它，它或许没有发挥完整的实力。最后我还是靠自己理解了 Pycco 的页面生成逻辑，选了一种好实现且好用的方案。</p>
+<p>我从来没有用 ChatGPT 做过特别复杂的编程任务，这次稍微体会了一下。感觉它的能力有时候会出乎意料地强（比如发现 HTML 的风格是 MathJax V2 的），但不见得次次都靠谱。它的能力主要还是基于大量数据的「搜索」，加上一点浅显的思考。只是因为看过的数据过多，所以很多时候能从历史经验中直接给出很好的答案。当然，作为语言模型，它对于语言的理解能力极强，哪怕描述不完全也能准确理解用户的意图。做为使用者，我们要在用之前就想好能从 ChatGPT 那里获取到哪些帮助，并提供充足的信息，而不能全盘接受它的输出，就和我们日常和别人交流一样。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/28/20241228-2024/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1499,169 +1629,6 @@ k_{NTK}(\mathbf{x_i}, \mathbf{x_j}) = \mathbb{E}_{\theta\sim\mathcal{N}} \langle
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/09/03/20240829-GameNGen/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/09/03/20240829-GameNGen/" class="post-title-link" itemprop="url">锐评能模拟射击游戏的扩散模型 GameNGen</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-09-03 16:33:35" itemprop="dateCreated datePublished" datetime="2024-09-03T16:33:35+08:00">2024-09-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%9D%82%E8%B0%88/%E8%AE%AE%E8%AE%BA%E6%96%87/" itemprop="url" rel="index"><span itemprop="name">议论文</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>今天看到一则新闻，说 Google DeepMind 发布了一个叫做 GameNGen （英文读音 “game engine”，游戏引擎）的扩散模型，它可以仅用神经网络的生成结果，模拟经典射击游戏 DOOM。</p>
-<p>项目网站：<a target="_blank" rel="noopener" href="https://gamengen.github.io/">https://gamengen.github.io/</a></p>
-<p>视频链接：<a target="_blank" rel="noopener" href="https://gamengen.github.io/static/videos/e1m1_t.mp4">https://gamengen.github.io/static/videos/e1m1_t.mp4</a></p>
-<p>作为一名未来的游戏设计师，每次看到这类「今天 AI 又取代了创作者」的新闻，我的第一反应总会是愤怒：创作是人类智慧的最高结晶，能做到这种程度的 AI 必然是强人工智能。但显然现在 AI 的水平没有那么高，那么这类宣传完全是无稽之谈。我带着不满看完了论文，果然这个工作并没有在技术上有革命性的突破。不过，这篇论文还是提出了一个比较新颖的科研任务并漂亮地将其解决了的，算是一篇优秀的工作。除了不要脸地将自己的模型称为「游戏引擎」外，这篇工作在宣传时还算克制，对模型的能力没有太多言过其实的描述。</p>
-<p>如果不懂相关技术的话，外行人很容易对这篇工作的应用前景产生一些不切实际的幻想。在这篇文章中，我将完整而清晰地介绍这篇工作的内容，再给出我从游戏开发方面和科研方面对这篇工作的评价。</p>
-<h2 id="问题定义"><a href="#问题定义" class="headerlink" title="问题定义"></a>问题定义</h2><p>看完了这篇工作的展示视频，大家第一个想问的问题一定是：这个模型的输入是什么？是只能随机生成游戏视频，还是能够根据用户的输入来生成后续内容？</p>
-<p>答案是，模型可以根据之前的游戏进度及当前的用户输入，输出下一帧的游戏图片。我们来详细看一下该工作对于「游戏」的定义。</p>
-<p>论文的第二章详细定义了该工作要完成的任务。作者认为，一个游戏可以由<strong>游戏状态</strong>、<strong>游戏画面</strong>、<strong>玩家操作集</strong>这三类信息组成。游戏状态包括角色血量、装备、地图、敌人等所有影响游戏进程的信息；游戏画面就是游戏屏幕上显示的二维图片；玩家操作集就是移动、射击等玩家所有可能进行的操作。此外，为了让游戏运行，还需要两类游戏机制：如何根据游戏状态生成当前游戏画面的<strong>渲染机制</strong>；如何根据游戏状态和当前玩家操作更新下一时刻游戏状态的<strong>逻辑机制</strong>。</p>
-<p>而用一个生成模型来模拟游戏时，我们不需要让模型学会游戏机制、状态，只需要让模型<strong>根据之前所有的画面和玩家操作，以及当前时刻的玩家操作，输出当前时刻的画面</strong>。这样，我们给第一个初始帧和操作，模型就能输出第二帧；给前两帧和之前及现在的操作，模型就能输出第三帧……。也就是说，模型以自回归的方式模拟游戏画面。</p>
-<blockquote>
-<p>给想读这篇论文的读者一点阅读上的提示。论文以「交互环境」$\mathcal{E}$来指代我上文中的「游戏」，以 「交互世界模拟」$q$ 来指代生成模型。在定义 $\mathcal{E}$ 用到的几个字母对应我前文的粗体名词。</p>
-</blockquote>
-<p>在我看来，这篇工作的主要贡献，就是把游戏模拟任务以如此简明的形式清楚定义了出来。怎么把任务做好，纯粹只是工程实现问题。明确了任务后，相关领域的科研人员基本上能猜出这篇工作是怎么实现的了。下面，我们就来看一下论文中分享的实现过程。</p>
-<h2 id="GameNGen"><a href="#GameNGen" class="headerlink" title="GameNGen"></a>GameNGen</h2><h3 id="用强化学习造数据"><a href="#用强化学习造数据" class="headerlink" title="用强化学习造数据"></a>用强化学习造数据</h3><p>本工作的任务是根据某些信息生成下一帧的画面，这种生成某类图像的任务用日益成熟的图像扩散模型技术就能解决了。但是，为了训练扩散模型，本工作有一道跨不过的坎——缺乏游戏画面数据。</p>
-<p>为了生成足够多的图片，作者利用强化学习训练了一个玩游戏的 AI。在这一块，作者用了一个非常巧妙的设计：和其他强化学习任务不同，这个玩游戏的 AI 并不是为了将游戏漂亮地通关，而是造出尽可能多样的数据。因此，该强化学习的奖励函数包括了击中敌人、使用武器、探索地图等丰富内容，鼓励 AI 制造出不同的游戏画面。</p>
-<h3 id="带约束图像扩散模型"><a href="#带约束图像扩散模型" class="headerlink" title="带约束图像扩散模型"></a>带约束图像扩散模型</h3><p>有了数据后，问题进一步缩小：现在该怎么用 Stable Diffussion 这个比较成熟的图像生成模型来根据<strong>之前的图片</strong>和<strong>之前及当前的操作</strong>来生成图片。</p>
-<p>「之前的图片」和「之前及现在的操作」是输入给图像生成模型的两类额外信息。用专业术语来说，它们是给一个随机生成图像的模型的<strong>约束</strong>条件，用于让模型的输出不那么随机。而带约束图像生成也是一个被研究得比较透的任务了。</p>
-<blockquote>
-<p>以下内容是写给相关科研者看的，看不懂可以跳过。</p>
-</blockquote>
-<p>先谈怎么让模型约束于之前的图片。本文参考了经典的 Cascaded Diffusion 实现图像约束：将之前的图片过 VAE 编码器，与扩散模型原来的噪声输入拼接。然而，这种约束方式存在分布不匹配的问题：训练时，图像约束来自训练集；推理时，图像约束来自于模型之前自回归的生成结果。为了填平两类图像在分布上的差异，我们需要给所有约束图像加噪，并把加噪程度当成额外约束输入进模型。这种图像约束方法和图生视频的 Stable Video Diffusion 是一样的。</p>
-<p>再看模型怎么约束于操作。每个操作都有独特的含义，它和语言中的单词是类似的。因此，我们可以把离散的操作变成嵌入向量，用 Stable Diffusion 处理单词的机制来处理操作。所以，在 GameNGen 的扩散模型中，文本约束没有了，被操作约束取代了。顺带一提，我们要输入之前及当前的操作，它们构成了一个操作序列。我们只要把这个操作序列当成由单词构成的文本，还是用原来 Stable Diffusion 那套处理文本的机制就行了。</p>
-<p>此外，该工作还微调了 Stable Diffusion 的 VAE 的解码器，用以提升其在特定数据上的重建效果。这种操作也是比较常见的，比如 Stable Video Diffusion 将图像解码器微调成了视频解码器。</p>
-<h2 id="实验及结果"><a href="#实验及结果" class="headerlink" title="实验及结果"></a>实验及结果</h2><p>本工作仅对图像约束用了强度为 1.5 的 Classifier-Free Guidance (CFG)，没有对操作约束加 CFG。采样用的是 DDIM 采样器，实验表明 4 步采样的结果就足够好了。在单个 TPU-v5 上，模拟模型每秒能渲染 20 帧画面。</p>
-<p>扩散模型基于 Stable Diffusion V1.4 训练。输入图像分辨率为 $320 \times 256$。之前图像和操作的上下文窗口长度为 $64$。训练集包含 900M 张图片，要用 128 块 TPU-v5e 训练 700,000 步。</p>
-<p>论文还评价了模型的生成质量。由于训练集能够提供当前要预测的帧的真值，因此我们可以用重建误差来反映模型的质量。具体来说，论文展示了表示图像相似度的 PSNR 和图像感知误差的 LPIPS。 重建质量通过两个任务来反映：</p>
-<ul>
-<li>图像质量：输入之前图像、操作均为数据集（按理说是测试集而不是训练集）里的真值，仅评测当前帧。此时重建质量较好，平均 PSNR 为 29.43，和一般图像经 JPEG 压缩产生的损耗相近。 </li>
-<li>视频质量：给定初始图像和数据集里的之前操作，让模型自回归地生成一段视频。这种情况下每一帧的质量会逐渐降低，如下所示。</li>
-</ul>
-<p><img src="/2024/09/03/20240829-GameNGen/1.jpg" alt></p>
-<p>除此之外，论文还展示了人类的评估结果：给出两段长度为 1.6 秒或 3.2 秒的游戏视频，分别来自真实游戏和 AI 生成，请人类分辨哪段视频是 AI 生成的。对于 1.6 秒的视频，正确率为 <code>58%</code>；对于 3.2 秒的视频，正确率为 <code>60%</code>。</p>
-<blockquote>
-<p>此类评测的最低（最优）正确率是 <code>50%</code>，因为我们总是可以随便猜一个。</p>
-</blockquote>
-<h2 id="论文总结与评价"><a href="#论文总结与评价" class="headerlink" title="论文总结与评价"></a>论文总结与评价</h2><h3 id="信息整理"><a href="#信息整理" class="headerlink" title="信息整理"></a>信息整理</h3><p>到目前为止，我已经客观介绍了论文中展示的内容。让我用外行人也能看懂的语言总结一下：</p>
-<p>本工作提出的 GameNGen 模型可以根据之前的游戏画面、用户的历史操作、当前操作，在完全不了解游戏机制的前提下，生成包含游戏逻辑（血量、弹药）的当前帧画面。生成画面的模型是一个深度学习模型。因此，需要一个包含了过往操作、真实游戏画面的大型数据集来训练该模型。本工作利用强化学习制造了大量数据。训练用了 128 张 TPU-v5e 计算卡。该生成模型能在单张 TPU-v5 (专门用来做深度学习的计算「显卡」，只租不卖，比价值 25000 美元的 H100 显卡要好) 上能以 20 帧每秒的速度生成画面。模型最多能记住 64 帧，即 3.2 秒内的游戏信息。若将 3.2 秒的生成视频与真实游戏视频比较，人类仅有 60% 的概率分辨出 AI 生成的视频。当然，利用自回归技术反复输入之前生成的画面，模型也能够生成更长的视频，正如本文开头所展示的那个视频。</p>
-<h3 id="论文中提及的缺陷"><a href="#论文中提及的缺陷" class="headerlink" title="论文中提及的缺陷"></a>论文中提及的缺陷</h3><p>哪怕不懂深度学习，大家也可以根据上述信息，提出自己的看法。当然，在那之前，我们先看一下作者在论文里是怎么描述模型的缺陷的。</p>
-<p>作者讲到，GameNGen 受制于有限的记忆。模型仅能获取三秒之短的历史信息，却能在极其长的时间里保持游戏逻辑稳定，这很了不起（怎么讲着讲着又开始夸起自己了？）。但由于模型学到了太多东西，模型会创造短期记忆处理不了的场景，比如角色在某处打倒了敌人，数分钟后又返回打倒了敌人的地方（文章讲了半天讲不出个东西，我替他们总结了一下）。对于这些问题，以当前的模型架构，再怎么加大记忆窗口也无济于事。</p>
-<h3 id="面向交互视频游戏的新范式"><a href="#面向交互视频游戏的新范式" class="headerlink" title="面向交互视频游戏的新范式"></a>面向交互视频游戏的新范式</h3><p>基于这篇工作的成果，作者还展望了未来：（以下是我对原文的精心翻译，欢迎对比）</p>
-<p>如今，视频游戏是靠人类编程实现的。而 GameNGen 表明了以神经网络的权重来描述游戏这种新范式的部分可行性。GameNGen 展示了，在现有硬件上用神经网络模型来高效地交互运行一个复杂的游戏 （DOOM）不是奢望，这样的模型架构与模型权重是存在的。尽管还有很多重要问题要解决，我们希望这种范式能够造福众生。比如说，用这种新范式开发视频游戏的代价可能更小，门槛更低，借此，我们或许能仅通过编辑文本描述或示例图片来开发游戏。这个愿景的一小部分，即在现有游戏上略作调整或创造新行为，也许会在不久的将来就能实现。比如即使拿不到作者的源代码，我们也可能可以把几段游戏截图变成一个可玩的游戏关卡或者基于现有图像创建新角色。这个范式还能带来其他好处，比如严格控制帧率、内存占用不变。路漫漫其修远兮，尽管我们目前还没有探究这些方向，我们还是乐于尝试！希望我们这一小步，会在未来的某天，化为人们享受视频游戏的美好瞬间；甚至更进一步，化为人们使用交互软件系统的点点日常。</p>
-<p>作为一个对这段抒情深有共鸣的人，在看论文前，我有千言万语想喷，却找不到切入点。看了这段话，我总算知道该怎么针对性地发表意见了。</p>
-<h3 id="锐评"><a href="#锐评" class="headerlink" title="锐评"></a>锐评</h3><p>总有人说，AI 要取代人类了。</p>
-<p>之前是说 AI 可以代替画师，又是说 AI 能代替人写小说。现在，来说 AI 能够完全模拟游戏了。</p>
-<p>我真的很不解：人类的作品怎么会沦落到和现有 AI 的对比了？</p>
-<p>我想了很久，为什么我无法容忍「现有 AI 技术能代替人类创作」这种观点。我的核心论点是：1）现有基于深度学习的 AI 无法达到和人同等的智力水平；2）达到人类同等的智力水平，意味着能够理解人类的行为，进而在创作、编程、教学、心理咨询等所有现在看来比较困难的领域看齐甚至超越人类。</p>
-<p>详细对深度学习了解了一段时间后，绝大多数人都能推理出深度学习的上限。通过对深度学习应用的种种观察，我们能够用我们脑中的那个「神经网络」，那种基于数据推理现实的能力，预知深度学习的能力上限。深度学习适用于一些数据定义良好，目标定义良好的任务。只要给了数据，给了目标，网络就能学习，甚至涌现出一些意想不到的强大理解、生成能力。</p>
-<p>但是，数据不是全部，永远有从大量数据学不到的东西。</p>
-<p>那就是人心。</p>
-<p>就和无数探讨机器人的作品所展示的一样。</p>
-<p>正因为我们是人，所以我们能感知我们生活在这个世界上。我们感受痛苦，所以我们思考，并追逐美好。</p>
-<p>无论是穷尽多少数据，复读多少经书也体会不到的；无论是洞察多少规律，拟合多少逻辑也推理不出的，就是人心。</p>
-<p>和人心等价的一切任务，是现在的深度学习 AI 做不到的。</p>
-<p>有关深度学习是否能达到人类水平，那是技术讨论，我们在别处再谈。如果最终能认同目前深度学习无法达到人类水平，但目前认为「现有 AI 技术能代替人类创作」的话，简单来看有两种可能：</p>
-<ol>
-<li><p>不懂深度学习</p>
-</li>
-<li><p>不懂创作的难度</p>
-</li>
-</ol>
-<p>而对于一个相关专业人士来说，只能是第二种可能了。所以听到懂深度学习的人讲出「AI 要代替人类」时，我都会下意识地认为他在贬低人类创作的含金量，自然是怒火中烧。不懂创作，就不要妄加评论。</p>
-<p>除此之外，还有人明明知道当前 AI 的实力，还要违心地宣传 AI 如何如何，宣传自己的垃圾工作多么有价值。这种人只会为自己的利益考虑，纯纯的坏而已。这种无可救药的坏连讨论的价值也没有。</p>
-<p>最后还有一种可能，很多人做研究时，并不会像我这样想这么多。在他们看来，科研就是从现有知识出发，朝外迈一小步。不管这一步是否方向正确，不管这一步有多么小，只要是拓宽人类的知识边界，那就是好的。他们的研究是纯洁的、无私的，不在意有生之年能否看到自己的成果被用上，甚至不在意自己的研究是否真的会被用到，只是为了科研增砖添瓦而已。我不得不承认，这是真正的、高尚的科研。</p>
-<p>他们是幸福的，可以不在意眼前的得失。所以，他们可以望着远处高峰，轻松而豪放地说出：「希望我的研究，能化为人们享受视频游戏的美好瞬间」。</p>
-<p>然而，这句话，对我而言，是沉重的。如果这种话是我说出来的，那么它不会是期盼，而是矢志不渝的誓言。不是拿着望远镜向远处眺望，不是用手指着地图挥斥方遒，而是用我的脚，一步，一步，踏出来的。</p>
-<p>我是各种作品的鼓舞下走过来的，优秀的作品对我而言是神圣的。所以，我希望立刻，亲眼见到更多的好作品。没有对好作品急功近利的渴望，也就说明他们生活中有更加便捷的能量来源。所以我说，真正能以纯洁的心做科研的人，是幸福的人。</p>
-<p>把我这些话总结一下，能认为深度学习能代替人类创作游戏，要么是深度学习的信徒，要么是不懂深度学习，要么是不懂创作，要么是坏，要么就是没想那么多觉得有新科研工作就是好事。</p>
-<p>有人可能还会说：「我也同意深度学习代替不了人类，但也不能说这些技术就完全没用」。这我非常同意，我就认为大家应该把现在的 AI 当成一种全新的工具。基于这些新工具，我们把创新的重点放在如何适配这些工具上，辅助以前的应用，或者开发一些新的应用，而不是非得一步到位直接妄想着把人类取代了。比如，根据简笔画生成图片就是一个很好的新应用啊。</p>
-<p>回到这篇文章的锐评上来。一上来，标题就写着《扩散模型是实时游戏引擎》。其实这是一个在顶级计算卡上每秒生成 20 张低分辨率图片的模型，这真的是我们认为的实时吗？作为一个游戏引擎，你能修改游戏机制吗？哦，我对引擎的理解有误，这不是游戏开发引擎，而是一个运行游戏的引擎。那踏踏实实叫做「游戏模拟器」不好吗？标题取得夸张一点，想吸引大家注意，能够理解，不多讲了。</p>
-<p>文章主体部分都是客观陈述，写得非常清晰，我读起来也很舒服。本来都准备把「锐评」改成「简述」的，看完作者最后那段对未来的畅想后，一阵无名火在我心中燃起。通过「我们或许能仅通过编辑文本描述或示例图片来开发游戏」这段话，我感觉这是作者是几个对游戏制作质量没有那么高要求的人。可是，就是这样的人，却能写出「路漫漫其修远兮，尽管我们目前还没有探究这些方向，我们还是乐于尝试！」这说明他们可能是真心热爱游戏的玩家。那为什么，为什么只做出了这种程度的工作呢？900M 张图片，128 块卡，别说爱好者，就是一般的大学实验室，都难以跟进这篇工作，这是想要给设计师、爱好者开发新工具的态度吗？没有其他更加贴近用户的项目了吗？好，你说你们以长期的科研为主，这只是这个方向的初步尝试，你们重心在科研上而不是提供游戏开发工具上。那你们是抱着多大的觉悟说出「希望我们这一小步，会在未来的某天，化为人们享受视频游戏的美好瞬间」的？给人的感觉就是一群深居象牙塔的人，一辈子也不去了解业界真的需要什么，只是「正确地」做着科研而已。</p>
-<p>非常抱歉，以上都是我的主观评价，请恕我对作者的想法妄加猜测。看完文章最后那段话后，我就有了这样一种矛盾的愤怒感。我喷了这么多，其实也不是想喷这篇工作的作者，更想批判的，是我长年以来在生活中的见闻。把气撒到这篇工作上，可能只是我嫉妒他们，没有 128 块卡去做想做的事情而已。</p>
-<p>但我毫不怀疑地相信，我要有的资源最后都会有的。「游戏开发的新范式」、「造福众生」、「今天的一小步」……，如果有一天我说出了这些话，那必然不是在论文里，而是在我的产品得到了用户的充分肯定后，向世界吹嘘的胜利宣言吧。</p>
-<h2 id="新科研方向的讨论"><a href="#新科研方向的讨论" class="headerlink" title="新科研方向的讨论"></a>新科研方向的讨论</h2><p>先谈一下这篇工作在科研上给我们的启发。我认为有三点：</p>
-<ol>
-<li>对于深度学习应用来说，不要去在意功能有多么异想天开，只要把问题定义好，数据准备好，问题就可解。</li>
-<li>可以以用户操作为约束，用生成模型建模一个可交互世界。这个「用户操作」不一定局限于游戏玩家的操作。</li>
-<li>强化学习可以用来造大批数据。并且，我们需要精心设计模型的学习目标，使其造出多样的数据。</li>
-</ol>
-<p>再来看顺着这篇文章的结果，我们能有怎样的新思考。拿图像生成模型这种结果极不稳定的东西做要求输入输出可控的游戏是不可能的。但是，我们应该把思路逆转过来：哪些任务可以以不确定的图像为输入？最容易想到的是缺数据的自动驾驶任务。也就是说，这篇工作实际上是提出了一种带交互的图像数据生成器。</p>
-<p>这篇工作用图像模型学习了 3D 场景在移动后的变化。也就是说，模型「理解」了 3D 场景。那么，有没有办法从模型中抽取出相关的知识呢？按理说，能理解 3D，就能理解物体是有远近的。那么，深度估计、语义分割这种任务是不是可以直接用这种模型来做呢？以交互为约束的图像生成模型可能蕴含了比文生图模型更加丰富的图像知识。很可惜，不知道这篇工作最后会不会开源。</p>
-<p>如果一个模型能够建模一个简单的世界，我们下一步要思考的是怎么编辑这个世界。就像有了图像生成模型，我们要给它加上文本约束一样。最容易想到的是以二维图片为约束，生成一个世界里的三维物体。但目前这个模型要的训练量太大了，做这种新实验的代价根本不敢想。</p>
-<p>当前这个模型的结果还是比较弱的。别看这里用了扩散模型，模型的训练目标实际上是一个重建任务而非生成任务，最后的评测指标也是重建误差而没有考虑 FID 等图像生成质量指标。有没有办法让模型设法输出有多样性的新内容？还有，这个模型在设计上应该是一个自回归模型，只不过下一张图片是用扩散模型隐式建立了概率分布。但由于用户操作是在线而不是离线一次性给出，这种任务在时序上没办法用视频扩散模型建模。所以，从本质上看，要设计带用户操作的生成模型，其实是要一种时序信息在线输入的生成模型。除了自回归模型外，能不能用一种全新的生成范式呢？一旦有了这样一种新式模型，训练交互世界神经网络的代价将大幅降低。</p>
-<p>除了时序信息不好输入外，这个任务还面临另一个问题：随着时间不断推移，模型会忘记以前的内容。NLP 领域通过 Transformer 全局信息交互暴力地解决了这类问题，但在长视频生成中，这种问题还是没能很好解决。或许需要其他领域为长时序建模提供了更好的工具后，才能考虑长时间的世界交互。但我们也可以从另一个角度思考：把要模拟的世界简化，不要去做模拟游戏那么难的任务，做一个时序依赖少的模拟任务。</p>
-<p>结束科研新方向的思考前，我再对这个模型的训练量喷两句。搞大批数据，搞大模型，一堆 GPU 狂训，强行拟合一个任务，在我看来是非常不优雅的做法。得不到学术界广泛跟进的工作，是发展不下去的。在思考这种世界模拟模型的种种应用前，最重要的还是把训练量降下去。我认为优化在线时序约束生成模型是最有价值的方向。</p>
-<p>最后我再从游戏开发的角度讲一下这篇工作的启发。我们只讨论如何用生成模型减少美术工作量，不去探究怎么让模型学习设计复杂的游戏机制。</p>
-<p>真的想要为游戏开发提供工具的话，应该从 2D 游戏而不是 3D 游戏入手。拟合 2D 游戏画面的训练代价较小，且 2D 游戏对开发者来说更容易做。仅基于现在的 AI 技术，我们就已经能够做出一些简单的美术生成应用了。比如前段比较火的植物大战僵尸杂交版，我们完全可以想办法定义一个科研任务，训练一个融合两种植物的生成模型。明明有更切实际的 2D 不做去做 3D，这也是我为什么觉得这篇工作在为游戏开发提供工具这个层面上显得非常没有诚意。这篇文章建模的 3D 世界模拟器其实更适合前面提到的自动驾驶等真实场景，反而不是很适合游戏开发。</p>
-<p>从这篇工作出发，或许可以联想出非常多游戏开发应用。这里我随便举一个 2D 网格地图生成任务。用同一种地板拼接地形时，根据地板的连通情况，游戏开发引擎会自动生成完整地形。但是，这种生成是基于写死的规则的，且最终每种地形还是以正方形网格为单位呈现。能不能用生成模型让这种地形生成更加多样呢？</p>
-<p><img src="/2024/09/03/20240829-GameNGen/2.jpg" alt></p>
-<p>从本文的启发 2 出发，我们或许可以有一些新想法：可以以操作为约束，用生成模型建模一个可交互世界。那么，我们将「操作」定义为设计师向地图上铺上一块地板，而不是定义为玩家的操作。这样，模型就能站在设计师的角度的学习生成地图了。</p>
-<p>如果数据足够的话，这种定义方式一定能让神经网络学会地形生成的。问题的关键就在于如何获取数据。根据玩家的操作，我们能够自然生成大量游戏数据。而根据设计师的每一步想法，每一步都绘制合理且高质量的图片，可能要花费大量资源。因此，如果是从这个角度出发，需要大量美术、游戏设计、深度学习的相关人员参与进来。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>GameNGen 将模拟 3D 可交互场景的任务定义为根据历史画面、历史及当前操作生成当前画面的带约束图像生成任务。该工作用强化学习巧妙造出大量数据，用扩散模型实现带约束图像生成。结果表明，该模型不仅能自回归地生成连贯的游戏画面，还能学会子弹、血量等复杂交互信息。然而，受制于硬件及模型架构限制，模型要求的训练资源极大，且一次只能看到 3.2 秒内的信息。这种大量数据驱动的做法难以在学校级实验室里复刻，也不能够归纳至更一般的 3D 世界模拟任务上。</p>
-<p>我个人认为，从科研的角度来看，这篇工作最大的贡献是提出了一种用带约束图像生成来描述 3D 世界模拟任务的问题建模方式。其次的贡献是确确实实通过长期的工程努力把这个想法做成功了，非常不容易。但从游戏开发的角度来看，这个工作现阶段没什么用处。</p>
-<p>从科研启发的角度思考，这篇工作告诉我们，定义好交互世界里的操作，我们就能部分地用图像生成模型建模一个交互世界。从本质上来看，这是一个每一个时刻的约束都在线给出的视频生成任务。针对这个任务，我们既可以去思考能否用自回归以外的更高效的方式来实现它，也可以去思考是否可以修改对于「操作」的定义来实现模拟玩家操作以外的世界模拟任务。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1731,7 +1698,7 @@ k_{NTK}(\mathbf{x_i}, \mathbf{x_j}) = \mathbb{E}_{\theta\sim\mathcal{N}} \langle
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-count">154</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

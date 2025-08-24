@@ -168,6 +168,289 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-11/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/24/DLS-note-11/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（十一）：深度卷积模型——从示例中学习</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-24 00:31:30" itemprop="dateCreated datePublished" datetime="2022-07-24T00:31:30+08:00">2022-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>上周，我们学完了CNN的基础组成模块。而从这周开始，我们要换一种学习方式：我们会认识一些经典的CNN架构，从示例中学习。一方面来说，通过了解他人的网络，阅读他人的代码，我们能够更快地掌握如何整合CNN的基础模块；另一方面，CNN架构往往泛化能力较强，学会了其他任务中成熟的架构，可以把这些架构直接用到我们自己的任务中。</p>
+<p>接下来，我们会按照CNN的发展历史，认识许多CNN架构。首先是经典网络：</p>
+<ul>
+<li>LeNet-5</li>
+<li>AlexNet</li>
+<li>VGG</li>
+</ul>
+<p>之后是近年来的一些网络：</p>
+<ul>
+<li>ResNet</li>
+<li>Inception</li>
+<li>MobileNet</li>
+</ul>
+<p>我们不会把这些研究的论文详细过一遍，而只会学习各研究中最精华的部分。学有余力的话，最好能在课后把论文自己过一遍。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="经典网络"><a href="#经典网络" class="headerlink" title="经典网络"></a>经典网络</h2><h3 id="LeNet-5"><a href="#LeNet-5" class="headerlink" title="LeNet-5"></a>LeNet-5</h3><p>LeNet-5是用于手写数字识别（识别0~9的阿拉伯数字）的网络。它的结构如下：</p>
+<p><img src="/2022/07/24/DLS-note-11/1.jpg" alt></p>
+<p>网络是输入是一张[32, 32, 1]的灰度图像，输入经过4个卷积+池化层，再经过两个全连接层，输出一个0~9的数字。这个网络和我们上周见过的网络十分相似，数据体的宽和高在不断变小，而通道数在不断变多。</p>
+<p>这篇工作是1998年发表的，当时的神经网络架构和现在我们学的有不少区别：</p>
+<ul>
+<li>当时padding还没有得到广泛使用，数据体的分辨率会越降越小。</li>
+<li>当时主要使用平均池化，而现在最大池化更常见。</li>
+<li>网络只输出一个值，表示识别出来的数字。而现在的多分类任务一般会输出10个值并使用softmax激活函数。</li>
+<li>当时激活函数只用sigmoid和tanh，没有人用ReLU。</li>
+<li>当时的算力没有现在这么强，原工作在计算每个通道卷积时使用了很多复杂的小技巧。而现在我们直接算就行了。</li>
+</ul>
+<p>LeNet-5只有6万个参数。随着算力的增长，后来的网络越来越大了。</p>
+<h3 id="AlexNet"><a href="#AlexNet" class="headerlink" title="AlexNet"></a>AlexNet</h3><p>AlexNet是2012年发表的有关图像分类的CNN结构。它的输入是[227, 227, 3]的图像，输出是一个1000类的分类结果。</p>
+<blockquote>
+<p>原论文里写的是输入形状是[224, 224, 3]，但实际上这个分辨率是有问题的，按照这个分辨率是算不出后续结果的分辨率的。但现在一些框架对AlexNet的复现中，还是会令输入的分辨率是224。这是因为框架在第一层卷积中加了一个padding的操作，强行让后续数据的分辨率和原论文对上了。 </p>
+</blockquote>
+<p><img src="/2022/07/24/DLS-note-11/2.jpg" alt></p>
+<p>AlexNet和LeNet-5在架构上十分接近。但是，AlexNet做出了以下改进：</p>
+<ul>
+<li>AlexNet用了更多的参数，一共有约6000万个参数。</li>
+<li>使用ReLU作为激活函数。</li>
+</ul>
+<p>AlexNet还提出了其他一些创新，但与我们要学的知识没有那么多关系：</p>
+<ul>
+<li>当时算力还是比较紧张，AlexNet用了双GPU训练。论文里写了很多相关的工程细节。</li>
+<li>使用了Local Response Normalization这种归一化层。现在几乎没人用这种归一化。</li>
+</ul>
+<p>AlexNet中的一些技术在今天看来，已经是常识般的存在。而在那个年代，尽管深度学习在语音识别等任务上已经初露锋芒，人们还没有开始重视深度学习这项技术。正是由于AlexNet这一篇工作的出现，计算机视觉的研究者开始关注起了深度学习。甚至在后来，这篇工作的影响力已经远超出了计算机视觉社区。</p>
+<h3 id="VGG-16"><a href="#VGG-16" class="headerlink" title="VGG-16"></a>VGG-16</h3><p>VGG-16也是一个图像分类网络。VGG的出发点是：为了简化网络结构，只用3x3等长(same)卷积和2x2最大池化。</p>
+<p><img src="/2022/07/24/DLS-note-11/3.jpg" alt></p>
+<p>可以看出，VGG也是经过了一系列的卷积和池化层，最后使用全连接层和softmax输出结果。顺带一提，VGG-16里的16表示有16个带参数的层。</p>
+<p>VGG非常庞大，有138M(1.38亿)个参数。但是它简洁的结构吸引了很多人的关注。</p>
+<p>吴恩达老师鼓励大家去读一读这三篇论文。可以先看AlexNet，再看VGG。LeNet有点难读，可以放到最后去读。</p>
+<h2 id="ResNets（基于残差的网络）"><a href="#ResNets（基于残差的网络）" class="headerlink" title="ResNets（基于残差的网络）"></a>ResNets（基于残差的网络）</h2><p>非常非常深的神经网络是很难训练的，这主要是由梯度爆炸/弥散问题导致的。在这一节中，我们要学一种叫做“跳连(skip connection)”的网络模块连接方式。使用跳连，我们能让浅层模块的输出直接对接到深层模块的输入上，进而搭建基于残差的网络，解决梯度爆炸/弥散问题，训练深达100层的网络。</p>
+<h3 id="残差块"><a href="#残差块" class="headerlink" title="残差块"></a>残差块</h3><p>回忆一下，在全连接网络中，假如我们有中间层的输出$a^{[l]}, a^{[l+2]}$，$a^{[l+2]}$是怎么由$a^{[l]}$算出来的呢？我们之前用的公式如下：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+z^{[l+1]}&=W^{[l+1]}a^{[l]}+b^{[l+1]} \\
+a^{[l+1]}&=g(z^{[l+1]}) \\
+z^{[l+2]}&=W^{[l+2]}a^{[l+1]}+b^{[l+2]} \\
+a^{[l+2]}&=g(z^{[l+2]}) \\
+\end{aligned}</script><p>也就是说，$a^{[l]}$要经过一个线性层、一个激活函数、一个线性层、一个激活函数，才能传递到$a^{[l+2]}$，这条路径非常长：</p>
+<p><img src="/2022/07/24/DLS-note-11/4.jpg" alt></p>
+<p>而在残差块(Residual block)中，我们使用了一种新的连接方法：</p>
+<p><img src="/2022/07/24/DLS-note-11/5.jpg" alt></p>
+<p>$a^{[l]}$的值被直接加到了第二个ReLU层之前的线性输出上，这是一种类似电路中短路的连接方法（又称跳连）。这样，浅层的信息能更好地传到深层了。</p>
+<p>使用这种方法后，计算公式变更为：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+z^{[l+1]}&=W^{[l+1]}a^{[l]}+b^{[l+1]} \\
+a^{[l+1]}&=g(z^{[l+1]}) \\
+z^{[l+2]}&=W^{[l+2]}a^{[l+1]}+b^{[l+2]} \\
+a^{[l+2]}&=g(z^{[l+2]}+a^{[l]}) \\
+\end{aligned}</script><p>残差块中还有一个要注意的细节。$a^{[l+2]}=g(z^{[l+2]}+a^{[l]})$这个式子能够成立，实际上是默认了$a^{[l+2]}, a^{[l]}$的维度相同。而一旦$a^{[l+2]}$的维度发生了变化，就需要用下面这种方式来调整了。</p>
+<p>$a^{[l+2]}=g(z^{[l+2]}+W’a^{[l]})$</p>
+<p>我们可以用一个$W’$来完成维度的转换。为了方便理解，我们先让所有$a$都是一维向量，$W’$是矩阵。这样，假设$a^{[l+2]}$的长度是256，$a^{[l]}$的长度是128，则$W’$的形状就是$256 \times 128$。</p>
+<p>但实际上，$a$是一个三维的图像张量，三个维度的长度都可能发生变化。因此，对于图像，上式中的$W’$应该表示的是一个卷积操作。通过卷积操作，我们能够减小图像的宽高，调整图像的通道数，使得$a^{[l]}$和$a^{[l+2]}$的维度完全相同。</p>
+<h3 id="残差网络"><a href="#残差网络" class="headerlink" title="残差网络"></a>残差网络</h3><p>在构建残差网络ResNet时，只要把这种残差块一个一个拼接起来即可。或者从另一个角度来看，对于一个“平坦网络”（”plain network”, ResNet论文中用的词，用于表示非残差网络），我们只要把线性层两两打包，添加跳连即可。</p>
+<p><img src="/2022/07/24/DLS-note-11/6.jpg" alt></p>
+<p>残差块起到了什么作用呢？让我们看看在网络层数变多时，平坦网络和残差网络训练误差的变化趋势：</p>
+<p><img src="/2022/07/24/DLS-note-11/7.jpg" alt></p>
+<p>理论上来说，层数越深，训练误差应该越低。但在实际中，对平坦网络增加深度，反而会让误差变高。而使用ResNet后，随着深度增加，训练误差起码不会降低了。</p>
+<p>正是有这样的特性，我们可以用ResNet架构去训练非常深的网络。</p>
+<p>为什么ResNet是有这样的特性呢？我们还是从刚刚那个ResNet的公式里找答案。</p>
+<p>假设我们设计好了一个网络，又给它新加了一个残差块，即多加了两个卷积层，那么最后的输出可以写成：</p>
+<script type="math/tex; mode=display">
+a^{[l+2]}=g(z^{[l+2]}+a^{[l]}),</script><p>即</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{[l+2]}&=g(z^{[l+2]}+a^{[l]}) \\
+a^{[l+2]}&=g(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}) \\
+\end{aligned}</script><p>由于正则化的存在，所有$W$和$b$都倾向于变得更小。极端情况下，$W, b$都变为0了。那么，</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{[l+2]}&=g(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}), \\
+a^{[l+2]}&=g(a^{[l]}). \\
+\end{aligned}</script><p>再不妨设$g=ReLU$。则因为$a^{[l]}$也是ReLU的输出，有</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{[l+2]}&=g(a^{[l]}), \\
+a^{[l+2]}&=a^{[l]}. \\
+\end{aligned}</script><p>这其实是一个恒等映射，也就是说，新加的残差块对之前的输出没有任何影响。网络非常容易学习到恒等映射。这样，最起码能够保证较深的网络不比浅的网络差。</p>
+<p>准备好了所有基础知识，我们来看看完整的ResNet长什么样。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_2.jpg" alt></p>
+<p>ResNet有几个参数量不同的版本。这里展示的叫做ResNet-34。完整的网络很长，我们只用关注其中一小部分就行了。</p>
+<p>一开始，网络还是用一个大卷积核大步幅的卷积以及一个池化操作快速降低图像的宽度，再把数据传入残差块中。和我们刚刚学的一样，残差块有两种，一种是维度相同可以直接相加的（实线），一种是要调整维度的（虚线）。整个网络就是由这若干个这样的残差块组构成。经过所有残差块后，还是和经典的网络一样，用全连接层输出结果。</p>
+<p>这里，我们只学习了残差连接的基本原理。ResNet的论文里还有更多有关网络结构、实验的细节。最好能读一读论文。当然，这周的编程实战里我们也会复现ResNet，以加深对其的理解。</p>
+<h2 id="Inception-网络"><a href="#Inception-网络" class="headerlink" title="Inception 网络"></a>Inception 网络</h2><p>我们已经见过不少CNN的示例了。当我们仿照它们设计自己的网络时，或许会感到迷茫：有3x3, 5x5卷积，有池化，该怎么选择每一个模块呢？Inception网络给了一个解决此问题的答案：我全都要。</p>
+<p>Inception网络用到了一种特殊的1x1卷积。我们会先学习1x1卷积，再学习Inception网络的知识。</p>
+<h3 id="1x1卷积"><a href="#1x1卷积" class="headerlink" title="1x1卷积"></a>1x1卷积</h3><p>用1x1的卷积核去卷一幅图像，似乎是一件很滑稽的事情。假设一幅图像的数字是[1, 2, 3]，卷积核是[2]，那么卷出来的图像就是[2, 4, 6]。这不就是把每个数都做了一次乘法吗？</p>
+<p>对于通道数为1的图像，1x1卷积确实没什么大用。而当通道数多起来后，1x1卷积的意义就逐渐显现出来了。思考一下，对多通道的图像做1x1卷积，就是把某像素所有通道的数字各乘一个数，求和，加一个bias，再通过激活函数。这是计算一个输出结果的过程，而如果有多个卷积核，就可以计算出多个结果。（下图中，蓝色的数据体是输入图像，黄色的数据体是1x1的卷积核。两个数据体重合部分的数据会先做乘法，再求和，加bias，经过激活函数。）</p>
+<p><img src="/2022/07/24/DLS-note-11/7_3.jpg" alt></p>
+<p>这个过程让你想起了什么？没错，正是最早学习的全连接网络。1x1卷积，实际上就是在各通道上做了一次全连接的计算。1x1卷积的输入通道数，就是全连接层上一层神经元的数量；1x1卷积核的数量，就是这一层神经元的数量。</p>
+<p>1x1卷积主要用于变换图像的通道数。比如要把一个192通道数的图像变成32通道的，就应该用32个1x1卷积去卷原图像。</p>
+<h3 id="Inception块的原理"><a href="#Inception块的原理" class="headerlink" title="Inception块的原理"></a>Inception块的原理</h3><p>在Inception网络中，我们会使用这样一种混合模块：对原数据做1x1, 3x3, 5x5卷积以及最大池化，得到通道数不同的数据体。这些数据体会被拼接起来，作为整个模块的输出。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_4.jpg" alt></p>
+<p>值得注意的是，这里的池化操作和我们之前见过的不太一样。为了保持输出张量的宽高，这个池化的步幅为1，且使用了等长填充。另外，为了调整池化操作输出的通道数，这条数据处理路线上还有一个用1x1卷积变换通道数的操作。这份图省略了很多这样的细节，下一节我们会见到这幅图的完整版。</p>
+<p>在实现这样一种模块时，会碰到计算量过大的问题。比如把上面$28 \times 28 \times 192$的数据体用$5 \times 5$卷积卷成$28 \times 28 \times 32$的数据体，需要多少次乘法计算呢？对每个像素单独考虑，一个通道上的卷积要做$5 \times 5$此乘法，192个通道的卷积要做$192 \times 5 \times 5$次乘法。32个这样的卷积在$28 \times 28$的图片上要做$28 \times 28 \times 32 \times 192 \times 5 \times 5 \approx 120M$次乘法。这个计算量太大了。</p>
+<p>为此，我们可以巧妙地先利用1x1卷积减少通道数，再做5x5卷积。这样，计算量就少得多了。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_5.jpg" alt></p>
+<p>这样一种两头大，中间小的结构被形象地称为瓶颈(bottlenect)。这种结构被广泛用在许多典型网络中。</p>
+<h3 id="Inception网络"><a href="#Inception网络" class="headerlink" title="Inception网络"></a>Inception网络</h3><p>有了之前的知识，我们可以看Inception模块的完整结构了。1x1卷积没有什么特别的。为了减少3x3卷积和5x5卷积的计算量，做这两种卷积之前都会用1x1卷积减少通道数。而为了改变池化结果的通道数，池化后接了一个1x1卷积操作。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_6.jpg" alt></p>
+<p>实际上，理解了Inception块，也就能看懂Inception网络了。如下图所示，红框内的模块都是Inception块。而这个网络还有一些小细节：除了和普通网络一样在网络的最后使用softmax输出结果外，这个网络还根据中间结果也输出了几个结果。当然，这些都是早期网络的设计技巧了。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_7.jpg" alt></p>
+<h2 id="MobileNet"><a href="#MobileNet" class="headerlink" title="MobileNet"></a>MobileNet</h2><p>MobileNet，顾名思义，这是一种适用于移动(mobile)设备的神经网络。移动设备的计算资源通常十分紧缺，因此，MobileNet对网络的计算量进行了极致的压缩。</p>
+<h3 id="减少卷积运算量"><a href="#减少卷积运算量" class="headerlink" title="减少卷积运算量"></a>减少卷积运算量</h3><p>再回顾一遍，一次卷积操作中主要的计算量如下：</p>
+<p><img src="/2022/07/24/DLS-note-11/7_8.jpg" alt></p>
+<p>计算量这么大，主要问题出在每一个输出通道都要与每一个输入通道“全连接”上。为此，我们可以考虑让输出通道只由部分的输入通道决定。这样一种卷积的策略叫逐深度可分卷积(Depthwise Separable Convolution)。</p>
+<blockquote>
+<p>这里的depthwise是“逐深度”的意思，但我觉得“逐通道”这个称呼会更容易理解一点。</p>
+</blockquote>
+<p>逐深度可分卷积分为两步：逐深度卷积(depthwise convolution)，逐点卷积(pointwise convolution)。逐深度卷积生成新的通道，逐点卷积把各通道的信息关联起来。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_9.jpg" alt></p>
+<p>之前，要对下图中的三通道图片做卷积，需要3个卷积核分别处理3个通道。而在逐深度卷积中，我们只要1个卷积核。这个卷积核会把输入图像当成三个单通道图像来看待，分别对原图像的各个通道进行卷积，并生成3个单通道图像，最后把3个单通道图像拼回一个三通道图像。也就是说，逐深度卷积只能生成一幅通道数相同的新图像。</p>
+<blockquote>
+<p>逐深度卷积可以通过设置卷积在编程框架中的<code>groups</code>参数来实现。参见我<a href>讲解卷积的文章</a>。</p>
+</blockquote>
+<p><img src="/2022/07/24/DLS-note-11/7_10.jpg" alt></p>
+<p>下一步，是逐点卷积，也就是1x1卷积。它用来改变图片的通道数。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_11.jpg" alt></p>
+<p>之前的卷积有2160次乘法，现在只有432+240=672次，计算量确实减少了不少。实际上，优化后计算量占原计算量的比例是：</p>
+<script type="math/tex; mode=display">
+\frac{1}{n_c'} + \frac{1}{f^2}</script><p>其中$n_c’$是输出通道数，$f$是卷积核边长。一般来说计算量都会少10倍。</p>
+<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><p>知道了MobileNet的基本思想，我们来看几个不同版本的MobileNet。</p>
+<h4 id="MobileNet-v1"><a href="#MobileNet-v1" class="headerlink" title="MobileNet v1"></a>MobileNet v1</h4><p>13个逐深度可分卷积模块，之后接通常的池化、全连接、softmax。</p>
+<p><img src="/2022/07/24/DLS-note-11/8.jpg" alt></p>
+<h4 id="MobileNet-v2"><a href="#MobileNet-v2" class="headerlink" title="MobileNet v2"></a>MobileNet v2</h4><p>两个改进：</p>
+<ol>
+<li>残差连接</li>
+<li>扩张(expansion)操作</li>
+</ol>
+<p><img src="/2022/07/24/DLS-note-11/9.jpg" alt></p>
+<p>残差连接和ResNet一样。这里我们关注一下第二个改进。</p>
+<p>在MobileNet v2中，先做一个扩张维度的1x1卷积，再做逐深度卷积，最后做之前的逐点1x1卷积。由于最后的逐点卷积起到的是减小维度的作用，所以最后一步操作也叫做投影。</p>
+<p><img src="/2022/07/24/DLS-note-11/10.jpg" alt></p>
+<p>这种架构很好地解决了性能和效果之间的矛盾：在模块之间，数据的通道数只有3，占用内存少；在模块之内，更高通道的数据能拟合更复杂的函数。</p>
+<h2 id="EfficientNet"><a href="#EfficientNet" class="headerlink" title="EfficientNet"></a>EfficientNet</h2><p>EfficientNet能根据设备的计算能力，自动调整网络占用的资源。</p>
+<p>让我们想想，哪些因素决定了一个网络占用的运算资源？我们很快能想到下面这些因素：</p>
+<ul>
+<li>图像分辨率</li>
+<li>网络深度</li>
+<li>特征的长度（即卷积核数量或神经元数量）</li>
+</ul>
+<p>在EfficientNet中，我们可以在这三个维度上缩放网络，动态改变网络的计算量。EfficientNet的开源实现中，一般会提供各设备下的最优参数。</p>
+<h2 id="卷积网络实现细节"><a href="#卷积网络实现细节" class="headerlink" title="卷积网络实现细节"></a>卷积网络实现细节</h2><h3 id="使用开源实现"><a href="#使用开源实现" class="headerlink" title="使用开源实现"></a>使用开源实现</h3><p>由于深度学习项目涉及很多训练上的细节，想复现一个前人的工作是很耗时的。最好的学习方法是找到别人的开源代码，在现有代码的基础上学习。</p>
+<p>深度学习的开源代码一般在GitHub上都能找到。如果是想看PyTorch实现，可以直接去GitHub上搜索OpenMMLab。</p>
+<h3 id="使用迁移学习"><a href="#使用迁移学习" class="headerlink" title="使用迁移学习"></a>使用迁移学习</h3><p>如第三门课第二周所学，我们可以用迁移学习，导入别人训练好的模型里的权重为初始权重，加速我们自己模型的训练。</p>
+<p>还是以多分类任务的迁移学习为例（比如把一个1000分类的分类器迁移到一个猫、狗、其他的三分类模型上）。迁移后，新的网络至少要删除输出层，并按照新的多分类个数，重新初始化一个输出层。之后，根据新任务的数据集大小，冻结网络的部分参数，从导入的权重开始重新训练网络的其他部分：</p>
+<p><img src="/2022/07/24/DLS-note-11/11.jpg" alt></p>
+<p>当然，可以多删除几个较深的层，也可以多加入几个除了输出层以外的隐藏层。</p>
+<h3 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h3><p>由于CV任务总是缺少数据，数据增强是一种常见的提升网络性能的手段。</p>
+<p>常见的改变形状的数据增强手段有：</p>
+<ul>
+<li>镜像</li>
+<li>裁剪</li>
+<li>旋转</li>
+<li>扭曲</li>
+</ul>
+<p>此外，还可以改变图像的颜色。比如对三个颜色通道都随机加一个偏移量。</p>
+<p>数据增强有一些实现上的细节：数据的读取及增强是放在CPU上运行的，训练是放在CPU或GPU上运行的。这两步其实是独立的，可以并行完成。最常见的做法是，在CPU上用多进程（发挥多核的优势）读取数据并进行数据增强，之后把数据搬到GPU上训练。</p>
+<h3 id="计算机视觉的现状与相关建议"><a href="#计算机视觉的现状与相关建议" class="headerlink" title="计算机视觉的现状与相关建议"></a>计算机视觉的现状与相关建议</h3><p>一般来说，算法从两个来源获取知识：标注的数据，人工设计的特征。这二者是互补的关系。对于人工智能任务来说，如果有足够的数据，设计一个很简单的网络就行了；而如果数据量不足，则需要去精心设计网络结构。</p>
+<p>像语音识别这种任务就数据充足，用简单的网络就行了。而大部分计算机视觉任务都处于数据不足的状态。哪怕计算机视觉中比较基础的图像分类任务，都需要设计结构复杂的网络，更不用说目标检测这些更难的任务了。</p>
+<p>如果你想用深度学习模型参加刷精度的比赛，可以使用以下几个小技巧：</p>
+<ul>
+<li>同时开始训练多个网络，算结果时取它们的平均值。</li>
+<li>对图像分类任务，可以把图像随机裁剪一部分并输入网络，多次执行这一步骤并取平均分类结果。</li>
+</ul>
+<p>也就是说，只是为了提高精度的话，可以想办法对同一份输入执行多次条件不同的推理，并对结果求平均。当然，实际应用中是不可能用性能这么低的方法。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课是CNN中最重要的一节课。通过学习一些经典的CNN架构，我们掌握了很多有关搭建CNN的知识。总结一下：</p>
+<ul>
+<li>早期CNN<ul>
+<li>卷积、池化、全连接</li>
+<li>边长减小，通道数增加</li>
+</ul>
+</li>
+<li>ResNet<ul>
+<li>为什么使用ResNet？</li>
+<li>梯度问题是怎么被解决的？</li>
+<li>残差块的一般结构</li>
+<li>输入输出通道数不同的残差块</li>
+<li>了解ResNet的结构(ResNet-18, ResNet-50)</li>
+</ul>
+</li>
+<li>Incpetion 网络<ul>
+<li>1x1卷积</li>
+<li>用1x1卷积减少计算量</li>
+<li>Inception网络的基本模块</li>
+</ul>
+</li>
+<li>MobileNet<ul>
+<li>逐深度可分卷积</li>
+<li>MobileNet v2中的瓶颈结构</li>
+</ul>
+</li>
+</ul>
+<p>这节课介绍的都是比较前沿的CNN架构。在深度学习技术日新月异的今天，最好的学习方式是读论文，尽快一步一步跟上最新的技术。这堂课中提及的比较新的几篇论文，都有很高的阅读价值。</p>
+<p>我打算在学完CNN的四周课后，暂时不去学第五门课，而是去阅读这些经典CNN论文并分享一下笔记。</p>
+<p>在这周的代码实战里，我会分享一下如何用TensorFlow和PyTorch编写ResNet，同时介绍两种框架的进阶用法。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-5/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1655,216 +1938,6 @@ L_{total}=W_1L_{spa}+W_2L_{exp}+W_3L_{col}+W_4L_{tv_A}</script><blockquote>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/03/DLS-note-8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/07/03/DLS-note-8/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（八）：如何降低误差以达成优化目标</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-07-03 17:14:58" itemprop="dateCreated datePublished" datetime="2022-07-03T17:14:58+08:00">2022-07-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>经过了之前的学习，我们学会了许多改进深度学习模型的方法，比如：</p>
-<ul>
-<li>收集更多数据</li>
-<li>收集更多样化的数据</li>
-<li>延长训练时间</li>
-<li>用高级梯度下降算法</li>
-<li>缩小/扩大网络</li>
-<li>使用正则化</li>
-<li>……</li>
-</ul>
-<p>这么多方法，如果只是一个一个试过去，开发效率就太低了。在未来的两周，我们会学习一些改进机器学习的策略。这些策略会给我们一些启发性的指导，让我们在改进模型时更明确下一步该做什么。</p>
-<h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>这周课没有太多的新内容，主要是拓展了第二门课第一周有关偏差与方差分析的内容。学完了这周的课后，大家会进一步了解如何在一个全新的机器学习任务上设置目标，并通过误差分析等技术逐步靠近目标。</p>
-<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="正交化"><a href="#正交化" class="headerlink" title="正交化"></a>正交化</h2><p>如何从众多的改进方案中选择出优先级较高的呢？让我们先看看生活中一些其他事情的例子：</p>
-<p><img src="/2022/07/03/DLS-note-8/1.jpg" alt></p>
-<p>首先，是调整老式电视机的例子。老式电视机的画面不一定恰好能端端正正地填满屏幕，需要人为地调整画面的位置。一般这些电视机都有很多按钮，每个按钮各负责一项调整功能，比如调整上下位置、左右位置、缩放、旋转等。每个按钮之间的功能互不干扰。</p>
-<p>另外，还有一个开汽车的例子。汽车最少有三种操作：转方向盘、加速、减速。只需要组合这三种操作，我们就能让汽车沿着某一路线跑起来。而如果汽车只有两个可以左右调整的按钮，一个按钮控制0.3倍的角度和-0.8倍的速度，另一个按钮控制2倍的角度和0.9倍的速度，那司机控制汽车时肯定会倍感吃力。</p>
-<p>以上两个例子显示了<strong>正交化</strong>的好处。正交可以指数学里两条直线垂直，这里指的是两个调整方向互不干扰。通过调整正交的参数，我们可以把事物的“坐标分量”逐个调整到我们期待的“位置”。</p>
-<p>类似地，在改进机器学习项目时，也可以使用正交化。</p>
-<p><img src="/2022/07/03/DLS-note-8/2.jpg" alt></p>
-<p>在机器学习项目中，大概有4个“坐标分量”需要调整：拟合训练集、拟合开发集、拟合测试集、提升实际应用中的表现。对于这每一项目标，我们都应该使用相互正交的策略去调整，比如：</p>
-<ul>
-<li>拟合训练集 - 用更大的网络</li>
-<li>拟合开发集 - 正则化</li>
-<li>拟合测试集 - 用更大的开发集</li>
-<li>提升实际应用中的表现 - 更换损失函数</li>
-</ul>
-<p>值得一提的是，提前停止是一个即会影响训练误差，又会影响开发误差的方法。这个方法不满足正交化的要求，使用此方法时需要多多注意。</p>
-<h2 id="设置目标"><a href="#设置目标" class="headerlink" title="设置目标"></a>设置目标</h2><h3 id="单一指标"><a href="#单一指标" class="headerlink" title="单一指标"></a>单一指标</h3><p>在分类任务中，一般有下面这两种评价指标：</p>
-<ul>
-<li>精确率（precision, 又称查准率）：所有识别为猫的图片中，究竟有多少确实是猫？</li>
-<li>召回率（recall, 又称查全率）：所有猫的图片中，有多少猫被正确识别了？</li>
-</ul>
-<blockquote>
-<p>注意，我们之前代码实战中用的准确率(accuracy)和精确率(precision)不是一个指标。</p>
-</blockquote>
-<p>现在，假设有两个模型，它们在开发集上的评估结果如下：</p>
-<ul>
-<li>模型1：精确率95%，召回率90%。</li>
-<li>模型2：精确率98%，召回率85%。</li>
-</ul>
-<p>二者在精确率和召回率上各有优劣，该怎么从中选一个更好的模型出来呢？</p>
-<p>设置目标的一个原则是：只使用单一实数作为评价标准。因此，我们要想办法用一个指标把这两个指标都考虑进来。比如使用F1-score，它的公式如下：</p>
-<script type="math/tex; mode=display">
-F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假如我们开发好了几个算法，我们要用来自不同国家的数据去测试它们。不同算法在不同国家的数据上表现较好。为了快速选取一个最好的算法，我们可以去计算每个算法的表现平均值。</p>
-<p><img src="/2022/07/03/DLS-note-8/3.jpg" alt></p>
-<p>有了单一评价标准，我们就可以快速比较各个模型在开发集上的表现，并选择一个更好的模型。这样，我们开发的迭代速度也变快了。</p>
-<h3 id="满足指标与优化指标"><a href="#满足指标与优化指标" class="headerlink" title="满足指标与优化指标"></a>满足指标与优化指标</h3><p>在有多个评价指标时，不是总能挑选出一个最恰当的综合指标的。比如评价某算法时既要考虑到准确率，又要考虑到运行时间。用一个综合指标来组合它们显然不太现实。这时，我们可以把指标分成<strong>满足指标</strong>和<strong>优化指标</strong>。</p>
-<p>比如说，我们有这样几个算法：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>分类器</th>
-<th>准确率</th>
-<th>运行时间</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>A</td>
-<td>90%</td>
-<td>80ms</td>
-</tr>
-<tr>
-<td>B</td>
-<td>92%</td>
-<td>95ms</td>
-</tr>
-<tr>
-<td>C</td>
-<td>95%</td>
-<td>1500ms</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>算法C是挺好的，但是它相较A,B实在跑的太慢了。因此，我们可以设置以下的评价标准：</p>
-<p><strong>满足</strong>运行时间≤100ms的前提下，<strong>最大化</strong>准确率。</p>
-<p>这个标准既保证了运行时间不会太长，又能选出准确率较高的算法。按照这个标准，B应该是最优的分类器。</p>
-<p>在这个例子中，准确率就是优化指标，运行时间就是满足指标。</p>
-<p>这种新的选取指标的方法应该和之前提到的单一指标原则结合起来。准确来说，应该只有一个优化指标，外加若干个满足指标。</p>
-<h3 id="训练-开发-测试的分布"><a href="#训练-开发-测试的分布" class="headerlink" title="训练/开发/测试的分布"></a>训练/开发/测试的分布</h3><p>开发集和评价指标，共同决定了我们的优化目标。因此，我们应该谨慎地选择各数据集的数据分布，防止优化目标跑偏。</p>
-<p>举个例子，假如我们收集了来自不同地区的数据，有亚洲、欧洲……。假如我们令亚洲的数据为开发集，欧洲的数据为测试集，我们就可能会训练出一个在开发集上表现优秀，却在测试集上表现糟糕的模型。正确的做法是，我们把来自不同地区的数据打乱，把数据随机分成开发集和测试集。</p>
-<p>还有一个改编自真实故事的例子。一个团队想开发根据某人的邮政编码预测他同意贷款的概率的算法。他们以中等收入地区的邮政编码为开发集，却以低收入地区的邮政编码为测试集。显然，在这两个地区的人同意贷款的概率会差很多。最后，这个团队花了3个月优化了算法在开发集上的表现，却发现模型在测试集上表现奇差，不得以推倒重来。</p>
-<p>也就是说，我们应该让训练集和测试集能够反映我们将来实际应用时的数据，并且训练集和测试集都得来自同一个分布。设置开发集和评估指标，就像立了一个靶子一样。训练，就是让射出的箭更靠靶心。而测试集，应该反映我们期望箭射到的位置。我们既要知道箭应该射在哪里，还要把靶子摆对。</p>
-<h3 id="开发集和测试集的大小"><a href="#开发集和测试集的大小" class="headerlink" title="开发集和测试集的大小"></a>开发集和测试集的大小</h3><blockquote>
-<p>这些知识在第二周已经学过了，这里再强调一次。</p>
-</blockquote>
-<p>数据量小的时候（比如说数量级在万以下），我们可以按6:2:2的比例划分训练/开发/测试集。但数据量大的时候，就不用考虑比例了，按固定大小选择差不多大小的开发集和测试集即可。</p>
-<p>那么，测试集要多大才够呢？从统计学的眼光来看，把测试集当成实际应用数据中的一个采样结果的话，我们应该保证测试集有很高的置信度能反映模型在实际应用中的综合表现。当然，对于简单的数据分布，我们可以用统计学知识严谨地算出置信度。而对于人工智能任务中用到的海量数据，数学工具就难以派上用场了。我们只能根据经验选择一个足够大的测试集。比如有百万级数据的话，一万个测试样本就够了。</p>
-<h3 id="何时更换开发-测试集与评价指标"><a href="#何时更换开发-测试集与评价指标" class="headerlink" title="何时更换开发/测试集与评价指标"></a>何时更换开发/测试集与评价指标</h3><p>在算法投入应用后，我们可能会发现新的评价角度。比如对于小猫分类模型，我们本来只期望它能正确识别小猫。可是，随着使用应用的人变多，我们发现有的用户会上传色情图片。这时，我们不仅希望模型能只找出小猫，还要能过滤掉色情图片。</p>
-<p>这样，我们就引入了一个新的评价指标。这样，之前辨认小猫能力强的模型，可能会在辨认色情图片上较差。</p>
-<p>为了考虑这个新的评价指标，我们可以修改误差函数，用更高的权重加大色情图片分类错误的惩罚。</p>
-<p>总结来说，当我们发现使用当前指标得出来的最优模型，与考虑到某些新因素后得到的最优模型不同时，我们就应该更换开发/测试集与评价指标了。</p>
-<h2 id="与人类级表现比较"><a href="#与人类级表现比较" class="headerlink" title="与人类级表现比较"></a>与人类级表现比较</h2><h3 id="为什么是人类级表现"><a href="#为什么是人类级表现" class="headerlink" title="为什么是人类级表现"></a>为什么是人类级表现</h3><p>我们经常能看到AI与人类比较的新闻：什么AlphaGo在围棋上战胜人类了，什么在ImageNet上AI的分类准确率超过了人类啊，等等。除了博眼球的新闻外，业内同样也会时常将机器学习模型和人类比较。这是为什么呢？</p>
-<p>在许多任务中，人类的表现都非常出色。当AI超过了人类后，往往也达到了这类问题的最优精度。在机器学习模型超过人类前，与人类比较有以下好处：</p>
-<ol>
-<li>获取人类标注的数据。</li>
-<li>从手动误差分析中获得启发：为什么人就能做对？</li>
-<li>更好地分析偏差与方差。</li>
-</ol>
-<p>其中，第1条是显然的，第2条会在下周介绍。接下来，我们看看第3条是怎么回事。</p>
-<h3 id="可规避偏差"><a href="#可规避偏差" class="headerlink" title="可规避偏差"></a>可规避偏差</h3><blockquote>
-<p>这个知识之前也学过了一点。</p>
-</blockquote>
-<p>如果一个模型的训练误差是8%，开发误差是10%，我们不一定说模型就存在这个偏差问题。有可能模型在训练集上已经几乎达到了最优的表现;</p>
-<p><img src="/2022/07/03/DLS-note-8/4.jpg" alt></p>
-<p>在判断一件事时，有可能因为信息的缺乏，最优的准确率也达不到100%，总会存在一些误差。这样的最小的误差叫做贝叶斯误差。人类的表现，通常可以用作贝叶斯误差的一个估计。</p>
-<p>在刚才那个例子中，如果人类误差是1%，那么模型的训练误差还有7%的提升空间；而如果人类误差是7.5%，那说不定模型的训练误差只有0.5%的提升空间了。对于前者，我们应该关注偏差；关于后者，我们应该关注方差。这里讲到的7%, 0.5%的提升空间，可以称作<strong>可规避偏差</strong>。</p>
-<h3 id="理解人类级表现"><a href="#理解人类级表现" class="headerlink" title="理解人类级表现"></a>理解人类级表现</h3><p>假如让人类来完成医学图片分类任务，人们得到了以下的分类误差：</p>
-<p><img src="/2022/07/03/DLS-note-8/5.jpg" alt></p>
-<p>从一个普通人，到一群有经验的医生，误差逐渐降低。那么，哪个误差算是人类级表现呢？</p>
-<p>回顾上一节的内容，人类误差是贝叶斯误差的一个估计。因此，人类最优的表现，才应该被视作是人类误差。</p>
-<p>当然，获取人类级表现的目的还是为了做偏差和方差分析。如果当前的训练误差是5%，那不管人类误差是1%，0.7%，还是5%，都差不多。而如果训练误差到了1%，甚至更低，那就要仔细地获取人类误差了。</p>
-<h3 id="提升模型表现"><a href="#提升模型表现" class="headerlink" title="提升模型表现"></a>提升模型表现</h3><p>最后，再一次回顾一下如何减少偏差和方差。</p>
-<p>机器学习有两大假设：模型能够很好地拟合训练集、模型能够泛化到开发/测试集上。它们分别对应偏差问题和方差问题。</p>
-<p>训练误差和人类级表现之间的差是可规避偏差，开发集和训练集之间的差是方差。</p>
-<p>训练更大的模型、训练更久/用更好的优化算法能够解决偏差问题。</p>
-<p>使用更多数据、正则化能解决方差问题。</p>
-<p>用更好的架构、超参数能同时解决这两个问题。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课涉及的新知识很少，大家就权当是复习了一下之前的知识。这节课大概学了这些东西：</p>
-<ul>
-<li>正交化</li>
-<li>目标<ul>
-<li>单一指标</li>
-<li>满足指标与优化指标</li>
-</ul>
-</li>
-<li>开发集与测试集<ul>
-<li>分布</li>
-<li>大小</li>
-</ul>
-</li>
-<li>人类级表现<ul>
-<li>贝叶斯误差</li>
-<li>可规避偏差</li>
-<li>提升模型表现的思路</li>
-</ul>
-</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1934,7 +2007,7 @@ F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-count">154</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
