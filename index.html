@@ -168,6 +168,168 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/11/24/20250922-ICPC2025-AI/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/11/24/20250922-ICPC2025-AI/" class="post-title-link" itemprop="url">前算法竞赛选手深度点评 AI 在 ICPC 2025 中的表现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-11-24 17:35:30" itemprop="dateCreated datePublished" datetime="2025-11-24T17:35:30+08:00">2025-11-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/%E8%AE%AE%E8%AE%BA%E6%96%87/" itemprop="url" rel="index"><span itemprop="name">议论文</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>近两年来 LLM 越来越猛，在 IMO，IOI 等竞赛中屡创佳绩。一直以来，我都是抱着围观的态度，看个热闹也就过去了。但是，最近又传出了 LLM 在算法竞赛 ICPC 2025 中超越了人类的新闻。作为前 ICPC 选手，看着社区里热烈的讨论，我可坐不住了，非得仔细地探一探 AI 的虚实才行。在这篇文章中，我会对 AI 在 ICPC 2025 的解答做深度分析，并给出我对 AI 思考方式以及未来发展趋势的看法。</p>
+<h2 id="背景简介"><a href="#背景简介" class="headerlink" title="背景简介"></a>背景简介</h2><p>先简单介绍一下 ICPC 的规则，方便圈外人理解。ICPC 是国际大学生算法竞赛（International Collegiate Programming Contest）的缩写。竞赛中，若干支三人小队共用一台电脑，在五小时内尝试用编程解决数道算法难题。解题越多，且解题所花时间越短，则成绩越好。这些算法题的原型都是有着清晰定义的数学题，一般很容易想到朴素的「暴力搜索」解法。然而，算法竞赛要求所有程序必须在数秒内算完，哪怕正确的程序也可能会因为超时而被判定解题失败。算法竞赛的魅力，正在于根据题目的特性（如数据范围），在所有可行算法中找出一个能够在几秒之内快速算完的最快算法。</p>
+<p>本次 AI 战胜人类的比赛为 ICPC 2025 世界总决赛。作为全年里最具含金量的比赛，总决赛的参赛队伍都是来自全世界各个赛区的佼佼者。比赛官网为：<a target="_blank" rel="noopener" href="https://worldfinals.icpc.global/2025/">https://worldfinals.icpc.global/2025/</a> 。我们可以在 <a target="_blank" rel="noopener" href="https://worldfinals.icpc.global/problems/2025/finals/index.html">https://worldfinals.icpc.global/problems/2025/finals/index.html</a> 查看所有题目，并在 <a target="_blank" rel="noopener" href="https://worldfinals.icpc.global/scoreboard/2025/finals/index.html">https://worldfinals.icpc.global/scoreboard/2025/finals/index.html</a> 回顾比赛中各个队伍在比赛中的过题记录及排行榜。</p>
+<p>前四名队伍的过题情况及总的过题情况如下图所示。最难的三道题是 B, C, G 题。其中，C 题没有队伍做出来。</p>
+<p><img src="/2025/11/24/20250922-ICPC2025-AI/./20250922-ICPC2025-AI/1.jpg" alt></p>
+<p>本次宣称战胜了人类的公司有两个：OpenAI 和 Google。相关信息来源为 OpenAI 在 X 的发帖：<a target="_blank" rel="noopener" href="https://x.com/MostafaRohani/status/1968361268475215881">https://x.com/MostafaRohani/status/1968361268475215881</a> 及 Google DeepMind 的博文：<a target="_blank" rel="noopener" href="https://deepmind.google/discover/blog/gemini-achieves-gold-level-performance-at-the-international-collegiate-programming-contest-world-finals/">https://deepmind.google/discover/blog/gemini-achieves-gold-level-performance-at-the-international-collegiate-programming-contest-world-finals/</a> 。国内主流媒体报道的内容都是从上面两个信源中整理而成。</p>
+<p>简单总结一下 OpenAI 和 Google 的报告内容。OpenAI 使用一个内部推理系统，成功答出了全部 12 题，超越了所有人类选手。值得注意的是，这个推理系统是若干个通用推理模型的集成 (ensemble)，没有仅针对 ICPC 竞赛训练。此外，仅用 GPT-5 也能答对 11 题，战平人类最强水平。Google 的 Gemini 则略逊一筹，答对了 10 题，在人类排行榜中能够位居第二。不过，Gemini 也解出了没有人类队伍通过的 C 题，证明其实力也不容小觑。热心的 Google 将 Gemini 的解题代码开源了：<a target="_blank" rel="noopener" href="https://github.com/google-deepmind/gemini_icpc2025">https://github.com/google-deepmind/gemini_icpc2025</a> 。</p>
+<h2 id="竞赛题深度分析"><a href="#竞赛题深度分析" class="headerlink" title="竞赛题深度分析"></a>竞赛题深度分析</h2><p>以往有 AI 达成某某成就的新闻时，我只能泛泛地分析一下。但在这次 ICPC 中，可以分析的信息多了很多：首先是 Google 开源了他们的解题代码，且有着不俗表现的 GPT-5 是人人可用的，我们能够更加深入地了解 AI 的水平；另外，虽然我的算法竞赛水平不足以解出最难的几道题目，但我能够理解题目的意思，大致看懂题解，并能揣测人类选手的解题思路。基于这些信息，我将深度分析在解答最难的几道题目时，人类和 AI 的区别在哪。</p>
+<p>从排行榜可知，对人类来说，最难的题目从难到易依次为 C, G, B，其中无人通过 C 题。而 Gemini 解出了 C 题，却没有解出 B 题和 G 题。我简单扫了遍题，G 题太复杂了懒得想，就去仔细看了 B 题和 C 题。随后，我借助 GPT-5 的帮助，并参考了 Youtube 上的官方视频题解及 GitHub 上某大神的解答 <a target="_blank" rel="noopener" href="https://github.com/SnapDragon64/ACMFinalsSolutions">https://github.com/SnapDragon64/ACMFinalsSolutions</a> ，勉强是搞懂了这两题的大致解法。</p>
+<h3 id="C-题"><a href="#C-题" class="headerlink" title="C 题"></a>C 题</h3><p>我们先看一下人类没解出来但 AI 通过的 C 题。这道题的题意可以对着下面的样例图解释。一些水会从 1 号水站流入下游的水库。水站中间还有一些分水管。水站、分水管、水库构成一张图，其中，水站用绿色表示，水库用蓝色表示，分水管用灰色表示。水站和分水管都会以一定比例将上游的水分流。不过，分水管的分流比例是固定，且可能会存在损耗（分流比例已在图中标出）。作为水站管理人员，我们可以任意指定每个水站的分流比例，因此水站的分流比例没有在图中标出。现在，我们要决定每个水站的分流比例，使得<strong>最终所有水库的最少水量尽可能大</strong>。假设 1 号水站流出了 1 单位的水，程序只需输出最优情况下上述问题的解，不需输出方案。</p>
+<p><img src="/2025/11/24/20250922-ICPC2025-AI/./20250922-ICPC2025-AI/2.jpg" alt></p>
+<p>比如，在示例中，如果我们让 1 号水站的分流比例为 50% : 50%，则我们可以逐步计算每个管道及每个分水管的流量，最终算出三个水库的水量分别为 0.4, 0.2, 0.2。我们要求解所有水库的最少水量，因此我们这个方案的价值是 0.2。我们要从所有这样的方案中，选择一个价值最高的方案。</p>
+<p><img src="/2025/11/24/20250922-ICPC2025-AI/./20250922-ICPC2025-AI/3.jpg" alt></p>
+<p>这道题的主要数据范围如下：水站、分水管约有 $10^4$ 个，但水库至多有 3 个。</p>
+<p>这题看得我一头雾水，我只好向万能的 GPT-5 请教了这道题。结果它淡然地回答我，这个问题其实和另一个更简单的子问题相关：假设三个水库都向水库买水，出价分别为 $a, b, c$, 且满足 $a+b+c=1$。这时，该怎么设置每个水站的分流比例，最大化利润呢？这个问题就简单很多了，由于一开始已经知道了底部水库的价值，我们这次自底向顶计算，算出每个水管和分水管的价值。在每个水站处，我们只需要贪心地让 100% 的水流向价值最高的分水管即可。对于多数竞赛选手来说，这个子问题并不难解。</p>
+<p><img src="/2025/11/24/20250922-ICPC2025-AI/./20250922-ICPC2025-AI/4.jpg" alt></p>
+<p>之后，GPT-5 又告诉我若干个炸裂的结论：如果将此时的可选方案变成指定三个水库的比例 $a:b:c$，而不必再考虑水库的分流方案，那么上面这个<strong>子问题的最小值</strong>等价于我们求<strong>原问题的最大值</strong>。并且，这个子问题的解是一个凸函数。针对输入变量数小于等于 3 的凸函数，有十分成熟的三分算法可以求解这个问题。</p>
+<p>GPT-5 给我说了一大堆内容，我都被绕晕了。过了一会儿后，我才整理出了这题的解题逻辑：</p>
+<ol>
+<li>原来指定水站分流比例的问题和一个指定水库价值比例的问题相关。题目里问的原问题的最大值，等于子问题的最小值。</li>
+<li>方案已知时，一个子问题可以用动态规划（DP）算法求解。</li>
+<li>不同方案的子问题的解构成凸函数。</li>
+<li>凸函数最优值的问题可以用三分算法求解。</li>
+</ol>
+<p>为什么人类选手没能在比赛中做出 C 题呢？对于顶级竞赛选手来说，做到第二、第四步都是轻而易举的事。但是，第一步这个问题转化实在是太难想了，本来求最大值的，怎么会联想到一个要求解最小值的任务。此外，哪怕想到了第一步这个子问题，也猜不到这个子问题的具有第三步中的凸函数性质。</p>
+<p>那为什么 AI 如此漂亮地解出了这道题呢？我询问 GPT-5 是怎么想出最关键的那一步问题转化的，它则煞有介事地回复了我一堆数学定理，看起来似乎很有道理。但以我浅薄的积累，这些数学定理全都不能在短期内看懂。我又问它是否这道题用到的知识在数学竞赛中很常见，而在算法竞赛中不常见。它告诉我这些知识在算法竞赛中很常见，但又好像完全没有理解这些知识一样，给了我一份不太相关的「相关题目表」，和这道 C 题用到的核心解法完全无关。最终，GPT-5 并没有教会我它是怎么想的。我只能猜测它的数学知识确实很渊博，比顶级竞赛选手们更快地找到了解决此问题的相关知识。</p>
+<h3 id="B-题"><a href="#B-题" class="headerlink" title="B 题"></a>B 题</h3><p>我们再来看 B 题。赛场上有 8 支队伍通过了此题，且最快的队伍在第一个小时里就解决了此题。但是，Gemini 并没有通过这道题。我问了 GPT-5，它装模做样地给了一个解答，虽然方向对了，但显然它的解法会超时。</p>
+<p>这道题是这样说的：两个人在黑板上写下了 $1 \sim N$ 所有数字。随后，二人轮流选择数字。第一个人在第一步必须选一个偶数。随后，每一步中，每个人必须选上一个数乘以一个质数，或者上一个数除以一个质数（必须保证能整除），随后擦掉上一个数。如果有人选不了下一个数，则这个人就输掉了。题目输入 $N$ $(2 \leq N \leq 10^7)$，输出先手胜利还是后手胜利。如果先手胜利，还要输出先手应该第一步选哪个数。</p>
+<p>这个问题很容易用数学模型表达：我们可以把每个 $1 \sim N$ 里的数字看成图里的节点，把 「能从数字 a 选到数字 b」 看成数字 a 和数字 b 之间连了一条边。根据题目，如果当前在数字 $x$，我们就能向 $x \cdot p$ 或者 $x / p$ （$p$ 是质数）连边。这样，我们就能画出一张无向图。那么，从黑板上擦掉数字，等于从图中删掉一个点。所以，问题就变成，两个人在无向图上轮流走一步，并删去上一步所在节点。谁不能动了谁就输了。</p>
+<p>下面是 $N=5$ 对应的图。这个情况下，先手必输，后手必赢。假如先手选 2，则后手选 4，先手无路可走；如果先手选 4，则后手选 2，先手选 1，后手选 5，先手同样失败。由于先手只能从偶数，而无论从 2 开始还是从 4 开始都是输，所以先手必输。</p>
+<p><img src="/2025/11/24/20250922-ICPC2025-AI/./20250922-ICPC2025-AI/5.jpg" alt></p>
+<p>GPT-5 告诉我，这个在地图上走路的博弈问题已经在学术界被研究过了，叫什么 Dulmage–Mendelsohn。研究的结论是，把图看成二分图，如果设置 $s$ 为起点，$s$ 在某个最大匹配里不被匹配，则先手必胜……。讲了一大堆我啥也听不懂，能得到的结论是，这道题的数学模型已经被人研究过了，早就有了明确的算法。</p>
+<p>可问题是，这个算法要求的计算量很大。在 $N$ 为 $10^7$ 这个量级时，用已知算法求解一定会超时。有没有办法能够绕过这些复杂的计算呢？</p>
+<p>解法就出在这个图的构造方法上。上述通用解法是针对一般的地图博弈问题。但在这道题中，这个图是根据「乘除素数」得到的。想必这种构造方法一定存在某些能够简化问题的特性。官方题解讲到，当 N 足够大（大于 80 多）时，我们总能找到三个满足条件的素数 p, q, r，它们能构成一张子图。在这张子图上，有着简单的策略让先手必胜。</p>
+<p><img src="/2025/11/24/20250922-ICPC2025-AI/./20250922-ICPC2025-AI/6.jpg" alt></p>
+<p>所以，这道题的解法分两块：</p>
+<ol>
+<li>如果 N 很小，用现有的成熟算法求解。</li>
+<li>如果 N 较大，只需要输出先手必胜，再轻松找到那个符合条件的起点即可。</li>
+</ol>
+<p>这道题属于算法竞赛里那一类解法十分巧妙的题目：用常规做法显然会超时，但如果灵机一动，发现题目在某些情况下有一个很直观的解，那这道题一下子就做出来了。甚至我都敢说，如果我知道这道题用到的成熟算法，连我都很可能在几个小时里把这道题的第二步想出来。当然，从某种角度来说，这道题的第一步也是很难的：如果你从来没有学过类似的定理，在赛场上是难以自己把定理重新发现一遍的。</p>
+<p>在我看来，B 题的难度是远小于 C 题的。首先，这题涉及的数学定理不是那么冷门，不少人都知道；其次，第二步那个巧妙的想法对于选手们来说并不难想。可 AI 有着和人类不一样的表现。在我的测试中，GPT-5 确实给出了第一步的正确思路，但它完全没思考清楚是否会超时，也没有发现第二步那个巧妙解法。</p>
+<h2 id="人类与-AI-在算法竞赛的对比"><a href="#人类与-AI-在算法竞赛的对比" class="headerlink" title="人类与 AI 在算法竞赛的对比"></a>人类与 AI 在算法竞赛的对比</h2><p>如果耐心看完了上一节，相信完全没接触过算法竞赛的读者也能对人类和 AI 解答算法题的方式略知一二。在这一节，我会基于上一节提供的信息，详细对比人类和目前 AI 思考方式上的区别。</p>
+<p>在分析之前，我想先给出我看待这个问题的方式。很多人看到 AI 在算法竞赛中战胜了人类，会把「在算法竞赛中表现更好」当成一件完整的事来分析，或许会因感觉 AI 比人类更聪明了而感到焦虑，又或许会以算法竞赛本身意义不大为由认为其不足为虑。而在我看来，解答算法竞赛是一个由若干步骤组成的复杂思维过程，详细地探究其中每一步中人类和 AI 的思维区别，才能帮我们更清晰地认识当前 AI 的实力。</p>
+<p>在我看来，算法竞赛选手解题时需要经过以下思维过程：</p>
+<ol>
+<li>读懂自然语言，将其转换成脑中的数学语言。</li>
+<li>回忆自己学过的算法原型，思考这道题的数学语言所表示的模型能够被哪种算法原型解决。</li>
+<li>写出正确的程序并提交。</li>
+</ol>
+<p>其中，最具挑战性的是第二步。在不同的题目中，执行第二步思考的方式也不同。以前面的 C 题为例，为了想出正确答案，选手或许需要经过以下思考过程：</p>
+<ol>
+<li>由于这道题的数学模型和「网络流」模型很像，选手会仔细思考网络流算法是否能够解决这道题。但稍微想了一下发现网络流算法解不了这题。</li>
+<li>选手突然灵光一闪，发现这道题可以转化成一个子问题。不同子问题的最小值就是答案。</li>
+<li>找到不同子问题的最优解可以用三分算法，没问题。</li>
+<li>解决单个子问题可以用动态规划算法，没问题。这个问题最后就解出来了。</li>
+</ol>
+<p>解答 B 题也会经过这样的思考过程：</p>
+<ol>
+<li>通过回忆与比对，选手发现这道题的本质是一道地图博弈问题，可以用成熟算法解决。</li>
+<li>但题目数据范围太大，套用算法只能解决部分问题。</li>
+<li>根据以往解题经验，这种博弈题在数据大的时候可能有一个很简单的解。简单尝试一下后，果然，选手发现了一个简单解法。</li>
+<li>合并数据量大时的简单解法和数据量小时的成熟算法，得到最终解法。</li>
+</ol>
+<p>虽然每道题的思考过程都不同，但我们可以总结出选手解题时共通的思考过程：</p>
+<ol>
+<li>在平时学习时，选手<strong>记忆</strong>了足够多的算法原型。我们不妨把每个算法原型看成一块「拼图」。</li>
+<li>看完题目后，选手会在记忆中<strong>搜索</strong>与题目的数学模型最像的那些算法原型。</li>
+<li>接着，选手会<strong>判断</strong>当前想到的这块「拼图」能不能和数学模型对齐，或者多块「拼图」拼在一起能不能凑出这个数学模型。</li>
+<li>如果当前想到的算法原型不对，那就重新尝试新的算法原型。选手既可能灵光一闪地<strong>顿悟</strong>出解答，也可能根据套路<strong>推理</strong>出解答的方向。</li>
+</ol>
+<p>在这些加粗的动作中，「顿悟」的原理比较复杂，这里不详细展开。剩下的动作可以清晰地分析两类：</p>
+<ul>
+<li><p>「非理性」的记忆和搜索：我们无法讲清楚我们在脑子里是怎么记东西的，又是怎么搜索出与眼前事物最契合的抽象概念的。</p>
+</li>
+<li><p>「理性」的判断和推理：我们能够讲清楚为什么一个算法是对的，又或者为什么一个算法会超时。如果碰到了一个套路类似的题目，我们可以直接根据套路不经搜索直接推理出正确解答方法（尽管识别套路时用到了搜索）。此外，知晓一个题目由几个子算法组成，也算是理性思维的一种。</p>
+</li>
+</ul>
+<p>将思考时的动作分成非理性和理性后，再回头看 AI 的解题过程，我们能发现 AI 明显在非理性功能上远胜人类。</p>
+<ul>
+<li>在做 C 题时，AI 能够将数学知识融会贯通，一眼看出这道题可以变换成另一个更好解的问题。而人类选手没怎么见过把这种数学知识用到算法题里的先例，在比赛中没能想出来。（如果见过一次这种套路的话，我相信顶级选手是能够在比赛里做出这道题的）</li>
+<li>在做 B 题时，AI 轻松找到了正确的算法。</li>
+</ul>
+<p>而在理性思考上，我觉得 AI 做得还不够好。比如在做 B 题时，AI 没有注意到直接套用算法会超时，更不用谈思考该如何针对超时做优化了。这对于一个能做出 C 题的同水平的人类选手来说是不可能的事。在人类视角来看，B 题远比 C 题简单。</p>
+<p>我们再来讨论一下 AI 和人类的思考方式之间为什么会有这样的差异。所谓非理性思考，其实就是统计学习的结果：从大量的经验中学习，碰到问题时直接凭直觉得出结论。人类在学习语言、重复生活习惯时，其实都用到了这种思考方式。然而，相比之下，现在的 AI 模型都是基于统计学习的，学过的数据比人类多得多，在非理性思考上优于人类也无可厚非。</p>
+<p>既然 AI 在学习时只用到了统计学习，它就不能进行需要推理的理性思考了吗？当然不是。现在的 LLM 是用 CoT （思维链）的方式学习推理的。具体来说，思考的过程，比如数学公式的每一步推导过程，被当成了一种文本数据，和其他死知识混在一起，供 AI 学习。这样，仅使用统计学习的方式，AI 既能记住知识，也能输出推理的过程。我们不能说 AI 不会理性思考，正确的说法是只有人类会将思考区别成理性的和非理性的，而 AI 自始至终都是在用同一种方式思考。不管是记忆、搜索，还是判断、推理，在 AI 看来都是大量数据中存在的规律而已。</p>
+<p>当下，我们难以断言 AI 的这种统一的思考方式是否最终能够全面超过人类。但可以确定的是，理性思考目前还是人类独属的利器，使得人类能够用相比之下更少的脑容量高效地完成复杂任务。</p>
+<h2 id="AI-的下一步"><a href="#AI-的下一步" class="headerlink" title="AI 的下一步"></a>AI 的下一步</h2><p>攻克算法竞赛这一项具有挑战性的任务后，AI 下一步要解决的问题是什么呢？如前所述，我认为当前 AI 在算法竞赛中的表现并不能说明它有和人类一样的理性思考水平，即在需要大量推理、严谨关联抽象概念的任务上的水平比不过人类。我将分享三个有价值的任务，它们对现在 AI 来说有望在一两年内有所突破，不至于太难，且能够反映 AI 的理性思考水平。</p>
+<p>第一个任务是科研。在我们的认知里，创造新知识的科研是难度最高的思考任务。但直接让 AI 创造新知识恐怕太难了，我觉得一个更简单的科研任务是<strong>审稿</strong>——清楚认知现有的知识体系，并准确判断一篇新论文的创新性有多少。现在确实有不少辅助审稿、辅助解读论文的 AI。但在我看来，它们都只是从浅层的文本方面分析文章，没有对知识的深刻认识。但如果是稍有科研训练的人类研究者，他们能很快剥开论文表面那些精美的外壳，迅速理解文章究竟提出了哪些新的内容。如果哪一天 AI 也能给出犀利且正确的审稿意见，那就能证明现在的 AI 不是死记硬背，而是确实深刻理解了知识并且知道新论文的知识和现有知识的关联。</p>
+<p>第二个任务是实现<strong>长思考链</strong>。深度学习时代的棋类 AI 一般由两大模块组成：判断网络，用于粗浅判断当前局势及下一步棋怎么下更好；搜索算法，用于模拟下完了几步棋以后的结果，以进一步确认当前每一步棋的好坏。也就是说，第一部分的网络只是凭借棋感大致想出了怎么下棋，而要严谨地确认哪步棋更好，需要搜索算法的帮助。棋感的部分其实是非理性思考，AI 能从大量数据里学会；而搜索算法代表了理性思考的部分，它用严密的程序逻辑告诉 AI 该怎么得到更正确的判断结果。那么，现在的 LLM 能否不靠人类编写的算法，自行领悟出这种思考过程呢？通过 CoT 技术，AI 确实会输出一些中间结果来帮助后续思考。但显然，它们的效率比不过预定义的算法，难以执行非常长的思考。研究仅由 LLM 构成的下棋 AI 同样很有价值。今年其实出了一个叫 InternThinker 的围棋 LLM，和我描述的任务一致，但我觉得这个产品还有很大的提升空间。</p>
+<p>第三个任务是<strong>输出人类可理解的思考过程</strong>。很多时候，知道过程比知道答案更有价值。比如，要检查一个学生是不是在抄答案，我们会问他的解题过程。同理，对于给出了比人类更好的答案的 AI，我们也希望它输出思考过程，反过来教育人类。现在的 AI 可以输出一些思考过程，但做得还不够好。如前文所述，我曾让 GPT-5 教我做 C 题，并告诉我它的思考过程。但 GPT-5 只是列了一些知识点，然后像一本枯燥的数学教材一样，一板一眼地讲着推导过程，根本做不到用三言两语就能快速教会我。从这里也能看出，AI 能输出思考过程，其实只是把训练集里的思考过程，即数学教材的推导方法学了过来。而我认为，真正有价值的思考过程，是<strong>把非理性思考的结果用理性思考严谨复述</strong>的内容。一旦能做到这一点，AI 就能把从大量数据里学到的新知识教给人类。当然，如何把这种更加复杂的思考过程与现在 LLM 能输出的思考过程做区分，且用一个具体的任务表现出来，同样比较困难。我认为这个任务可以和上一个任务结合起来。如果一个 LLM 的围棋水平很高，且能准确讲出自己每一步棋的想法以指导人类，那这样的 AI 在其他领域一定会有更加亮眼的表现。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过深度分析 AI 在 ICPC 2025 的解答结果，我们发现 AI 还是在非理性思考，即从大量数据中寻找规律这一点上远胜人类，而在推理、判断等理性思考上不如人类。在我看来，当前 AI 的本质并没有发生什么变化。它取得的一系列成就，只能进一步说明统计学习的有效性——如果 AI 的能力不受内存、算力等资源的限制，学过了世界上所有可能的数据，它就能在一切事情上超过人类。但在资源有限的前提下，人类的理性思考能力还是一项非常高效率的功能。 </p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1928,154 +2090,6 @@ sim(q, k) = ReLU(q)ReLU(k)</script><p>ReLU 函数用于让相似度非负。</p>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/01/22/20250115-R3GAN/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2025/01/22/20250115-R3GAN/" class="post-title-link" itemprop="url">高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2025-01-22 23:30:36" itemprop="dateCreated datePublished" datetime="2025-01-22T23:30:36+08:00">2025-01-22</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>最近一篇论文因其吸引眼球的标题而刷屏科技自媒体：”The GAN is dead; long live the GAN!<br>A Modern Baseline GAN (GAN 已死？GAN 万岁！一个现代 GAN 基模)”。我不喜欢这种浮夸的标题，因为真正有价值的论文不必靠标题吸引人。带着怨气通读完论文后，我发现这篇论文果然没有做出特别大的创新。</p>
-<p>这篇论文提出了一种叫做 <em>R3GAN</em> （读作 “Re-GAN”）的 GAN 基准模型。R3GAN 综合使用了 RpGAN 损失函数和特殊的梯度惩罚 (Gradient Penalty, GP) 损失函数，并基于前沿卷积网络 ConvNeXt 重新设计了一套 GAN 网络。实验表明 R3GAN 在 FFHQ 和低分辨率 ImageNet 图像生成上有着比肩扩散模型的 FID 分数。该工作主要是在工程实验上做了贡献，没有提出太多科研创新。在这篇博文里，我会简单介绍 R3GAN 的主要实现细节，并为各项细节提供参考文献而不做深入讲解，感兴趣的读者可以查阅文末总结的参考文献。</p>
-<h2 id="GAN-回顾"><a href="#GAN-回顾" class="headerlink" title="GAN 回顾"></a>GAN 回顾</h2><p>在这一小节里，我们会回顾读懂 R3GAN 必备的和生成对抗网络 (GAN) 相关的知识。</p>
-<h3 id="GAN-基础知识"><a href="#GAN-基础知识" class="headerlink" title="GAN 基础知识"></a>GAN 基础知识</h3><p>和其他多数生成模型一样，GAN 的训练目标是建模一个好采样的分布（高斯分布）到一个不好训练的分布（训练数据集）的映射方式。具体来说，GAN 会用一个<strong>生成器 (Generator)</strong> 把来自高斯分布的噪声 $z$ 设法变成图像 $x$。其他生成模型大多有自己的一套理论基础，并根据某理论来设置生成器的学习目标。而 GAN 用另一个神经网络——<strong>判别器 (Discriminator)</strong> 来学习生成器的训练目标。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/1.jpg" alt></p>
-<p>两个模型的学习是通过一种博弈游戏实现的：判别器试图分辨图片是否是「假」的，或者说是否是生成出来的，而生成器通过提升生成图像质量来让判别器无法分辨图片真假。二者共用一套优化目标，但一方希望最小化目标而另一方希望最大化目标。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/2.jpg" alt></p>
-<p>在上面的损失函数中，$f$ 有很多种选取方式。R3GAN 选用了 softplus 函数，如上图所示。</p>
-<h3 id="两大经典结构-DCGAN-和-StyleGAN"><a href="#两大经典结构-DCGAN-和-StyleGAN" class="headerlink" title="两大经典结构 DCGAN 和 StyleGAN"></a>两大经典结构 DCGAN 和 StyleGAN</h3><p>GAN 的开山之作是用全连接网络实现的。在 GAN 的后续发展过程中，有两个经典的网络结构：2016 年 的 DCGAN 和 2019 年的 StyleGAN。 </p>
-<p>DCGAN 是一个生成器基于卷积神经网络 (CNN) 的 GAN。它的特点是对低通道特征逐渐上采样并逐渐减少通道数，直至生成目标大小的三通道图像。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/3.jpg" alt></p>
-<p>StylGAN 是一个训练较稳定且适合做图像编辑的 GAN。和传统 GAN 生成器相比，StyleGAN 从一条「旁路」输入被映射网络 (Mapping Network) 预处理过的噪声 $z$，此处信息注入的方式是风格转换 (Style Transfer) 中的 AdaIN 操作。由于输入噪声的方式变了，原来的低分辨率特征图输入被换成了一个常量。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/4.jpg" alt></p>
-<h3 id="两大难题：难收敛和模式崩溃"><a href="#两大难题：难收敛和模式崩溃" class="headerlink" title="两大难题：难收敛和模式崩溃"></a>两大难题：难收敛和模式崩溃</h3><p>相比其他生成模型，GAN 常被诟病「难训练」。这种难训练体现在难收敛、模式崩溃 (Mode Collapse)。难收敛即意味着模型对数据集拟合效果不佳，我们可以用 FID 来评估模型输出与训练集的相似程度。模式崩溃指的是对于一个多类别数据集，模型只能生成其中少数类别，示意图如下所示（<a target="_blank" rel="noopener" href="https://www.researchgate.net/figure/Generated-images-by-GAN-and-WGAN-models-trained-on-MNIST-after-1-100k-500k-1000k_fig2_329705388">图片来源</a>）。为了检测是否出现模式崩溃，我们既可以让网络随机生成大量图片并用另一个分类网络统计其中出现的类别数，也可以用生成召回率 (recall) 来大致评估模型的采样丰富度。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/5.jpg" alt></p>
-<h2 id="R3GAN-实现方法"><a href="#R3GAN-实现方法" class="headerlink" title="R3GAN 实现方法"></a>R3GAN 实现方法</h2><p>R3GAN 在引言里把 StyleGAN 中的各种提升 GAN 稳定性的小技巧批判了一通，并主张应该使用尽可能简洁的 GAN 生成器。虽然论文是这样写的，但实际上 R3GAN 是在更早的 DCGAN 的基础上，更新了损失函数，并用上了最新的 CNN 结构，和 StyleGAN 结构几乎无关。我们来从这两个方面来学习 R3GAN：损失函数和模型结构。</p>
-<h3 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h3><p>在描述博弈游戏的 GAN 损失上，R3GAN 把标准 GAN 损失换成了 RpGAN (relativistic pairing GAN) 论文中的 GAN 损失。相比之下，RpGAN 损失用一对真假样本的判别器输出之差送入激活函数 $f$，而不是分别把真假样本的判别器输出送入 $f$。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/6.jpg" alt></p>
-<p>根据之前的研究结果，作者从直觉和理论上简单解释了 RpGAN 的好处：</p>
-<ul>
-<li>以前的 GAN 损失只要求判别器区分真假样本，而不要求真假样本之间的距离要尽可能大。通过把一对真假样本的差输入损失函数，RpGAN 损失可以让真假样本之间的差距尽可能大。</li>
-<li>根据之前论文的理论分析，在一些简单的配置下，标准 GAN loss 有数量指数增长的较差局部极小值，而 RpGAN loss 的每个局部极小值都是全局最小值。</li>
-</ul>
-<p>R3GAN 还重新对最佳的梯度惩罚（Gradient Penalty, GP）损失函数做了消融实验。$n$-GP 表示让模型对输入的梯度尽可能靠近实数 $n$，从而使得训练更加稳定。常用的 GP 有 0-GP 和 1-GP：</p>
-<ul>
-<li>0-GP：最优情况下，模型对任意输入都给出完全一样的结果。</li>
-<li>1-GP：最优情况下，模型的输出对输入平滑变动：输入张量的范数变 1，输出张量的范数也变 1。</li>
-</ul>
-<p>作者认为 0-GP 对 GAN 判别器是较好的。因为当生成器的输出完全和训练集一样时，判别器是无法区分任何输入的，对任何输入都会给出一样的输出。</p>
-<p>对判别器的 GP 有 $R_1$ 和 $R_2$ 两种形式，分别表示对真/假数据采取 GP。作者发现同时用 $R_1$ 和 $R_2$ 更好。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/7.jpg" alt></p>
-<p>总结一下，R3GAN 使用的损失函数为 RpGAN + $R_1$ + $R_2$。作者用简单的实验证明这是最优的。如下图所示，在一个有 1000 种类别的简单数据集上，最佳损失配置能够生成所有类别的数据，且有更小的分布距离 $D_{KL}$ （和 FID 指标类似，越小越好）。不用 RpGAN 损失会同时降低输出多样性和收敛度，不用 $R_2$ 会使训练完全无法收敛。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/8.jpg" alt></p>
-<h3 id="现代化的卷积网络"><a href="#现代化的卷积网络" class="headerlink" title="现代化的卷积网络"></a>现代化的卷积网络</h3><p>找出了一个简洁而有效的损失函数后，R3GAN 论文接着探究了更优的卷积网络结构。文中提及了五套配置：</p>
-<ul>
-<li>A：原版 StyleGAN2</li>
-<li>B：把 StyleGAN2 里的绝大多数设计删掉，让模型和 DCGAN 几乎相同。</li>
-<li>C：换用上一节里发现的新损失函数</li>
-<li>D：把类似 VGG 的神经网络加上 ResNet 中的残差连接</li>
-<li>E：用 ConvNeXt 里的模块更新 ResNet</li>
-</ul>
-<p><img src="/2025/01/22/20250115-R3GAN/9.jpg" alt></p>
-<blockquote>
-<p>我不明白作者为什么要强行从 StyleGAN2 开始做实验，然后把 StyleGAN2 中的设计批评一顿，删掉全部设计，再换成一个更早期的 DCGAN。直接用 DCGAN 不是更加简洁吗？我猜测是因为作者用了 StyleGAN2 的代码做开发，花很多精力把 StyleGAN2 删成了 DCGAN。既然代码都改了，不写进论文就太浪费了。</p>
-</blockquote>
-<p>我们跳过配置 A，直接看配置 B 和早期的 DCGAN 有什么区别。经作者总结，配置 B 中比较重要的几项区别有：</p>
-<ul>
-<li>a) 用 $R_1$ 损失。</li>
-<li>b) 用较小的学习率且关闭 Adam 优化器中的动量</li>
-<li>c) 所有网络中均不使用 Normalization 层</li>
-<li>d) 用 bilinear 上采样代替反卷积</li>
-</ul>
-<p>其中，不改 a), b), c) 会使训练失败。d) 是当今神经网络上采样的标准配置，可以防止出现棋盘格 artifact。</p>
-<p>配置 C 中的新损失函数我们已经在上一节中讨论过了。</p>
-<p>包括 StyleGAN 在内，此前 GAN 的神经网络多采用了类 VGG 结构，没有残差块。而配置 D 将标准 ResNet 中的 1-3-1 残差块引入了网络。</p>
-<p>配置 E 则是进一步更新了卷积层的设计。该配置首先引入了 group convolution 操作（将通道分组，同组通道相互连接。group=1 即 depthwise convolution）。由于该操作更加高效，网络能够在总运行时间不变的前提下加入更多参数。此外，配置 E 还用到了 ConvNeXt 中的反瓶颈（inverted bottleneck）块，该模块的设计灵感来自于 Transformer 中的全连接层。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/10.jpg" alt></p>
-<p>我们再看一次各配置的简单消融实验结果。看起来新损失函数并没有多大的提升，最后比较有效的是网络架构的改进。最好的配置 E 模型能够略优于 StyleGAN2。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/9.jpg" alt></p>
-<h2 id="定量实验结果"><a href="#定量实验结果" class="headerlink" title="定量实验结果"></a>定量实验结果</h2><p>最后，我们来看论文中的定量结果。如前所述，我们主要关心 GAN 的两个指标：多样性与收敛度/图像质量。前者能够通过数类别或者召回率反映，后者能够通过与训练集的 FID（以及本文使用的 $D_{KL}）$反映。</p>
-<h3 id="多样性"><a href="#多样性" class="headerlink" title="多样性"></a>多样性</h3><p>在小型多类别数据集上，R3GAN 能够生成出所有类别，且有最好的训练集相似度。而 StyleGAN2 无法生成少数类别。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/11.jpg" alt></p>
-<p>另一个能够反映图像多样性的指标是召回率，它大致表示了训练集有多少内容能够在生成集里找到。论文没有提供表格，只简单说了一下 CIFAR-10 上 StyleGAN-XL 是 0.47，R3GAN 0.57。但总体来看 R3GAN 的召回率总是会低于扩散模型。</p>
-<h3 id="收敛度"><a href="#收敛度" class="headerlink" title="收敛度"></a>收敛度</h3><p>本工作宣传时的一大亮点是它在部分数据集的 FID 分数超过了扩散模型。我们看一下本工作在单一、多样数据集上的 FID 结果。</p>
-<p>先看经典的 FFHQ 人脸数据集。在这种多样性较低的数据集上，GAN 的表现一直很不错。R3GAN 的 FID 好于 StyleGAN2 和多数扩散模型，且只需要一次推理 (NFE=1)。但它的 FID 并没有优于此前最好的 GAN 模型。当然，此前的 GAN 用了一种提升 FID 而不提升图像质量的技巧，R3GAN 没有用。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/12.jpg" alt></p>
-<p>再看类别比较丰富的 CIFAR-10 和 ImageNet 数据集。R3GAN 的表现也比所有扩散模型和大部分 GAN 强。但 R3GAN 没有在更大分辨率的 ImageNet 上测试。现在前沿生成模型一般都会测试 ImageNet-256，而 R3GAN 并没有提供相关实验结果。</p>
-<p><img src="/2025/01/22/20250115-R3GAN/13.jpg" alt></p>
-<h2 id="总结与评论"><a href="#总结与评论" class="headerlink" title="总结与评论"></a>总结与评论</h2><p>R3GAN 是一种现代版的 DCGAN。它从损失函数和模型结构两个方面做了改进。损失函数方面，DCGAN 用了 RpGAN + $R_1$ + $R_2$ 损失函数；模型结构方面，R3GAN 用 ConvNeXt 中的最新卷积结构代替了原来的 VGG 结构。实验表明 R3GAN 在 FFHQ-256 和 ImageNet-64 的 FID 分数上超过了全部扩散模型和多数 GAN，略差于此前最强的 GAN。在生成多样性上，R3GAN 依然没有扩散模型好。</p>
-<p>从科研贡献上来看，这篇文章并没有提出新理论或新想法，完全复用了之前工作提出的方法。这篇文章主要提供了一些工程上的启发，有助于我们去开发更好的基于 CNN 的 GAN。从结果来看，R3GAN 并没有在目前主流指标 ImageNet-256 上测试，没有迹象表明它能好过扩散模型。我们可以从其他数据集上的实验结果推断，R3GAN 的最佳表现和之前的 GAN 差不多，没有对 GAN 作出本质的改进。综上，我认为这篇文章是质量满足顶会要求的平庸之作，被 NIPS 2024 选为 Poster 合情合理。</p>
-<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>DCGAN: Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks</p>
-<p>StyleGAN: A Style-Based Generator Architecture for Generative Adversarial Networks</p>
-<p>StyleGAN2: Analyzing and Improving the Image Quality of StyleGAN</p>
-<p>GP (WGAN-GP): Improved Training of Wasserstein GANs</p>
-<p>RpGAN: The relativistic discriminator: a key element missing from standard GAN</p>
-<p>RpGAN Landscape Explanation: Towards a Better Global Loss Landscape of GANs</p>
-<p>ConvNeXt: A convnet for the 2020s</p>
-<p>ImageNet FID Trick: The role of imagenet classes in fréchet inception distance</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2145,7 +2159,7 @@ sim(q, k) = ReLU(q)ReLU(k)</script><p>ReLU 函数用于让相似度非负。</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">154</span>
+          <span class="site-state-item-count">155</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

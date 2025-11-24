@@ -168,6 +168,246 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/04/DLS-note-9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/04/DLS-note-9/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（九）：错误分析、数据集匹配、多任务学习、端到端学习</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-04 17:14:51" itemprop="dateCreated datePublished" datetime="2022-07-04T17:14:51+08:00">2022-07-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>这周要学习四项内容：错误分析、使用不匹配的数据、完成多个任务的学习、端到端学习。</p>
+<p>其中，前两项内容是对上一周内容的扩展。学完这些知识后，我们能更好地决定下一步的改进计划。通过处理分布不匹配的数据，我们能够学会如何诊断一种新的问题：数据不匹配问题。之后，我们使用错误分析技术，找到模型具体的错误样例，进一步改进模型。</p>
+<p>后两项内容分别是两项深度学习的应用技巧。我们会学习迁移学习、多任务学习这两种处理多个学习任务的方法。我们还会学习如何用深度学习把问题一步到位地解决，而不是分好几个步骤。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="错误分析"><a href="#错误分析" class="headerlink" title="错误分析"></a>错误分析</h2><h3 id="分析具体错误"><a href="#分析具体错误" class="headerlink" title="分析具体错误"></a>分析具体错误</h3><p>当我们想提升模型的准确率时，一种做法是统计模型输出错误的样例，看看哪类数据更容易让模型出错。</p>
+<p>比如，在提升一个小猫分类器的准确率时，我们可以去看看分类器最容易把其他哪种动物错分类成小猫。经过调查后，我们可能会发现一些小狗长得很像小猫，分类器在这些小狗图片上的表现不佳：</p>
+<p><img src="/2022/07/04/DLS-note-9/1.jpg" alt></p>
+<p>这时，我们可以考虑去提升模型在小狗图片上的表现。</p>
+<p>但是，在决定朝着某个方向改进模型之前，我们应该先做一个数据分析，看看这样的改进究竟有没有意义。我们可以去统计100张分类错误的<strong>开发集</strong>图片，看看这些图片里有多少张是小狗。如果小狗图片的数量很小，比如说只有5张，那么无论我们再怎么提升模型辨别小狗的能力，我们顶多把10%的错误率降到9.5%，提升微乎其微；但如果错分为小狗图片的数量很多，比如有50张，那么我们最优情况下可以把错误率从10%降到5%，这个提升就很显著了。</p>
+<p>更系统地，我们可以建立一套同时分析多个改进方向的数据分析方法。比如说，在小猫的错误样例中，一些输入样本是很像小猫的小狗，一些输入样本是其他大型猫科动物，一些输入样本过于模糊。我们可以挑一些错误的样例，分别去记录这些错误样例的出现情况：</p>
+<p><img src="/2022/07/04/DLS-note-9/2.jpg" alt></p>
+<p>在这个表格中，我们可以记录每张分类错误的图片是由哪一种错误引起的，并留下一些备注。</p>
+<p>调研已有问题的同时，我们还可以顺便去发现一些新的问题。比如我们可能会发现某些错分类的图片加了滤镜。发现这个新问题后，我们可以去表格中新建“滤镜”这一列。</p>
+<p>手动分析完所有样例后，我们统计每种错误的百分比，看看改进哪种问题的价值更大。</p>
+<h3 id="清理标错的数据"><a href="#清理标错的数据" class="headerlink" title="清理标错的数据"></a>清理标错的数据</h3><p>在有监督学习中，标注数据往往是人工完成的，数据的标签有误也是情理之中的事。那么，如果数据中有标错的数据，它们会对模型的表现有什么影响呢？</p>
+<p>首先，来看训练集有误的影响。事实上，深度学习算法对<strong>随机错误</strong>的容忍度很高。如果有少量样本是不小心标错的，那么它们对训练结果几乎没有影响。但是，如果数据中有<strong>系统性错误</strong>，比如白色的小狗全部被标成了小猫，那问题就大了，因为模型也会学到数据集中这种错误的规律。</p>
+<p>接着，我们来看开发集有误的影响。为了确认标错数据的影响，我们应该用刚刚的表格统计法，顺便调查一下标错数据的比例：</p>
+<p><img src="/2022/07/04/DLS-note-9/3.jpg" alt></p>
+<p>在开发集误差不同时，标错数据产生的影响也不同。假设我们分别有一个开发集误差为10%的分类器和一个误差为2%的分类器：</p>
+<p><img src="/2022/07/04/DLS-note-9/4.jpg" alt></p>
+<p>对于第一个分类器，总体占比0.6%的错标数据相对于10%的开发集错误率几乎可以忽略。但是，对于第二个误差为2%的分类器，0.6%的错标数据就显得占比很大了。在这种情况下，假如有同一个模型有两个权重记录点，一个误差为2.1%，一个误差为1.9%。由于误差的存在，我们不好说第二个记录点就优于第一个记录点。回想一下，开发集本来的目的就是帮助我们选择一个在开发集上表现更好的模型。分辨不出更好的模型，开发集就失效了。因此，我们必须要去纠正一下这些开发集中的错标数据。</p>
+<p>在纠正错标数据时，我们要注意以下几点：</p>
+<ul>
+<li>由于开发集和测试集应来自同一个分布，纠正数据的过程应该在开发集和测试集上同步进行。</li>
+<li>不仅要检查算法输出错误的样本中的错标样本，还要考虑那些标注错误却输出正确的样本。</li>
+<li>不一定要去训练集上纠正错标样本，因为训练集和开发集/测试集可以来自不同的分布。</li>
+</ul>
+<p>吴恩达老师建议道，尽管很多人会因为检查数据这件事很琐碎而不愿意去一个一个检查算法输出错误的样本，但他还是鼓励大家这样做。他在自己领导的深度学习项目中，经常亲自去检查错误样本。检查错误样本往往能够确认算法之后的改进方向，在这件事上花时间绝对是值得的。</p>
+<h3 id="快速构建第一个系统，再迭代更新"><a href="#快速构建第一个系统，再迭代更新" class="headerlink" title="快速构建第一个系统，再迭代更新"></a>快速构建第一个系统，再迭代更新</h3><p>在面对一个全新的深度学习问题时，我们不应该一上来就花很多时间去开发一个复杂的系统，而是应该按照下面的步骤尽快开始迭代：</p>
+<ul>
+<li>快速建立开发集、测试集和评估指标以树立一个目标。</li>
+<li>快速构建一个初始的系统。</li>
+<li>使用偏差和方差分析、错误分析来获取后续任务的优先级。</li>
+</ul>
+<p>简而言之，就是：快速构建第一个系统，再迭代更新。</p>
+<p>当然，如果你在这个问题上已经很有经验了，或者这个问题已经有很多的科研文献，那么一上来就使用一套较为复杂却十分成熟的系统也是可以的。</p>
+<blockquote>
+<p>这种快速迭代的思想同样适用于人生中的其他任务。比如，软件开发中，敏捷开发指的就是快速开发出原型，再逐步迭代。同样，我们在计划做一件事时，不必事先就想得面面俱到，可以尽快下手，再逐渐去改良做法。</p>
+</blockquote>
+<h2 id="不匹配的训练集与开发-测试集"><a href="#不匹配的训练集与开发-测试集" class="headerlink" title="不匹配的训练集与开发/测试集"></a>不匹配的训练集与开发/测试集</h2><h3 id="在不同分布上训练与测试"><a href="#在不同分布上训练与测试" class="headerlink" title="在不同分布上训练与测试"></a>在不同分布上训练与测试</h3><p>到目前为止，我们已经多次学习过，开发集和测试集的分布必须一致，但是它们与训练集的分布不一定要一致。让我们来看一个实际的例子：</p>
+<p>假设我们要开发一个小猫分类的手机程序。我们有两批数据，第一批是从网站上爬取的高清图片，共200,000张；第二批是使用手机摄像头拍摄上传的图片，有10,000张。最终，用户在使用我们的手机程序时，也是要通过拍照上传。</p>
+<p><img src="/2022/07/04/DLS-note-9/5.jpg" alt></p>
+<p>现在，有一个问题：该如何划分训练集、测试集、开发集呢？</p>
+<p>一种方法是把所有数据混在一起，得到210,000张图片。之后，按照某种比例划分三个集合，比如按照205,000/2,500/2,500的比例划分训练/测试/开发集。</p>
+<p>这种方法有一个问题：我们的开发集和测试集中有很多高清图片。但是，用户最终上传的图片可能都不是高清图片，而是模糊的收集摄像图片。在开发集和测试集中混入更简单的高清图片会让评估结果偏好，不能反映模型在实际应用中的真正表现。</p>
+<p>另一种方法是只用手机拍摄的图片作为开发集和测试集。我们可以从手机拍摄的图片里选5,000张放进训练集里，剩下各放2,500张到开发/训练集里。这样的话，开发集和测试集就能更好地反映模型在我们所期望的指标上的表现了。</p>
+<p>总结来说，如果我们有来自不同分布的数据，我们应该谨慎地划分训练集与开发/测试集，尽可能让开发/测试集只包含我们期待的分布中的数据，哪怕这样做会让训练集和开发/测试集的分布不一致。</p>
+<h3 id="不同数据分布下的偏差与方差问题"><a href="#不同数据分布下的偏差与方差问题" class="headerlink" title="不同数据分布下的偏差与方差问题"></a>不同数据分布下的偏差与方差问题</h3><p>在之前的学习中，我们一直把机器学习模型的改进问题分为偏差问题和方差问题两种。而在使用不匹配的数据分布后，我们会引入一个新的分布不匹配问题。</p>
+<p>还是在刚刚提到的小猫分类模型中，我们用第二种方法设置了分布不一致的训练集和开发/训练集。假设我们得到了1%的训练误差和10%的开发误差。但是，我们使用了不同分布的数据，开发/测试集的数据可能比训练数据要难得多。我们难以分辨更高的开发误差是过拟合导致的，还是开发集比训练集难度更高导致的。</p>
+<p>为了区分这两种问题，我们需要划分出一个只评估一种问题的新数据集——训练开发集(Training-dev set)。训练开发集的用法和我们之前用的开发集类似，但是其数据分布和训练集一致，而不参与训练。通过比较模型在训练集和训练开发集上的准确度，我们就能单独评估模型的方差，进而拆分过拟合问题和数据不匹配问题了。</p>
+<p>加入了这个数据集后，让我们对几个示例进行改进问题分析。</p>
+<p>假设人类在小猫分类上的失误率是0%。现在，有以下几个不同准确率的模型：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>误差/样本</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练误差</td>
+<td>1%</td>
+<td>1</td>
+<td>10%</td>
+<td>10%</td>
+</tr>
+<tr>
+<td>训练开发误差</td>
+<td>9%</td>
+<td>1.5%</td>
+<td>11%</td>
+<td>11%</td>
+</tr>
+<tr>
+<td>开发误差</td>
+<td>10%</td>
+<td>10</td>
+<td>12%</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>问题诊断</td>
+<td>高方差</td>
+<td>数据不匹配</td>
+<td>高偏差</td>
+<td>高偏差、数据不匹配</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>也就是说，在多出了数据不匹配问题后，我们可以通过加入一个训练开发集来区分不同的问题。</p>
+<p>当然，数据不匹配不一定会加大误差。如果开发/测试集上的数据更加简单，模型有可能取得比训练集还低的误差。</p>
+<p>结合上周的知识，总结一下，考虑数据不匹配问题后，我们应该建立如下的表格：</p>
+<p><img src="/2022/07/04/DLS-note-9/6.jpg" alt></p>
+<p>首先，我们要知道训练集上人类的表现，以此为贝叶斯误差的一个估计。之后，我们要测训练误差和训练开发误差。训练误差和人类表现之间的差距为可规避偏差，训练开发误差和训练误差之间的差距为方差。最后，我们计算开发/测试集误差，这个误差和训练开发误差之间的差距为数据不匹配造成的差距。</p>
+<p>一般来说，只把上述内容填入表格即可明确当前模型存在的问题。不过，如果我们能够获取开发/测试数据分布上的人类误差和训练误差，把上表填满，我们就能获取更多的启发。比如上表中，如果我们发现在开发/测试数据上人类的表现也是6%，这就说明开发/测试数据对于人类来说比较难，但是对模型来说比较简单。</p>
+<h2 id="完成多个任务"><a href="#完成多个任务" class="headerlink" title="完成多个任务"></a>完成多个任务</h2><h3 id="迁移学习"><a href="#迁移学习" class="headerlink" title="迁移学习"></a>迁移学习</h3><p>深度学习的一大强大之处，就是一个深度学习模型在某任务中学习到的知识，能够在另一项任务中使用。比如在计算机视觉中，目标检测等更难的任务会把图像分类任务的模型作为其模型组成的一部分。这种技术叫做<strong>迁移学习</strong>。</p>
+<p>假如我们有一个通用图像识别的数据集和一个医学图像识别数据集，我们可以先训好一个通用的图像识别模型，再对模型做一些调整，换医学图像数据上去再训练出一个医学图像识别模型。</p>
+<p><img src="/2022/07/04/DLS-note-9/7.jpg" alt></p>
+<p>具体来说，以上图中展示的情况为例，我们可以在训练完通用图像识别模型后，删掉最后一个输出层，初始化一个符合医学图像识别任务要求的输出层。之后，我们使用医学图像来训练。在这个过程中，如果新数据较少，我们既可以只训练最后的输出层，而保持其他层参数不变；如果新数据够多，我们可以让所有参数都参与训练。</p>
+<p>这里还要介绍两个重要的深度学习名词。如果换新数据后要训练所有参数，则换数据前的训练过程称为<strong>预训练(pre-training)</strong> ，换数据后的训练过程称为<strong>微调(fine-tuning)</strong> 。</p>
+<p>在上面的例子中，我们只是删掉了一个输出层，加了一个输出层。实际上，删哪些层换哪些层都没有一定的标准。如果任务变得更难了，我们可以删一个输出层，再加几个隐藏层和一个输出层。</p>
+<p>迁移学习最常见的场合，是我们想完成训练数据较少的B任务，却在相似的A任务中有大量的训练数据。这时，我们就可以先学A任务，再迁移到B任务上。如果A、B任务的数据量差不多，那迁移学习就没什么意义了，因为同样是一份数据，对于B任务来说，一份B任务的数据肯定比一份A任务的数据要有用得多。</p>
+<p>另外，迁移学习之所以能有效，是因为神经网络的浅层总能学到一些和任务无关，而之和数据相关的知识。因此，A任务和B任务要有一样的输入，且A任务的浅层特征能够帮助到任务B。</p>
+<h3 id="多任务学习"><a href="#多任务学习" class="headerlink" title="多任务学习"></a>多任务学习</h3><p>在刚刚学的迁移学习中，模型会先学任务A，再学任务B。而在另一个面向多个任务的学习方法中，模型可以并行地学习多个任务。这种学习方法叫做<strong>多任务学习</strong>。</p>
+<p>还是来先看一个例子。在开发无人驾驶车时，算法要分别识别出一张图片中是否有人行道、汽车、停止路牌、红绿灯……。识别每一种物体是否存在，都是一个二分类问题。使用多任务学习，我们可以让一个模型同时处理多个任务，即把模型的输出堆叠起来：</p>
+<blockquote>
+<p>这里，一定要区分多个二分类问题和多分类问题。多分类中，一个物体只可能属于多个类别中的一种；而多个二分类问题中，图片可以被同时归为多个类别。</p>
+</blockquote>
+<p><img src="/2022/07/04/DLS-note-9/8.jpg" alt></p>
+<p>使用多任务学习时，除了输出数据格式需要改变，网络结构和损失函数也需要改变。多个二分类任务的网络结构和多分类的类似，都要在最后一层输出多个结果；而误差和多分类的不一样，不使用softmax，而是使用多个sigmoid求和（每个sigmoid对应一个二分类任务）。</p>
+<p><img src="/2022/07/04/DLS-note-9/9.jpg" alt></p>
+<p>此外，多个二分类任务和多分类任务还有一个不同。在执行多分类学习时，由于所有任务都用统一的数据，数据的标注可能有缺失。比如某几张图片可能没有标出红绿灯，另外几张图片又没有标出人行道。在多任务学习中，我们是允许数据中出现“模糊不清”的现象的，可以把没有标注的数据标成”?”。这样，碰到标注是”?”的数据时，我们就不对这一项进行损失函数的计算。</p>
+<p>和迁移学习一样，多任务学习在使用上有一些要求。</p>
+<p>首先，所有任务都必须受益于相同的浅层特征。这是显而易见的。</p>
+<p>其次，每类任务的数据集都要差不多大。在迁移学习中，我们有比较大的数据集A和比较小的数据集B。而在迁移学习中，假如我们有100项任务，每种数据有1000条数据。对于每一项任务来说，其他99项任务的99000条数据就像数据集A一样，自己的1000条数据就像数据集B一样。</p>
+<p>最后，经研究，只有当神经网络模型足够大时，使用多任务学习才至少不比分别学习每个任务差。</p>
+<p>在实践中，迁移学习比多任务学习常见得多。</p>
+<h2 id="端到端深度学习"><a href="#端到端深度学习" class="headerlink" title="端到端深度学习"></a>端到端深度学习</h2><p>深度学习的另一大强大之处，就是<strong>端到端(end-to-end)学习</strong>。这项技术可以让搭建学习算法简单很多。让我们先看看端到端学习具体是指什么。</p>
+<p>不使用深度学习的话，一项任务可能会被拆成多个子步骤。比如在NLP（自然语言处理）中，为了让电脑看懂人类的语言，传统方法会先提取语言中的词语，再根据语法组织起词语，最后再做进一步的处理。而在端到端学习中，深度学习可能一步就把任务完成了。比如说机器翻译这项NLP任务，用深度学习的话，输入是某语言的句子，输出就是另一个语言的句子，中间不需要有其他任何步骤。</p>
+<p>相较于多步骤的方法，端到端学习的方法需要更多的数据。仅在数据足够的情况下，端到端学习才是有效的。下面，我们来看一个反例。</p>
+<p>在人脸识别任务中，输入是一张图片，输出是图片中人脸的身份。这里有一个问题：识别人脸之前，算法需要先定位人脸的位置。如果使用端到端学习的话，学习算法要花很长时间才能学会找到人脸并识别人脸的身份。</p>
+<p>相比之下，我们可以把这个人物拆成两个阶段：第一阶段，算法的输入是图片，输出是一个框，框出了人脸所在位置；第二阶段，输入是框里的人脸，输出是人脸的身份。学习算法可以轻松地完成这两个子问题，这种非端到端的方法反而更加通用。</p>
+<p><img src="/2022/07/04/DLS-note-9/10.jpg" alt></p>
+<p>总结一下，非端到端学习想要优于端到端学习，必须满足两个条件：每个子任务都比较简单；每个子任务的数据很多，而整个任务的数据很少。</p>
+<p>那么，具体哪些情况下该用端到端学习，哪些情况下不用呢？我们来看看端到端学习的优缺点：</p>
+<p>优点：</p>
+<ul>
+<li>让数据说话。相较于手工设计的某些步骤，端到端学习能够从海量数据中发现于更适合计算机理解的统计规律。</li>
+<li>减少手工设计的工作量，让设计者少花点精力。</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>可能需要大量的数据。</li>
+<li>排除了可能有用的手工设计的东西。比如人脸识别中，显然，找出人脸是一个绕不过去的子步骤。</li>
+</ul>
+<p>归根结底，还是数据量决定了是否使用端到端学习。在复杂的任务中，要达成端到端需要非常非常多的数据，在不能够获取足够数据之前，还是使用多阶段的方法好；而对于简单的任务，可能要求的数据不多，直接用端到端学习就能很好地完成任务了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这周的知识点如下：</p>
+<ul>
+<li>错误分析<ul>
+<li>用表格做错误分析</li>
+<li>统计错标数据</li>
+</ul>
+</li>
+<li>数据不匹配<ul>
+<li>何时使用数据分布不同的训练集和开发/测试集</li>
+<li>训练开发集</li>
+<li>如何诊断数据不匹配问题</li>
+</ul>
+</li>
+<li>完成多个任务<ul>
+<li>迁移学习的定义与常见做法</li>
+<li>预训练、微调</li>
+<li>多任务学习的定义</li>
+<li>多个二分类任务</li>
+<li>迁移学习与多任务学习的优劣、使用场景</li>
+</ul>
+</li>
+<li>端到端深度学习<ul>
+<li>认识端到端学习的例子</li>
+<li>何时使用端到端学习</li>
+</ul>
+</li>
+</ul>
+<p>和上周一样，这周的知识都是一些只需要了解的概念，没有什么很复杂的公式。大家可以较为轻松地看完这周的内容。</p>
+<p>另外，这周也没有官方的编程作业。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/03/DLS-note-8/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2566,217 +2806,6 @@ error=\frac{||\hat{d_{\theta_i}}-d_{\theta_i}||_2}{||\hat{d_{\theta_i}}||_2\cdot
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/06/03/DLS-note-summary-1/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》第一阶段总结与第二阶段预览</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-06-03 20:12:07" itemprop="dateCreated datePublished" datetime="2022-06-03T20:12:07+08:00">2022-06-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>经过前四周的学习，我们已经学完了《深度学习专项》的第一门课程《神经网络与深度学习》。让我们总结一下这几周学的知识，查缺补漏。</p>
-<h1 id="《神经网络与深度学习》知识回顾"><a href="#《神经网络与深度学习》知识回顾" class="headerlink" title="《神经网络与深度学习》知识回顾"></a>《神经网络与深度学习》知识回顾</h1><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>在有监督统计机器学习中，我们会得到一个<strong>训练集</strong>。训练集中的每一条<strong>训练样本</strong>由<strong>输入</strong>和<strong>输出</strong>组成。我们希望构建一个数学模型，使得该模型在学习了训练集中的规律后，能够建立起输入到输出的映射。</p>
-<p>在<strong>深度学习</strong>中，使用的数学模型是深度<strong>神经网络</strong>。</p>
-<p>神经网络一般可以由如下的<strong>计算图</strong>表示：</p>
-<p><img src="/2022/06/03/DLS-note-summary-1/1.jpg" alt></p>
-<p>其中，每一个圆形的计算单元（又称<strong>神经元</strong>）一般表示$g(WX+b)$这一组计算。$W, b$是线性运算的参数，$g$是激活函数。</p>
-<p>为了使神经网络学习到输入和正确输出的映射，我们要定义一个描述网络输出和正确输出之间差距的<strong>损失函数</strong>（即每个样本的网络输出与正确输出的<strong>误差函数</strong>的平均值），并最小化这个损失函数。这样，网络的“学习”就成为了一个优化问题。</p>
-<p>为了对这个优化问题求解，通常的方法是<strong>梯度下降法</strong>，即通过求导，使每一个参数都沿着让损失函数减少最快的方向移动。</p>
-<h2 id="神经网络的结构"><a href="#神经网络的结构" class="headerlink" title="神经网络的结构"></a>神经网络的结构</h2><p>神经网络由<strong>输入层</strong>，<strong>隐藏层</strong>，<strong>输出层</strong>组成。计算神经网络的层数$L$时，我们只考虑隐藏层与输出层。</p>
-<p><img src="/2022/06/03/DLS-note-summary-1/2.jpg" alt></p>
-<p>令$x^{(i)[j]}_k$表示某向量在第$i$个样本第$j$层的第$k$个分量。</p>
-<p>若每层的神经元个数为$n^{[l]}$，特别地，令输入的通道数$n_x=n^{[0]}$，则每层参数的形状满足$W^{[l]}:(n^{[l]}, n^{[l-1]})$，$b^{[l]}:(n^{[l]}, 1)$。</p>
-<p>常见的激活函数有<code>sigmoid, tanh, relu, leaky_relu</code>。一般隐藏层的激活函数$g^{[l]}(l &lt; L)$用<code>relu</code>。对于二分类问题（输出为0或1），输出层的激活函数$g^{[L]}$应用<code>sigmoid</code>。</p>
-<h2 id="神经网络的训练"><a href="#神经网络的训练" class="headerlink" title="神经网络的训练"></a>神经网络的训练</h2><ol>
-<li>初始化参数：随机初始化$W$并使其绝对值较小，用零初始化$b$。</li>
-</ol>
-<p>重复执行以下步骤：</p>
-<ol>
-<li><p><strong>前向传播</strong>：直接运行神经网络，并缓存中间计算结果$A, Z$。</p>
-</li>
-<li><p><strong>反向传播</strong>：倒着“运行”神经网络，根据求导链式法则，由网络输出求得每一个参数的导数。</p>
-</li>
-<li><p><strong>梯度下降</strong>：对于每个参数$p = w^{[l]}  or  b^{[l]}$，用$p := p-\alpha dp$更新参数。其中$\alpha$叫学习率，表示参数更新的速度。</p>
-</li>
-</ol>
-<h2 id="用numpy实现神经网络"><a href="#用numpy实现神经网络" class="headerlink" title="用numpy实现神经网络"></a>用numpy实现神经网络</h2><ol>
-<li>把输入图片进行“压平”操作：</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">images = np.reshape(images, (-<span class="number">1</span>))</span><br></pre></td></tr></table></figure>
-<ol>
-<li>初始化参数</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) * <span class="number">0.01</span></span><br><span class="line">b = np.zeros((neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>))</span><br></pre></td></tr></table></figure>
-<ol>
-<li>前向传播</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">self.A_cache[<span class="number">0</span>] = A</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">    Z = np.dot(self.W[i], A) + self.b[i]</span><br><span class="line">    A = get_activation_func(self.activation_func[i])(Z)</span><br><span class="line">    <span class="keyword">if</span> train_mode:</span><br><span class="line">        self.Z_cache[i] = Z</span><br><span class="line">        self.A_cache[i + <span class="number">1</span>] = A</span><br></pre></td></tr></table></figure>
-<ol>
-<li>反向传播</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer - <span class="number">1</span>, -<span class="number">1</span>, -<span class="number">1</span>):</span><br><span class="line">    dZ = dA * get_activation_de_func(self.activation_func[i])(</span><br><span class="line">        self.Z_cache[i])</span><br><span class="line">    dW = np.dot(dZ, self.A_cache[i].T) / self.m</span><br><span class="line">    db = np.mean(dZ, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>)</span><br><span class="line">    dA = np.dot(self.W[i].T, dZ)</span><br><span class="line">    self.dW_cache[i] = dW</span><br><span class="line">    self.db_cache[i] = db</span><br></pre></td></tr></table></figure>
-<ol>
-<li>梯度下降</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_layer):</span><br><span class="line">    self.W[i] -= learning_rate * self.dW_cache[i]</span><br><span class="line">    self.b[i] -= learning_rate * self.db_cache[i]</span><br></pre></td></tr></table></figure>
-<h1 id="第一阶段学习情况自评"><a href="#第一阶段学习情况自评" class="headerlink" title="第一阶段学习情况自评"></a>第一阶段学习情况自评</h1><p>学了几周，大家可能不太清楚自己现在的水平怎么样了。这里，我给大家提供了一个用于自我评价的标准，大家可以看看自己现在身处第几层。</p>
-<h2 id="Level-1-能谈论深度学习的程度"><a href="#Level-1-能谈论深度学习的程度" class="headerlink" title="Level 1 能谈论深度学习的程度"></a>Level 1 能谈论深度学习的程度</h2><ul>
-<li>知道深度学习能解决计算机视觉、自然语言处理等问题。</li>
-<li>能够说出“训练集”、“神经网络”等专有名词</li>
-</ul>
-<h2 id="Level-2-能调用深度学习框架的程度"><a href="#Level-2-能调用深度学习框架的程度" class="headerlink" title="Level 2 能调用深度学习框架的程度"></a>Level 2 能调用深度学习框架的程度</h2><ul>
-<li>知道正向传播、反向传播、梯度下降的意义。</li>
-<li>虽然现在不会用代码实现学习算法，但通过后面的学习，能够用深度学习框架编写学习算法。</li>
-</ul>
-<h2 id="Level-3-掌握所有知识细节的程度"><a href="#Level-3-掌握所有知识细节的程度" class="headerlink" title="Level 3 掌握所有知识细节的程度"></a>Level 3 掌握所有知识细节的程度</h2><ul>
-<li>反向传播的流程。</li>
-<li>为什么必须使用激活函数。</li>
-<li>为什么要随机初始化参数。</li>
-<li>正向传播时为什么要缓存，缓存的变量在反向传播时是怎么使用的。</li>
-</ul>
-<h2 id="Level-4-能从零开始实现一个分类器的程度"><a href="#Level-4-能从零开始实现一个分类器的程度" class="headerlink" title="Level 4 能从零开始实现一个分类器的程度"></a>Level 4 能从零开始实现一个分类器的程度</h2><blockquote>
-<p>升级语音：别说是用numpy，就算是用纯C++，我也能造一个神经网络！</p>
-</blockquote>
-<ul>
-<li>掌握 numpy 的基本操作。</li>
-<li>能用 Python 编写一个神经网络框架。</li>
-<li>能用 numpy 实现神经网络的计算细节。</li>
-<li>能用 Python 实现读取数据集、输出精度等繁杂的操作。</li>
-</ul>
-<h1 id="第二阶段知识预览"><a href="#第二阶段知识预览" class="headerlink" title="第二阶段知识预览"></a>第二阶段知识预览</h1><p>《深度学习专项》第二门课的标题是《改进深度神经网络：调整超参数、正则化和优化》。从标题中也能看出，这门课会介绍广泛的改进深度神经网络性能的技术。具体来说，在三周的时间里，我们会学习：</p>
-<ul>
-<li>第一周：深度学习的实践层面 <ul>
-<li>训练集/开发集/测试集的划分</li>
-<li>偏差与方差</li>
-<li>机器学习的基础改进流程</li>
-<li>正则化</li>
-<li>输入归一化</li>
-<li>梯度问题与加权初始化</li>
-<li>梯度检查</li>
-</ul>
-</li>
-<li>第二周：优化算法<ul>
-<li>分批梯度下降</li>
-<li>更高级的梯度下降算法</li>
-<li>学习率衰减</li>
-</ul>
-</li>
-<li>第三周：调整超参数、批归一化和编程框架<ul>
-<li>调参策略</li>
-<li>批归一化</li>
-<li>多分类问题</li>
-<li>深度学习框架 TensorFlow</li>
-</ul>
-</li>
-</ul>
-<p>目录还是比较凌乱的，让我们具体看一下每项主要知识点的介绍：</p>
-<ul>
-<li>训练集/开发集/测试集的划分<ul>
-<li>之前我们只把数据集划分成训练集和测试集两个部分。但实际上，我们还需要一个用于调试的“开发集”。</li>
-</ul>
-</li>
-<li>偏差与方差<ul>
-<li>机器学习模型的性能不够好，体现在高偏差和高方差两个方面。前者表示模型的描述能力不足，后者表示模型在训练集上过拟合。</li>
-<li>为了解决过拟合问题，我们要使用添加正则项、dropout等正则化方法。</li>
-</ul>
-</li>
-<li>梯度问题<ul>
-<li>在较深的神经网络中，数值运算结果可能会过大或过小，这会导致梯度爆炸或者梯度弥散。</li>
-<li>加权初始化可以解决这一问题。我们即将认识多种初始化参数的方法。</li>
-</ul>
-</li>
-<li>优化梯度下降<ul>
-<li>使用mini-batch：处理完部分训练数据后就执行梯度下降，而不用等处理完整个训练数据集。</li>
-<li>使用更高级的梯度下降算法，比如让梯度更平滑的momentum优化器，以及结合了多种算法的adam优化器。</li>
-<li>在训练一段时间后，减少学习率也能提高网络的收敛速度。</li>
-</ul>
-</li>
-<li>调参策略<ul>
-<li>在调试神经网络的超参数时，有一些超参数的优先级更高。我们应该按照优先级从高到低的顺序调参。</li>
-<li>在调参时，一种技巧是多次随机选取超参数，观察哪些配置下网络的表现最好。</li>
-</ul>
-</li>
-<li>归一化<ul>
-<li>对输入做归一化能够加速梯度下降。</li>
-<li>除了对输入做归一化外，我们还可以对每一层的输出做批归一化，这项技术能够让我们的网络更加健壮。</li>
-</ul>
-</li>
-<li>多分类问题<ul>
-<li>前几周我们一直关注的是二分类问题。我们将学习如何用类似的公式，把二分类问题推广到多分类问题。</li>
-</ul>
-</li>
-<li>编程框架<ul>
-<li>深度学习编程框架往往带有自动求导的功能，能够极大提升我们的开发效率。学完第二门课后，我们将一直使用TensorFlow来编程。</li>
-<li>我会顺便介绍所有编程任务的 PyTorch 等价实现。</li>
-</ul>
-</li>
-</ul>
-<p>可以看出，第二门课包含的内容非常多。甚至很多知识都只会在课堂上提一两句，得通过阅读原论文才能彻底学会这些知识。但是，这门课的知识都非常重要。学完了第二门课后，我们对于深度学习的理解能提升整整一个台阶。让我们做好准备，迎接下周的学习。</p>
-<hr>
-<p>关注我社交媒体的人，肯定质疑我最近的行为：你最近怎么发文章只注意数量不注意质量啊？怎么一篇文章可以拆开来发好几遍啊？</p>
-<p>这你就不懂了。我最近想看看，这些社交平台究竟有多捞：我提供了这么优质的文字内容，我看你们会不会去认真推广，会不会发掘优质内容。结果，我发现这些平台确实都很捞，根本不去好好推送的。没办法，我只好先写一批质量中等的文章，增加发文的次数。我倒要看看这些平台什么时候能给我符合我文章质量的关注量。文章看的人多，我才有继续创作更优质内容的动力。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2846,7 +2875,7 @@ error=\frac{||\hat{d_{\theta_i}}-d_{\theta_i}||_2}{||\hat{d_{\theta_i}}||_2\cdot
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">154</span>
+          <span class="site-state-item-count">155</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
