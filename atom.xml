@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2025-11-24T09:35:30.895Z</updated>
+  <updated>2025-12-02T16:24:44.899Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -15,6 +15,35 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>何恺明团队新作 JiT 解读与复现：解决大 patch DiT 难以训练的问题</title>
+    <link href="https://zhouyifan.net/2025/12/03/20251124-jit/"/>
+    <id>https://zhouyifan.net/2025/12/03/20251124-jit/</id>
+    <published>2025-12-02T16:24:44.000Z</published>
+    <updated>2025-12-02T16:24:44.899Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;近期何恺明团队的论文提出了一种叫做 Just image Transformers (JiT) 新式 DiT (Diffusion</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
   
   <entry>
     <title>前算法竞赛选手深度点评 AI 在 ICPC 2025 中的表现</title>
@@ -606,39 +635,6 @@
     <category term="位置编码" scheme="https://zhouyifan.net/tags/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/"/>
     
     <category term="StyleGAN" scheme="https://zhouyifan.net/tags/StyleGAN/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>论文速览 | Diffusion Forcing：给视频扩散模型的每一帧添加不同强度的噪声</title>
-    <link href="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/"/>
-    <id>https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/</id>
-    <published>2024-11-28T14:58:06.000Z</published>
-    <updated>2024-12-18T07:16:05.465Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h2 id=&quot;论文速览&quot;&gt;&lt;a href=&quot;#论文速览&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
-    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
-    
-    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
-    
-    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
     
   </entry>
   

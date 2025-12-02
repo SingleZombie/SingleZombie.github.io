@@ -168,6 +168,156 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/02/05/20250203-sana/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/02/05/20250203-sana/" class="post-title-link" itemprop="url">论文速览 | Sana：用线性 Transformer 高效率生成 4K 图片</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-02-05 01:13:42" itemprop="dateCreated datePublished" datetime="2025-02-05T01:13:42+08:00">2025-02-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Transformer 中平方复杂度的注意力运算一直是其性能瓶颈，该问题在序列长度极大的视觉生成任务中尤为明显。为了缓解此问题，并生成分辨率高至 4K (4096x4096) 的图像，英伟达近期推出了文生图模型 Sana。Sana 不仅使用了线性注意力的 Transformer，还通过增加 VAE 压缩比等方式，极大提升了超高分辨率图像生成的性能。</p>
+<p>Sana 论文示意图如下，生成的图像看起来还不错。值得注意的是，在 1K 图像生成上，Sana-0.6B 的生成速度是 FLUX-Dev 的 25 倍。由于采用了线性注意力机制，这一速度优势会随着图像尺寸增加而越发明显。 </p>
+<p><img src="/2025/02/05/20250203-sana/1.jpg" alt></p>
+<p>在这篇博文里，我们来着重学习 Sana 相较标准 DiT 文生图模型 (SD3, FLUX.1) 做了哪些提升性能的改进。</p>
+<blockquote>
+<p>本文中，计算机术语「性能」表示运行速度。</p>
+</blockquote>
+<h2 id="线性注意力真的是「免费午餐」吗？"><a href="#线性注意力真的是「免费午餐」吗？" class="headerlink" title="线性注意力真的是「免费午餐」吗？"></a>线性注意力真的是「免费午餐」吗？</h2><p>在看完论文摘要后，我的第一反应不是去细读论文，而是立刻去网上搜索社区用户对于 Sana 的评价。我一直坚持一个观点：「天下没有免费的午餐」。线性注意力比标准注意力快了那么多，那么它的质量一定会有所下降，不然所有人都会立刻把标准注意力换成线性注意力。</p>
+<p>有网友在 Reddit 上分享了 Sana 的生成结果并对此开展了讨论：<a target="_blank" rel="noopener" href="https://www.reddit.com/r/StableDiffusion/comments/1hzxeb7/it_is_now_possible_to_generate_16_megapixel/">https://www.reddit.com/r/StableDiffusion/comments/1hzxeb7/it_is_now_possible_to_generate_16_megapixel/</a> 。有关图像质量的讨论有：</p>
+<ul>
+<li>楼主：「Sana 的 4K 模型生成出的图片没有 2K 的真实」。</li>
+<li>社区用户：「生成结果看起来更靠近抽象艺术，但这些效果已经能够通过 SD 1.5 + 超分辨率达到了。能否用 Sana 生成照片级图片？」楼主：「它不太擅长生成照片级图片。」</li>
+<li>社区用户：「4K 图片质量太差了，没有比 1K 图片更多的细节。许多上采样算法的结果会比这个更好。论文应该宣传其生成速度而不是丢人的 4K 图像质量。」</li>
+<li>楼主：「手画得不是很好。」</li>
+</ul>
+<p>另一个帖子 （<a target="_blank" rel="noopener" href="https://www.reddit.com/r/StableDiffusion/comments/1h5xujr/sana_nvidia_image_generation_model_is_finally_out/">https://www.reddit.com/r/StableDiffusion/comments/1h5xujr/sana_nvidia_image_generation_model_is_finally_out/</a> ）里的评论有：</p>
+<ul>
+<li>「考虑模型大小和速度的话，它的效果非常惊人。第一感看起来艺术感比 FLUX 好，但文本生成能力不太行。」</li>
+<li>「有 SD 1.5 的质量，但很快。再训练它可以达到 SDXL 的质量。」同楼里另一个用户则认为，Sana 质量在 SDXL 基础版和 FLUX 之间。</li>
+</ul>
+<p>简单看下来，根据社区用户的反馈，Sana 的质量没有显著好于 SDXL。它的 4K 图像生成效果跟先生成较低分辨率再使用超分辨率算法的结果差不多。我们应该着重关注 Sana 的加速方式而不是其生成质量。</p>
+<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><h3 id="潜扩散模型（Latent-Diffusion-Models）"><a href="#潜扩散模型（Latent-Diffusion-Models）" class="headerlink" title="潜扩散模型（Latent Diffusion Models）"></a>潜扩散模型（Latent Diffusion Models）</h3><p>扩散模型能够在多次迭代中生成高质量图像。而有研究发现，扩散模型在生成时早早就生成完了图像结构，后续时间都浪费在完善图像细节上。为此，潜扩散模型 （Latent Diffusion Models, LDM）使用了一个两阶段方法来提升扩散模型的性能：</p>
+<ul>
+<li>先用一个自编码器 VAE 把图像压缩成尺寸更小、信息更丰富的潜图像 (latent images)。</li>
+<li>用标准扩散模型生成潜图像。</li>
+</ul>
+<p>目前主流的扩散模型几乎都属于 LDM。其中，最经典的 LDM 是 LDM 论文作者实现的 Stable Diffusion (SD)。根据 LDM 论文的实验结果，令 VAE 的压缩比 f 为 4 或 8 比较好。SD 采用了 f=8 的 VAE。后续多数 LDM 都使用了这样的压缩比。</p>
+<h3 id="Diffusion-Transformers"><a href="#Diffusion-Transformers" class="headerlink" title="Diffusion Transformers"></a>Diffusion Transformers</h3><p>早期扩散模型是用 U-Net 实现的，而后来大家逐渐把 U-Net 替换成了 DiT (Diffusion Transformers)。基于 DiT 的著名文生图模型有 SD3, FLUX。这些模型的核心仍是标准 Transformer 中的多头注意力运算。</p>
+<h3 id="线性注意力"><a href="#线性注意力" class="headerlink" title="线性注意力"></a>线性注意力</h3><p>设矩阵 $Q \in \mathbb{R}^{n \times d}, K \in \mathbb{R}^{n \times d}, V \in \mathbb{R}^{n \times d}$，其中 $n$ 为序列长度，$d$ 为特征长度，则注意力操作可以简写成：</p>
+<script type="math/tex; mode=display">
+Attn(Q, K, V) = softmax(QK^T)V</script><p>对于矩阵 $A \in \mathbb{R}^{a \times b}, B \in \mathbb{R}^{b \times c}$，不做加速的前提下，朴素的矩阵乘法 $A B$ 的复杂度是 $O(a \cdot b \cdot c)$。</p>
+<p>根据这个结论，注意力操作的复杂度为 $O(n^2d)$。这是因为 $Q \in \mathbb{R}^{n \times d}, K^T \in \mathbb{R}^{d \times n}$，第一步 $QK^T$ 的复杂度是 $O(n^2d)$。类似地，后一步矩阵乘法也是同样的复杂度。总复杂度不变，仍是 $O(n^2d)$。</p>
+<p>由于模型特征长度 $d$ 是常数，我们只考虑序列长度 $n$ 的变化，所以可以认为标准注意力操作的复杂度是 $O(n^2)$。</p>
+<p>但假如注意力运算中没有 softmax 操作的话，注意力运算就是两次矩阵乘法。</p>
+<script type="math/tex; mode=display">
+Attn(Q, K, V) = QK^TV</script><p>由于矩阵乘法满足结合律，通过改变矩阵乘法的顺序，我们能够神奇地改变注意力运算的计算复杂度。</p>
+<script type="math/tex; mode=display">
+Attn(Q, K, V) = QK^TV = Q(K^TV)</script><p>由于 $K^T \in \mathbb{R}^{d \times n}, V \in \mathbb{R}^{n \times d}$，$K^TV$ 操作的复杂度是 $O(nd^2)$。由于 $Q \in \mathbb{R}^{n \times d}, K^TV \in \mathbb{R}^{d \times d}$，第二步矩阵乘法的复杂度还是 $O(nd^2)$。因此，总复杂度变为 $O(nd^2)$。不考虑 $d$ 的增长的话，这种注意力运算就是线性复杂度的。</p>
+<p>我们再回头看去掉 softmax 对注意力运算有什么影响。softmax 函数同时做了两件事：1）保证 QK 的输出非负，以表示相似度；2）保证对于一个 query，它对所有 key 的相似度权重之和为 1，使得输出向量的范数（向量的「大小」）几乎不变。所以，线性注意力都会设置一个非负相似度函数 $sim(q, k)$，并用下面的注意力公式保证权重归一化。</p>
+<script type="math/tex; mode=display">
+Attn(Q_i, K, V) = \frac{\sum_{j=1}^{n}sim(Q_i, K_j)V_j}{\sum_{j=1}^{n}sim(Q_i, K_j)}</script><p>根据 NLP 社区的反馈，线性注意力的效果比不过标准注意力。</p>
+<p>相比之下，CV 社区对线性注意力的探索没有那么多。Sana 主要参考的早期工作为 Efficientvit: Lightweight multi-scale attention for high-resolution dense prediction。</p>
+<h2 id="Sana-模型架构改进"><a href="#Sana-模型架构改进" class="headerlink" title="Sana 模型架构改进"></a>Sana 模型架构改进</h2><p>在模型架构上，Sana 主要做了三大改进：增加 VAE 压缩比、使用线性注意力、使用轻量级文本编码器。</p>
+<h3 id="深度压缩-VAE"><a href="#深度压缩-VAE" class="headerlink" title="深度压缩 VAE"></a>深度压缩 VAE</h3><p>在基于 LDM 的 DiT 中，和图块数（参与 Transformer 计算的元素个数，类似于 NLP 的 token）相关的超参数有：</p>
+<ul>
+<li>VAE 压缩比例 <code>f</code></li>
+<li>DiT 图块化 (patchify) 比例 <code>p</code></li>
+</ul>
+<p>此外，VAE 输出的潜图像通道数 <code>c</code> 决定了重建质量与学习难度：<code>c</code> 越大，自编码器的重建效果越好，但扩散模型的学习难度也变大。</p>
+<p>经过 VAE 后，图像会从 $H \times W \times 3$ 压缩成 $\frac{H}{f} \times \frac{W}{f} \times C$。又经过图块化操作后，图像大小会变成 $\frac{H}{fp} \times \frac{W}{fp} \times d$，其中 $d$ 是 Transformer 的特征长度。决定 Transformer 运算量的是图像尺寸 $\frac{H}{fp} \times \frac{W}{fp}$。标准 Transformer 一般至多处理 $64 \times 64$ 大小的图像。</p>
+<p>此前的文生图 DiT 一般采用 <code>f8 c4 p2</code> 或 <code>f8 c16 p2</code> 的配置。而 Sana 直接把 <code>f</code> 设置成了 <code>32</code>，实现了一个 <code>f32 c32</code> 的 VAE。</p>
+<p>其实，LDM 论文尝试用过一个 <code>f32 c64</code> 的 VAE，但生成效果并不好。为什么这次 Sana 的 VAE 就好了不少呢？论文对此没有做深入分析，只是简单列举了一些 Sana 的 VAE 做出的改进：</p>
+<ul>
+<li>从模型设计与训练策略上：此前 <code>f32</code> VAE 效果不好的一大原因是模型没有充分收敛。为此，Sana VAE 将模型中的标准自注意力换成了线性注意力。另外，为了提升在高分辨率图像上的生成效果，Sana VAE 先在低分辨率上训练，之后在 1K 图像上微调。</li>
+<li>从通道数上：作者比较了 <code>f=32</code> 时 <code>c=16, 32, 64</code> 的实验结果，发现将 <code>c=64</code> 改成 <code>c=32</code> 会显著提升扩散模型收敛速度。</li>
+</ul>
+<blockquote>
+<p>尽管 VAE 是卷积网络，里面还是包含了自注意力运算。</p>
+</blockquote>
+<p><img src="/2025/02/05/20250203-sana/2.jpg" alt></p>
+<p>除了调整 <code>f, c</code> 外，作者还认为 <code>p=1</code>，即不使用图块化操作，是最好的。论文展示了总压缩比 <code>fp</code> 不变的前提下， <code>p</code> 提升、 <code>f</code>下降后扩散模型的学习进度。结果发现，不用图块化而让 VAE 全权负责压缩是最好的。</p>
+<p><img src="/2025/02/05/20250203-sana/3.jpg" alt></p>
+<h3 id="线性-Transformer-块"><a href="#线性-Transformer-块" class="headerlink" title="线性 Transformer 块"></a>线性 Transformer 块</h3><p>为了降低注意力操作的复杂度以提升性能，Sana 使用了线性注意力操作。如前所述，线性注意力会去掉 softmax 并通过矩阵乘法的结合律来降低计算复杂度，但需要通过额外设计一个相似度指标。</p>
+<p>Sana 对线性注意力的定义如下：</p>
+<p><img src="/2025/02/05/20250203-sana/4.jpg" alt></p>
+<p>其中，$O_i$ 是某一条 query $Q_i$ 的输出。这其实是让相似度函数为：</p>
+<script type="math/tex; mode=display">
+sim(q, k) = ReLU(q)ReLU(k)</script><p>ReLU 函数用于让相似度非负。</p>
+<p>在上面的线性注意力公式中，不管是分子还是分母，都可以通过结合律来优化计算复杂度。此处细节可参见原论文。</p>
+<p>根据之前的经验，线性注意力会降低注意力运算的效果。为了弥补这一点，Sana 参考 EfficientViT，把前馈网络 (FFN) 从 MLP （即 1x1 卷积网络）换成了带 3x3 逐深度卷积的网络。这个小卷积网络不仅提升了整个 Transformer 块的拟合能力，还省去了位置编码——由于卷积网络天然能够建模相对位置关系并打破 Transformer 的对称性，不需要再加入位置编码了。</p>
+<p><img src="/2025/02/05/20250203-sana/5.jpg" alt></p>
+<h3 id="轻量级文本编码器"><a href="#轻量级文本编码器" class="headerlink" title="轻量级文本编码器"></a>轻量级文本编码器</h3><p>之前的 SD3 和 FLUX 都用 T5 作为文本编码器，但 Sana 为了提升模型性能，使用了速度为 T5-XXL 6 倍的 Gemma-2-2B。</p>
+<h2 id="定量实验"><a href="#定量实验" class="headerlink" title="定量实验"></a>定量实验</h2><p>最后，我们简单看一下论文的主要实验结果。论文用到的实验数据集为 MJHQ-30K，包含三万张 Midjourney 生成的图像。</p>
+<p>从定量指标上看，Sana 确实好过不少此前的文生图模型。但是，这些指标无法如实反映人类的审美偏好。如前文所述，社区用户认为 Sana 并没有明显好于 SDXL，但指标无法反映这一点。这些指标参考价值不大的另一个证据是 FLUX-dev 和 FLUX-schnell 的比较结果——作为一个被进一步蒸馏出来的模型，schnell 显然是比 dev 的生成质量更差的，但它的 FID, GenEval, DPG 竟然比 dev 还好。因此，在比较文生图模型质量时，我个人建议不要参考文生图的定量指标，而是去参考社区用户的反馈。</p>
+<p>另外，虽然 Sana-1.6B 比 FLUX-dev 快了很多，但它比 FLUX-schnell 只快了一倍。或许 Sana 也可以通过蒸馏获得进一步的推理加速。</p>
+<p><img src="/2025/02/05/20250203-sana/6.jpg" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Sana 是一个以降低运算开销为主要目标的高分辨率文生图模型。它主要通过增加 VAE 压缩比例、使用线性注意力来提升 DiT 的效率。为了弥补线性注意力的能力损失，Sana 将 FFN 改成了 3x3 卷积网络，在提升模型能力的同时免去了位置编码。除了这两大主要设计外，Sana 还通过使用轻量级文本编码器等诸多细节改进提升了模型的训练与推理效率。整体上看，这个工作主要在工程上作出了贡献，线性注意力的设计几乎照搬了之前的工作，没有使用比较新颖的模块设计。</p>
+<p>从生成效果上看，尽管 Sana 论文给出的定量指标还不错，但这些指标是否能如实反映文生图质量还存疑。据社区用户反映，Sana 的质量没有明显好于 SDXL。另外，虽然论文一开头就宣称 Sana 能够生成 4096x4096 的图片，但这种图片的细节很差，和 1024x1024 的差不多。这是因为不管是 VAE 还是 DiT 都只在 1024x1024 上训练过。在加大生成尺寸后，图像的清晰程度没有变，只是看起来像素变多了。这篇论文真正应该强调的是生成 4K 图像的速度会更快，而不应该去强调 4K 图像的质量有多高。</p>
+<p>从生成速度上来看，Sana 确实比最强开源文生图模型 Flux-Dev 要快很多。但尴尬的是，在 1024x1024 图像生成上，Sana 的速度仅仅是精心蒸馏的 Flux-schnell 的两倍。当然这个对比可能不是很公平，因为 Sana 还没有经过蒸馏。但就目前来看社区用户在生成 1024x1024 的图像时难以感受到 Sana 性能优势。</p>
+<p>这篇文章很好地指明了 DiT 的一个发展方向：我们能不能将线性注意力更好地引入 DiT 呢？按我目前的理解，线性注意力就是通过牺牲自注意力全局依赖关系来提升模型计算速度。它的本质和 MAR (Autoregressive Image Generation without Vector Quantization)、VAR (Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction) 很像，都是通过减少计算像素间的依赖关系来提升速度。这个假设在视觉任务中是很合理的：在确定了图像的主要结构后，理解细节只需要局部像素信息。然而，这些加速方法都不可避免地降低模型的能力。在完全不用和完全使用全局信息之间，我们或许要找到一个平衡点，来使 DiT 具有最佳性能和效果。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/01/22/20250115-R3GAN/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1521,116 +1671,6 @@ k_{NTK}(\mathbf{x_i}, \mathbf{x_j}) = \mathbb{E}_{\theta\sim\mathcal{N}} \langle
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/11/28/20241128-diffusion-forcing/" class="post-title-link" itemprop="url">论文速览 | Diffusion Forcing：给视频扩散模型的每一帧添加不同强度的噪声</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-11-28 22:58:06" itemprop="dateCreated datePublished" datetime="2024-11-28T22:58:06+08:00">2024-11-28</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="论文速览"><a href="#论文速览" class="headerlink" title="论文速览"></a>论文速览</h2><p>平时我自己读新论文时，往往简单看一下摘要和图表就能差不多明白文章的大意。而要用一篇博文来详细介绍新论文的设计动机、实现方法，需要花多得多的时间来写作。为了能分享更多的新论文，并且让我自己能够更好地整理论文间的关系，从这篇文章开始，我会不定期发表「论文速览」类文章，以简明扼要的文字来帮助计算机视觉的同行们快速了解新论文。</p>
-<p>和发文频繁的自媒体相比，我的论文速览文章几乎不会展示论文的结果，仅会从科研角度介绍文章的贡献及方法，并给出我的批判性分析。和我之前的论文详解文章相比，这个新系列的文章会用更少的文字介绍背景，几乎不介绍方法细节，力求用更少的文字来表达关键信息，提升文字沟通效率。不过另一方面，我会花更多心思在介绍新论文与过往论文的关系上，为不熟悉某些背景知识的读者提供学习途径，以填补背景介绍上的空缺。</p>
-<h2 id="Diffusion-Forcing"><a href="#Diffusion-Forcing" class="headerlink" title="Diffusion Forcing"></a>Diffusion Forcing</h2><p>视频扩散模型普遍存在视频质量随着视频长度增加不断下降的问题。为此，论文作者提出了 Diffusion Forcing 这一建模任何<strong>序列生成</strong>问题的新范式：在训练该扩散模型时，序列中的每个元素会<strong>独立地</strong>添加不同强度的噪声。作者在简单视频生成、决策 (decision-making) 任务上验证了这种生成范式的有效性。我将主要从视频生成的角度介绍本工作。</p>
-<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>稍后我们会了解到，Diffusion Forcing 与此前两种主流序列生成范式密切相关：自回归生成与全序列扩散模型。</p>
-<p>在序列的自回归生成中，模型会不断根据序列前 $n-1$ 个元素，预测下一个元素（第 $n$ 个元素）。自回归生成在 NLP 中最为常见，RNN、Transformer 用的都是这种生成方法。</p>
-<p>扩散模型可以直接生成任何形状的数据。如果我们不把视频视为一种由图像组成的序列数据，而是将其视为一种「三维图像」，那么我们可以直接将 2D 图像扩散模型简单地拓展成 3D 视频扩散模型。这种做法在这篇论文中被称为「全序列扩散模型」。使用这一方法的早期工作有 DDPM 的作者提出的 <em>Video Diffusion Models</em>。Stable Diffusion 的作者也基于 LDM 提出类似的 <em>Align your Latents: High-Resolution Video Synthesis with Latent Diffusion Models</em>（Video LDM）工作。</p>
-<p>全序列扩散模型仅能生成固定长度的视频。为了将其拓展到长视频生成，还是得将其和自回归结合起来。但是，自回归视频生成存在着生成质量与训练集质量不匹配的问题。Stable Video Diffusion 等工作参考 Cascaded Diffusion Models 的做法，通过给约束图像/视频帧加噪声缓解此问题。</p>
-<p><em>AR-Diffusion: Auto-Regressive Diffusion Model for Text Generation</em> 进一步探讨了自回归生成与全序列扩散模型的结合方法：在生成文本时，不同时刻的文本噪声不同，越早的文本上的噪声越少。无独有偶，<em>FIFO-Diffusion: Generating Infinite Videos from Text without Training</em> 提到了如何在预训练视频扩散模型上，以不同的噪声强度来生成不同的视频帧。或许是受到这些工作的启发，Diffusion Forcing 系统探讨了如何在训练时独立地给序列元素添加噪声。</p>
-<h2 id="科研动机"><a href="#科研动机" class="headerlink" title="科研动机"></a>科研动机</h2><p>本工作的作者发现了自回归与全序列扩散模型的不足之处，并认为这两种生成范式是互补的：</p>
-<ul>
-<li>自回归不能在推理时加入新的优化目标，且存在着前述的训练采样质量不匹配导致的降质问题。</li>
-<li>全序列扩散模型不能生成变长的序列。</li>
-</ul>
-<p>反过来讲：</p>
-<ul>
-<li>全序列扩散模型可以在推理加入 Classifier-guidance，且在固定序列长度内几乎不存在降质。</li>
-<li>自回归可以生成变长序列。</li>
-</ul>
-<p>那能不能把二者结合起来呢？在推理时，我们希望序列是按时间顺序先后生成的。同时，从噪声强度这一维度上，我们希望每个元素能够从完全带噪到完全清晰逐渐生成。结合二者的方法是：在采样时，较早的元素有较少的噪声，较新的元素有较多的噪声，不同噪声强度的元素在序列中同时生成。比如采样分3步完成，共生成3帧，那么一步去噪会让$[x_1^{1/3\cdot T}, x_2^{2/3\cdot T}, x_3^{T}]$变成$[x_1^0, x_2^{1/3\cdot T}, x_3^{2/3\cdot T}]$。</p>
-<p>为了实现这样的采样，我们在训练时就要让每一元素能够在其他元素和自己的噪声强度不同时也能顺利去噪。和以往的工作不同，本工作的作者发现，训练时我们不必和推理时一样固定每一元素的噪声强度，而是可以<strong>独立地</strong>对每帧随机采样噪声强度。</p>
-<h2 id="简单视频生成模型"><a href="#简单视频生成模型" class="headerlink" title="简单视频生成模型"></a>简单视频生成模型</h2><p>本文的想法十分简洁，只需要在 DDPM 序列生成模型上把训练和推理时的噪声强度换掉即可。为了进一步了解本工作的方法，我们来看一下论文中有关视频模型的方法与实验。</p>
-<p>整体上看，训练时，方法和 $\epsilon$ 预测的普通 DDPM 一样，只是不同帧噪声强度不一样。</p>
-<p><img src="/2024/11/28/20241128-diffusion-forcing/1.png" alt></p>
-<p>在帧间关系上，Diffusion Forcing 用因果（causal）关系建模，即当前帧只能看到之前帧的信息。</p>
-<p><img src="/2024/11/28/20241128-diffusion-forcing/2.png" alt></p>
-<p>具体来说，本工作用 RNN （准确来说是 GRU）的隐变量来建模之前帧传过来的信息。加入了 RNN 后，论文把本来很简单的公式变得无比复杂，不建议读者深究论文中有关 RNN 的内容。</p>
-<p><img src="/2024/11/28/20241128-diffusion-forcing/3.png" alt></p>
-<p>在采样时，由于不同帧的噪声强度不同，现在我们需要定义一个二维的噪声强度表，表示每一帧在不同位置及不同去噪时刻的噪声强度。为了让每一时刻的噪声强度不同，一开始较新帧的去噪时刻会停留在原地。作者在附录中介绍了同时刻去噪的详细设计。</p>
-<p><img src="/2024/11/28/20241128-diffusion-forcing/4.png" alt></p>
-<p>作者发现，Diffusion Forcing 的这种序列生成方式可以自然地推广到无限长度的视频生成上：在生成下一个片段时，<strong>不用滑动窗口</strong>，直接把 RNN 的初始隐变量初始化为上一个片段的隐变量输出。</p>
-<p>作者用同样的 RNN 结构训练了两个基准模型：一个自回归模型，一个全序列<strong>因果</strong>扩散模型。定性结果表明，不管是在预定视频长度内，还是超出原本长度的长视频生成，Diffusion Forcing 的结果均好于基准方法。结果可以在官方项目网站上查看：</p>
-<p><a target="_blank" rel="noopener" href="https://boyuan.space/diffusion-forcing/">https://boyuan.space/diffusion-forcing/</a></p>
-<h2 id="批判性分析"><a href="#批判性分析" class="headerlink" title="批判性分析"></a>批判性分析</h2><p>论文开头说自回归模型在推理时缺少添加约束的方法。但这对视频生成来说并不致命，因为一般可以在训练时加入约束，推理时用 Classifier-free Guidance 就行了。</p>
-<p>作者说出于简洁，他们在论文中用 RNN 实现了 Diffusion Forcing。但很明显 3D U-Net 才应该是直观上最简单实用的实现方法，毕竟最早期的视频扩散模型就是拿 3D U-Net 做的。在官方仓库中，有本科生帮他们实现了一个 3D U-Net 加时间注意力的模型，比原来视频模型效果要好。</p>
-<p>我认为本文的视频生成基准方法设置过低。对于自回归视频生成/图生成视频，现在大家都会参照 Cascaded Diffusion, 对约束图像加噪并把噪声强度做为额外约束传入当前帧的生成模型。这种设计和 Diffusion Forcing 原理相似。为了体现新方法的好处，有必要跟这个更加强大的基准自回归方法做对比。</p>
-<p>作者对于全序列视频扩散模型的设计也很奇怪。全序列视频扩散模型的初衷就是把视频当成 3D 图像来看待，允许帧间两两交换信息，只保证预定长度内的视频是连贯的。作者现在用 RNN 实现了一个因果版全序列视频模型，这个模型的表现肯定是不如非因果版的。虽然作者说 Diffusion Forcing 在因果视频生成上总是比全序列扩散模型更加连贯，我很怀疑去掉了因果这个条件后 Diffusion Forcing 还能否比得过。</p>
-<p>Diffusion Forcing 在视频生成的主要好处应该体现在超出预定长度的长视频生成。因此，哪怕在预定长度内比不过全序列扩散模型，也没有关系。作者应该比较结合自回归和全序列扩散模型的方法，比如用 Stable Video Diffusion 这种图生视频模型，把上一个视频的末帧当作下一个视频的首帧约束，证明 Diffusion Forcing 在长视频生成上的优越性。</p>
-<p>综上，我认为作者在视频生成任务上的实验是不够充分的。也的确，这篇论文有一半篇幅是在决策任务上，没有只讲视频生成任务。我相信 Diffusion Forcing 的设计会在长视频生成上缓解降质问题，这需要后续大公司的工作来跟进。但是，长视频的根本问题是记忆缺失，这一本质问题是 Diffusion Forcing 这种方法难以做好的。</p>
-<p>这篇工作对我最大的启发是，我们一直把视频当成完整的 3D 数据来看待，却忘了视频可以被看成是图像序列。如果把视频当成 3D 数据的话，不同帧只能通过时序注意力看到其他帧在当前去噪时刻的信息；而对于序列数据，我们可以在不同帧的依赖关系上做更多设计，比如这篇工作的不同去噪强度。我很早前就在构思一种依赖更加强的序列生成范式：我们可不可以把序列中其他元素的<strong>所有去噪时刻</strong>的<strong>所有信息</strong>（包括中间去噪结果及去噪网络的中间变量）做为当前元素的约束呢？这种强约束序列模型可能对多视角生成、视频片段生成等任务的一致性有很大帮助。由于生成是约束于另一个去噪过程的，我们对此去噪过程做的任何编辑，都可以自然地传播到当前元素上。比如在视频生成中，如果整个视频约束于首帧的去噪过程，那么我们用任意基于扩散模型的图像编辑方法来编辑首帧，都可以自然地修改后续帧。当然，我只是提供一个大致的想法，暂时没有考虑细节，欢迎大家往这个方向思考。</p>
-<p>有人肯定也会想到能否把 Diffusion Forcing 拓展到图像像素间关系上。我认为要实现训练是完全没有问题的，问题出在推理上：Diffusion Forcing 在推理时需要预定义不同元素间的去噪强度。对于视频这种有先后顺序的数据，我们很自然地可以让越早的帧噪声强度越低。但是，对于图像来说，如何定义不同像素在不同去噪步数时的去噪强度并不是一个易解的问题。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1700,7 +1740,7 @@ k_{NTK}(\mathbf{x_i}, \mathbf{x_j}) = \mathbb{E}_{\theta\sim\mathcal{N}} \langle
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">155</span>
+          <span class="site-state-item-count">156</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
