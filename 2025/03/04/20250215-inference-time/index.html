@@ -45,7 +45,7 @@
 <meta property="og:image" content="https://zhouyifan.net/2025/03/04/20250215-inference-time/16.jpg">
 <meta property="og:image" content="https://zhouyifan.net/2025/03/04/20250215-inference-time/17.jpg">
 <meta property="article:published_time" content="2025-03-04T08:13:20.000Z">
-<meta property="article:modified_time" content="2025-03-04T08:13:20.450Z">
+<meta property="article:modified_time" content="2025-12-05T15:10:36.403Z">
 <meta property="article:author" content="Zhou Yifan">
 <meta property="article:tag" content="深度学习">
 <meta property="article:tag" content="扩散模型">
@@ -252,7 +252,7 @@
 <p>如果我们又想用 ODE 采样，又想在采样时加入随机性，该怎么办呢？这时，我们可以利用扩散模型定义好的加噪过程：比如当前采样到了 $x_t$，我们用加噪过程给它随机加噪两步，得到 $x_{t+2}$，再用 ODE 去噪三步，得到 $x_{t-1}$。这样，我们能在正常去噪的同时，通过加噪过程中的随机噪声引入随机性。</p>
 <p><img src="/2025/03/04/20250215-inference-time/2.jpg" alt></p>
 <p>得益于 ODE 的确定性，我们可以使用 ODE 反演 (Inversion) 来把真实图像 $x_0$ 重新变回噪声 $x_T$。相比加噪过程，由于这个反演过程没有任何随机性，我们可以保证再次对 $x_T$ 做 ODE 采样得到的重建图像 $\hat{x}_0$ 和原图像 $x_0$ 非常相似。重建图像的误差大小取决于反演算法的精确度。</p>
-<p>在去噪时，我们可以启用 CFG (Classifier-free Guidance) 功能，让输出图像更符合某一约束信息。比如，我们可以用 CFG 让输出图像更符合文本提示词。具体来说，对于一个约束于文本信息 $c$ 的网络 $\epsilon_\theta(x_t, t, c)$，我们让它输出 $\epsilon_\theta(x_t, t, c)$, $\epsilon_\theta(x_t, t, \emptyset)$ 两个值，再令这一轮的最终输出为 $(w - 1)(\epsilon_\theta(x_t, t, c) - \epsilon_\theta(x_t, t, \emptyset)) + \epsilon_\theta(x_t, t, c)$，其中 $w$ 为 CFG 强度。直观上看，当 $w &gt; 1$ 时，这一操作相当于是在原输出 $\epsilon_\theta(x_t, t, c)$ 的基础上，让输出更加远离空约束的输出，更加贴近有约束的输出。</p>
+<p>在去噪时，我们可以启用 CFG (Classifier-free Guidance) 功能，让输出图像更符合某一条件信息。比如，我们可以用 CFG 让输出图像更符合文本提示词。具体来说，对于一个条件于文本信息 $c$ 的网络 $\epsilon_\theta(x_t, t, c)$，我们让它输出 $\epsilon_\theta(x_t, t, c)$, $\epsilon_\theta(x_t, t, \emptyset)$ 两个值，再令这一轮的最终输出为 $(w - 1)(\epsilon_\theta(x_t, t, c) - \epsilon_\theta(x_t, t, \emptyset)) + \epsilon_\theta(x_t, t, c)$，其中 $w$ 为 CFG 强度。直观上看，当 $w &gt; 1$ 时，这一操作相当于是在原输出 $\epsilon_\theta(x_t, t, c)$ 的基础上，让输出更加远离空条件的输出，更加贴近有条件的输出。</p>
 <p>在本文中，除非特别指明，否则默认扩散模型使用 ODE 采样。</p>
 <h3 id="搜索算法"><a href="#搜索算法" class="headerlink" title="搜索算法"></a>搜索算法</h3><p>搜索算法用于从某数据集合中搜索出最符合要求的数据项。一个最简单的场景是数据库搜索：我们输入某数据，将它与数据库中所有数据逐个比对，以判断它在数据库中是否存在。这个算法可以写成：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> query</span><br><span class="line"><span class="keyword">for</span> key <span class="keyword">in</span> database:</span><br><span class="line">  <span class="keyword">if</span> key == query:</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">True</span></span><br><span class="line"><span class="keyword">return</span> <span class="literal">False</span></span><br></pre></td></tr></table></figure>
@@ -283,8 +283,8 @@
 <p>从搜索算法上看，这个工作相当于把 INITNO 里的两步搜索算法拆成了两种算法。</p>
 <p>这个工作用了一种有趣的评价指标。对于噪声 $x_T$，我们求它先生成，再 DDIM 反演 (DDIM Inversion) 得到重建噪声 $\x’_T$。之后，我们令重建稳定性为 $x_T$ 和 $\x’_T$ 的 cos 相似度。论文指出，重建稳定性更好的噪声具有更高的生成质量。尽管作者并没有严谨地分析这个指标，但实验表明这种指标确实有效。我们在后文中会看到，该团队的后续工作对这个指标的原理进行了一定的解释。</p>
 <h2 id="Golden-Noise-直接输出临近最优噪声"><a href="#Golden-Noise-直接输出临近最优噪声" class="headerlink" title="Golden Noise: 直接输出临近最优噪声"></a>Golden Noise: 直接输出临近最优噪声</h2><p>“Not All Noises Are Created Equally” 的研究团队后续推出了其改进版 <em>Golden Noise for Diffusion Models: A Learning Framework</em> [1]。这篇论文最大的亮点是不直接使用噪声搜索，而是先用噪声优化方法得到「差噪声-好噪声」这样的数据对作为训练样本，再用一个小网络学习差噪声到好噪声的映射。在阅读这篇论文时，我们主要关注两件事：1）如何为差噪声找到对应的好噪声？2）噪声优化网络有何亮点？</p>
-<p>在构建训练样本时，Golden Noise 并没有用噪声搜索技术，而是用规则直接得到更好的噪声。和前作”Not All Noises Are Created Equally” 一样，这篇论文把噪声 $x_T$ 先去噪再 DDIM 反演的重建噪声当成一个更好的噪声。稍有不同的是，这篇文章明确指出，去噪时使用的 CFG 强度大于 1，而反演的时候 CFG 强度等于 1。这样得到的重建噪声 $x’_T$ 能够更加贴近约束文本的描述。</p>
-<p>作者用公式推导介绍了这项技术的原理。通过合并去噪和 DDIM 反演的公式，我们能够用下面的式子描述原噪声 $x_T$ 和反演噪声 $x’_T$ 的关系。我们可以忽略多数参数，只看后面 $\epsilon$ 做差的那一项。前面的系数 $w_l - w_w$ 表示去噪 CFG 强度 $w_l$ 减去重建 CFG 强度 $w_w$。可以发现，这个式子和 CFG 类似，也是写成了带约束输出 $\epsilon(\cdot, c)$ 减去无约束输出 $\epsilon(\cdot, \emptyset)$ 的形式。那么，它的作用也和 CFG 类似，可以把噪声「推向」更靠近文本描述的方向。</p>
+<p>在构建训练样本时，Golden Noise 并没有用噪声搜索技术，而是用规则直接得到更好的噪声。和前作”Not All Noises Are Created Equally” 一样，这篇论文把噪声 $x_T$ 先去噪再 DDIM 反演的重建噪声当成一个更好的噪声。稍有不同的是，这篇文章明确指出，去噪时使用的 CFG 强度大于 1，而反演的时候 CFG 强度等于 1。这样得到的重建噪声 $x’_T$ 能够更加贴近条件文本的描述。</p>
+<p>作者用公式推导介绍了这项技术的原理。通过合并去噪和 DDIM 反演的公式，我们能够用下面的式子描述原噪声 $x_T$ 和反演噪声 $x’_T$ 的关系。我们可以忽略多数参数，只看后面 $\epsilon$ 做差的那一项。前面的系数 $w_l - w_w$ 表示去噪 CFG 强度 $w_l$ 减去重建 CFG 强度 $w_w$。可以发现，这个式子和 CFG 类似，也是写成了带条件输出 $\epsilon(\cdot, c)$ 减去无条件输出 $\epsilon(\cdot, \emptyset)$ 的形式。那么，它的作用也和 CFG 类似，可以把噪声「推向」更靠近文本描述的方向。</p>
 <p><img src="/2025/03/04/20250215-inference-time/6.jpg" alt></p>
 <p>该团队的同期工作 Zigzag Diffusion Sampling [7] 用了更多示意图来直观解释这项技术的原理。从语义贴合度的角度看，使用 CFG &gt; 1 的强度做去噪会提升噪声的语义贴合度，而使用 CFG = 1 的强度做反演几乎不会改变噪声的语义贴合度。因此，只要反复执行去噪-反演过程，就能让噪声的语义贴合度逐渐提升。</p>
 <p><img src="/2025/03/04/20250215-inference-time/7.jpg" alt></p>
@@ -581,7 +581,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">156</span>
+          <span class="site-state-item-count">157</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
