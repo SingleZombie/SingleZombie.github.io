@@ -39,7 +39,7 @@
 <meta property="og:image" content="https://zhouyifan.net/2025/12/06/20251203-pixeldit/10.jpg">
 <meta property="og:image" content="https://zhouyifan.net/2025/12/06/20251203-pixeldit/a1.jpg">
 <meta property="article:published_time" content="2025-12-06T03:40:33.000Z">
-<meta property="article:modified_time" content="2025-12-06T03:44:36.906Z">
+<meta property="article:modified_time" content="2025-12-07T13:41:11.291Z">
 <meta property="article:author" content="Zhou Yifan">
 <meta property="article:tag" content="深度学习">
 <meta property="article:tag" content="扩散模型">
@@ -378,7 +378,7 @@
 <p>由于 Pixel DiT 的主要范式已经被这几篇论文定下来了，以后还用类似的方法，虽然中论文不难，但很难做出较大的影响力。明显可以改进的方向包括：1）把 DeCo 的 Freq Loss 和 PixelDiT 的 attention 都用上；2）尝试我在正文讲的在所有 unpatchify 处加入 bilinear 上采样；3）增加 PixelDiT attention 的粒度。如果把若干个小改进用上，最后能在所有 DiT 中取得 ImageNet-256 上的 SOTA 成果的话，应该也能引起关注。此外，要尝试这个方向，还需要动手拆解 latent space 最新方法的各个模块，试图分析哪些 latent space 的技巧可以迁移到 pixel space 中。</p>
 <p>和我在看完 JiT 后的想法一样，我认为所有像素 DiT 的研究意义不在于像素生成本身，而在于任意高分辨率/长序列数据生成。我们完全可以尝试把这些像素 DiT 方法搬到那些即使加入了 VAE 还是数据量太大的任务中，比如视频生成和超高分辨率生成。从工程实现的难易看，要我做的话，我会先从 4K 图像生成开始尝试。这个方向尝试的人不多，只要做出还可以的成果也能发论文。</p>
 <p>既然都谈到 latent space 了，我们不妨将 LDM 和这个带了像素级解码器的 Pixel DiT 做对比。仔细一看，二者其实非常相近。最本质的区别在于 VAE 不负责任何去噪功能，而 Pixel DiT 的解码器既负责把压缩信息还原成像素信息，又直接输出去噪结构。我感觉可以尝试这样一件事：复用现在某个 LDM 的编码器和去噪模型部分，将其输出传入一个像素级解码器里，finetune 模型，输出像素级去噪结果。这样整个模型可以端到端训练，不会有 VAE 的重建误差。如果这个想法是可行的，那么这个像素级解码器也可以放到多模态模型里：MLLM 用自回归/扩散模型输出像素解码器的条件，解码器再用一个扩散模型直接生成出像素级输出。</p>
-<h2 id="勘误"><a href="#勘误" class="headerlink" title="勘误"></a>勘误</h2><p>在之前阅读 DeCo 实验表格时，我忽略了训练轮数、推理步数这两栏，错将一个训了很久、推理步数很长的 DeCo 结果与其他两个方法的结果对比。由于对比基础不统一，原文的一些评价因此产生偏差。</p>
+<h2 id="勘误"><a href="#勘误" class="headerlink" title="勘误"></a>勘误</h2><p>在之前阅读 DeCo 实验表格时，我忽略了训练轮数、推理步数这两栏，错将一个训了很久、推理步数很多的 DeCo 结果与其他两个方法的结果对比。由于对比基础不统一，原文的一些评价因此产生偏差。</p>
 <p>从结果看，我之前高估了 DeCo 的实验结果。我在「论文对比」章节重新画了一个三个方法在相同训练、推理配置下的对比表格，并修正了所有分析。改正后的结论有：</p>
 <ul>
 <li>只看 FID 的好坏，DeCo = DiP &lt; PixelDiT。去除 Freq Loss 的影响，架构设计上应该是 DeCo &lt; DiP &lt; PixelDiT。</li>
@@ -475,7 +475,10 @@
     <a href="/2025/12/03/20251124-jit/" rel="prev" title="何恺明团队新作 JiT 解读与复现：解决大 patch DiT 难以训练的问题">
       <i class="fa fa-chevron-left"></i> 何恺明团队新作 JiT 解读与复现：解决大 patch DiT 难以训练的问题
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/19/20251211-llsa-1/" rel="next" title="作者亲述 | Log-linear Sparse Attention：首个 $O(N \log N)$ 高性能稀疏注意力">
+      作者亲述 | Log-linear Sparse Attention：首个 $O(N \log N)$ 高性能稀疏注意力 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -548,7 +551,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">157</span>
+          <span class="site-state-item-count">158</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -561,7 +564,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">66</span>
+        <span class="site-state-item-count">67</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

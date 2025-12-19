@@ -6,7 +6,7 @@
   <link href="https://zhouyifan.net/atom.xml" rel="self"/>
   
   <link href="https://zhouyifan.net/"/>
-  <updated>2025-12-06T03:44:36.906Z</updated>
+  <updated>2025-12-19T02:39:13.387Z</updated>
   <id>https://zhouyifan.net/</id>
   
   <author>
@@ -17,11 +17,42 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>作者亲述 | Log-linear Sparse Attention：首个 $O(N &#92;log N)$ 高性能稀疏注意力</title>
+    <link href="https://zhouyifan.net/2025/12/19/20251211-llsa-1/"/>
+    <id>https://zhouyifan.net/2025/12/19/20251211-llsa-1/</id>
+    <published>2025-12-19T02:39:13.000Z</published>
+    <updated>2025-12-19T02:39:13.387Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;作者亲述-Log-linear-Sparse-Attention：首个-O-N-log-N-高性能稀疏注意力&quot;&gt;&lt;a href=&quot;#作者亲述-Log-linear-Sparse-Attention：首个-O-N-log-N-高性能稀疏注意力&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="创作" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/"/>
+    
+    <category term="科研" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/%E7%A7%91%E7%A0%94/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="注意力" scheme="https://zhouyifan.net/tags/%E6%B3%A8%E6%84%8F%E5%8A%9B/"/>
+    
+  </entry>
+  
+  <entry>
     <title>给 JiT 加上像素级解码器：三篇近期 Pixel DiT 论文对比解读</title>
     <link href="https://zhouyifan.net/2025/12/06/20251203-pixeldit/"/>
     <id>https://zhouyifan.net/2025/12/06/20251203-pixeldit/</id>
     <published>2025-12-06T03:40:33.000Z</published>
-    <updated>2025-12-06T03:44:36.906Z</updated>
+    <updated>2025-12-07T13:41:11.291Z</updated>
     
     
       
@@ -200,7 +231,7 @@
     <link href="https://zhouyifan.net/2025/04/05/20250314-afldm/"/>
     <id>https://zhouyifan.net/2025/04/05/20250314-afldm/</id>
     <published>2025-04-05T05:44:43.000Z</published>
-    <updated>2025-04-10T01:04:32.026Z</updated>
+    <updated>2025-12-09T11:29:06.889Z</updated>
     
     
       
@@ -231,7 +262,7 @@
     <link href="https://zhouyifan.net/2025/03/06/20250305-fractal-generation/"/>
     <id>https://zhouyifan.net/2025/03/06/20250305-fractal-generation/</id>
     <published>2025-03-06T05:23:37.000Z</published>
-    <updated>2025-03-14T06:23:13.534Z</updated>
+    <updated>2025-12-07T13:45:31.829Z</updated>
     
     
       
@@ -602,35 +633,6 @@
     <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
     
     <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>让预训练 Transformer 生成更长的文本/图像：位置编码长度外推技术</title>
-    <link href="https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/"/>
-    <id>https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/</id>
-    <published>2024-12-08T18:15:32.000Z</published>
-    <updated>2024-12-12T08:07:57.909Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;p&gt;随着视觉主干模型不断向 Transformer 靠拢，和 Transformer 配套的一些技术也从 NLP 社区涌入了 CV 社区。比如 Stable Diffusion 3 还在用标准 Transformer 那一套正弦位置编码，而其升级版 FLUX.1</summary>
-        
-      
-    
-    
-    
-    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
-    
-    
-    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
-    
-    <category term="位置编码" scheme="https://zhouyifan.net/tags/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/"/>
     
   </entry>
   

@@ -168,6 +168,163 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/10/DLS-note-summary-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/10/DLS-note-summary-3/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》第三阶段总结与第四阶段预览</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-10 01:39:41" itemprop="dateCreated datePublished" datetime="2022-07-10T01:39:41+08:00">2022-07-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="第三阶段回顾"><a href="#第三阶段回顾" class="headerlink" title="第三阶段回顾"></a>第三阶段回顾</h1><p>在过去两周里，我们学习了改进深度学习模型的一些策略。让我们来回顾一下。</p>
+<p>首先，我们应该设置好任务的目标。选取开发/测试集时，应参考实际应用中使用的数据分布。设置优化指标时，应使用单一目标。可以设置一个最优化目标和多个满足目标。</p>
+<p>在搭建模型时，我们可以根据现有的数据量、问题的难易度，选择端到端学习或者是多阶段学习。</p>
+<p>训练模型前，如果有和该任务相似的预训练模型，我们可以采取迁移学习，把其他任务的模型权重搬过来；如果我们的模型要完成多个相似的任务，可以同时训练多个任务的模型。</p>
+<p>有了目标，搭好了模型之后，就可以开始训练模型了。有了训练好的模型后，我们可以根据模型的训练误差、训练开发误差、开发误差来诊断模型当前存在的问题。当然，在诊断之前，我们可以先估计一下人类在该问题上的最低误差，以此为贝叶斯误差的一个估计。通过比较贝叶斯误差和训练误差，我们能知道模型是否存在偏差问题；通过比较训练误差和训练开发误差，我们能知道模型是否存在方差问题；通过比较训练开发误差和开发误差，我们能知道模型是否存在数据不匹配问题。</p>
+<p>另一方面，如果在改进模型时碰到了问题，不妨采取错误分析技术，看看模型究竟错在哪。我们可以拿出开发集的一个子集，统计一下模型的具体错误样例，看看究竟是模型在某些条件下表现得不好，还是标错的数据太多了。</p>
+<p>这些内容可能比较偏向于工程经验，没有过多的数学理论。但是，相信大家在搭建自己的深度学习项目时，这些知识一定能派上用场。</p>
+<h1 id="第四阶段预览"><a href="#第四阶段预览" class="headerlink" title="第四阶段预览"></a>第四阶段预览</h1><p>在这之后，我们要分别学习两大类神经网络：处理图像的网络和处理序列数据的网络。在第四门课《卷积神经网络》中，我们就会学习能够处理图像问题的卷积神经网络。一起来看看接下来要学的内容吧。</p>
+<p>《卷积神经网络》的课需花四周学完。第一周，我们会学习卷积神经网络的基本构件，建立对卷积神经网络的基本认识，为后续的学习做准备。具体的内容有：</p>
+<ul>
+<li>卷积操作<ul>
+<li>从卷积核到卷积</li>
+<li>卷积的属性——填充、步幅</li>
+<li>卷积层</li>
+</ul>
+</li>
+<li>池化操作</li>
+<li>卷积神经网络示例</li>
+</ul>
+<p>最简单的计算机视觉任务是图像分类。第二周，我们将学习一系列图像分类网络。这些网络不仅能在图像分类上取得优秀的成绩，还是很多其他计算机视觉任务的基石。通过学习它们，我们不仅能见识一些经典网络的架构，更能从中学习到搭建卷积神经网络的一般规律。其内容有：</p>
+<ul>
+<li>早期神经网络<ul>
+<li>LeNet-5</li>
+<li>AlexNet</li>
+<li>VGG</li>
+</ul>
+</li>
+<li>残差神经网络</li>
+<li>Inception 网络</li>
+<li>MobileNet</li>
+<li>搭建卷积网络项目<ul>
+<li>使用开源代码</li>
+<li>迁移学习</li>
+<li>数据增强</li>
+</ul>
+</li>
+</ul>
+<p>第三周，我们将学习计算机视觉中一个比较热门的任务——目标检测。目标检测要求算法不仅能辨别出图片中的物体，还要能把物体精确地框出来。我们会一步一步学习如何搭建完成目标检测的卷积神经网络：</p>
+<ul>
+<li>目标定位与关键点检测</li>
+<li>使用卷积神经网络的目标检测<ul>
+<li>滑动窗口算法</li>
+<li>基于卷积的滑动窗口</li>
+</ul>
+</li>
+<li>YOLO 算法<ul>
+<li>结合目标定位与滑动窗口</li>
+<li>交并比(IoU)</li>
+<li>NMS（非极大值抑制）</li>
+<li>锚框(Anchor boxes)</li>
+</ul>
+</li>
+<li>R-CNN 系列算法简介</li>
+</ul>
+<p>此外，这周还会稍微提及另一个计算机视觉任务——语义分割的基本知识：</p>
+<ul>
+<li>基于U-Net的语义分割<ul>
+<li>反卷积</li>
+<li>U-Net架构</li>
+</ul>
+</li>
+</ul>
+<p>最后一周，第四周，我们又会认识两个新任务：人脸检测与神经网络风格迁移。具体的内容有：</p>
+<ul>
+<li>人脸检测<ul>
+<li>人脸检测问题与一次性学习</li>
+<li>孪生神经网络</li>
+<li>三元组误差</li>
+<li>转化成二分类问题</li>
+</ul>
+</li>
+<li>神经网络风格迁移<ul>
+<li>风格迁移简介</li>
+<li>利用神经网络学到的东西</li>
+<li>风格迁移中的误差</li>
+<li>推广到1维和3维</li>
+</ul>
+</li>
+</ul>
+<p>相比之前的课，学习第四门课时需要花更多的精力，主要因为以下几点：</p>
+<ol>
+<li>课程难度变高。</li>
+<li>课程的编程练习很多。</li>
+<li>课堂上介绍了很多论文作为拓展学习的方向。</li>
+</ol>
+<p>如果你未来要以计算机视觉为研究方向的话，这四周的内容一定要认真掌握。同时，编程练习和论文阅读也不能落下。据我估计，如果要打好计算机视觉方向上的坚实的基础，至少还要多花费两周时间去认真阅读经典论文，做好相关的技术调研。</p>
+<p>在未来的几周里，我仅会上传课堂笔记，并尽最大可能复现一下课后的习题。在所有的五门课上完后（大约2个月后），我会回过头来补充计算机视觉相关的论文阅读笔记、项目实现笔记，对视频课中没来得及讲完的内容查缺补漏，以呈现一套翔实的深度学习学习笔记，辅助大家更好地入门深度学习。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2095,259 +2252,6 @@ w :=(1-\frac{\alpha\lambda}{m})w-\alpha dw</script><p><strong>精通 - dropout�
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/21/DLS-note-7/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/06/21/DLS-note-7/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》笔记（七）：调参、批归一化、多分类任务、编程框架</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-06-21 13:47:43" itemprop="dateCreated datePublished" datetime="2022-06-21T13:47:43+08:00">2022-06-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>这周的知识点也十分分散，主要包含四项内容：调参、批归一化、多分类任务、编程框架。</p>
-<p>通过在之前的编程项目里调整学习率，我们能够体会到超参数对模型效果的重要影响。实际上，选择超参数不是一个撞运气的过程。我们应该有一套系统的方法来快速找到合适的超参数。</p>
-<p>两周前，我们学习了输入归一化。类似地，如果对网络的每一层都使用归一化，也能提升网络的整体表现。这样一种常用的归一化方法叫做批归一化。</p>
-<p>之前，我们一直都在讨论二分类问题。而只要稍微修改一下网络结构和激活函数，我们就能把二分类问题的算法拓展到多分类问题上。</p>
-<p>为了提升编程的效率，从这周开始，我们要学习深度学习编程框架。编程框架往往能够帮助我们完成求导的功能，我们可以把精力集中在编写模型的正向传播上。</p>
-<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="调参"><a href="#调参" class="headerlink" title="调参"></a>调参</h2><blockquote>
-<p>调参的英文动词叫做tune，这个单词作动词时大部分情况下是指调音。这样一看，把调参叫做“调整参数”或“调试参数”都显得很“粗鲁”。理想情况下，调参应该是一个系统性的过程，就像你去给乐器调音一样。乱调可是行不通的。</p>
-</blockquote>
-<h3 id="超参数优先级"><a href="#超参数优先级" class="headerlink" title="超参数优先级"></a>超参数优先级</h3><p>回顾一下，我们接触过的超参数有：</p>
-<ul>
-<li>学习率 $\alpha$</li>
-<li>momentum $\beta$</li>
-<li>adam $\beta_1, \beta_2, \epsilon$</li>
-<li>隐藏层神经元数</li>
-<li>层数</li>
-<li>学习率递减率</li>
-<li>mini-batch size</li>
-</ul>
-<p>其中，优先级最高的是学习率。吴恩达老师建议大家调完学习率后，再去调$\beta$、隐藏层神经元数、mini-batch size。如果使用adam，则它的三个参数基本不用调。</p>
-<h3 id="超参数采样策略"><a href="#超参数采样策略" class="headerlink" title="超参数采样策略"></a>超参数采样策略</h3><p>在尝试各种超参数时，不要按“网格”选参数（如下图左半所示），最好随机选参数（如下图右半所示）：</p>
-<p><img src="/2022/06/21/DLS-note-7/1.jpg" alt></p>
-<p>如果用网格采样法的话，你可能试了25组参数，每个参数只试了5个不同的值。而实际上，你试的两个参数中只有一个参数对结果的影响较大，另一个参数几乎不影响结果。最终，你尝试的25次中只有5次是有效的。</p>
-<p>而采用随机采样法试参数的话，你能保证每个参数在每次尝试时都取不同值。这样试参数的效率会更高一点。</p>
-<p>另外，调参时还有一个“由粗至精”的过程。如下图所示：</p>
-<p><img src="/2022/06/21/DLS-note-7/2.jpg" alt></p>
-<p>当我们发现某几个参数的结果比较优秀时，我们可以缩小搜索范围，仅在这几个参数附近进行搜索。</p>
-<h3 id="超参数搜索尺度"><a href="#超参数搜索尺度" class="headerlink" title="超参数搜索尺度"></a>超参数搜索尺度</h3><p>搜索参数时，要注意搜索的尺度。如果搜索的尺度不够恰当，我们大部分的调参尝试可能都是无用功。</p>
-<p>比如当搜索学习率时，我们应该按<code>0.0001, 0.001, 0.01, 0.1, 1</code>这样指数增长的方式去搜索，而不应该按<code>0.2, 0.4, 0.6, 0.8, 1</code>这种均匀采样的方式搜索。这是因为学习率是以乘法形式参与计算，取<code>0.4, 0.6, 0.8</code>得到的结果可能差不多，按这种方式采样的话，大部分的尝试都是浪费的。而以<code>0.001, 0.01, 0.1</code>这种方式取学习率的话，每次的运行结果就会差距较大，每次尝试都是有意义的。</p>
-<p>除了搜索学习率时用到的指数采样，还有其他的采样方式。让我们看调整momentum项$\beta$的情况。回忆一下，$\beta$取0.9，表示近10项的平均数；$\beta$取0.99，表示近100项的平均数。也就是说，$\beta$表示$\frac{1}{1-\beta}$项的平均数。我们可以对$\frac{1}{1-\beta}$进行指数均匀采样。</p>
-<p>当然，有些参数是可以均匀采样的。比如隐藏层的个数，我们可以从[2, 3, 4]里面挑一个；比如每个隐藏层的神经元数，我们也可以直接均匀采样。</p>
-<p>总结一下，我们在搜索超参数的时候，应该从超参数所产生的影响出发，考虑应该在哪个指标上均匀采样，再反推超参数的采样公式，而不一定要对超参数本身均匀采样。</p>
-<p>当然了，如果我们不确定应该从哪个尺度对超参数采样，可以先默认使用均匀采样。因为我们会遵循由粗至精的搜索原则，尝试几轮后我们就能够观察出超参数的取值规律，从而在正确的尺度上对超参数进行搜索。</p>
-<h2 id="批归一化-Batch-Normalization"><a href="#批归一化-Batch-Normalization" class="headerlink" title="批归一化(Batch Normalization)"></a>批归一化(Batch Normalization)</h2><p>在<a href>第五篇笔记中</a>，我们曾学习了<strong>输入归一化</strong>。其计算公式如下：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-\mu&=\frac{1}{m}\Sigma_{i=1}^{m}x^{(i)} \\
-x &:= (x - \mu) \\
-\sigma^2&=\frac{1}{m}\Sigma_{i=1}^{m}(x^{(i)})^2 \\
-x &:= x / \sigma
-\end{aligned}</script><p>通过归一化，神经网络第一层的输入更加规整，模型的训练速度能得到有效提升。</p>
-<p><img src="/2022/06/21/DLS-note-7/3.jpg" alt></p>
-<p>我们知道，神经网络的输入可以看成是第零层（输入层）的激活输出。一个很自然的想法是：我们能不能把神经网络每一个隐藏层的激活输出也进行归一化，让神经网络更深的隐藏层也能享受到归一化的加速？</p>
-<p><strong>批归一化</strong>(Batch Normalization)就是这样一种归一化神经网络每一个隐藏层输出的算法。准确来说，我们归一化的对象不是每一层的激活输出$a^{[l]}$，而是激活前的计算结果$z^{[l]}$。让我们看看对于某一层的激活前输出$z=z^{[l]}$，我们该怎么进行批归一化。</p>
-<p>首先，还是先获取符合标准正态分布的归一化结果$z^{(i)}_{norm}$：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-& Input \ z^{(1)}, z^{(2)}, ...z^{(m)} \\
-& \mu=\frac{1}{m}\Sigma_i^{m}z^{(i)} \\
-& \sigma^2=\frac{1}{m}\Sigma_i^{m}(z^{(i)}- \mu)^2\\
-& z^{(i)}_{norm}=\frac{z^{(i)}-\mu}{\sigma}
-\end{aligned}</script><p>我们不希望每一层的输出都固定为标准正态分布，而是希望网络能够自己选择最恰当的分布。因此，我们可以用下式计算最终的批归一化结果：</p>
-<script type="math/tex; mode=display">
-\tilde{z}^{(i)}=\gamma z^{(i)}_{norm} + \beta</script><p>其中$\tilde{z}^{(i)}$是最终的批归一化结果，$\gamma, \beta$都是可学习参数，分别影响新分布的方差与均值。</p>
-<blockquote>
-<p>为什么我们不希望数据的分布总是标准正态分布呢？可以考察一个即将送入sigmoid的$z$。sigmoid在[-1, 1]这段区间内近乎是一个线性函数，为了利用该激活函数的非线性区域，我们应该让$z$的取值范围更大一点，即让$z$的方差大于1。</p>
-<p>这里的$\beta$和梯度下降算法里的$\beta$不是同一回事，只是这几个算法的原论文里都使用了$\beta$这个符号。</p>
-</blockquote>
-<p>使用批归一化后，原来的神经网络计算公式需要做出一些调整。之前，$z^{(i)}$的计算公式如下：</p>
-<script type="math/tex; mode=display">
-z^{(i)}=Wa^{(i)}+b</script><p>现在，我们会把$z^{(i)}$的均值归一化到0。因此，$+b$成为了一个冗余的操作。使用了批归一化后，$z^{(i)}$应该按下面的方法计算：</p>
-<script type="math/tex; mode=display">
-z^{(i)}=Wa^{(i)}</script><p>总结一下，加入批归一化后，神经网络的计算过程如下所示：</p>
-<script type="math/tex; mode=display">
-X \to Z^{[1]}(use \ W^{[1]}) \to \tilde{Z}^{[1]}(use \ \beta^{[1]}, \gamma^{[1]}) \to A^{[1]} \to ...</script><p>注意，使用向量化计算后，$\tilde{Z}^{[l]}$的计算公式应该如下：</p>
-<script type="math/tex; mode=display">
-\tilde{Z}^{[l]}=\gamma^{[l]} \ast Z_{norm}^{[l]} + \beta^{[l]}</script><p>其中$\gamma^{[l]}$和$\beta^{[l]}$的形状都是$(n^{[l]}, 1)$</p>
-<blockquote>
-<p>课堂里没有介绍批归一化的求导公式。这里补充一下：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-d\beta &= \frac{1}{m}dA \\
-d\gamma &= \frac{1}{m}dA \ast Z_{norm}^{[l]} 
-\end{aligned}</script></blockquote>
-<p>使用批归一化后，常见优化算法（mini-batch, momentum, adam, …）仍能照常使用。</p>
-<h3 id="直观理解批归一化的作用"><a href="#直观理解批归一化的作用" class="headerlink" title="直观理解批归一化的作用"></a>直观理解批归一化的作用</h3><p>对于神经网络中较深的层，它们只能“看到”来自上一层的激活输出，而不知道较浅的层的存在。如下图所示，对于第3层，它只知道第2层的激活输出$A^{[2]}$。</p>
-<p><img src="/2022/06/21/DLS-note-7/4.jpg" alt></p>
-<p>这样，经过一段时间的训练后，网络的第3层和第4层知道了如何较好地把$A^{[2]}$映射成$\hat{y}$。</p>
-<p>可是，$A^{[2]}$并不是神经网络的真实输入。神经网络真正的结构如下：</p>
-<p><img src="/2022/06/21/DLS-note-7/5.jpg" alt></p>
-<p>$A^{[2]}$其实还受到神经网络前2层参数的影响。一旦前2层的参数更新，$A^{[2]}$的分布也会随之改变，第3层和第4层可能要从头学习$A^{[2]}$到$\hat{y}$的映射关系。</p>
-<p>与之相比，使用了批归一化后，神经网络每一层的输出都会落在一个类似的分布里。这样，浅层和深层之间就没有那么强的依赖关系，较深的层能够更快完成学习。</p>
-<p>顺带一提，当我们用批归一化的同时，如果还使用了mini-batch，则批归一化还能稍微起到一点正则化的作用。这是因为在mini-batch上每层批归一化用到的方差和均值是不准确的，这种“带噪音”的批归一化能够起到和dropout类似的作用，防止神经网络以较大的权重依赖于少数神经元。</p>
-<h3 id="测试时的批归一化"><a href="#测试时的批归一化" class="headerlink" title="测试时的批归一化"></a>测试时的批归一化</h3><p>我们刚刚学习的批归一化操作，其实都是针对训练而言的。在训练时，我们有大批的数据，可以轻松算出每一层中间结果$Z^{[l]}$的均值和方差。但是，在测试时，我们可能只会对一项输入进行计算。对一项输入计算均值和方差是没有意义的。因此，我们要想办法决定测试时$Z^{[l]}\to Z_{norm}^{[l]}$用到的均值和方差。</p>
-<p>我们可以用每一个mini-batch的均值和方差的指数加权移动平均数作为测试时的均值和方差。</p>
-<h2 id="Softmax-与多分类问题"><a href="#Softmax-与多分类问题" class="headerlink" title="Softmax 与多分类问题"></a>Softmax 与多分类问题</h2><p>之前我们一直都在讨论二分类问题。比如，辨别一张图片是不是小猫。当我们把二分类问题拓展到多分类问题时，问题的数学模型会发生哪些变化呢？</p>
-<p>首先，我们来看一下多分类问题的定义。在多分类问题中，我们要要判断一个输入是属于$C$种类型中的哪一种。比如我们希望判断一张图片里的生物是属于小猫、小狗、小鸡、其他这$C=4$类中的哪一种。</p>
-<p>在二分类问题中，我们用1表示“是某一类”，0表示“不是某一类”。我们只需要计算$P(\hat{y}=1|x)$这一个概率。而多分类问题中，我们用一个数字表示一种类别，比如0表示“其他”，1表示“小猫”，2表示“小狗”，3表示“小鸡”。这样，我们就应该计算多个概率，比如$P(\hat{y}=0|x), P(\hat{y}=1|x), P(\hat{y}=2|x), P(\hat{y}=3|x)$这四个概率。</p>
-<p>多分类问题的示意图和一个可能的多分类神经网络如下图所示（注意，该网络有4个输出）：</p>
-<p><img src="/2022/06/21/DLS-note-7/6.jpg" alt></p>
-<p>接着，我们来看看多分类问题带来了哪些新的困难。在二分类问题中，我们得到了最后一层的计算结果$z^{[L]}$，我们要用sigmoid把它映射到表示概率的[0, 1]上。而多分类问题中，同理，我们要把神经网络最后一层的计算结果$z^{[L]}$映射成一些有实际意义的概率值。具体而言，我们应让所有分类概率之和为1，即$\Sigma_{i=1}^CP(\hat{y}=i|x)=1$。为了达到这个目的，我们要引入一个激活函数——softmax。</p>
-<p>和其他定义在一个实数上的激活函数不同，softmax定义在一个向量上，其计算方式为：</p>
-<script type="math/tex; mode=display">
-\begin{aligned}
-&Input \ z^{[L]} \\
-&output \ a^{[L]} \\
-&t =  e^{z^{[L]}} \\
-&a^{[L]} = \frac{t}{\Sigma_{i=1}^Ct_i}
-\end{aligned}</script><p>注意，上式中所有运算都是逐元素运算。比如在上面提到的有四个类别的分类问题中，$z^{[L]}$是一个形状为$(4, 1)$的张量，经过逐元素运算后，$t, a^{[L]}$都是形状为$(4, 1)$的张量。</p>
-<p>上述描述可能比较抽象，让我们看课件里的一个具体例子：</p>
-<p><img src="/2022/06/21/DLS-note-7/7.jpg" alt></p>
-<p>假设$z^{[L]}=[5, 2, -1, 3]$，则$t=[e^5, e^2, e^{-1}, e^3], \Sigma_{j=1}^4t_j\approx176.3,a^{[L]}_1\approx0.842,a^{[L]}_2\approx0.042,a^{[L]}_3\approx0.002,a^{[L]}_4\approx0.114$。</p>
-<p>softmax的计算方法可以总结为：求指数，归一化。本质上来说，softmax就是把向量每个分量的自然指数作为一个新的标准，在这个标准上进行标准归一化操作。</p>
-<blockquote>
-<p>为什么要使用向量每个分量的自然指数作为归一化的变量，而不直接对原向量做标准归一化呢？可以考虑[1, 2], [10, 20]这两个向量。如果直接对这两个量进行进行归一化，算出来的概率都是[0.33, 0.67]。而实际上，第一个向量可能对应一幅比较模糊的输入，第二个向量可能对应一幅比较清楚的输入。显然，在更清晰的输入上，我们更有把握说我们的分类结果是正确的。通过使用softmax，我们可以放大数值的影响，[10, 20]相比[1, 2]，我们更有把握说输入是属于第二个类别的。该解释参考自<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/17187507/why-use-softmax-as-opposed-to-standard-normalization">https://stackoverflow.com/questions/17187507/why-use-softmax-as-opposed-to-standard-normalization</a></p>
-<p>在C=2时，softmax会退化成sigmoid。也就是说，softmax是sigmoid在多分类任务上的推广。</p>
-<p>softmax这个名字，其实衍生自hardmax这个词。使用hardmax时，输入会被映射成[1, 0, 0, 0]这样一个one-hot向量。这种最大值太严格（hard）了，所以有相对来说比较宽松（soft）的最大值计算方法softmax。</p>
-</blockquote>
-<p>使用了softmax后，还需要调整的是网络的loss。推广到多分类后，我们要使用的loss是</p>
-<script type="math/tex; mode=display">
-L(y, \hat{y}) = -\Sigma_{i=1}^Cy_ilog\hat{y_i}</script><p>，其中$y_i$不是一个表示类别的整数，而是一个one-hot编码的向量。比如在一共有4类时，标签2的one-hot编码是：</p>
-<script type="math/tex; mode=display">
-
-\left[
-  \begin{aligned}
-  0 \\ 0 \\ 1 \\ 0
-  \end{aligned}
-\right]</script><p>假设整个标签数据集为$[0, 1, 3, 2]$，则参与网络运算时用到的$Y$应该是：</p>
-<script type="math/tex; mode=display">
-\left[
-  \begin{aligned}
-  1 \ 0 \ 0 \ 0\\ 
-  0 \ 1 \ 0 \ 0\\ 
-  0 \ 0 \ 0 \ 1\\ 
-  0 \ 0 \ 1 \ 0
-  \end{aligned}
-\right]</script><p>在编程时，数据集一般只会提供用整数表示的标签。为了正确使用loss，我们需要多加一步转换到one-hot编码的步骤。</p>
-<p>和逻辑回归类似，计算梯度时，$dZ^{[L]}=\hat{Y}-Y$这个等式依然成立，我们可以用它跳一个算梯度的步骤。</p>
-<h2 id="编程框架"><a href="#编程框架" class="headerlink" title="编程框架"></a>编程框架</h2><p>由于深度学习的开发者越来越多，许多开源深度学习编程框架相继推出，比如：</p>
-<ul>
-<li>Caffe/Caffe2</li>
-<li>Torch</li>
-<li>TensorFlow</li>
-<li>Keras</li>
-<li>mxnet</li>
-<li>PaddlePaddle</li>
-<li>CNTK</li>
-<li>DL4J</li>
-<li>Lasagne</li>
-<li>Theano</li>
-</ul>
-<p>这些编程框架不仅封装了常见的深度学习数学函数，如sigmoid、softmax、卷积，还支持自动求导的功能——这是深度学习编程框架最吸引人的一点。在使用编程框架时，我们只需要编写前向传播的过程，框架就会自动执行梯度计算，以辅助我们完成反向传播。</p>
-<blockquote>
-<p>目前，学术界最常用的是Torch的Python版PyTorch。第二常用的是TensorFlow。</p>
-</blockquote>
-<p>在选择编程框架时，我们要考虑以下几点：</p>
-<ul>
-<li>易用性（能否快速开发与部署）</li>
-<li>运行性能</li>
-<li>是否真正开源</li>
-</ul>
-<p>前两点注意事项毋庸置疑。框架之于编程语言，就像高级语言之于汇编语言一样。我们选择编程框架而不去从零编程，最主要的原因就是开发效率。使用框架能够节约大量的开发时间，有助于项目的迭代。而使用统一的框架，往往会损失一些效率，这些损失的效率不能太多。</p>
-<p>第三点要着重强调一下。很多框架打着开源的名号，实际上却是某个公司在维护。如果这个公司哪天不想维护了，放弃继续开源，那么你的开发就会受到很大的影响。</p>
-<blockquote>
-<p>这周的课还介绍了TensorFlow的用法，我会在编程实战中补充这方面的知识。</p>
-</blockquote>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这堂课的知识点有：</p>
-<ul>
-<li>调参<ul>
-<li>优先级</li>
-<li>采样策略</li>
-<li>搜索尺度</li>
-</ul>
-</li>
-<li>批归一化<ul>
-<li>在网络中的位置</li>
-<li>作用（归一化、<strong>新分布</strong>）</li>
-<li><strong>超参数</strong>与公式</li>
-<li>测试时的处理方式</li>
-</ul>
-</li>
-<li>多分类问题<ul>
-<li>softmax</li>
-<li>loss</li>
-</ul>
-</li>
-<li>编程框架<ul>
-<li>了解常见的编程框架</li>
-<li>选择编程框架的角度</li>
-</ul>
-</li>
-</ul>
-<p>通过这三周的学习，我们掌握了深度学习各方面的知识，能够用多种方式提升我们深度学习项目的性能了。</p>
-<p>这周的编程要用到TensorFlow。我将另开一篇文章介绍本周的代码实战项目。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2417,7 +2321,7 @@ L(y, \hat{y}) = -\Sigma_{i=1}^Cy_ilog\hat{y_i}</script><p>，其中$y_i$不是�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">157</span>
+          <span class="site-state-item-count">158</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2430,7 +2334,7 @@ L(y, \hat{y}) = -\Sigma_{i=1}^Cy_ilog\hat{y_i}</script><p>，其中$y_i$不是�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">66</span>
+        <span class="site-state-item-count">67</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

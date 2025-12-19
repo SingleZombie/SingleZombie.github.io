@@ -168,6 +168,136 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/08/09/DLS-note-12-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/08/09/DLS-note-12-2/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》代码实战（十二）：目标检测 NMS 的 Python 实现（附算法动图）</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-09 14:09:41" itemprop="dateCreated datePublished" datetime="2022-08-09T14:09:41+08:00">2022-08-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在这篇文章中，我将给出一份带运行示例的NMS Python脚本，并对算法和代码进行详细解说。相信大家看完这篇文章后，能够轻松地掌握NMS的底层原理。</p>
+<p>如果你对目标检测的基础知识不太熟，欢迎先阅读我的上篇文章：<a href="https://zhouyifan.net/2022/07/26/DLS-note-12/">目标检测简介</a></p>
+<p>示例脚本（包括可视化的代码）链接：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/nms">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/nms</a> </p>
+<h2 id="算法介绍"><a href="#算法介绍" class="headerlink" title="算法介绍"></a>算法介绍</h2><p>在目标检测算法中，为了尽量不漏掉物体，会输出大量的检测结果（每一条结果由检测概率与检测框组成）。这些检测结果很可能有重复的，即会有多个框标出了同一个物体。下图就是一个例子，算法正确识别出了两辆车，但却有多个检测框标出了同一辆车。</p>
+<p><img src="/2022/08/09/DLS-note-12-2/1.jpg" alt></p>
+<p>我们需要一个算法来过滤多余的检测框。最常用的算法就是NMS(Non-Maximum Suppresion, 非极大值抑制)。该算法的思路很简单：只保留局部概率最大的检测框，与其重合的其他检测框都会被舍去。</p>
+<p>算法的伪代码如下：</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">输入所有检测概率、检测框</span><br><span class="line">当还有检测框没有处理：</span><br><span class="line">    从剩下的框里挑出检测概率最大的框 bbox_a</span><br><span class="line">    遍历所有没有处理的框bbox_i：</span><br><span class="line">        如果 bbox_i != bbox_a 且 bbox_i 与 bbox_a 重合：</span><br><span class="line">            舍去 bbox_i</span><br><span class="line">    把 bbox_a 输出成一个检测结果</span><br></pre></td></tr></table></figure>
+<p>当然，这个算法的描述还不够准确：究竟该怎么定义两个检测框是“重合”呢？如果两个检测框有交集就说它们重合是行不通的，因为图片中很可能会有挨得很近的物体，它们的检测框就是相交的。因此，我们一般用IoU（交并比）来描述两个框的重合程度，如果IoU超出某个阈值，就说这两个框是“重合”的。</p>
+<p>IoU的计算很简单，算出两个矩形的「交面积」，再用两个矩形面积之和减去「交面积」就可以得到「并面积」，「交面积」比「并面积」就是IoU。</p>
+<p><img src="/2022/08/09/DLS-note-12-2/1.gif" alt></p>
+<p>在NMS之前，一般还会先做一步预处理：对于预测概率小于某个阈值的检测框，我们不信任它们，会在进行NMS之前就把它们舍去。在代码实现时这部分逻辑常常会放到NMS的函数里。这样，整个NMS的流程是这样的：</p>
+<p><img src="/2022/08/09/DLS-note-12-2/2.gif" alt></p>
+<p>上述的NMS针对是识别一种物体的任务，在推广到多分类NMS时，只要把输入的检测概率换成有物体的概率乘上概率最大的类别的概率即可。</p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><blockquote>
+<p>理论上这段代码是兼容任何格式的张量的。经测试，NumPy, PyTorch 的张量都可以正确运行。</p>
+</blockquote>
+<p>先看一下IoU的实现代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">iou</span>(<span class="params">b1: <span class="type">Tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>], b2: <span class="type">Tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>]</span>) -&gt; <span class="built_in">float</span>:</span></span><br><span class="line">    intersection = box_intersection(b1, b2)</span><br><span class="line">    inter_area = area(intersection)</span><br><span class="line">    union_area = area(b1) + area(b2) - inter_area</span><br><span class="line">    <span class="keyword">return</span> inter_area / union_area</span><br></pre></td></tr></table></figure>
+<p>所有的检测框用一个长度为4的元组表示。<code>box_intersection</code>用于计算两个框的相交框，<code>area</code>用于计算框的面积。这段代码和之前描述得一样，先获取相交区域，计算交面积，再计算并面积，最后算除法。</p>
+<p><code>box_intersection</code>的实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">box_intersection</span>(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="function">        b1: <span class="type">Tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>],</span></span></span><br><span class="line"><span class="params"><span class="function">        b2: <span class="type">Tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>]</span>) -&gt; <span class="type">Tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>]:</span></span><br><span class="line">    x11, y11, x12, y12 = b1</span><br><span class="line">    x21, y21, x22, y22 = b2</span><br><span class="line"></span><br><span class="line">    xl = <span class="built_in">max</span>(x11, x21)</span><br><span class="line">    xr = <span class="built_in">min</span>(x12, x22)</span><br><span class="line">    yt = <span class="built_in">max</span>(y11, y21)</span><br><span class="line">    yb = <span class="built_in">min</span>(y12, y22)</span><br><span class="line">    <span class="keyword">return</span> (xl, yt, xr, yb)</span><br></pre></td></tr></table></figure>
+<p>算相交区域，可以理解成分别求出x, y方向上的相交部分，再把两部分合成一个框。而求直线的相交，就是取最大的左端点和最小的右端点。</p>
+<p><code>area</code>的实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">area</span>(<span class="params">box: <span class="type">Tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>]</span>) -&gt; <span class="built_in">float</span>:</span></span><br><span class="line">    x1, y1, x2, y2 = box</span><br><span class="line">    width = <span class="built_in">max</span>(x2 - x1, <span class="number">0</span>)</span><br><span class="line">    height = <span class="built_in">max</span>(y2 - y1, <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">return</span> width * height</span><br></pre></td></tr></table></figure>
+<p>如果两个框不相交，<code>x2 - x1</code>和<code>y2 - y1</code>会出现小于0的情况。因此，要保证它们最小为0，再算面积就不会有错了。</p>
+<p>有了<code>iou</code>，就可以实现了NMS了。我的NMS函数定义如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">nms</span>(<span class="params">predicts: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">        score_thresh: <span class="built_in">float</span> = <span class="number">0.6</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        iou_thresh: <span class="built_in">float</span> = <span class="number">0.3</span></span>):</span></span><br><span class="line">    <span class="string">&quot;&quot;&quot;Non-Maximum Suppression</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        predicts (np.ndarray): Tensor of shape [n, 5]. The second demesion</span></span><br><span class="line"><span class="string">            includes 1 probability and 4 numbers x, y, w, h denoting a bounding</span></span><br><span class="line"><span class="string">            box.</span></span><br><span class="line"><span class="string">        score_thresh (float): The boxes with probability lower than</span></span><br><span class="line"><span class="string">            score_threash will be discarded.</span></span><br><span class="line"><span class="string">        iou_thresh (float): The threshold determining whether two boxes are</span></span><br><span class="line"><span class="string">            &quot;overlapped&quot;.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        (np.ndarray, List[int]): The filtered predictions and the indices of</span></span><br><span class="line"><span class="string">            remaining boxes.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure></p>
+<p>NMS算法需要输入检测结果<code>predicts</code>，输出过滤后的检测结果<code>filtered_predicts</code>。此外，NMS算法有两个输入属性<code>score_thresh</code>， <code>iou_thresh</code>，分别表示被选定的检测框最小需要的概率、判断两个框是否重合的IoU阈值。为了方便其他的计算（比如多分类NMS），我还输出了一个索引数组indices，表示被选中的框的索引。这方面的逻辑可以根据自己的项目要求进行优化，没有统一的规定。</p>
+<p>NMS的实现和开始的伪代码几乎一模一样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">nms</span>(<span class="params">predicts: np.ndarray,</span></span></span><br><span class="line"><span class="params"><span class="function">        score_thresh: <span class="built_in">float</span> = <span class="number">0.6</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">        iou_thresh: <span class="built_in">float</span> = <span class="number">0.3</span></span>):</span></span><br><span class="line">    n_remainder = <span class="built_in">len</span>(predicts)</span><br><span class="line">    vis = [<span class="literal">False</span>] * n_remainder</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Filter predicts with low probability</span></span><br><span class="line">    <span class="keyword">for</span> i, predict <span class="keyword">in</span> <span class="built_in">enumerate</span>(predicts):</span><br><span class="line">        <span class="keyword">if</span> predict[<span class="number">0</span>] &lt; score_thresh:</span><br><span class="line">            vis[i] = <span class="literal">True</span></span><br><span class="line">            n_remainder -= <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># NMS</span></span><br><span class="line">    output_predicts = []</span><br><span class="line">    output_indices = []</span><br><span class="line">    <span class="keyword">while</span> n_remainder &gt; <span class="number">0</span>:</span><br><span class="line">        max_pro = -<span class="number">1</span></span><br><span class="line">        max_index = <span class="number">0</span></span><br><span class="line">        <span class="comment"># Find argmax</span></span><br><span class="line">        <span class="keyword">for</span> i, p <span class="keyword">in</span> <span class="built_in">enumerate</span>(predicts):</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> vis[i]:</span><br><span class="line">                <span class="keyword">if</span> max_pro &lt; p[<span class="number">0</span>]:</span><br><span class="line">                    max_index = i</span><br><span class="line">                    max_pro = p[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Append output</span></span><br><span class="line">        max_p = predicts[max_index]</span><br><span class="line">        output_predicts.append(max_p)</span><br><span class="line">        output_indices.append(max_index)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Suppress</span></span><br><span class="line">        <span class="keyword">for</span> i, p <span class="keyword">in</span> <span class="built_in">enumerate</span>(predicts):</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> vis[i] <span class="keyword">and</span> i != max_index:</span><br><span class="line">                <span class="keyword">if</span> iou(p[<span class="number">1</span>:<span class="number">5</span>], max_p[<span class="number">1</span>:<span class="number">5</span>]) &gt; iou_thresh:</span><br><span class="line">                    vis[i] = <span class="literal">True</span></span><br><span class="line">                    n_remainder -= <span class="number">1</span></span><br><span class="line">        vis[max_index] = <span class="literal">True</span></span><br><span class="line">        n_remainder -= <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> output_predicts, output_indices</span><br></pre></td></tr></table></figure>
+<p>一开始，先声明一些辅助的变量。<code>n_remainder</code>表示还有多少个框没被访问，<code>vis[i]</code>表示第<code>i</code>个框是否被访问。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">n_remainder = <span class="built_in">len</span>(predicts)</span><br><span class="line">vis = [<span class="literal">False</span>] * n_remainder</span><br></pre></td></tr></table></figure>
+<p>一开始，先过滤那些概率过小的框：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i, predict <span class="keyword">in</span> <span class="built_in">enumerate</span>(predicts):</span><br><span class="line">    <span class="keyword">if</span> predict[<span class="number">0</span>] &lt; score_thresh:</span><br><span class="line">        vis[i] = <span class="literal">True</span></span><br><span class="line">        n_remainder -= <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>之后，正式进入NMS，先准备好输出的列表：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># NMS</span></span><br><span class="line">output_predicts = []</span><br><span class="line">output_indices = []</span><br><span class="line">    <span class="keyword">while</span> n_remainder &gt; <span class="number">0</span>:</span><br></pre></td></tr></table></figure>
+<p>在还有没访问的框时，先找出剩下的框中概率最大的那个框：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> n_remainder &gt; <span class="number">0</span>:</span><br><span class="line">    max_pro = -<span class="number">1</span></span><br><span class="line">    max_index = <span class="number">0</span></span><br><span class="line">    <span class="comment"># Find argmax</span></span><br><span class="line">    <span class="keyword">for</span> i, p <span class="keyword">in</span> <span class="built_in">enumerate</span>(predicts):</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> vis[i]:</span><br><span class="line">            <span class="keyword">if</span> max_pro &lt; p[<span class="number">0</span>]:</span><br><span class="line">                max_index = i</span><br><span class="line">                max_pro = p[<span class="number">0</span>]</span><br></pre></td></tr></table></figure>
+<p>之后，抑制掉和概率最大框“重合”的框。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> n_remainder &gt; <span class="number">0</span>:</span><br><span class="line">    <span class="comment"># Find argmax</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    max_p = predicts[max_index]</span><br><span class="line">    <span class="comment"># Suppress</span></span><br><span class="line">    <span class="keyword">for</span> i, p <span class="keyword">in</span> <span class="built_in">enumerate</span>(predicts):</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> vis[i] <span class="keyword">and</span> i != max_index:</span><br><span class="line">            <span class="keyword">if</span> iou(p[<span class="number">1</span>:<span class="number">5</span>], max_p[<span class="number">1</span>:<span class="number">5</span>]) &gt; iou_thresh:</span><br><span class="line">                vis[i] = <span class="literal">True</span></span><br><span class="line">                n_remainder -= <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>最后，把这个结果添加进输出，并维护好<code>vis</code>和<code>n_remainder</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> n_remainder &gt; <span class="number">0</span>:</span><br><span class="line">    <span class="comment"># Find argmax</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Suppress</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Append output</span></span><br><span class="line">    output_predicts.append(max_p)</span><br><span class="line">    output_indices.append(max_index)</span><br><span class="line">    vis[max_index] = <span class="literal">True</span></span><br><span class="line">    n_remainder -= <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>这里可以把<code>vis[max_index] = True</code>那两行移到抑制操作的前面，这样判断里就不用加<code>i != max_index</code>了。我这样写是为了强调一下，判断重合的时候不需要判断自己。</p>
+</blockquote>
+<p>实现完了，返回结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> output_predicts, output_indices</span><br></pre></td></tr></table></figure>
+<h2 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h2><p>做单元测试的时候，最好是找一份现有的实现用做对照。为了让整个测试过程更贴合实际一些，我用MMDetection的YOLOv3跑了一个NMS前和NMS后的检测框结果，并把NMS前的检测框输入进了自己实现的NMS，比较了两份NMS的输出。以下是具体的测试过程。</p>
+<p>照着MMDetection的官方文档，下载好YOLOv3模型，用下面的代码即可对MMDetection的demo图片进行推理并保存结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> mmdet.apis <span class="keyword">import</span> inference_detector, init_detector, show_result_pyplot</span><br><span class="line"><span class="keyword">from</span> mmdet.models.detectors <span class="keyword">import</span> BaseDetector</span><br><span class="line"></span><br><span class="line"><span class="comment"># Choose to use a config and initialize the detector</span></span><br><span class="line">config = <span class="string">&#x27;configs/yolo/yolov3_mobilenetv2_320_300e_coco.py&#x27;</span></span><br><span class="line"><span class="comment"># Setup a checkpoint file to load</span></span><br><span class="line">checkpoint = <span class="string">&#x27;checkpoints/yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth&#x27;</span></span><br><span class="line"><span class="comment"># initialize the detector</span></span><br><span class="line">model: BaseDetector = init_detector(config, checkpoint, device=<span class="string">&#x27;cuda:0&#x27;</span>)</span><br><span class="line"></span><br><span class="line">img = <span class="string">&#x27;demo/demo.jpg&#x27;</span></span><br><span class="line">result = inference_detector(model, img)</span><br><span class="line"></span><br><span class="line">model.show_result(img, result, score_thr=<span class="number">0.3</span>, out_file=<span class="string">&#x27;work_dirs/1.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p><img src="/2022/08/09/DLS-note-12-2/d_1.jpg" alt></p>
+<p>为了得到NMS前的输入，我在<code>mmdet/models/dense_head/YOLOV3Head.get_bboxes</code>里面插入了一段输出结果的代码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line"></span><br><span class="line">save_dict = &#123;</span><br><span class="line">    <span class="string">&#x27;bboxes&#x27;</span>: bboxes,</span><br><span class="line">    <span class="string">&#x27;cls_scores&#x27;</span>: scores,</span><br><span class="line">    <span class="string">&#x27;prob&#x27;</span>: objectness</span><br><span class="line">&#125;</span><br><span class="line">torch.save(save_dict, <span class="string">&#x27;work_dirs/bboxes.pt&#x27;</span>)</span><br><span class="line"></span><br><span class="line">det_bboxes, det_labels = multiclass_nms(</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>得到NMS前的输入是<br><img src="/2022/08/09/DLS-note-12-2/d_2.jpg" alt></p>
+<p>把这份数据输入进我们的NMS中，得到的可视化结果如下：</p>
+<p><img src="/2022/08/09/DLS-note-12-2/3.jpg" alt></p>
+<p>这跟开始那份输出一模一样。看来我们实现的这份NMS完全正确。</p>
+<p>如果你对测试过程、可视化、多分类NMS感兴趣，欢迎直接阅读我的项目源码。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我给出了一份NMS的简洁而靠近底层的Python实现，并对NMS算法进行了介绍。通过阅读这篇文章，相信大家已经完全理解了NMS的原理，并且能够用任何一种语言实现NMS。一般的NMS开源实现支持的参数更多，代码会更复杂一些，但它们的核心和我的这份实现是一样的。</p>
+<p>这份NMS的实现还有很大的改进空间。比如每轮求概率最大的框时，可以先排好序，或者用优先队列，这样均摊下来每次获取概率最大的框的复杂度是<code>O(logn)</code>。但是后面判断重复的框一定有一个<code>O(n)</code>的计算，这部分的优化并不显著。大家有余力可以参考成熟的CV项目里NMS是怎么高效用C++实现的。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/26/DLS-note-12/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1673,163 +1803,6 @@ a^{[l+2]}&=a^{[l]}. \\
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/10/DLS-note-summary-3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/07/10/DLS-note-summary-3/" class="post-title-link" itemprop="url">吴恩达《深度学习专项》第三阶段总结与第四阶段预览</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-07-10 01:39:41" itemprop="dateCreated datePublished" datetime="2022-07-10T01:39:41+08:00">2022-07-10</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="第三阶段回顾"><a href="#第三阶段回顾" class="headerlink" title="第三阶段回顾"></a>第三阶段回顾</h1><p>在过去两周里，我们学习了改进深度学习模型的一些策略。让我们来回顾一下。</p>
-<p>首先，我们应该设置好任务的目标。选取开发/测试集时，应参考实际应用中使用的数据分布。设置优化指标时，应使用单一目标。可以设置一个最优化目标和多个满足目标。</p>
-<p>在搭建模型时，我们可以根据现有的数据量、问题的难易度，选择端到端学习或者是多阶段学习。</p>
-<p>训练模型前，如果有和该任务相似的预训练模型，我们可以采取迁移学习，把其他任务的模型权重搬过来；如果我们的模型要完成多个相似的任务，可以同时训练多个任务的模型。</p>
-<p>有了目标，搭好了模型之后，就可以开始训练模型了。有了训练好的模型后，我们可以根据模型的训练误差、训练开发误差、开发误差来诊断模型当前存在的问题。当然，在诊断之前，我们可以先估计一下人类在该问题上的最低误差，以此为贝叶斯误差的一个估计。通过比较贝叶斯误差和训练误差，我们能知道模型是否存在偏差问题；通过比较训练误差和训练开发误差，我们能知道模型是否存在方差问题；通过比较训练开发误差和开发误差，我们能知道模型是否存在数据不匹配问题。</p>
-<p>另一方面，如果在改进模型时碰到了问题，不妨采取错误分析技术，看看模型究竟错在哪。我们可以拿出开发集的一个子集，统计一下模型的具体错误样例，看看究竟是模型在某些条件下表现得不好，还是标错的数据太多了。</p>
-<p>这些内容可能比较偏向于工程经验，没有过多的数学理论。但是，相信大家在搭建自己的深度学习项目时，这些知识一定能派上用场。</p>
-<h1 id="第四阶段预览"><a href="#第四阶段预览" class="headerlink" title="第四阶段预览"></a>第四阶段预览</h1><p>在这之后，我们要分别学习两大类神经网络：处理图像的网络和处理序列数据的网络。在第四门课《卷积神经网络》中，我们就会学习能够处理图像问题的卷积神经网络。一起来看看接下来要学的内容吧。</p>
-<p>《卷积神经网络》的课需花四周学完。第一周，我们会学习卷积神经网络的基本构件，建立对卷积神经网络的基本认识，为后续的学习做准备。具体的内容有：</p>
-<ul>
-<li>卷积操作<ul>
-<li>从卷积核到卷积</li>
-<li>卷积的属性——填充、步幅</li>
-<li>卷积层</li>
-</ul>
-</li>
-<li>池化操作</li>
-<li>卷积神经网络示例</li>
-</ul>
-<p>最简单的计算机视觉任务是图像分类。第二周，我们将学习一系列图像分类网络。这些网络不仅能在图像分类上取得优秀的成绩，还是很多其他计算机视觉任务的基石。通过学习它们，我们不仅能见识一些经典网络的架构，更能从中学习到搭建卷积神经网络的一般规律。其内容有：</p>
-<ul>
-<li>早期神经网络<ul>
-<li>LeNet-5</li>
-<li>AlexNet</li>
-<li>VGG</li>
-</ul>
-</li>
-<li>残差神经网络</li>
-<li>Inception 网络</li>
-<li>MobileNet</li>
-<li>搭建卷积网络项目<ul>
-<li>使用开源代码</li>
-<li>迁移学习</li>
-<li>数据增强</li>
-</ul>
-</li>
-</ul>
-<p>第三周，我们将学习计算机视觉中一个比较热门的任务——目标检测。目标检测要求算法不仅能辨别出图片中的物体，还要能把物体精确地框出来。我们会一步一步学习如何搭建完成目标检测的卷积神经网络：</p>
-<ul>
-<li>目标定位与关键点检测</li>
-<li>使用卷积神经网络的目标检测<ul>
-<li>滑动窗口算法</li>
-<li>基于卷积的滑动窗口</li>
-</ul>
-</li>
-<li>YOLO 算法<ul>
-<li>结合目标定位与滑动窗口</li>
-<li>交并比(IoU)</li>
-<li>NMS（非极大值抑制）</li>
-<li>锚框(Anchor boxes)</li>
-</ul>
-</li>
-<li>R-CNN 系列算法简介</li>
-</ul>
-<p>此外，这周还会稍微提及另一个计算机视觉任务——语义分割的基本知识：</p>
-<ul>
-<li>基于U-Net的语义分割<ul>
-<li>反卷积</li>
-<li>U-Net架构</li>
-</ul>
-</li>
-</ul>
-<p>最后一周，第四周，我们又会认识两个新任务：人脸检测与神经网络风格迁移。具体的内容有：</p>
-<ul>
-<li>人脸检测<ul>
-<li>人脸检测问题与一次性学习</li>
-<li>孪生神经网络</li>
-<li>三元组误差</li>
-<li>转化成二分类问题</li>
-</ul>
-</li>
-<li>神经网络风格迁移<ul>
-<li>风格迁移简介</li>
-<li>利用神经网络学到的东西</li>
-<li>风格迁移中的误差</li>
-<li>推广到1维和3维</li>
-</ul>
-</li>
-</ul>
-<p>相比之前的课，学习第四门课时需要花更多的精力，主要因为以下几点：</p>
-<ol>
-<li>课程难度变高。</li>
-<li>课程的编程练习很多。</li>
-<li>课堂上介绍了很多论文作为拓展学习的方向。</li>
-</ol>
-<p>如果你未来要以计算机视觉为研究方向的话，这四周的内容一定要认真掌握。同时，编程练习和论文阅读也不能落下。据我估计，如果要打好计算机视觉方向上的坚实的基础，至少还要多花费两周时间去认真阅读经典论文，做好相关的技术调研。</p>
-<p>在未来的几周里，我仅会上传课堂笔记，并尽最大可能复现一下课后的习题。在所有的五门课上完后（大约2个月后），我会回过头来补充计算机视觉相关的论文阅读笔记、项目实现笔记，对视频课中没来得及讲完的内容查缺补漏，以呈现一套翔实的深度学习学习笔记，辅助大家更好地入门深度学习。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1899,7 +1872,7 @@ a^{[l+2]}&=a^{[l]}. \\
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">157</span>
+          <span class="site-state-item-count">158</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1912,7 +1885,7 @@ a^{[l+2]}&=a^{[l]}. \\
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">66</span>
+        <span class="site-state-item-count">67</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

@@ -168,6 +168,242 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/12/19/20251211-llsa-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/12/19/20251211-llsa-1/" class="post-title-link" itemprop="url">作者亲述 | Log-linear Sparse Attention：首个 $O(N \log N)$ 高性能稀疏注意力</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-12-19 10:39:13" itemprop="dateCreated datePublished" datetime="2025-12-19T10:39:13+08:00">2025-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%9B%E4%BD%9C/" itemprop="url" rel="index"><span itemprop="name">创作</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%9B%E4%BD%9C/%E7%A7%91%E7%A0%94/" itemprop="url" rel="index"><span itemprop="name">科研</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="作者亲述-Log-linear-Sparse-Attention：首个-O-N-log-N-高性能稀疏注意力"><a href="#作者亲述-Log-linear-Sparse-Attention：首个-O-N-log-N-高性能稀疏注意力" class="headerlink" title="作者亲述 | Log-linear Sparse Attention：首个 $O(N \log N)$ 高性能稀疏注意力"></a>作者亲述 | Log-linear Sparse Attention：首个 $O(N \log N)$ 高性能稀疏注意力</h1><p>$O(N^2)$ 复杂度的自注意力操作一直是当前大模型的计算瓶颈。今年，注意力的一个热门改进方向是稀疏注意力：不对所有 KV token 求注意力，只对极少数重要的 KV token 求注意力。这个方向的代表作是 Kimi 的 MoBA 和 DeepSeek 的 NSA。然而，这些稀疏注意力并没有真正降低该运算的复杂度，总运行时间仍随着序列长度 $N$ 按照 $O(N^2)$ 的趋势增长。</p>
+<p>针对这一问题，我们团队近期的研究 <em>Log-linear Sparse Attention (LLSA)</em> 从算法设计的层面将以往稀疏注意力的复杂度优化至 $O(N \log N)$。同时，我们用 Triton 编写了一套适配当前 GPU 架构的 LLSA 的高效并行实现，并用较优的稀疏算法尽可能减少了稀疏操作的时间占用。我们在<strong>无 VAE，无 Patchification 的</strong>纯像素 DiT 生成任务上验证了 LLSA 的有效性。在最长为 $512 \times 512$ 的像素序列上，LLSA 的生成质量不逊于全注意力，而运算时间大大缩短。</p>
+<p>在这篇博文中，我会介绍我们团队在 arXiv 上发布的 <em>Trainable Log-linear Sparse Attention for Efficient Diffusion Transformers</em> 论文，并在文末给出我对论文的评价并探讨论文未来拓展方向。LLSA 的高性能 Triton 实现也已经开源。欢迎各位科研同行使用我们的方法，或是在读完论文后与我们交流、合作。</p>
+<p>arXiv: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2512.16615">https://arxiv.org/abs/2512.16615</a></p>
+<p>GitHub: <a target="_blank" rel="noopener" href="https://github.com/SingleZombie/LLSA">https://github.com/SingleZombie/LLSA</a></p>
+<p><img src="/2025/12/19/20251211-llsa-1/0.png" alt></p>
+<h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>首先，先明确一下 LLSA 的适用范围。正如论文标题所写，这是一种可训练的 (trainable) 注意力机制。因此，它和 Sparse VideoGen 等面向预训练模型推理加速的方法不同，不必保证输出和全注意力尽可能接近，只要能训练一个带有这种注意力的 Transformer 就行。LLSA 对标的是 MoBA (Mixture of Block Attention), NSA (Native Sparse Attention) 这样的注意力机制，拥有更大的设计空间。</p>
+<p>在这一节中，我将先补充背景介绍，帮助读者理解我们在解决一个怎么样的问题。之后，我会简单回顾一下和这个工作相关的早期工作。</p>
+<h3 id="注意力的稀疏化"><a href="#注意力的稀疏化" class="headerlink" title="注意力的稀疏化"></a>注意力的稀疏化</h3><p>注意力操作可以简单表示为：</p>
+<script type="math/tex; mode=display">
+\mathbf{P} = \text{softmax}(\mathbf{Q} \mathbf{K}^{\intercal}), \mathbf{O}=\mathbf{P}\mathbf{V}.</script><p>其中，$\mathbf{Q}, \mathbf{K}, \mathbf{V} \in \mathbb{R}^{N\times d}$，$N$ 是序列长度，$d$ 是特征通道数。我们通常将 $\mathbf{Q}, \mathbf{K}, \mathbf{V}$ 称为 query, key, value。</p>
+<p>上面的公式其实是 $N$ 个 query 合并成矩阵的写法。如果一次只考虑一个 $q \in \mathbb{R}^{1\times d}$ 的话，注意力公式会更容易理解。我们先算一个 query 对所有 key 的归一化相似度 $p = \text{softmax}(q \mathbf{K}^{\intercal})$，再把这个相似度用逐元素乘法乘到 value 上，得到该 query 的注意力输出 $o = p\mathbf{V}$。把所有 $o$ 拼接成矩阵就得到了最后的输出 $\mathbf{O}$。</p>
+<p>理解了注意力公式后，我们来从复杂度的角度讨论为什么标准全注意力那么慢。因为有 $N$ 个 query，每个 query 要对 $N$ 个 key, value 求注意力输出，所以总复杂度是 $O(N^2)$。或者我们可以直接考查矩阵乘法 $\mathbf{Q} \mathbf{K}^{\intercal}$，由于 $\mathbf{Q}, \mathbf{K}\in \mathbb{R}^{N\times d}$，该矩阵乘法的复杂度是 $O(N^2d)$，忽略通常为常数的 $d$ 后复杂度是 $O(N^2)$。由于时间复杂度为序列长度的平方，所以在 Transformer 序列长度逐渐变长后，我们会发现注意力操作的速度下降得极快，相比其他线性复杂度的计算 (MLP, Norm)，时间占比越来越高。</p>
+<p>而许多研究表明，其实预训练模型里的注意力矩阵 $\mathbf{P} = \text{softmax}(\mathbf{Q} \mathbf{K}^{\intercal})$ 都是稀疏的。或者更具体地说，对于每个 query，大多数 key 的相似度都接近 0，忽略掉这些 key 也没关系。根据这个观察，一个很自然的想法是：能否使用 Top-$K$ 算法，每次只取最重要的 $K$ 个 key, value，而跳过其余的呢？</p>
+<p>这个想法从正确性上来看并没有问题。但仔细一想，这个想法好像并不能实现加速：为了求 Top-$K$，我都把 $O(N^2)$ 个 query, key 相似度算完了，那还用稀疏注意力干什么呢？直接把 value 再乘上不就算完了？所以，这里的问题是：如果不能高效地算出 query, key 相似度，那么 Top-$K$ 稀疏注意力并不能实现加速。</p>
+<p>现在我们常见的 Top-$K$ 稀疏注意力其实用了一个更高效的算法粗略算出了 query, key 的相似度。在认识它之前，我们先回顾一项前置知识：Block Sparse FlashAttention。</p>
+<h3 id="Block-Sparse-FlashAttention"><a href="#Block-Sparse-FlashAttention" class="headerlink" title="Block Sparse FlashAttention"></a>Block Sparse FlashAttention</h3><p>现代 GPU 编程都基于并行计算：GPU 可以同时算 $B$ 个同类型的计算。所以，假设我们要对两个长度为 $N$ 的向量求和，我们不是写一个长度为 $N$ 的循环，每次算一个元素，而是写一个长度为 $N/B$ 的循环（假设可以整除），每次算 $B$ 个元素。</p>
+<p>按照这个思想，FlashAttention 实现了一个高效的分块（block）计算。我们假设 $\mathbf{Q}, \mathbf{K}, \mathbf{V}$ 被分成了 $N/B$ 组，第 $i$ 组的 token 满足 $\mathbf{Q}_i, \mathbf{K}_i, \mathbf{V}_i \in \mathbb{R}^{B\times d}$。这样我们可以用 $N/B$ 个程序实现注意力运算，每个程序并行计算 $B$ 个 $\mathbf{Q}_i$ 的输出 $\mathbf{O}_i$。同时，在每个程序里，我们使用一个长度为 $N/B$ 的循环，每次处理 $B$ 个 $\mathbf{K}_i, \mathbf{V}_i$。这样的运算方式可以充分利用 GPU 的并行计算能力。</p>
+<p>FlashAttention 天生支持块稀疏 (Block Sparse) 算法：假设我们用某个稀疏算法知道 $\mathbf{Q}_i$ 对 $\mathbf{K}_j$ 不用算，我们在第 $i$ 个程序的第 $j$ 轮迭代 (iteration) 时就可以直接跳过。这里稀疏算法的选择没有限制。比如我们可以用滑动窗口注意力，仅让每个 query 看到相邻的几个 key。</p>
+<p>对于 FlashAttention 的详细介绍欢迎参考我的往期博文：<a href="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/">不会 CUDA 也能轻松看懂的 FlashAttention 教程（算法原理篇）</a>。</p>
+<h3 id="Top-K-Block-Sparse-Attention"><a href="#Top-K-Block-Sparse-Attention" class="headerlink" title="Top-$K$ Block Sparse Attention"></a>Top-$K$ Block Sparse Attention</h3><p>有了 Block Sparse FlashAttention 的背景知识，一个高效的 Top-$K$ 稀疏注意力算法也就呼之欲出了。我们可以生成少量能够概括一个 block 所有信息的 query, key 特征，再从这些粗糙特征中计算 Top-$K$ 稀疏模式 (sparse pattern)。具体步骤如下：</p>
+<ol>
+<li>对 $\mathbf{Q}, \mathbf{K}$ 做 $B$ 倍平均池化，得到 $\mathbf{Q’}, \mathbf{K’}\in \mathbb{R}^{T\times d}$。其中，$T=N/B$。</li>
+<li>对 $\mathbf{Q’}, \mathbf{K’}$ 求内积，再对每个 query 求出内积 Top-$K$ 的 key block 的下标。</li>
+<li>根据 Top-$K$ 算法得到的稀疏块下标，执行 Block Sparse FlashAttention。</li>
+</ol>
+<p><img src="/2025/12/19/20251211-llsa-1/1.png" alt></p>
+<p>这个稀疏注意力算法可能并不与某个具体算法一模一样，但现在先进的 Top-$K$ 稀疏算法的核心都可以用这个算法表示，比如 MoBA, NSA，以及后文讲到的 VMoBA, VSA, SLA。</p>
+<p>我们来粗糙地分析一下这个算法的复杂度。算法的运行时间主要耗费在第二步 Top-$K$ 搜索和第三步注意力计算，我们也只分析这两步。</p>
+<p>对于 Top-$K$ 搜索，由于 query block 和 key block 数量都是 $O(N/B)$，所以这一步求内积的复杂度是 $O((N/B)^2)$。</p>
+<p>对于稀疏注意力计算，每个 query 能看到 $KB$ 个 key，所以复杂度是 $O(NKB)$。</p>
+<p>当 $N$ 不是很大的时候，Top-$K$ 那一步很快，稀疏注意力的运行时间依然占主导。但随着 $N$ 不断增大，含 $O(N^2)$ 那一项迟早会占据主导。也就是说，这种稀疏注意力算法并没有优化全注意力的复杂度，仅仅是让运行速度至多提升了 $B^2$ 倍。而我们的 Log-linear Sparse Attention (LLSA) 的目标是彻底优化掉 $O(N^2)$ 的复杂度。</p>
+<h3 id="相关论文"><a href="#相关论文" class="headerlink" title="相关论文"></a>相关论文</h3><p>如我们前面反复提及的，NLP 领域使用这种<strong>可训练</strong>稀疏注意力机制的著名工作是 MoBA 和 NSA。另外，同期学术界也提出了 SpargeAttention，这个稀疏注意力也是基于先平均池化、再过滤的机制，在 NLP 和 CV 领域能够通用。后来 CV 领域提出了 VMoBA，VSA (Video Sparse Attention)，SLA (Sparse-Linear Attention) 这三种用于 DiT 训练的稀疏注意力。VMoBA 把 MoBA 适配到了 CV 领域。VSA 和 SLA 都引入了一些机制来解决 Top-$K$ 注意力因稀疏性造成的信息损失问题。VSA 对粗糙 query/key 计算了一个粗糙注意力输出，并将该输出和稀疏注意力输出相加。SLA 用线性注意力高效计算了 Top-$K$ 以外的 key 的注意力输出。</p>
+<p>将特征分解成 $O(\log N)$ 层是注意力优化的一种常见思想。比如较早一点的方法有 H-Transformer 和 Fast Multipole Attention。近期比较相关的工作中，Radial Attention 利用一种针对视频的静态稀疏模式，实现了 $O(N \log N)$ 的注意力。而 Log-linear Attention 基于优化线性注意力的质量而非优化全注意力的速度的初衷，使用树状数组为每个 query 维护 $O(\log N)$ 个而不是一个状态。和我们的方法最像的是早期方法 Multi-Resolution Attention (MRA)，但这个方法并没有和 FlashAttention 结合，缺乏高效 GPU 实现，也没有在超长序列生成任务上验证。</p>
+<p>LLSA 以 Pixel DiT 为目标任务。在该科研工作进行时，Pixel DiT 的研究较少，近期工作只有 PixelFlow, PixNerd 两篇。当然，上个月 arXiv 上连续出现了 JiT, DiP, DeCo, PixelDiT 这四篇工作。不过，这些工作虽然没用 VAE，但全部使用了 patchify 压缩 token 数量。没有工作尝试在<strong>不用 VAE，不用 patchification</strong> 的情况下训练 DiT，因为这种情况下必然要面对注意力计算开销过大的困难。而我们的工作恰好就是冲着这个问题来的，所以最后用高分辨率纯 Pixel DiT 生成任务来验证我们的方法。 </p>
+<h2 id="Log-linear-Sparse-Attention-方法实现"><a href="#Log-linear-Sparse-Attention-方法实现" class="headerlink" title="Log-linear Sparse Attention 方法实现"></a>Log-linear Sparse Attention 方法实现</h2><p>下图是论文方法的概览。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/2.png" alt></p>
+<p>简而言之，LLSA 将以往两级稀疏结构升级成了多层级结构。另外，在最后计算稀疏注意力时，LLSA 不仅用了最精细的 key, value，还用到了不同层级、更加粗糙的 key, value。方法细节介绍如下。</p>
+<h3 id="注意力算法"><a href="#注意力算法" class="headerlink" title="注意力算法"></a>注意力算法</h3><p><strong>层级压缩</strong>。我们把 token 序列按粒度划分成 $L = \log_B N - 1$ 级。为此，我们用 $B$ 倍平均池化逐渐将原 token 特征 $\mathbf{Q}^{(0)}, \mathbf{K}^{(0)}, \mathbf{V}^{(0)} \in \mathbb{R}^{N\times d}$ 压缩成 $L$ 组粗糙 token，第 $l$ 组特征满足  $\mathbf{Q}^{(l)}, \mathbf{K}^{(l)}, \mathbf{V}^{(l)} \in \mathbb{R}^{N/B^l\times d}$。</p>
+<p><strong>层级 Top-$K$ 选择</strong>。在这一步中，我们自顶向下，由粗到精地为每个 query block 找到 Top-$K$ 相似度的 key block。</p>
+<p>以下面这个 $N=8,B=2,K=1$ 的场景为例。一开始，我们对最顶级（第 $L$ 级）query, key 算全相似度。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/3.png" alt></p>
+<p>从第二粗糙级开始，我们递归地利用前一级的稀疏索引来再次选择 Top-$K$ token。这里，我们认为一个大 block 内所有精细 query 在这一级里拥有相同的 sparse pattern。比如下图中的 $\mathbf{Q}^{(1)}_1, \mathbf{Q}^{(1)}_2$ 都属于更粗糙的 $\mathbf{Q}^{(2)}_1$，它们应该只关注 $\mathbf{K}^{(2)}_2$ 对应的 key token。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/4.png" alt></p>
+<p>每个 query 在前一级里有 $K$ 个候选粗糙 key block。而到了这一级后，由于特征的精细度增加，每个 query 有 $KB$ 个候选 key block。对每个 query 的 $KB$ 个 key token，我们再执行 Top-$K$ 选择算法。算法递归执行，直到最底层。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/5.png" alt></p>
+<p>最终，和以往稀疏注意力算法一样，我们能给每个最精细的 query block 找到 Top-$K$ 个最精细的 key block。此外，我们还知道了每个 query block 在每一级 key block 中应该关注哪些稀疏 key block。</p>
+<p><strong>层级 KV 丰富化</strong>。在标准稀疏注意力中，只关注稀疏 K, V token 不可避免地会带来信息损失。 </p>
+<p><img src="/2025/12/19/20251211-llsa-1/6.png" alt></p>
+<p>而 LLSA 在层级 Top-$K$ 选择中发现的多层级 sparse pattern 恰好能缓解这一点。相比于只看最精细的 K, V token，LLSA 还会在最后的稀疏注意力计算中把各级的粗糙 K, V token 考虑进去。这样做能让每个 query 不丢失全局信息。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/7.png" alt></p>
+<p><strong>KV 权重重设</strong>。上一节讲的做法还不是最优的。按理来说，更粗糙的 token 拥有的信息更多，应该更重要一点。但在默认做法下，我们只会给所有层级的 K, V token 设置相同的权重。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/8.png" alt></p>
+<p>为此，我们假设一个 coarse K, V token 里所有精细 token 的信息可以通过最近邻上采样（或者说 repeat 操作）复原出来。按照这个假设，我们不需要真的去做上采样，而只需要在注意力运算中给不同层级的 token 设不同的权重就行。具体来说，第 $l$ 级 token 的权重为 $B^l$。这个权重会乘到 K 和 V 上。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/9.png" alt></p>
+<h3 id="复杂度分析"><a href="#复杂度分析" class="headerlink" title="复杂度分析"></a>复杂度分析</h3><p>说了这么多，LLSA 真的比之前的稀疏注意力更快吗？让我们来分析一下它的复杂度。（假设 $B$ 是常数）</p>
+<p>在层级压缩部分，只需要对总 token 数计数。不同层 token 数量构成一个等比数列，该数列的和小于一个与 $B$ 相关的常数乘以 $N$。所以复杂度是 $O(N)$。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/10.png" alt></p>
+<p>同理，在第二步层级 Top-$K$ 选择中，参与计算的 query 数加起来是 $O(N)$ 个。每一级要算相似度的 key token 数有 $KB$ 个，最终的复杂度是 $O(NK)$。</p>
+<blockquote>
+<p>为了节省篇幅，这里我们没有分析 Top-$K$ 的复杂度。Top-$K$ 的复杂度取决于其算法实现。这一部分的运行时间其实和具体的数据长度、使用的并行算法相关，对 $K$, $B$ 的复杂度分析意义不大。但不管用什么算法，如果 $K$, $B$ 都是常数，仅考虑 $N$ 的增长的话，Top-$K$ 这一步的复杂度也是 $O(N)$。</p>
+</blockquote>
+<p><img src="/2025/12/19/20251211-llsa-1/11.png" alt></p>
+<p>在最后一步注意力计算中，有 $O(N)$ 个 query，有 $O(K\log N )$ 个 key, value block。这一步的复杂度是 $O(N K \log N )$。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/12.png" alt></p>
+<p>如果我们把 $K$ 也看成常数的话（实践中是这样的），整个 LLSA 的复杂度就是 $O(N\log N)$。我们成功把以前稀疏注意力 $O(N^2)$ 的复杂度降下来了。</p>
+<h3 id="高性能-GPU-实现"><a href="#高性能-GPU-实现" class="headerlink" title="高性能 GPU 实现"></a>高性能 GPU 实现</h3><p>在现代深度学习框架中，设计新算子时必须要考虑它是否能兼容 GPU 并行运算。而 LLSA 在设计时，始终是兼容 FlashAttention 这种现代 GPU 实现的。</p>
+<p>具体来说，在所有涉及稀疏访问的部分 (稀疏 Top-$K$，稀疏注意力)，只需要把原来对于所有 K, V 的遍历换成对于稀疏索引的遍历，再根据索引去 gather K, V 的值即可。原来复杂度为 $O(N)$ 的循环都会被优化至 $O(K)$。</p>
+<p>但在编程实现时，有一处难点：Top-$K$ 算法只能获取 Q-major 的稀疏索引（即哪些 Q 能看到哪些 K），但不能直接获得 K-major 的稀疏索引 （即哪些 K 能看到哪些 Q）。而在对 K, V 求梯度时，得用到 K-major 的稀疏索引，才能实现高效的求梯度算法。所以，我们要实现一套从 Q-major 索引到 K-major 索引的<strong>稀疏索引转置</strong>算法。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/13.png" alt></p>
+<p>幸好这方面的研究在稀疏矩阵乘法领域已经很成熟了，我们直接把成熟的算法用了过来。我这里简单介绍一下算法的思想。由于每个 K 对应的 Q 的数量是不等长的，我们只能把所有 Q 索引存到一个一维展平的数组里。它相当于把不等长的二维 K-major 索引 flatten 成了一维。为了知道每个 K 用的是哪些索引，我们再用另一个辅助用的 offset 数组，表示每个 K 的开始、结束 offset。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/14.png" alt></p>
+<p>如果不用这个优化过的算法的话，就得用一个稠密的 mask 矩阵来表示每对 Q, K 之间是否有效来间接描述稀疏性。这样算法的复杂度会退化到 $O(N^2)$。此前不少方法都用的是这个更低效的算法实现。</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><h3 id="Pixel-DiT-实现"><a href="#Pixel-DiT-实现" class="headerlink" title="Pixel DiT 实现"></a>Pixel DiT 实现</h3><p>为验证 LLSA 确实能降低注意力的复杂度，我们在长像素 token 序列上训练了一个<strong>无 VAE，无 Patchification</strong> 的像素 DiT。为了将 LLSA 适配到二维数据上，我们使用了<strong>索引重排</strong>。为了加快训练速度，我们使用了<strong>噪声重缩放</strong>和<strong>低分辨率预训练</strong>。</p>
+<p><strong>索引重排</strong>。LLSA 其实是为 1D 序列设计的。由于其中存在对相邻 $B$ 个 token 做平均下采样的操作，我们最好能保证相邻 token 的性质相似。而对于 2D 图像，最自然的做法是令 2D patch 的 1D 索引尽可能相邻。于是，我们参照之前的工作，设计了下面的索引重排方式。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/15.png" alt></p>
+<p><strong>噪声重缩放</strong>。之前 Simple Diffusion, SD3 等工作表明，高分辨率的数据应该加更多的噪声。在我们的实验中，发现最好的提升噪声强度的方法就是在噪声前乘一个系数 $s(s\geq1)$。比如对于 rectified flow 加噪公式：</p>
+<script type="math/tex; mode=display">
+\mathbf{x}_t = (1-t)\mathbf{x}_0+s \cdot t\epsilon</script><p>根据实验结果，对于序列长度为 $n\times n (n&gt;64)$ 的图片，我们令 $s = n/64$，也就是把信噪比对齐至 $64\times 64$ 的图片。</p>
+<p><strong>预训练</strong>。参考 SD3 等大型文生图模型的多阶段训练方式，我们先在低分辨率图像上预训练模型，再逐渐在高分辨率上微调。</p>
+<p><strong>DiT 模型</strong>。我们把标准 DiT 的位置编码换成了 RoPE，并且加上了 qk-norm 以稳定 bfloat16 的训练。</p>
+<blockquote>
+<p>我们没有把 backbone 升级成 LightningDiT 或 DDT，也没用 REPA。</p>
+</blockquote>
+<p><strong>指标</strong>。除非有额外声明，论文中指标的默认配置为：FID 是用 10,000 个经过 20 步去噪生成的图片来计算的。吞吐量的单位是 1,000 像素 token / 秒。使用的 GPU 是单卡 H200。</p>
+<h3 id="消融实验"><a href="#消融实验" class="headerlink" title="消融实验"></a>消融实验</h3><p>消融实验默认是在 FFHQ-128 上训练了 20 epoch 的模型上测试的。所有实验中，默认情况下，超参数 $B=16$, $K=8$。我们简单看一下主要的消融实验结果。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/16.png" alt></p>
+<p>表格中，$L$ 是层级数，$L_e$ 表示多少级用了 KV Enrichment。能得到的结论有：</p>
+<ul>
+<li><p>比较 $L=1$ 和 $L=2$ 的结果，能发现换成 $L=2$ 显著提升了速度，同时 FID 略微变差（变差的主要原因是用到的 KV token 数大幅减少）。这证明了 LLSA 划分成 $\log N$ 层级设计确实能够提升计算效率。</p>
+</li>
+<li><p>KV Enrichment 和 KV Reweighting 都很有效。最后甚至稀疏注意力的 FID 比全注意力还好。</p>
+</li>
+</ul>
+<p>我们还尝试在 $512 \times 512$ 的 FFHQ 上训练 $L=3$ 的 LLSA。结果也完全符合预期：在序列变长时增加 $L$ 能使得模型速度几乎按 $O(N \log N)$ 增长，但因用到的 KV token 变少，效率提高，质量会稍差一点。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/16_5.png" alt></p>
+<p>论文正文和附录里还有更多消融实验结果。最终的结论是，注意力和训练方式中的每一项设计都是有效的。</p>
+<h3 id="对比实验"><a href="#对比实验" class="headerlink" title="对比实验"></a>对比实验</h3><p>在对比实验中，我们比较了 VSA，SLA 这两种方法。这里也顺带介绍一下 VMoBA。据我所知，近期做 DiT 可训练稀疏注意力的工作就是这三个。仅看使用哪些 key block，忽略各个方法对图像/视频的处理细节，各方法的做法为：</p>
+<ul>
+<li>VMoBA：VMoBA 和 MoBA 都等价于上面表格里 Top-$K$ Attention。</li>
+<li>VSA：对平均池化后的 Q, K, V 算一个粗糙注意力输出，把它和稀疏注意力的输出相加。</li>
+<li>SLA：用另一个线性注意力拟合 Top-$K$ 以外的 K, V 输出，把它和稀疏注意力的输出相加。</li>
+</ul>
+<p>为了保证对比实验的公平，我在同样的训练环境下用尽可能相同的超参数进行了实验。具体来说，我把 VSA, SLA 的代码搬进了我的训练环境下。由于它们的 GPU 反向传播实现较为低效，<strong>为了公平地比较算法速度，我把 VSA, SLA 的反向传播也升级成了稀疏索引卷积的版本</strong>。此外，由于我们启用了 KV Enrichment，对于同样的 $K$，LLSA 在稀疏注意力计算时会访问更多 K, V token。为了质量对比上的公平，我们增加了 VSA, SLA 的 $K$，使得它等于 LLSA 在稀疏注意力时实际访问的 K, V 数量。</p>
+<p>在 FFHQ 上的对比如下。LLSA 又快又好。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/17.png" alt></p>
+<p>我们也尝试了 ImageNet-256 上的验证实验。为了在有限的时间内完成训练，我们以 patch size = 4 的 PixelFlow 为 DiT backbone，将其中的全注意力替换成 VSA, SLA, 或 LLSA。训练 10 个 epoch 后的结果如下。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/18.png" alt></p>
+<p>前四个 epoch 训练时的指标如下。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/19.png" alt></p>
+<p>可以看出，哪怕是在实验配置较保守的情况下，无论是在 FFHQ 还是在 ImageNet 上，LLSA 都比之前的稀疏注意力又快又好。这个实验结果其实很正常。在设计注意力时，我尝试了很多处理粗糙 K, V 的方法。最后发现，如果像 VSA, SLA 一样引入多个计算 branch 再把结果相加，效果怎么都比不过只做一次注意力。可见，哪怕忽略 $O(\log N)$ 加速那一块，将池化后的 K, V 和原来的精细 K, V 一起做注意力的做法在生成质量上优于之前的处理方法。</p>
+<h3 id="效率"><a href="#效率" class="headerlink" title="效率"></a>效率</h3><p>我们单独比较了不同 $B$ 时各个注意力方法在不同序列长度下推理和训练的耗时（用相比全注意力的提速比表示）。当然，这次我们用的是未优化的 VSA, SLA 代码。LLSA 有着肉眼可见的效率优势。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/20.png" alt></p>
+<p>我们还验证了用稀疏索引转置实现反向传播的有效性。我们比较了 LLSA 的反向传播实现和 baseline 反向传播实现的速度，其中 baseline 是通过 dense sparse mask 实现的。由于我们的算法是 $O(N)$ 的，在不同序列长度下吞吐量几乎不变。</p>
+<p><img src="/2025/12/19/20251211-llsa-1/21.png" alt></p>
+<p>这些实验说明，在 GPU 编程实现上，LLSA 也做得比以前的方法更好。</p>
+<h2 id="论文评价"><a href="#论文评价" class="headerlink" title="论文评价"></a>论文评价</h2><p>赞美的话就不必多说了。从实验部分可知，LLSA 无论是算法设计的效率上、质量上，还是 GPU 编程实现的效率上，都比之前的同类方法好。</p>
+<p>这篇论文有两个明显的缺陷。</p>
+<p>先挑那个最严重的缺陷。这篇论文没有展示 ImageNet-256 上一个完全收敛的 DiT 的指标，只展示了少量训练轮数时的结果。因此，没有证据表明在扩大模型规模、数据集规模后，LLSA 还能有效。如果能补上这些实验，论文的说服力会大幅提升。</p>
+<p>请给我一点反驳的空间。事实上，从项目开始之初，我就对这个潜在缺陷心知肚明。我们不展示这个实验不是不想做，而是我们无法承担如此大的训练代价。我们的 LLSA 只有在 token 数很多很多的时候才能体现出优势。为此，我们要刻意找这样一个 token 数很多的任务。之前的 VSA, SLA 等方法是在预训练视频 DiT 上验证他们的方法，这样的视频任务用的 token 很多，确实很合适。但他们用到的实验数据、测试方法都不太统一。并且，VSA 论文明确指出他们在实验中用到了 128 块卡，我拥有的 GPU 远少于这个数。因此，无论是从验证方法的公平性还是计算资源上，我都不打算选择视频生成任务。高分辨率像素 DiT 生成算是一个最公平，最清晰明了的任务了。然而，即使是这样的任务，由于 token 数很多，我们也没办法像其他带压缩的 ImageNet-256 上的 DiT 一样训那么久。一般来说，这些 DiT 的压缩比都是 $16 \times 16$ 倍，哪怕在最理想的情况下，模型运行时间按线性增长，我们也需要 $256$ 倍的计算资源才能和他们训练同样的轮数。当我们选择了优化注意力复杂度这个目标时，没有资源训练一个收敛得较好的模型就是注定的结局了。我们只能退而求其次，在少量的训练轮数上比较各个方法。</p>
+<p>另一个缺陷是论文对于层级设计的有效性没有做分析，缺乏一点「理论分析」上的支撑，更多的是展示工程实现细节。</p>
+<p>这个缺陷倒不是很严重，有不少的注意力优化的论文都是只讲实现方法的。缺乏理论、动机上的解释仅仅是降低这篇论文在审稿时的评价，并不会影响方法本身有效性，因为有效性主要还是靠实验来支撑。如果审稿人问到了这一点，也只能俯首道歉。</p>
+<p>最后还有一个注意力优化内行才能看出的点。这篇论文的方法设计和 Multi-Resolution Attention 几乎一样，区别仅在于 Multi-Resolution Attention 没提供高性能实现。是否说明这篇论文的创新性不够？</p>
+<p>说实话，这个项目刚开始时，我是以优化 NSA, VSA 这些论文为目标，压根不知道早期已经有了一篇 $O(\log N)$ 分级的论文。当然，我也从没觉得这样的优化方案别人想不到，毕竟这样的算法优化策略在计算机科学中十分常见。但是，在我看来，编写一份高性能 GPU 实现是一件有挑战性且贡献足够的事情，提供一份可供社区直接使用的高效实现至少占了论文一半以上的贡献。所以，哪怕之前有方法一样的论文，基于 FlashAttention 重新实现，并在超长序列上验证，已经有足够的贡献了。不仅如此，如前文所述，这篇论文还提供了与层级注意力无关，仅与稀疏注意力实现相关的算法优化贡献，这个优化方法能够直接改进之前 VSA, SLA 的代码实现。综上，我认为算法设计上的雷同不影响论文的贡献度。</p>
+<h2 id="未来方向与个人感想"><a href="#未来方向与个人感想" class="headerlink" title="未来方向与个人感想"></a>未来方向与个人感想</h2><p>在想出了这套优化复杂度的算法后，我就对这个项目的应用前景充满了信心。哪怕一开始不会 GPU 编程，我也义无反顾地投入了一两个月的时间去学习 Triton 编程并实现了一版高效的算法。在后来的实验中，我也碰到了不少意外之喜。KV Enrichment 和 KV Reweighting 出乎意料地有效。这样，我们方法不仅仅有速度上的改进，在效果上也有不少提升。我非常希望我们的这项研究能够用在更广泛的场景中。</p>
+<p>但正如前文所讲，自项目开始之初，一种不祥的预感就萦绕在我的心头：由于长序列生成与高计算量绑定，我们难以训练一个充分收敛的 DiT。同时，我们实验室的主攻方向是 CV 应用，我们也不知道是不是在 NLP 里验证这个方法是不是成本更低一点。最终，我还是选择了尽可能简单的 Pixel DiT 生成任务。我在很长一段时间里都在黑暗中探索验证实验的设计方法，实验结果大多是不令人满意的。我时常会想，假如我是在 DeepSeek 这样的大公司里做这样的研究，会不会更加顺利一点？同样的方法，如果是在更高的平台上打磨，更难的任务上验证，会不会受到的评价更高一点？但学校实验室自然也有实验室自己的做法。在有限的时间和有限的资源内，我敢说我已经充分用科学的实验方法小规模地验证我们方法的有效性了。从现有实验的迹象来看，我对 LLSA 在任务规模扩增之后的表现充满信心。未来犹未可知，那就不必多想。</p>
+<p>在维持现有资源的情况下，我的计划是尝试在 ImageNet 上训一个较好的使用 LLSA 的 DiT。最近正好有不少这方面的研究，比如 PixelDiT。我想尝试能否在不显著增加计算量的前提下，在模型的某个地方用 LLSA 算所有像素间的注意力。比如，不改 PixelDiT 带 patchify 的编码器部分，只是提升解码器注意力的计算量。但我近期的实验表明，这样的改进没啥用，还是得让整个 Transformer 都不用 patchify 才行。目前，我仍在做低成本的尝试。</p>
+<p>如果非要换一个验证思路的话，我们想到的另一个方案是 4K 图像生成。可以拿一个预训练的 FLUX 在超高分辨率图像数据集上微调。之前有方法做了类似的事，但它们都用的是 window attention。换成 LLSA 按理来说效果会好很多。但这种应用导向的工作所需的工作量较多，且重心也从注意力设计转移到了一个具体任务，适合当成一个全新的研究来做。</p>
+<p>当然，我觉得最高效的拓展方案还是寻求合作，争取在 NLP 任务或者视频 DiT 生成任务这两个更加常见、合适的任务上验证 LLSA。如果是做 NLP 任务的话，我需要去结识一些 NLP 领域优化注意力的研究者，寻求他们的意见。而做视频生成任务最大的瓶颈应该是数据和算力，我们需要找公司的视频 DiT 团队合作。鉴于这篇论文已经是在研究注意力方法本身了，如果要继续研究，不应该是小打小闹地微调现有视频模型，最好是在大规模训练阶段一直使用 LLSA。</p>
+<p>如果完全忽略相关领域合作者和计算资源这些客观制约因素，我觉得 LLSA 真正大展身手的舞台是此前一些因为注意力平方复杂度而完全不敢做的任务，比如基于体素的 3D 生成。实际上，今年已经有使用稀疏注意力的 3D 生成工作。比如 Direct3D-S2 直接把 NSA 适配到了 3D 生成领域，用于生成至多 45K 个 3D latent。如果未来 GPU 的性能能按线性持续提升，且某任务的质量直接取决于 token 的数量，那么 LLSA 一定有很大的发挥空间，因为它确实能将全注意力的复杂度降下来。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇论文中，我们介绍了 Log-linear Sparse Attention (LLSA)，一种将自注意力运算复杂度从 $O(N^2)$ 降至 $O(N \log N)$ 的新颖注意力机制。它的贡献有：</p>
+<ul>
+<li><p>降低稀疏注意力复杂度的层级式设计，可以应用到现在所有类型的稀疏注意力中。</p>
+</li>
+<li><p>提出了 KV Enrichment 这种相较 VSA, SLA 更优的维持全局信息，利用稀疏 K, V 的稀疏注意力方法。</p>
+</li>
+<li><p>实现并开源了高性能 GPU 程序。它不仅能够直接被后续工作使用，它的 GPU 编程思路也可以启发后来的工作。</p>
+</li>
+</ul>
+<p>我觉得 LLSA 未来可期。如果让我主导视频 DiT 的训练，我一定会立刻把全注意力换成 LLSA。</p>
+<p>我在 MLSys 方面的积累不足，论文和研究方法或许有可以改进的空间。我们欢迎各种形式的合作，包括但不限于：</p>
+<ul>
+<li>对论文内容的批评与建议。</li>
+<li>学校实验室的科研合作。</li>
+<li>公司的实习、项目合作。</li>
+</ul>
+<p>我未来会持续宣传、介绍论文的内容。已经定好的事项有论文内容以外的独家解读博文（这篇博文其实只是重述了论文的内容）。有机会的话我也会分享这次科研过程中艰辛的历程。视频介绍可以做，但感觉这种类型的论文不太适合做成视频。大家有什么疑问，建议，也欢迎多多交流。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>Attention:</p>
+<p>(FlashAttention) FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</p>
+<p>(MoBA) MoBA: Mixture of Block Attention for Long-Context LLMs</p>
+<p>(NSA) Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention</p>
+<p>(SpargeAttention) SpargeAttention: Accurate and Training-free Sparse Attention Accelerating Any Model Inference</p>
+<p>(Sparse VideoGen) Sparse VideoGen: Accelerating Video Diffusion Transformers with Spatial-Temporal Sparsity</p>
+<p>(VMoBA) VMoBA: Mixture-of-Block Attention for Video Diffusion Models</p>
+<p>(VSA) VSA: Faster Video Diffusion with Trainable Sparse Attention</p>
+<p>(SLA) SLA: Beyond Sparsity in Diffusion Transformers via Fine-Tunable Sparse-Linear Attention</p>
+<p>(MRA) Multi Resolution Analysis (MRA) for Approximate Self-Attention</p>
+<p>(Radial Attention) Radial Attention: $O(n\log n)$ Sparse Attention with Energy Decay for Long Video Generation</p>
+<p>Log-Linear Attention</p>
+<p>Pixel DiT:</p>
+<p>(PixelFlow) PixelFlow: Pixel-Space Generative Models with Flow</p>
+<p>(PixNerd) PixNerd: Pixel Neural Field Diffusion</p>
+<p>(JiT) Back to Basics: Let Denoising Generative Models Denoise</p>
+<p>(DiP) DiP: Taming Diffusion Models in Pixel Space</p>
+<p>(DeCo) DeCo: Frequency-Decoupled Pixel Diffusion for End-to-End Image Generation</p>
+<p>(PixelDiT) PixelDiT: Pixel Diffusion Transformers for Image Generation</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/12/06/20251203-pixeldit/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -362,7 +598,7 @@
 <p>由于 Pixel DiT 的主要范式已经被这几篇论文定下来了，以后还用类似的方法，虽然中论文不难，但很难做出较大的影响力。明显可以改进的方向包括：1）把 DeCo 的 Freq Loss 和 PixelDiT 的 attention 都用上；2）尝试我在正文讲的在所有 unpatchify 处加入 bilinear 上采样；3）增加 PixelDiT attention 的粒度。如果把若干个小改进用上，最后能在所有 DiT 中取得 ImageNet-256 上的 SOTA 成果的话，应该也能引起关注。此外，要尝试这个方向，还需要动手拆解 latent space 最新方法的各个模块，试图分析哪些 latent space 的技巧可以迁移到 pixel space 中。</p>
 <p>和我在看完 JiT 后的想法一样，我认为所有像素 DiT 的研究意义不在于像素生成本身，而在于任意高分辨率/长序列数据生成。我们完全可以尝试把这些像素 DiT 方法搬到那些即使加入了 VAE 还是数据量太大的任务中，比如视频生成和超高分辨率生成。从工程实现的难易看，要我做的话，我会先从 4K 图像生成开始尝试。这个方向尝试的人不多，只要做出还可以的成果也能发论文。</p>
 <p>既然都谈到 latent space 了，我们不妨将 LDM 和这个带了像素级解码器的 Pixel DiT 做对比。仔细一看，二者其实非常相近。最本质的区别在于 VAE 不负责任何去噪功能，而 Pixel DiT 的解码器既负责把压缩信息还原成像素信息，又直接输出去噪结构。我感觉可以尝试这样一件事：复用现在某个 LDM 的编码器和去噪模型部分，将其输出传入一个像素级解码器里，finetune 模型，输出像素级去噪结果。这样整个模型可以端到端训练，不会有 VAE 的重建误差。如果这个想法是可行的，那么这个像素级解码器也可以放到多模态模型里：MLLM 用自回归/扩散模型输出像素解码器的条件，解码器再用一个扩散模型直接生成出像素级输出。</p>
-<h2 id="勘误"><a href="#勘误" class="headerlink" title="勘误"></a>勘误</h2><p>在之前阅读 DeCo 实验表格时，我忽略了训练轮数、推理步数这两栏，错将一个训了很久、推理步数很长的 DeCo 结果与其他两个方法的结果对比。由于对比基础不统一，原文的一些评价因此产生偏差。</p>
+<h2 id="勘误"><a href="#勘误" class="headerlink" title="勘误"></a>勘误</h2><p>在之前阅读 DeCo 实验表格时，我忽略了训练轮数、推理步数这两栏，错将一个训了很久、推理步数很多的 DeCo 结果与其他两个方法的结果对比。由于对比基础不统一，原文的一些评价因此产生偏差。</p>
 <p>从结果看，我之前高估了 DeCo 的实验结果。我在「论文对比」章节重新画了一个三个方法在相同训练、推理配置下的对比表格，并修正了所有分析。改正后的结论有：</p>
 <ul>
 <li>只看 FID 的好坏，DeCo = DiP &lt; PixelDiT。去除 Freq Loss 的影响，架构设计上应该是 DeCo &lt; DiP &lt; PixelDiT。</li>
@@ -1398,7 +1634,7 @@ L(s) \leq || \tilde{v}_t^{\theta}(x, c) ||_2^2 + || v_t^{*}(x, c)||_2^2</script>
 <video src="https://vdn3.vzuu.com/HD/8c4ee2c4-0de7-11f0-936b-bad319200bd0-v8_f2_t1_h6jprdNZ.mp4?auth_key=1743842630-0-0-1ebb28e85d034649af2b2ba9db859590&bu=1513c7c2&c=avc.8.0&disable_local_cache=1&expiration=1743842630&f=mp4&pu=e59e796c&v=tx&pp=ChMxNDAxNjIzODY1NzM5NTc5MzkyGGMiC2ZlZWRfY2hvaWNlMhMxMzY5MDA1NjA4NTk5OTA0MjU3PXu830Q%3D&pf=Web&pt=zhihu" type="video/mp4" controls="controls" width="100%" height="100%">
 </video>
 
-<p>为什么 LDM 的生成过程这么不稳定呢？为什么 CFA 技术又能提升生成的一致性呢？在我们团队近期发表于 CVPR 2025 的论文 <em>Alias-Free Latent Diffusion Models: sImproving Fractional Shift Equivariance of Diffusion Latent Space</em> 中，我们从<strong>平移同变性 (shift equivariance)</strong> 的角度分析了 LDM 的生成稳定性，并提出了一种能够提升平移同变性的 Alias-Free LDM (AF-LDM) 模型。我们在无约束人脸生成、视频编辑、超分辨率、法向量估计等多个任务上验证了该模型的有效性。</p>
+<p>为什么 LDM 的生成过程这么不稳定呢？为什么 CFA 技术又能提升生成的一致性呢？在我们团队近期发表于 CVPR 2025 的论文 <em>Alias-Free Latent Diffusion Models: sImproving Fractional Shift Equivariance of Diffusion Latent Space</em> 中，我们从<strong>平移同变性 (shift equivariance)</strong> 的角度分析了 LDM 的生成稳定性，并提出了一种能够提升平移同变性的 Alias-Free LDM (AF-LDM) 模型。我们在无条件人脸生成、视频编辑、超分辨率、法向量估计等多个任务上验证了该模型的有效性。</p>
 <p><img src="/2025/04/05/20250314-afldm/1.jpg" alt></p>
 <p>在这篇博文中，我将系统性地介绍一下这篇论文。我会先简单回顾背景知识，让对信号处理不太熟悉的读者也能读懂本文；再介绍论文的方法、实验、贡献；最后从本工作出发，探讨新的科研方向。</p>
 <p>项目网站：<a href="https://zhouyifan.net/AF-LDM-Page/">https://zhouyifan.net/AF-LDM-Page/</a></p>
@@ -1767,7 +2003,7 @@ T(x)W^V = xW^V
 <p><img src="/2025/03/06/20250305-fractal-generation/18.jpg" alt></p>
 <p>再看一下 NLL 指标的结果，作者比较了那些能够准确输出图像概率的模型。从最大似然估计的角度看，本文的方法确实很不错。</p>
 <p><img src="/2025/03/06/20250305-fractal-generation/19.jpg" alt></p>
-<p>从支持的任务上看，本文和其他类别约束的自回归模型一样，支持图像内插/外插，且可以用 ImageNet 类别作为指引。</p>
+<p>从支持的任务上看，本文和其他类别条件的自回归模型一样，支持图像内插/外插，且可以用 ImageNet 类别作为指引。</p>
 <p><img src="/2025/03/06/20250305-fractal-generation/20.jpg" alt></p>
 <h2 id="论文表述批判性分析"><a href="#论文表述批判性分析" class="headerlink" title="论文表述批判性分析"></a>论文表述批判性分析</h2><p>在初次读文章时，我无论是看示意图还是看公式、文字，都不能理解算法的意思。反复读了几遍后，我才大概明白作者提出的其实是一种多叉树结构。我最后通过阅读代码验证了我的理解是正确的。我认为论文的部分叙述不够严谨，且对于贡献的总结不够准确。具体的分析如下。</p>
 <h3 id="是否是分治算法"><a href="#是否是分治算法" class="headerlink" title="是否是分治算法"></a>是否是分治算法</h3><p>对于一些朴素算法为 $O(N^2)$ 的序列处理任务，分治 (divide-and- conquer) 算法通过把任务拆成子任务并递归求解子任务的方法，将总算法的复杂度降到 $O(N^2)$ 以下。比如我们熟悉的快速排序就是一种分治算法。论文中反复将分形自回归称为分治算法，但它与传统意义上的分治算法存在较大的差别。</p>
@@ -2078,155 +2314,6 @@ p(x_1, ..., x_{k^n})=\prod_{i=1}^k p(x_{(i-1)\cdot k^{n-1}+1}, ..., x_{i\cdot k^
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2025/02/13/20250212-not-all-noise/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Zhou Yifan">
-      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="周弈帆的博客">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2025/02/13/20250212-not-all-noise/" class="post-title-link" itemprop="url">一个有趣却撤稿 ICLR 2025 的工作：并非所有扩散模型噪声本质相同</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2025-02-13 18:38:08" itemprop="dateCreated datePublished" datetime="2025-02-13T18:38:08+08:00">2025-02-13</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>自从 ChatGPT o1 在 2024 年 9 月发布后，人们逐渐把研究重点放在了推理时扩展 (Inference-time scaling) 上。对于扩散模型而言，除了在推理时增加步数外，谷歌今年 1 月的研究 <em>Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps</em> 表明，搜索更好的扩散模型噪声也能提升图像质量。但实际上，选取更好的噪声这一想法早在 2024 年 6 月的论文 <em>Not All Noises Are Created Equally:Diffusion Noise Selection and Optimization</em> 中就已提出。可惜的是，这篇论文最后在 ICLR 上被主动撤稿了，详情可参考 OpenReview：<a target="_blank" rel="noopener" href="https://openreview.net/forum?id=R5xozf2ZoP">https://openreview.net/forum?id=R5xozf2ZoP</a> 。</p>
-<p>在这篇博文中，我会简单介绍「并非所有噪声本质相同」这篇论文。之后，我们来尝试批判性分析这篇论文及其审稿意见，并反思该如何做出高质量的工作。</p>
-<h2 id="知识准备"><a href="#知识准备" class="headerlink" title="知识准备"></a>知识准备</h2><p>想读懂这篇论文，只需了解 DDPM 和 DDIM 这两篇扩散模型经典论文。</p>
-<p>DDPM 定义了加噪过程和去噪过程：加噪过程中，训练图像 $x_0$ 会加噪 $T$ 次，最后变成纯噪声 $x_T$；去噪过程中，纯噪声 $x_T$ 会被去噪 $T$ 次，最后变成生成图像 $x_0$ 。</p>
-<p>DDIM 修改了 DDPM 中的部分假设，让扩散模型在去噪时不再有随机性，而唯一的随机性来自于随机噪声 $x_T$ 的采样。保证了去噪过程不再有随机性后，我们就可以通过公式反演 (inversion)，找出某个真实图像  $x_0$ 对应的 $x_T$。当然，这个反演过程存在误差。</p>
-<h2 id="核心思想：更好的噪声带来更高的图像质量"><a href="#核心思想：更好的噪声带来更高的图像质量" class="headerlink" title="核心思想：更好的噪声带来更高的图像质量"></a>核心思想：更好的噪声带来更高的图像质量</h2><p>作者认为，过去的工作仅通过优化网络结构或参数来提升扩散模型生成质量，却忽视了噪声的重要性。作者从两个方向探索了噪声空间（即所有可能的噪声构成的集合）：能否用某种定量指标选取更好的噪声？能否优化某一现有噪声？这两个方向的应用如下所示。噪声选取能够提升模型在同一个文本提示下的随机生成质量，而噪声优化能够提升现有某噪声对应图像的质量。</p>
-<p><img src="/2025/02/13/20250212-not-all-noise/1.jpg" alt></p>
-<h2 id="用反演稳定度反映噪声质量"><a href="#用反演稳定度反映噪声质量" class="headerlink" title="用反演稳定度反映噪声质量"></a>用反演稳定度反映噪声质量</h2><p>根据以上设计思想，这个工作的重点就落在了噪声质量的评估指标上。只要有了一个这样的指标，我们就能用简单的算法实现噪声选取和噪声优化：</p>
-<ul>
-<li>噪声选取：随机采样大量噪声，然后根据指标选出最好的那一个。</li>
-<li>噪声优化：把指标变成损失函数，用损失函数优化给定噪声。</li>
-</ul>
-<p>作者认为，函数不动点具有某些良好性质。因此，如果一个噪声在做完一轮生成-反演（去噪-加噪）后变化越小，那么这个噪声的质量越好。</p>
-<blockquote>
-<p>所谓不动点，就是令函数 $f$ 满足 $x=f(x)$ 的输入 $x$。这里作者把函数 $f$ 定义成先生成再反演这一整个过程，把 $x$ 定义成某个高斯噪声。</p>
-</blockquote>
-<p>具体来说，作者用 cos 相似度来反映噪声的「变化幅度小」，即对于噪声 $\epsilon$ 和其生成-反演结果 $\epsilon’$，反演过程的稳定度，或者说噪声的质量，等于 $cos(\epsilon, \epsilon’)$。</p>
-<p>有了这样一个指标后，我们可以用下面伪代码所示算法实现噪声选取和噪声采样：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> number of samples K, denoising model M</span><br><span class="line">eps_list = sample_noise(K)</span><br><span class="line">stability_list = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">    eps = eps_list[i]</span><br><span class="line">    img = generate(M, eps)</span><br><span class="line">    eps_inversion = inversion(M, img)</span><br><span class="line">    stability = cos(eps, eps_inversion)</span><br><span class="line">    stability_list.append(stability)</span><br><span class="line">best_idx = argmax(stability_list)</span><br><span class="line">output eps_list[best_idx]</span><br></pre></td></tr></table></figure>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> denoising model M, optimization steps n, noise eps</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">    img = generate(M, eps)</span><br><span class="line">    eps_inversion = inversion(M, img)</span><br><span class="line">    loss = <span class="number">1</span> - cos(eps, eps_inversion)</span><br><span class="line">    eps = gradient_descent(loss, eps)</span><br><span class="line">output eps</span><br></pre></td></tr></table></figure>
-<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><h3 id="实验配置"><a href="#实验配置" class="headerlink" title="实验配置"></a>实验配置</h3><p>本工作用 SDXL 和 SDXL-turbo 模型做实验。去噪步数分别为 10, 4。</p>
-<p>本工作在测试时只需要设置提示词。提示词来自于 Pick-a-pic, DrawBench, GenEval 这三个数据集。</p>
-<ul>
-<li>Pick-a-Pic 收集了真实文生图应用中用户的输入提示词及相同提示词下不同输出的偏好程度。每项数据包含提示词、一对图像、一个表示用户偏好哪个图像的标签。</li>
-<li>Drawbench 的每项数据包含提示词、一对图像、一个反映图像质量的偏好标签、一个反映提示词对齐度的偏好标签。这些提示词能从颜色、物体数量等多个角度测试模型生成属性。</li>
-<li>GenEval 提供了能从单个物体、两个物体、物体数量、颜色、位置等多个角度测试模型的提示词。</li>
-</ul>
-<p>为了对比生成图像质量，本工作用了 HPS v2, AES，PickScore, ImageReward 指标。除 AES 只考虑美学分数外，其他几个指标都是通过训练一个匹配人类偏好的模型来评估图像质量。除了给出这些指标的值外，论文还展示了方法的胜率——在同样的提示词下，比较使用/不使用新方法的定量结果，统计使用新方法胜利的频率。</p>
-<h3 id="定性定量结果"><a href="#定性定量结果" class="headerlink" title="定性定量结果"></a>定性定量结果</h3><p>以下是噪声选取的实验结果。</p>
-<p><img src="/2025/02/13/20250212-not-all-noise/2.jpg" alt></p>
-<p>以下是噪声优化的实验结果。</p>
-<p><img src="/2025/02/13/20250212-not-all-noise/3.jpg" alt></p>
-<p>从定量结果中可以看出，本文的方法一定程度上确实是有效的。但是，这些数值上的提升真的总能反映在视觉效果上吗？这些数值上的提升足够大吗？由于缺乏同类方法的比较，这些实验还是欠缺说服力。</p>
-<p>博文开头已经展示了本文的定性结果，这里就不再重复展示了。值得一提的是，本文的方法可以拓展到其他模型上，比如生成 3D 模型的 SV3D。以下是 3D 模型上的可视化结果。</p>
-<p><img src="/2025/02/13/20250212-not-all-noise/4.jpg" alt></p>
-<h2 id="审稿意见分析"><a href="#审稿意见分析" class="headerlink" title="审稿意见分析"></a>审稿意见分析</h2><p>在看 ICLR 2025 官方审稿人意见之前，我先给出我的一份简单审稿意见。我把本文的主要内容都在这篇博文里写出来了，读者也可以在阅读下面内容之前尝试给该论文打分。如果读者想着重提升审稿能力，可以先去把这篇论文细读一遍，再去 OpenReview 上审视其他审稿人的意见。</p>
-<p>这篇文章发现了并非所有扩散噪声生成质量相同这一问题，并设计了反演稳定度这一衡量噪声质量的指标。定性和定量实验表明该方法确实能提升图像质量。</p>
-<p>本文的优点在于新问题的发现：确实之前多数研究者只考虑如何优化模型，而忽视了噪声也是影响图像的重要因素。</p>
-<p>本文在叙述和论证上均存在缺陷：</p>
-<ul>
-<li>在为何要使用反演稳定性这件事上，作者说是受到了不动点理论的启发。但作者完全没有深入分析反演稳定性的原理，本质上是通过实验来直接验证假设的合理性。哪怕不好从数学原理上解释，作者也应该通过列出相关工作，并补充部分探究原理的实验，来巩固该指标的合理性。</li>
-<li>本文的技术贡献并不多：优化噪声是一个非常常见的策略。</li>
-<li>在实验中，作者没有和其他方法对比，完全看不出这个方法是否具有优越性。找出一个基准方法其实并不难：将 CFG (classifier-free guidance) 分别设置成 1 和 7.5 就是一个非常容易实现的基准方法。</li>
-</ul>
-<p>如果是现在已经知道了优化噪声是一个有潜力的方向，我可能会给这篇论文一个位于接收临界线上的分数。但如果是去年的话，很可能给的是低于临界线的分数。</p>
-<p>我们来简单看看官方审稿人的评价。</p>
-<p>审稿人 A 给了明确的差评。文章的主要缺陷有：</p>
-<ul>
-<li>虽然作者宣称这是首次研究噪声空间的论文，但实际上之前已经至少有三篇工作做过类似研究。因此，文章的创新性是有限的。</li>
-<li>DDIM 反演稳定性差一部分是因为反演算法不够好导致的，而和扩散模型无关。最好能够展示更好反演算法下的结果。</li>
-<li>评估不充分：这篇文章没有展示任何和其他方法的比较。另外，最好能展示诸如 FID，IS 等其他指标。文中的指标提升看起来微不足道，仅有约 1%，感觉不到明显的进步。</li>
-<li>每次评估都需要执行一次加噪-去噪过程，方法性能较低。</li>
-</ul>
-<p>审稿人 A 是这个方向的专家，他用已有的噪声空间优化工作来质疑本文的创新性。我简单看了一下该审稿人引用的工作，确实已经有不少往期工作做了类似的事，但实现方法还是比本文的方法更复杂一点。所以，不能说这篇论文一点创新也没有，作者必须严谨地比较这篇论文和之前的论文，并强调出创新点在哪。</p>
-<p>审稿人 B 给了一份评价略低于临界线的短评。他认为这篇论文提出的「反演稳定性」及其实验结果还是非常合理的。他认为论文的主要缺陷是方法质量受到反演算法的影响，并希望作者给出不同反演策略下的结果。</p>
-<p>审稿人 C 也给出了略低于临界线的评价。他认为这种使用反演稳定性来评估噪声质量的想法有新颖性，且实验的设置比较合理。在 3D 上的应用或许很有潜力。但他也列出了几条主要缺陷：</p>
-<ul>
-<li>作者认为反演质量与生成质量强相关。但这个假设只是通过一个具体示例来验证，而缺少理论分析或者系统性的研究。一个可能的分析方法是：测试10万个样本，计算图像质量和反演稳定性的相关性。</li>
-<li>和上面两个审稿人一样，审稿人 C 也提到了 DDIM 反演本身就不够好的问题。</li>
-<li>噪声选取和噪声优化都需要大量计算资源。</li>
-</ul>
-<p>审稿人 D 也给出了略低于临界线的评价。他同样认为反演稳定性是一种新颖的指标，作者对于方法设计动机阐述得十分清晰。他提到的主要缺陷有：</p>
-<ul>
-<li>研究反演中的不同点并不是一个新颖的想法，之前至少有三篇工作从迭代优化来寻找反演不动点的文章。这篇文章没有与这些工作做对比。</li>
-<li>从 K=100 个样本里选取噪声的方法太简单直接了。之前有类似工作用一种更深入的方式选取噪声。</li>
-<li>缺乏和其他噪声优化论文的比较。</li>
-<li>计算效率太低。</li>
-</ul>
-<h2 id="总结与反思"><a href="#总结与反思" class="headerlink" title="总结与反思"></a>总结与反思</h2><p>本工作明确指出了扩散模型不同初始噪声质量不同这一设计动机。为了找出更好的噪声，本工作用一种听起来比较有趣的「反演稳定性」来评估噪声质量。基于这个指标，本工作设计了噪声选取和噪声优化两个算法，用于两类生成任务。</p>
-<p>多数审稿人都认可该工作的方法有一定的新颖性，但其论文有着诸多缺陷：</p>
-<ul>
-<li>没有深入分析反演稳定性的原理，且没有考虑是否应该用更好的反演算法。</li>
-<li>噪声优化是一种常见的策略。没有与相关工作做对比。</li>
-<li>指标提升的说服力不足。</li>
-<li>每次评估反演稳定性都需要执行去噪和加噪过程，运算效率过低。</li>
-</ul>
-<p>当然，在目前的眼光看来，如果生成质量足够高，增加推理时间也是可以接受的。但是，论文的前几个缺陷是实实在在的，被评价为低于接收临界线合情合理。作者最后也没有 rebuttal，直接撤稿了。我感觉这篇论文还是比较可惜的，毕竟它的研究方向比较有潜力。</p>
-<p>从这篇论文以及最近做推理时扩展的论文可以看出，哪怕对于同一项技术，改变看待问题的角度也算创新。比如同样是更换扩散模型噪声，如果是从推理时扩展的角度来看，那么运算时间长就不是缺陷了；但与之相对，我们需要证明随着运算时间的增加，生成质量会按某种规律逐渐变好，表明花更多的时间是有意义的。</p>
-<p>从这篇论文投稿失败的教训中，我们也可以总结出顶会论文应该满足哪些最基本的要求。当论文的方法和之前方法非常相似时，一定要与之前的方法对比，并明确写出本文的创新点在哪。另外，虽然很多时候我们是先有了实验结果再去补充说明方法中的假设，但我们依然可以在论文里尝试解释我们这样做的原因。这种解释可以是通过原理上的推导，也可以是通过解释性实验。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2296,7 +2383,7 @@ p(x_1, ..., x_{k^n})=\prod_{i=1}^k p(x_{(i-1)\cdot k^{n-1}+1}, ..., x_{i\cdot k^
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">157</span>
+          <span class="site-state-item-count">158</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2309,7 +2396,7 @@ p(x_1, ..., x_{k^n})=\prod_{i=1}^k p(x_{(i-1)\cdot k^{n-1}+1}, ..., x_{i\cdot k^
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">66</span>
+        <span class="site-state-item-count">67</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

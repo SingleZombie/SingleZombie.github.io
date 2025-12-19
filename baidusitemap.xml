@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://zhouyifan.net/2025/12/19/20251211-llsa-1/</loc>
+    <lastmod>2025-12-19</lastmod>
+  </url>
+  <url>
+    <loc>https://zhouyifan.net/2025/04/05/20250314-afldm/</loc>
+    <lastmod>2025-12-09</lastmod>
+  </url>
+  <url>
+    <loc>https://zhouyifan.net/2025/03/06/20250305-fractal-generation/</loc>
+    <lastmod>2025-12-07</lastmod>
+  </url>
+  <url>
     <loc>https://zhouyifan.net/2025/12/06/20251203-pixeldit/</loc>
-    <lastmod>2025-12-06</lastmod>
+    <lastmod>2025-12-07</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2025/12/03/20251124-jit/</loc>
@@ -37,16 +49,8 @@
     <lastmod>2025-04-10</lastmod>
   </url>
   <url>
-    <loc>https://zhouyifan.net/2025/04/05/20250314-afldm/</loc>
-    <lastmod>2025-04-10</lastmod>
-  </url>
-  <url>
     <loc>https://zhouyifan.net/2023/07/07/20230330-diffusion-model/</loc>
     <lastmod>2025-03-19</lastmod>
-  </url>
-  <url>
-    <loc>https://zhouyifan.net/2025/03/06/20250305-fractal-generation/</loc>
-    <lastmod>2025-03-14</lastmod>
   </url>
   <url>
     <loc>https://zhouyifan.net/2024/07/27/20240717-ar-wo-vq/</loc>

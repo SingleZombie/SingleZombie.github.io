@@ -52,7 +52,7 @@
 <meta property="og:image" content="https://zhouyifan.net/2025/03/06/20250305-fractal-generation/11.jpg">
 <meta property="og:image" content="https://zhouyifan.net/2025/03/06/20250305-fractal-generation/21.jpg">
 <meta property="article:published_time" content="2025-03-06T05:23:37.000Z">
-<meta property="article:modified_time" content="2025-03-14T06:23:13.534Z">
+<meta property="article:modified_time" content="2025-12-07T13:45:31.829Z">
 <meta property="article:author" content="Zhou Yifan">
 <meta property="article:tag" content="深度学习">
 <meta property="article:tag" content="自回归">
@@ -322,7 +322,7 @@
 <p><img src="/2025/03/06/20250305-fractal-generation/18.jpg" alt></p>
 <p>再看一下 NLL 指标的结果，作者比较了那些能够准确输出图像概率的模型。从最大似然估计的角度看，本文的方法确实很不错。</p>
 <p><img src="/2025/03/06/20250305-fractal-generation/19.jpg" alt></p>
-<p>从支持的任务上看，本文和其他类别约束的自回归模型一样，支持图像内插/外插，且可以用 ImageNet 类别作为指引。</p>
+<p>从支持的任务上看，本文和其他类别条件的自回归模型一样，支持图像内插/外插，且可以用 ImageNet 类别作为指引。</p>
 <p><img src="/2025/03/06/20250305-fractal-generation/20.jpg" alt></p>
 <h2 id="论文表述批判性分析"><a href="#论文表述批判性分析" class="headerlink" title="论文表述批判性分析"></a>论文表述批判性分析</h2><p>在初次读文章时，我无论是看示意图还是看公式、文字，都不能理解算法的意思。反复读了几遍后，我才大概明白作者提出的其实是一种多叉树结构。我最后通过阅读代码验证了我的理解是正确的。我认为论文的部分叙述不够严谨，且对于贡献的总结不够准确。具体的分析如下。</p>
 <h3 id="是否是分治算法"><a href="#是否是分治算法" class="headerlink" title="是否是分治算法"></a>是否是分治算法</h3><p>对于一些朴素算法为 $O(N^2)$ 的序列处理任务，分治 (divide-and- conquer) 算法通过把任务拆成子任务并递归求解子任务的方法，将总算法的复杂度降到 $O(N^2)$ 以下。比如我们熟悉的快速排序就是一种分治算法。论文中反复将分形自回归称为分治算法，但它与传统意义上的分治算法存在较大的差别。</p>
@@ -527,7 +527,7 @@ p(x_1, ..., x_{k^n})=\prod_{i=1}^k p(x_{(i-1)\cdot k^{n-1}+1}, ..., x_{i\cdot k^
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">157</span>
+          <span class="site-state-item-count">158</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -540,7 +540,7 @@ p(x_1, ..., x_{k^n})=\prod_{i=1}^k p(x_{(i-1)\cdot k^{n-1}+1}, ..., x_{i\cdot k^
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">66</span>
+        <span class="site-state-item-count">67</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
