@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在之前的文章中，我介绍了如何用NumPy实现卷积正向传播。在这篇文章里，我会继续介绍如何用NumPy复现二维卷积的反向传播，并用PyTorch来验证结果的正确性。通过阅读这篇文章，大家不仅能进一步理解卷积的实现原理，更能领悟到一般算子的反向传播实现是怎么推导、编写出来的。 项目网址：https:&#x2F;&#x2F;github.com&#x2F;SingleZombie&#x2F;DL-Demos&#x2F;tree&#x2F;master&#x2F;dldem">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》代码实战（十）：4. 算子反向传播的实现思路（以NumPy版卷积为例）">
+<meta property="og:url" content="https://zhouyifan.net/2022/07/24/DLS-note-10-5/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="在之前的文章中，我介绍了如何用NumPy实现卷积正向传播。在这篇文章里，我会继续介绍如何用NumPy复现二维卷积的反向传播，并用PyTorch来验证结果的正确性。通过阅读这篇文章，大家不仅能进一步理解卷积的实现原理，更能领悟到一般算子的反向传播实现是怎么推导、编写出来的。 项目网址：https:&#x2F;&#x2F;github.com&#x2F;SingleZombie&#x2F;DL-Demos&#x2F;tree&#x2F;master&#x2F;dldem">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-07-23T16:31:03.000Z">
+<meta property="article:modified_time" content="2022-07-23T16:31:03.334Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="PyTorch">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/07/24/DLS-note-10-5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》代码实战（十）：4. 算子反向传播的实现思路（以NumPy版卷积为例） | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》代码实战（十）：4. 算子反向传播的实现思路（以NumPy版卷积为例）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-24 00:31:03" itemprop="dateCreated datePublished" datetime="2022-07-24T00:31:03+08:00">2022-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在之前的文章中，我介绍了<a href>如何用NumPy实现卷积正向传播</a>。<br>在这篇文章里，我会继续介绍如何用NumPy复现二维卷积的反向传播，并用PyTorch来验证结果的正确性。通过阅读这篇文章，大家不仅能进一步理解卷积的实现原理，更能领悟到一般算子的反向传播实现是怎么推导、编写出来的。</p>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN</a></p>
+<p>本文代码在<code>dldemos/BasicCNN/np_conv_backward.py</code>这个文件里。</p>
+<h2 id="实现思路"><a href="#实现思路" class="headerlink" title="实现思路"></a>实现思路</h2><p>回忆一下，在正向传播中，我们是这样做卷积运算的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">    <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">        <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">            h_lower = i_h * stride</span><br><span class="line">            h_upper = i_h * stride + f</span><br><span class="line">            w_lower = i_w * stride</span><br><span class="line">            w_upper = i_w * stride + f</span><br><span class="line">            input_slice = input_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">            kernel_slice = weight[i_c]</span><br><span class="line">            output[i_h, i_w, i_c] = np.<span class="built_in">sum</span>(input_slice * kernel_slice)</span><br><span class="line">            output[i_h, i_w, i_c] += bias[i_c]</span><br></pre></td></tr></table></figure>
+<p>我们遍历输出图像的每一个位置，选择该位置对应的输入图像切片和卷积核，做一遍乘法，再加上bias。</p>
+<p>其实，一轮运算写成数学公式的话，就是一个线性函数<code>y=wx+b</code>。对<code>w, x, b</code>求导非常简单：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dw_i = x * dy</span><br><span class="line">dx_i = w * dy</span><br><span class="line">db_i = dy</span><br></pre></td></tr></table></figure>
+<p>在反向传播中，我们只需要遍历所有这样的线性运算，计算这轮运算对各参数的导数的贡献即可。最后，累加所有的贡献，就能得到各参数的导数。当然，在用代码实现这段逻辑时，可以不用最后再把所有贡献加起来，而是一算出来就加上。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dw += x * dy</span><br><span class="line">dx += w * dy</span><br><span class="line">db += dy</span><br></pre></td></tr></table></figure>
+<p>这里要稍微补充一点。在前向传播的实现中，我加入了<code>dilation, groups</code>这两个参数。为了简化反向传播的实现代码，只展示反向传播中最精华的部分，我在这份卷积实现中没有使用这两个参数。</p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><p>在开始实现反向传播之前，我们先思考一个问题：反向传播的函数应该有哪些参数？从数学上来讲，反向传播和正向传播的参数是相反的。设正向传播的输入是<code>A_prev, W, b</code>（输入图像、卷积核组、偏差），则应该输出<code>Z</code>（输出图像）。那么，在反向传播中，应该输入<code>dZ</code>，输出<code>dA_prev, dW, db</code>。可是，在写代码时，我们还需要一些其他的输入参数。</p>
+<p>我的反向传播函数的函数定义如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">conv2d_backward</span>(<span class="params">dZ: np.ndarray, cache: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray], stride: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                    padding: <span class="built_in">int</span></span>) -&gt; <span class="type">Tuple</span>[np.ndarray, np.ndarray, np.ndarray]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Backward Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        dZ: (np.ndarray): The derivative of the output of conv.</span></span><br><span class="line"><span class="string">        cache (Dict[str, np.ndarray]): Record output &#x27;Z&#x27;, weight &#x27;W&#x27;, bias &#x27;b&#x27;</span></span><br><span class="line"><span class="string">            and input &#x27;A_prev&#x27; of forward function.</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        Tuple[np.ndarray, np.ndarray, np.ndarray]: The derivative of W, b,</span></span><br><span class="line"><span class="string">            A_prev.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>虽然我这里把所有参数都写在了一起，但从逻辑上来看，这些参数应该分成三个类别。在编程框架中，这三类参数会储存在不同的地方。</p>
+<ul>
+<li><code>dZ</code>: 反向传播函数真正的输入。</li>
+<li><code>cache</code>: 正向传播中的一些中间变量<code>Z, W, b</code>。由于我们必须在一个独立的函数里完成反向传播，这些中间变量得以输入参数的形式供函数访问。</li>
+<li><code>stride, padding</code>: 这两个参数是卷积的属性。如果卷积层是用一个类表示的话，这些参数应该放在类属性里，而不应该放在反向传播的输入里。</li>
+</ul>
+<p>给定这三类参数，就足以完成反向传播计算了。下面我来介绍<code>conv2d_backward</code>的具体实现。</p>
+<p>首先，获取<code>cache</code>中的参数，并且新建储存梯度的张量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">W = cache[<span class="string">&#x27;W&#x27;</span>]</span><br><span class="line">b = cache[<span class="string">&#x27;b&#x27;</span>]</span><br><span class="line">A_prev = cache[<span class="string">&#x27;A_prev&#x27;</span>]</span><br><span class="line">dW = np.zeros(W.shape)</span><br><span class="line">db = np.zeros(b.shape)</span><br><span class="line">dA_prev = np.zeros(A_prev.shape)</span><br><span class="line"></span><br><span class="line">_, _, c_i = A_prev.shape</span><br><span class="line">c_o, f, f_2, c_k = W.shape</span><br><span class="line">h_o, w_o, c_o_2 = dZ.shape</span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> (f == f_2)</span><br><span class="line"><span class="keyword">assert</span> (c_i == c_k)</span><br><span class="line"><span class="keyword">assert</span> (c_o == c_o_2)</span><br></pre></td></tr></table></figure>
+<p>之后，为了实现填充操作，我们要把<code>A_prev</code>和<code>dA_prev</code>都填充一下。注意，算完了所有梯度后，别忘了要重新把<code>dA_prev</code>从<code>dA_prev_pad</code>里抠出来。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">A_prev_pad = np.pad(A_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line">dA_prev_pad = np.pad(dA_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                (<span class="number">0</span>, <span class="number">0</span>)])</span><br></pre></td></tr></table></figure>
+<p>接下来，就是梯度的计算了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">    <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">        <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">            h_lower = i_h * stride</span><br><span class="line">            h_upper = i_h * stride + f</span><br><span class="line">            w_lower = i_w * stride</span><br><span class="line">            w_upper = i_w * stride + f</span><br><span class="line"></span><br><span class="line">            input_slice = A_prev_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">            <span class="comment"># forward</span></span><br><span class="line">            <span class="comment"># kernel_slice = W[i_c]</span></span><br><span class="line">            <span class="comment"># Z[i_h, i_w, i_c] = np.sum(input_slice * kernel_slice)</span></span><br><span class="line">            <span class="comment"># Z[i_h, i_w, i_c] += b[i_c]</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># backward</span></span><br><span class="line">            dW[i_c] += input_slice * dZ[i_h, i_w, i_c]</span><br><span class="line">            dA_prev_pad[h_lower:h_upper,</span><br><span class="line">                        w_lower:w_upper, :] += W[i_c] * dZ[i_h, i_w, i_c]</span><br><span class="line">            db[i_c] += dZ[i_h, i_w, i_c]</span><br></pre></td></tr></table></figure>
+<p>在算导数时，我们应该对照着正向传播的计算，算出每一条计算对导数的贡献。如前文所述，卷积操作只是一个简单的<code>y=wx+b</code>，把对应的<code>w, x, b</code>从变量里正确地取出来并做运算即可。</p>
+<p>最后，要把这些导数返回。别忘了把填充后的<code>dA_prev</code>恢复一下。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> padding &gt; <span class="number">0</span>:</span><br><span class="line">    dA_prev = dA_prev_pad[padding:-padding, padding:-padding, :]</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    dA_prev = dA_prev_pad</span><br><span class="line"><span class="keyword">return</span> dW, db, dA_prev</span><br></pre></td></tr></table></figure>
+<p>这里有一个细节：如果<code>padding==0</code>，则在取切片时范围会变成<code>[0:-0]</code>，这样会取出一个长度为<code>0</code>的切片，而不是我们期望的原长度的切片。因此，要特判一下<code>padding&lt;=0</code>的情况。</p>
+<h2 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h2><p>为了方便地进行单元测试，我使用了pytest这个单元测试库。可以直接pip一键安装：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pytest</span><br></pre></td></tr></table></figure>
+<p>之后就可以用pytest执行我的这份代码，代码里所有以<code>test_</code>开头的函数会被认为是单元测试的主函数。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pytest dldemos/BasicCNN/np_conv_backward.py</span><br></pre></td></tr></table></figure>
+<p>单元测试函数的定义如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;c_i, c_o&#x27;</span>, [(<span class="params"><span class="number">3</span>, <span class="number">6</span></span>), (<span class="params"><span class="number">2</span>, <span class="number">2</span></span>)]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;kernel_size&#x27;</span>, [<span class="number">3</span>, <span class="number">5</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;stride&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;padding&#x27;</span>, [<span class="number">0</span>, <span class="number">1</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span></span>):</span><br></pre></td></tr></table></figure>
+<p><code>@pytest.mark.parametrize</code>用于设置单元测试参数的可选值。我设置了4组参数，每组参数有2个可选值，经过排列组合后可以生成<code>2^4=16</code>个单元测试，pytest会自动帮我们执行不同的测试。</p>
+<p>在单元测试中，我打算测试<code>conv2d</code>在各种输入通道数、输出通道数、卷积核大小、步幅、填充数的情况。</p>
+<p>测试函数是这样写的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span></span>):</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Preprocess</span></span><br><span class="line">    <span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">    weight = np.random.randn(c_o, kernel_size, kernel_size, c_i)</span><br><span class="line">    bias = np.random.randn(c_o)</span><br><span class="line"></span><br><span class="line">    torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">        <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br><span class="line">    torch_weight = torch.from_numpy(np.transpose(</span><br><span class="line">        weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>))).requires_grad_()</span><br><span class="line">    torch_bias = torch.from_numpy(bias).requires_grad_()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># forward</span></span><br><span class="line">    torch_output_tensor = torch.conv2d(torch_input, torch_weight, torch_bias,</span><br><span class="line">                                       stride, padding)</span><br><span class="line">    torch_output = np.transpose(</span><br><span class="line">        torch_output_tensor.detach().numpy().squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    cache = conv2d_forward(<span class="built_in">input</span>, weight, bias, stride, padding)</span><br><span class="line">    numpy_output = cache[<span class="string">&#x27;Z&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># backward</span></span><br><span class="line">    torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">    torch_sum.backward()</span><br><span class="line">    torch_dW = np.transpose(torch_weight.grad.numpy(), (<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>))</span><br><span class="line">    torch_db = torch_bias.grad.numpy()</span><br><span class="line">    torch_dA_prev = np.transpose(torch_input.grad.numpy().squeeze(<span class="number">0</span>),</span><br><span class="line">                                 (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    dZ = np.ones(numpy_output.shape)</span><br><span class="line">    dW, db, dA_prev = conv2d_backward(dZ, cache, stride, padding)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dW, torch_dW)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(db, torch_db)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dA_prev, torch_dA_prev)</span><br></pre></td></tr></table></figure>
+<p>整个测试函数可以分成三部分：变量预处理、前向传播、反向传播。在前向传播和反向传播中，我们要分别用刚编写的卷积核PyTorch中的卷积进行计算，并比较两个运算结果是否相同。</p>
+<p>预处理时，我们要创建NumPy和PyTorch的输入。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Preprocess</span></span><br><span class="line"><span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">weight = np.random.randn(c_o, kernel_size, kernel_size, c_i)</span><br><span class="line">bias = np.random.randn(c_o)</span><br><span class="line"></span><br><span class="line">torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">    <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br><span class="line">torch_weight = torch.from_numpy(np.transpose(</span><br><span class="line">    weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>))).requires_grad_()</span><br><span class="line">torch_bias = torch.from_numpy(bias).requires_grad_()</span><br></pre></td></tr></table></figure>
+<p>之后是正向传播。计算结果和中间变量会被存入<code>cache</code>中。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># forward</span></span><br><span class="line">torch_output_tensor = torch.conv2d(torch_input, torch_weight, torch_bias,</span><br><span class="line">                                    stride, padding)</span><br><span class="line">torch_output = np.transpose(</span><br><span class="line">    torch_output_tensor.detach().numpy().squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">cache = conv2d_forward(<span class="built_in">input</span>, weight, bias, stride, padding)</span><br><span class="line">numpy_output = cache[<span class="string">&#x27;Z&#x27;</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br></pre></td></tr></table></figure>
+<p>最后是反向传播。在那之前，要补充说明一下如何在PyTorch里手动求一些数据的导数。在PyTorch中，各个张量默认是不可训练的。为了让框架知道我们想求哪几个参数的导数，我们要执行张量的<code>required_grad_()</code>方法，如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">        <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br></pre></td></tr></table></figure>
+<p>这样，在正向传播时，PyTorch就会自动把对可训练参数的运算搭成计算图了。</p>
+<p>正向传播后，对结果张量调用<code>backward()</code>即可执行反向传播。但是，PyTorch要求调用<code>backward()</code>的张量必须是一个标量，也就是它不能是矩阵，不能是任何长度大于1的数据。而这里PyTorch的卷积结果又是一个四维张量。因此，我把PyTorch卷积结果做了求和，得到了一个标量，用它来调用<code>backward()</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">torch_sum.backward()</span><br></pre></td></tr></table></figure>
+<p>这样，就可以用<code>tensor.grad</code>获取<code>tensor</code>的导数了，如</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">torch_weight.grad</span><br><span class="line">torch_bias.grad</span><br><span class="line">torch_input.grad</span><br></pre></td></tr></table></figure>
+<p>整个反向传播测试的代码如下。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># backward</span></span><br><span class="line">torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">torch_sum.backward()</span><br><span class="line">torch_dW = np.transpose(torch_weight.grad.numpy(), (<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>))</span><br><span class="line">torch_db = torch_bias.grad.numpy()</span><br><span class="line">torch_dA_prev = np.transpose(torch_input.grad.numpy().squeeze(<span class="number">0</span>),</span><br><span class="line">                                (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">dZ = np.ones(numpy_output.shape)</span><br><span class="line">dW, db, dA_prev = conv2d_backward(dZ, cache, stride, padding)</span><br></pre></td></tr></table></figure>
+<p>再补充一下，在求导时，运算结果的导数是1。因此，新建<code>dZ</code>时，我用的是<code>np.ones</code>（全1张量）。同理，PyTorch也会默认运算结果的导数为1，即这里<code>torch_sum.grad==1</code>。而执行加法运算不会改变导数，所以<code>torch_output_tensor.grad</code>也是一个全是1的张量，和NumPy的<code>dZ</code>的值是一模一样的。</p>
+<p>写完单元测试函数后，运行前面提到的单元测试命令，pytest就会输出很多测试的结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pytest dldemos/BasicCNN/np_conv_backward.py</span><br></pre></td></tr></table></figure>
+<p>如果看到了类似的输出，就说明我们的代码是正确的。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">==== 16 passed in 1.04s ====</span><br></pre></td></tr></table></figure>
+<h2 id="反向传播的编写思路"><a href="#反向传播的编写思路" class="headerlink" title="反向传播的编写思路"></a>反向传播的编写思路</h2><p>通过阅读上面的实现过程，相信大家已经明白如何编写卷积的反向传播了。接下来，我将总结一下实现一般算子的正向、反向传播的思路。无论是用NumPy，还是PyTorch等编程框架，甚至是纯C++，这种思路都是适用的。</p>
+<p>一开始，我们要明白，一个算子总共会涉及到这些参数：</p>
+<ul>
+<li>输入与输出：算子的输入张量和输出张量。正向传播和反向传播的输入输出恰好是相反的。</li>
+<li>属性：算子的超参数。比如卷积的<code>stride, padding</code>。</li>
+<li>中间变量：前向传播传递给反向传播的变量。</li>
+</ul>
+<p>一般情况下，我们应该编写一个算子类。在初始化算子类时，算子的属性就以类属性的形式存储下来了。</p>
+<p>在正向传播时，我们按照算子定义直接顺着写下去就行。这个时候，可以先准备好<code>cache</code>变量，但先不去管它，等写到反向传播的时候再处理。</p>
+<p>接着，编写反向传播。由于反向传播和正向传播的运算步骤相似，我们可以直接把正向传播的代码复制一份。在这个基础上，思考每一步正向传播运算产生了哪些导数，对照着写出导数计算的代码即可。这时，我们会用到一些正向传播的中间结果，这下就可以去正向传播代码里填写<code>cache</code>，在反向传播里取出来了。</p>
+<p>最后，写完了算子，一定要做单元测试。如果该算子有现成的实现，用现成的实现来对齐运算结果是最简单的一种实现单元测试的方式。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了以下内容：</p>
+<ul>
+<li>卷积反向传播的NumPy实现</li>
+<li>如何用PyTorch手动求导</li>
+<li>如何编写完整的算子单元测试</li>
+<li>实现算子正向传播、反向传播的思路</li>
+</ul>
+<p>如果你也想把代码基础打牢，一定一定要像这样自己动手从头写一份代码。在写代码，调bug的过程中，一定会有很多收获。</p>
+<p>由于现在的编程框架都比较成熟，搞科研时基本不会碰到自己动手写底层算子的情况。但是，如果你想出了一个特别棒的idea，想出了一个全新的神经网络模块，却在写代码时碰到了阻碍，那可就太可惜了。学一学反向传播的实现还是很有用的。</p>
+<p>在模型部署中，反向传播可能完全派不上用场。但是，一般框架在实现算子的正向传播时，是会照顾反向传播的。也就是说，如果抛掉反向传播，正向传播的实现或许可以写得更加高效。这样看来，了解反向传播的实现也是很有帮助的。我们可以用这些知识看懂别人的正向传播、反向传播的实现，进而优化代码的性能。</p>
+<h2 id="附录：完整代码"><a href="#附录：完整代码" class="headerlink" title="附录：完整代码"></a>附录：完整代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Dict</span>, <span class="type">Tuple</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> pytest</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">conv2d_forward</span>(<span class="params"><span class="built_in">input</span>: np.ndarray, weight: np.ndarray, bias: np.ndarray,</span></span><br><span class="line"><span class="params">                   stride: <span class="built_in">int</span>, padding: <span class="built_in">int</span></span>) -&gt; <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Forward Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        input (np.ndarray): The input NumPy array of shape (H, W, C).</span></span><br><span class="line"><span class="string">        weight (np.ndarray): The weight NumPy array of shape</span></span><br><span class="line"><span class="string">            (C&#x27;, F, F, C).</span></span><br><span class="line"><span class="string">        bias (np.ndarray | None): The bias NumPy array of shape (C&#x27;).</span></span><br><span class="line"><span class="string">            Default: None.</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        Dict[str, np.ndarray]: Cached data for backward prop.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    h_i, w_i, c_i = <span class="built_in">input</span>.shape</span><br><span class="line">    c_o, f, f_2, c_k = weight.shape</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> (f == f_2)</span><br><span class="line">    <span class="keyword">assert</span> (c_i == c_k)</span><br><span class="line">    <span class="keyword">assert</span> (bias.shape[<span class="number">0</span>] == c_o)</span><br><span class="line"></span><br><span class="line">    input_pad = np.pad(<span class="built_in">input</span>, [(padding, padding), (padding, padding), (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">cal_new_sidelngth</span>(<span class="params">sl, s, f, p</span>):</span><br><span class="line">        <span class="keyword">return</span> (sl + <span class="number">2</span> * p - f) // s + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    h_o = cal_new_sidelngth(h_i, stride, f, padding)</span><br><span class="line">    w_o = cal_new_sidelngth(w_i, stride, f, padding)</span><br><span class="line"></span><br><span class="line">    output = np.empty((h_o, w_o, c_o), dtype=<span class="built_in">input</span>.dtype)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">        <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">            <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">                h_lower = i_h * stride</span><br><span class="line">                h_upper = i_h * stride + f</span><br><span class="line">                w_lower = i_w * stride</span><br><span class="line">                w_upper = i_w * stride + f</span><br><span class="line">                input_slice = input_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">                kernel_slice = weight[i_c]</span><br><span class="line">                output[i_h, i_w, i_c] = np.<span class="built_in">sum</span>(input_slice * kernel_slice)</span><br><span class="line">                output[i_h, i_w, i_c] += bias[i_c]</span><br><span class="line"></span><br><span class="line">    cache = <span class="built_in">dict</span>()</span><br><span class="line">    cache[<span class="string">&#x27;Z&#x27;</span>] = output</span><br><span class="line">    cache[<span class="string">&#x27;W&#x27;</span>] = weight</span><br><span class="line">    cache[<span class="string">&#x27;b&#x27;</span>] = bias</span><br><span class="line">    cache[<span class="string">&#x27;A_prev&#x27;</span>] = <span class="built_in">input</span></span><br><span class="line">    <span class="keyword">return</span> cache</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">conv2d_backward</span>(<span class="params">dZ: np.ndarray, cache: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray], stride: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                    padding: <span class="built_in">int</span></span>) -&gt; <span class="type">Tuple</span>[np.ndarray, np.ndarray, np.ndarray]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;2D Convolution Backward Implemented with NumPy</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        dZ: (np.ndarray): The derivative of the output of conv.</span></span><br><span class="line"><span class="string">        cache (Dict[str, np.ndarray]): Record output &#x27;Z&#x27;, weight &#x27;W&#x27;, bias &#x27;b&#x27;</span></span><br><span class="line"><span class="string">            and input &#x27;A_prev&#x27; of forward function.</span></span><br><span class="line"><span class="string">        stride (int): Stride for convolution.</span></span><br><span class="line"><span class="string">        padding (int): The count of zeros to pad on both sides.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Outputs:</span></span><br><span class="line"><span class="string">        Tuple[np.ndarray, np.ndarray, np.ndarray]: The derivative of W, b,</span></span><br><span class="line"><span class="string">            A_prev.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    W = cache[<span class="string">&#x27;W&#x27;</span>]</span><br><span class="line">    b = cache[<span class="string">&#x27;b&#x27;</span>]</span><br><span class="line">    A_prev = cache[<span class="string">&#x27;A_prev&#x27;</span>]</span><br><span class="line">    dW = np.zeros(W.shape)</span><br><span class="line">    db = np.zeros(b.shape)</span><br><span class="line">    dA_prev = np.zeros(A_prev.shape)</span><br><span class="line"></span><br><span class="line">    _, _, c_i = A_prev.shape</span><br><span class="line">    c_o, f, f_2, c_k = W.shape</span><br><span class="line">    h_o, w_o, c_o_2 = dZ.shape</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> (f == f_2)</span><br><span class="line">    <span class="keyword">assert</span> (c_i == c_k)</span><br><span class="line">    <span class="keyword">assert</span> (c_o == c_o_2)</span><br><span class="line"></span><br><span class="line">    A_prev_pad = np.pad(A_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                 (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line">    dA_prev_pad = np.pad(dA_prev, [(padding, padding), (padding, padding),</span><br><span class="line">                                   (<span class="number">0</span>, <span class="number">0</span>)])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i_h <span class="keyword">in</span> <span class="built_in">range</span>(h_o):</span><br><span class="line">        <span class="keyword">for</span> i_w <span class="keyword">in</span> <span class="built_in">range</span>(w_o):</span><br><span class="line">            <span class="keyword">for</span> i_c <span class="keyword">in</span> <span class="built_in">range</span>(c_o):</span><br><span class="line">                h_lower = i_h * stride</span><br><span class="line">                h_upper = i_h * stride + f</span><br><span class="line">                w_lower = i_w * stride</span><br><span class="line">                w_upper = i_w * stride + f</span><br><span class="line"></span><br><span class="line">                input_slice = A_prev_pad[h_lower:h_upper, w_lower:w_upper, :]</span><br><span class="line">                <span class="comment"># forward</span></span><br><span class="line">                <span class="comment"># kernel_slice = W[i_c]</span></span><br><span class="line">                <span class="comment"># Z[i_h, i_w, i_c] = np.sum(input_slice * kernel_slice)</span></span><br><span class="line">                <span class="comment"># Z[i_h, i_w, i_c] += b[i_c]</span></span><br><span class="line"></span><br><span class="line">                <span class="comment"># backward</span></span><br><span class="line">                dW[i_c] += input_slice * dZ[i_h, i_w, i_c]</span><br><span class="line">                dA_prev_pad[h_lower:h_upper,</span><br><span class="line">                            w_lower:w_upper, :] += W[i_c] * dZ[i_h, i_w, i_c]</span><br><span class="line">                db[i_c] += dZ[i_h, i_w, i_c]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> padding &gt; <span class="number">0</span>:</span><br><span class="line">        dA_prev = dA_prev_pad[padding:-padding, padding:-padding, :]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        dA_prev = dA_prev_pad</span><br><span class="line">    <span class="keyword">return</span> dW, db, dA_prev</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;c_i, c_o&#x27;</span>, [(<span class="params"><span class="number">3</span>, <span class="number">6</span></span>), (<span class="params"><span class="number">2</span>, <span class="number">2</span></span>)]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;kernel_size&#x27;</span>, [<span class="number">3</span>, <span class="number">5</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;stride&#x27;</span>, [<span class="number">1</span>, <span class="number">2</span>]</span>)</span></span><br><span class="line"><span class="meta">@pytest.mark.parametrize(<span class="params"><span class="string">&#x27;padding&#x27;</span>, [<span class="number">0</span>, <span class="number">1</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_conv</span>(<span class="params">c_i: <span class="built_in">int</span>, c_o: <span class="built_in">int</span>, kernel_size: <span class="built_in">int</span>, stride: <span class="built_in">int</span>, padding: <span class="built_in">str</span></span>):</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Preprocess</span></span><br><span class="line">    <span class="built_in">input</span> = np.random.randn(<span class="number">20</span>, <span class="number">20</span>, c_i)</span><br><span class="line">    weight = np.random.randn(c_o, kernel_size, kernel_size, c_i)</span><br><span class="line">    bias = np.random.randn(c_o)</span><br><span class="line"></span><br><span class="line">    torch_input = torch.from_numpy(np.transpose(</span><br><span class="line">        <span class="built_in">input</span>, (<span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>))).unsqueeze(<span class="number">0</span>).requires_grad_()</span><br><span class="line">    torch_weight = torch.from_numpy(np.transpose(</span><br><span class="line">        weight, (<span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>))).requires_grad_()</span><br><span class="line">    torch_bias = torch.from_numpy(bias).requires_grad_()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># forward</span></span><br><span class="line">    torch_output_tensor = torch.conv2d(torch_input, torch_weight, torch_bias,</span><br><span class="line">                                       stride, padding)</span><br><span class="line">    torch_output = np.transpose(</span><br><span class="line">        torch_output_tensor.detach().numpy().squeeze(<span class="number">0</span>), (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    cache = conv2d_forward(<span class="built_in">input</span>, weight, bias, stride, padding)</span><br><span class="line">    numpy_output = cache[<span class="string">&#x27;Z&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(torch_output, numpy_output)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># backward</span></span><br><span class="line">    torch_sum = torch.<span class="built_in">sum</span>(torch_output_tensor)</span><br><span class="line">    torch_sum.backward()</span><br><span class="line">    torch_dW = np.transpose(torch_weight.grad.numpy(), (<span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>))</span><br><span class="line">    torch_db = torch_bias.grad.numpy()</span><br><span class="line">    torch_dA_prev = np.transpose(torch_input.grad.numpy().squeeze(<span class="number">0</span>),</span><br><span class="line">                                 (<span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line">    dZ = np.ones(numpy_output.shape)</span><br><span class="line">    dW, db, dA_prev = conv2d_backward(dZ, cache, stride, padding)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dW, torch_dW)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(db, torch_db)</span><br><span class="line">    <span class="keyword">assert</span> np.allclose(dA_prev, torch_dA_prev)</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/24/DLS-note-10-4/" rel="prev" title="吴恩达《深度学习专项》代码实战（十）：3.用 NumPy 复现参数一致的 torch.conv2d 前向传播">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》代码实战（十）：3.用 NumPy 复现参数一致的 torch.conv2d 前向传播
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/24/DLS-note-11/" rel="next" title="吴恩达《深度学习专项》笔记（十一）：深度卷积模型——从示例中学习">
+      吴恩达《深度学习专项》笔记（十一）：深度卷积模型——从示例中学习 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF"><span class="nav-number">1.</span> <span class="nav-text">实现思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">代码实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95"><span class="nav-number">3.</span> <span class="nav-text">单元测试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8D%E5%90%91%E4%BC%A0%E6%92%AD%E7%9A%84%E7%BC%96%E5%86%99%E6%80%9D%E8%B7%AF"><span class="nav-number">4.</span> <span class="nav-text">反向传播的编写思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95%EF%BC%9A%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="nav-number">6.</span> <span class="nav-text">附录：完整代码</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

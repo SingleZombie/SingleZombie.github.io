@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在2022年的这波AI绘画浪潮中，Stable Diffusion无疑是最受欢迎的图像生成模型。究其原因，第一，Stable Diffusion通过压缩图像尺寸显著提升了扩散模型的运行效率，使得每个用户能在自己的商业级显卡上运行模型；第二，有许多基于Stable Diffusion的应用，比如Stable Diffusion自带的文生图、图像补全，以及ControlNet、LoRA、DreamBo">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Stable Diffusion 解读（一）：回顾早期工作">
+<meta property="og:url" content="https://zhouyifan.net/2024/01/23/20230707-SD1/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="在2022年的这波AI绘画浪潮中，Stable Diffusion无疑是最受欢迎的图像生成模型。究其原因，第一，Stable Diffusion通过压缩图像尺寸显著提升了扩散模型的运行效率，使得每个用户能在自己的商业级显卡上运行模型；第二，有许多基于Stable Diffusion的应用，比如Stable Diffusion自带的文生图、图像补全，以及ControlNet、LoRA、DreamBo">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/11.5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/13.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/14.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/15.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/16.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/17.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/18.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/19.jpg">
+<meta property="article:published_time" content="2024-01-23T11:41:17.000Z">
+<meta property="article:modified_time" content="2024-10-23T06:42:17.397Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2024/01/23/20230707-SD1/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/01/23/20230707-SD1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Stable Diffusion 解读（一）：回顾早期工作 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/01/23/20230707-SD1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Stable Diffusion 解读（一）：回顾早期工作
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-01-23 19:41:17" itemprop="dateCreated datePublished" datetime="2024-01-23T19:41:17+08:00">2024-01-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在2022年的这波AI绘画浪潮中，Stable Diffusion无疑是最受欢迎的图像生成模型。究其原因，第一，Stable Diffusion通过压缩图像尺寸显著提升了扩散模型的运行效率，使得每个用户能在自己的商业级显卡上运行模型；第二，有许多基于Stable Diffusion的应用，比如Stable Diffusion自带的文生图、图像补全，以及ControlNet、LoRA、DreamBooth等插件式应用；第三，得益于前两点，Stable Diffusion已经形成了一个庞大的用户社群，大家互相分享模型，交流心得。</p>
+<p>不仅是大众，Stable Diffusion也吸引了大量科研人员，很多本来研究GAN的人纷纷转来研究扩散模型。然而，许多人在学习Stable Diffusion时却犯了难：又是公式扎堆的扩散模型，又是VAE，又是U-Net，这该怎么学起呀？</p>
+<p>其实，一上来就读Stable Diffusion是很难读懂的。而如果你把之前的一些更基础的文章读懂，再回头来读Stable Diffusion，就会畅行无阻了。在这篇及之后的几篇文章中，我将从科研的角度对Stable Diffusion做一个全面的解读。在第一篇文章中，我将面向完全没接触过图像生成的读者，从头介绍Stable Diffusion是怎样从早期工作中一步一步诞生的；在第二篇文章中，我将详细解读Stable Diffusion的论文；在最后的第三篇文章中，我将带领大家阅读Stable Diffusion的官方源码，以及一些流行的开源库的Stable Diffusion实现。后续我还会写其他和Stable Diffusion相关的文章，比如ControlNet的介绍。</p>
+<h2 id="从自编码器谈起"><a href="#从自编码器谈起" class="headerlink" title="从自编码器谈起"></a>从自编码器谈起</h2><p>包括Stable Diffusion在内，很多图像生成模型都可以看成是一种非常简单的模型——自编码器——的改进版。要谈Stable Diffusion是怎么逐渐诞生的，其实就是在谈自编码器是一步一步进化的。我们的学习就从自编码器开始。</p>
+<p>尽管PNG、JPG等图像压缩方法已经非常成熟，但我们会想，会不会还有更好的图像压缩算法呢？图像压缩，其实就是找两个映射，一个把图片<strong>编码</strong>成压缩数据，另一个把压缩数据<strong>解码</strong>回图片。我们知道，神经网络理论上可以拟合任何映射。那我们干脆用两个神经网络来拟合两种映射，以实现一个图像压缩算法。负责编码的神经网络叫<strong>编码器（Encoder）</strong>，负责解码的神经网络叫做<strong>解码器（Decoder）</strong>。</p>
+<p><img src="/2024/01/23/20230707-SD1/1.jpg" alt></p>
+<p>光定义了神经网络还不够，我们还需要给两个神经网络设置一个学习目标。在运行过程中，神经网络应该满足一个显然的约束：编码再解码后的<strong>重建图像</strong>应该和原图像尽可能一致，即二者的均方误差应该尽可能小。这样，我们只需要随便找一张图片，通过编码器和解码器得到重建图像，就能训练神经网络了。我们不需要给图片打上标签，整个训练过程是自监督的。所以我们说，整套模型是一个<strong>自编码器（Autoencoder，AE）</strong>。</p>
+<p><img src="/2024/01/23/20230707-SD1/2.jpg" alt></p>
+<p>图像压缩模型AE为什么会和图像生成扯上关系呢？你可以试着把AE的输入图像和编码器遮住，只看解码部分。把一个压缩数据解码成图像，换个角度看，不就是在根据某一数据生成图像嘛。</p>
+<p>很可惜，AE并不是一个合格的图像生成模型。我们常说的图像生成，具体是指让程序生成各种各样的图片。为了让程序生成不同的图片，我们一般是让程序根据随机数（或是随机向量）来生成图片。而普通的AE会有<strong>过拟合</strong>现象，这导致AE的解码器只认得训练集里的图片经编码器解码出来的压缩数据，而不认得随机生成的压缩数据，进而也无法达到图像生成的要求。</p>
+<p>所谓过拟合，就是指模型只能处理训练数据，而不能推广到一般的数据上。举一个极端的例子，如下图所示，编码器和解码器直接记忆了整个数据集，把所有图片压缩成了一个数字。也就是模型把编码器当成一个图片到数字的词典，把解码器当成一个数字到图片的词典。这样，不管数据集有多大，所有图片都可以被压缩成一个数字。这样的AE确实压缩能力很强，但它完全没用，因为它过拟合了，处理不了训练集以外的数据。</p>
+<p><img src="/2024/01/23/20230707-SD1/3.jpg" alt></p>
+<p>过拟合现象在普通版AE中是不可避免的。为了利用AE的解码器来生成图片，许多工作都在试图克服AE的过拟合现象。AE的改进思路很多，在这篇文章中，我们仅把AE的改进路线粗略地分成两种：解决过拟合问题以直接用AE做图像生成、用AE压缩图像间接实现图像生成。</p>
+<h2 id="第一条路线：VAE-和-DDPM"><a href="#第一条路线：VAE-和-DDPM" class="headerlink" title="第一条路线：VAE 和 DDPM"></a>第一条路线：VAE 和 DDPM</h2><p>在第一条改进路线中，许多后续工作都试图用更高级的数学模型来解决AE的过拟合问题。<strong>变分自编码器（Variational Autoencoder, VAE）</strong> 就是其中的代表。</p>
+<p>VAE对AE做了若干改动。第一，VAE让编码器的输出不再是一个确定的数据，而是一个正态分布中的一个随机数据。更具体一点，训练时，编码器会同时输出一个均值和方差。随后，模型会从这个均值和方差表达的正态分布里随机采样一个数据，作为解码器的输入。直观上看，这一改动就是在AE的基础上，让编码器多输出了一个方差，使得原AE编码器的输出发生了一点随机扰动。</p>
+<p><img src="/2024/01/23/20230707-SD1/4.jpg" alt></p>
+<p>这一改动可以缓解过拟合现象。这是为什么呢？我们可以这样想：原来的AE之所以会过拟合，是因为它强行记住了训练集里每一个数据的编码输出。现在，我们在VAE里让编码器不再输出一个固定值，而是随机输出一个在均值附近的值。这样的话，VAE就不能死记硬背了，必须要找出数据中的规律。</p>
+<p>VAE的第二项改动是多添加一个学习目标，让编码器的输出和标准正态分布尽可能相似。前面我们谈过，图像生成模型一般会根据一个随机向量来生成图像。最常用的产生随机向量的方法是去标准正态分布里采样。也就是说，在用VAE生成图像时，我们会抛掉编码器，用下图所示的流程来生成图像。如果我们不约束编码器的输出分布，不让它输出一个和标准正态分布很相近的分布的话，解码器就不能很好地根据来自标准正态分布的随机向量生成图像了。</p>
+<p><img src="/2024/01/23/20230707-SD1/5.jpg" alt></p>
+<p>综上，VAE对AE做了两项改进：使编码器输出一个正态分布，且该分布要尽可能和标准正态分布相似。训练时，模型从编码器输出的分布里随机采样一个数据作为解码器的输入；图像采样（图像生成）时，模型从标准正态分布里随机采样一个数据作为解码器的输入。VAE的误差函数由两部分组成：原图像和重建图像的重建误差、编码器输出和标准正态分布之间的误差。VAE要最小化重建误差，最大化编码器输出与标准正态分布的相似度。</p>
+<p><img src="/2024/01/23/20230707-SD1/6.jpg" alt></p>
+<p>分布与分布之间的误差可以用一个叫KL散度的指标表示。所以，在上面那个误差函数公式中，负的相似度应该被替换成KL散度。VAE的这两项改动本质上都是在解决AE的过拟合问题，所以，VAE的改动可以被看成一种正则化方法。我们可以把VAE的正则化方法简称为<strong>KL正则化</strong>。</p>
+<blockquote>
+<p>在机器学习中，正则化方法就是「降低模型过拟合的方法」的简称。</p>
+</blockquote>
+<p>VAE确实能减轻AE的过拟合。然而，由于VAE只是让重建图像和原图像的均方误差（重建误差）尽可能小，而没有对重建图像的质量施加更多的约束，VAE的重建结果和图像生成结果都非常模糊。以下是VAE在CelebA数据集上图像生成结果。</p>
+<p><img src="/2024/01/23/20230707-SD1/7.jpg" alt></p>
+<p>在众多对VAE的改进方法中，一个叫做<strong>去噪扩散概率模型（Denoising Diffusion Probabilistic Model, DDPM）</strong> 的图像生成模型脱颖而出。DDPM正是当今扩散模型的开山鼻祖。我们来看一下DDPM是怎样基于VAE对图像生成建模的。</p>
+<p>VAE之所以效果不好，很可能是因为它的约束太少了。VAE的编码和解码都是用神经网络表示的。神经网络是一个黑盒，我们不好对神经网络的中间步骤施加约束，只好在编码器的输出（某个正态分布）和解码器的输出（重建图像）上施加约束。能不能让VAE的编码和解码过程更可控一点呢？</p>
+<p>DDPM的设计灵感来自热力学：一个分布可以通过一系列简单的变化（如添加高斯噪声）逐渐变成另一个分布。恰好，VAE的编码器不正是想让来自训练集的图像（训练集分布）变成标准正态分布吗？既然如此，就不要用一个可学习的神经网络来表示VAE的编码器了，干脆用一些预定义好的加噪声操作来表示编码过程。可以从数学上证明，经过了多次加噪声操作后，最后的图像分布会是一个标准正态分布。</p>
+<p><img src="/2024/01/23/20230707-SD1/8.jpg" alt></p>
+<p>既然编码是加噪声，那解码时就应该去掉噪声。DDPM的解码器也不再是一个不可解释的神经网络，而是一个能预测若干个去噪结果的神经网络。</p>
+<p><img src="/2024/01/23/20230707-SD1/9.jpg" alt></p>
+<p>相比只有两个约束条件的VAE，DDPM的约束条件就多得多了。在DDPM中，第t个去噪操作应该尽可能抵消掉第t个加噪操作。</p>
+<p><img src="/2024/01/23/20230707-SD1/10.jpg" alt></p>
+<p>让我们来更具体地认识一下DDPM的学习目标。所谓添加噪声，就是在一个均值约等于当前图像的正态分布上采样。比如要对图像$\mathbf{x}$添加噪声，我们可以在$\mathcal{N}(0.9\mathbf{x},\mathbf{I})$这个分布里采样一张新图像。新的图像每个像素的均值是原来的0.9倍左右，且新图像会出现很多噪声。我们设$q(\mathbf{x}_{t} | \mathbf{x}_{t - 1})$为第$t$步加噪声的正态分布。经过一些数学推导，我们可以求出这一步操作的逆操作$q(\mathbf{x}_{t-1} | \mathbf{x}_{t})$，这个加噪声逆操作也是一个正态分布。既然如此，我们可以设第$t$步去噪声也为一个正态分布$p(\mathbf{x}_{t-1} | \mathbf{x}_{t})$，让第$t$步去噪声和第$t$步加噪声的逆操作尽可能相似。</p>
+<p><img src="/2024/01/23/20230707-SD1/11.jpg" alt></p>
+<p>总结一下，DDPM对VAE做了如下改动：</p>
+<ol>
+<li>编码器是一系列不可学习（固定）的加噪声操作</li>
+<li>解码器是一系列可学习的去噪声操作</li>
+<li>图像尺寸自始至终不变</li>
+</ol>
+<p>相比于VAE，DDPM的编码过程和解码过程的定义更加明确，可以施加的约束更多。因此，如下图所示，它的生成效果会比VAE好很多。同时，DDPM和VAE类似，它在编码时会从分布里采样，而不是只输出一个固定值，不会出现AE的过拟合问题。</p>
+<p><img src="/2024/01/23/20230707-SD1/11.5.jpg" alt="DDPM的图像生成结果"></p>
+<p>DDPM的生成效果确实很好。但是，由于DDPM始终会对同一个尺寸的数据进行操作，图像的尺寸极大地影响了DDPM的运行速度，用DDPM生成高分辨率图像需要耗费大量计算资源。因此，想要用DDPM生成高质量图像，还得经过另一条路线。</p>
+<h2 id="第二条路线：VQVAE"><a href="#第二条路线：VQVAE" class="headerlink" title="第二条路线：VQVAE"></a>第二条路线：VQVAE</h2><p>在AE的第二条改进路线中，一些工作干脆放弃使用AE做图像生成，转而利用AE的图像压缩能力，把图像生成拆成两步来做：先用AE的编码器把图像压缩成更小的图像，再用另一个图像生成模型生成小图像，并用AE的解码器把小图像重建回真实图像。</p>
+<p>为什么会有这么奇怪的图像生成方法呢？这得从另一类图像生成模型讲起。在机器翻译模型Transformer横空出世后的一段时间里，有很多工作都想把Transformer用在图像生成上。但是，原本用来生成文本的Transformer无法直接应用在图像上。在自然语言处理（NLP）中，一个句子可以用若干个单词表示。而每个单词又是用一个整数表示。所以，Transformer生成句子时，实际上是在生成若干个离散的整数，也就是生成一个离散向量。而在图像生成模型中，每个像素的颜色值是一个连续的浮点数。想把Transformer直接用在图像生成上，就得想办法把图像用离散向量表示。我们知道，AE可以把图像编码成一个连续向量。能不能做一些修改，让AE把图像编码成一个离散向量呢？</p>
+<p><img src="/2024/01/23/20230707-SD1/12.jpg" alt></p>
+<p><strong>Vector Quantised-Variational AutoEncoder (VQVAE)</strong> 就是一个能把图像编码成离散向量的AE（虽然作者在取名时用了VAE）。我们来简单看一下VQVAE是怎样把图像编码成离散向量的。</p>
+<p>假设我们有了一个能编码出离散向量的AE。</p>
+<p><img src="/2024/01/23/20230707-SD1/13.jpg" alt></p>
+<p>由于神经网络不能很好地处理离散数据，我们要引入NLP里的通常做法，加一个把离散向量映射成连续向量的嵌入层。</p>
+<p><img src="/2024/01/23/20230707-SD1/14.jpg" alt></p>
+<p>现在我们再回头讨论怎么让编码器输出一个离散向量。我们可以让AE的编码器保持不变，还是输出一个连续向量，再通过一个「向量离散化」操作，把连续向量变成离散向量。这个操作会把编码器的输出对齐到嵌入层的向量上，其原理类似于把0.99和1.01离散化成1，只不过它是对向量整体考虑，而不是对每一个数单独考虑。向量离散化操作的具体原理我们不在此处细究。</p>
+<p><img src="/2024/01/23/20230707-SD1/15.jpg" alt></p>
+<p>忽略掉实现细节，我们可以认为VQVAE能够把图像压缩成离散向量。更准确地说，VQVAE能把图像等比例压缩成离散的「小图像」。压缩成二维图像而不是一维向量，能够保留原图像的一些空间特性，为之后第二步图像生成铺路。</p>
+<p><img src="/2024/01/23/20230707-SD1/16.jpg" alt></p>
+<p>整理一下，VQVAE是一个能把图像压缩成离散小图像的AE。为了用VQVAE生成图像，需要执行一个两阶段的图像生成流程：</p>
+<ul>
+<li>训练时，先训练一个图像压缩模型（VQVAE），再训练一个生成压缩图像的模型（比如Transformer）</li>
+<li>生成时，先用第二个模型生成出一个压缩图像，再用第一个模型的解码器把压缩图像复原成真实图像</li>
+</ul>
+<p>之所以要执行两阶段的图像生成流程，而不是只用第二个模型生成大图像，有两个原因。第一个原因是前面提到的，Transformer等生成模型只支持生成离散图像，需要用另一个模型把连续的颜色值变成离散值以兼容这些模型。第二个原因是为了减少模型的运算量。以Transformer为例，Transformer的运算次数大致与像素数的平方成正比，拿Transformer生成高分辨率图像的运算开销是不可接受的。而如果用一个AE把图像压缩一下的话，用Transformer就可行了。</p>
+<p>VQVAE给后续工作带来了三条启发：第一，可以用AE把图像压缩成离散向量；第二，如果一个图像生成模型生成高分辨率的图像的计算代价太高，可以先用AE把图像压缩，再生成压缩图像。这两条启发对应上一段提到的使用VQVAE的两条动机。</p>
+<p>而第三条启发就比较有意思了。在讨论VQVAE的过程中，我们完全没有考虑过拟合的事。这是因为经过了向量离散化操作后，解码器的输入已经不再是编码器的输出，而是嵌入层里的向量了。这种做法杜绝了AE的死记硬背，缓解了过拟合现象。这样，我们可以换一个角度看待VQVAE：编码器还是AE的编码器，编码器的输出是连续向量，后续的向量离散化操作和嵌入层全部都是解码器的一部分。从这个角度看，VQVAE其实提出了一个由向量离散化和嵌入层组成的正则化模块。这个模块和VAE的KL散度约束一样，都解决了AE的过拟合问题。我们把VQVAE的正则化方法叫做<strong>VQ正则化</strong>。</p>
+<p><img src="/2024/01/23/20230707-SD1/17.jpg" alt></p>
+<p>VQVAE论文提出的图像生成方法效果一般。和普通的AE一样，VQVAE在训练时只用了重建误差来约束图像质量，重建图像的细节依然很模糊。且VQVAE配套的第二阶段图像生成模型不是较为强力的Transformer，而是一个基于CNN的图像生成模型。</p>
+<p><img src="/2024/01/23/20230707-SD1/18.jpg" alt></p>
+<p>后续的<strong>VQGAN</strong>论文对VQVAE进行了改进。对于一阶段的图像压缩模型，VQGAN在VQVAE的基础上引入了生成对抗网络（GAN）中一些监督误差，提高了图像压缩模型的重建质量；对于两阶段的图像生成模型，该方法使用了Transformer。凭借这些改动，VQGAN方法能够生成高质量的高清图片。并且，通过把额外的约束条件（如语义分割图像、文字）输入进Transformer，VQGAN方法能够实现带约束的图像生成。以下是VQGAN方法根据语义分割图像生成的高清图片。  </p>
+<blockquote>
+<p>图像生成模型可以是无约束或带约束的。无约束图像生成模型只需要输入一个随机向量，训练数据不需要任何标注，可以进行无监督训练。带约束图像生成模型会在无约束图像生成模型的基础上多加一些输入，并给每个训练图像打上描述约束的标签，执行监督训练。比如要训练文生图模型，就要给每个训练图片带上文字描述。</p>
+</blockquote>
+<p><img src="/2024/01/23/20230707-SD1/19.jpg" alt></p>
+<h2 id="路线的交汇点——Stable-Diffusion"><a href="#路线的交汇点——Stable-Diffusion" class="headerlink" title="路线的交汇点——Stable Diffusion"></a>路线的交汇点——Stable Diffusion</h2><p>看完上面这两条AE的改进路线，相信你已经能够猜出Stable Diffusion的核心思想了。让我们看看Stable Diffusion是怎么从这两条路径中汲取灵感的。</p>
+<p>在发布了VQGAN后，德国的CompVis实验室开始探索起VQGAN的改进方法。VQGAN能把图像边长压缩16倍，而VQGAN配套的Transformer只能一次生成$16 \times 16$的图片。也就是说，整套方法一次只能生成$256 \times 256$的图片。为了生成分辨率更高的图片，VQGAN方法需要借助滑动窗口。能不能让模型一次性生成分辨率更高的图片呢？制约VQGAN方法生成分辨率的主要因素是Transformer。如果能把Transformer换成一个效率更高，能生成更高分辨率的图像的模型，不就能生成比$256\times256$更大的图片了吗？CompVis实验室开始把目光着眼于DDPM上。</p>
+<p>于是，在发布VQGAN的一年后，CompVis实验室又发布了名为<em>High-Resolution Image Synthesis with Latent Diffusion Models</em>的论文，提出了一种叫做<strong>隐扩散模型（latent diffusion model, LDM）</strong> 的图像生成模型。通过与AI公司Stability AI合作，借助他们庞大的算力资源训练LDM，CompVis实验室发布了商业名为<strong>Stable Diffusion</strong>的开源文生图AI绘画模型。</p>
+<p>LDM其实就是在VQGAN方法的基础上，把图像生成模型从Transformer换成了DDPM。或者从另一个角度说，为了让DDPM生成高分辨率图像，LDM利用了VQVAE的第二条启发：先用AE把图像压缩，再用DDPM生成压缩图像。LDM的AE一般是把图像边长压缩8倍，DDPM生成$64 \times 64$的压缩图像，整套LDM能生成$512 \times 512$的图像。</p>
+<p>和Transformer不同，DDPM处理的图像是用连续向量表示的。因此，在LDM中使用VQGAN做图像压缩时，不一定需要向量离散化操作，只需要在AE的基础上加一点轻微的正则化就行。作者在实现LDM时讨论了两类正则化，一类是VAE的KL正则化，一类是VQ正则化（对应VQVAE的第三条启发），两种正则化都能取得不错的效果。</p>
+<p>LDM依然可以实现带约束的图像生成。用DDPM替换掉Transformer后，额外的约束会输入进DDPM中。作者在论文中讨论了几种把约束输入进DDPM的方式。</p>
+<p>在搞懂了早期工作后，理解Stable Diffusion的核心思想就是这么简单。让我们把Stable Diffusion的发展过程及主要结构总结一下。Stable Diffusion由两类AE的变种发展而来，一类是有强大生成能力却需要耗费大量运算资源的DDPM，一类是能够以较高保真度压缩图像的VQVAE。Stable Diffusion是一个两阶段的图像生成模型，它先用一个使用KL正则化或VQ正则化的VQGAN来实现图像压缩，再用DDPM生成压缩图像。可以把额外的约束（如文字）输入进DDPM以实现带约束图像生成。</p>
+<h2 id="相关论文"><a href="#相关论文" class="headerlink" title="相关论文"></a>相关论文</h2><p>本文仅仅对Stable Diffusion的早期工作做了一个简单的梳理。要把Stable Diffusion吃透，还需要多读一些早期论文。我来把早期论文按重要性分个类。</p>
+<h3 id="图像生成必读文章"><a href="#图像生成必读文章" class="headerlink" title="图像生成必读文章"></a>图像生成必读文章</h3><p><em>Neural Discrete Representation Learning</em> (VQVAE): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1711.00937">https://arxiv.org/abs/1711.00937</a></p>
+<p><em>Taming Transformers for High-Resolution Image Synthesis</em> (VQGAN): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2012.09841">https://arxiv.org/abs/2012.09841</a></p>
+<p><em>Denoising Diffusion Probabilistic Models</em> (DDPM): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2006.11239">https://arxiv.org/abs/2006.11239</a></p>
+<h3 id="图像生成选读文章"><a href="#图像生成选读文章" class="headerlink" title="图像生成选读文章"></a>图像生成选读文章</h3><p><em>Auto-Encoding Variational Bayes</em> (VAE): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1312.6114">https://arxiv.org/abs/1312.6114</a> 提出VAE的文章。数学公式较多，只需要了解VAE的大致结构就好，不需要详细阅读论文。</p>
+<p><em>Pixel Recurrent Neural Networks</em> (PixelCNN): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1601.06759">https://arxiv.org/abs/1601.06759</a> 提出了一种拟合离散分布的图像生成模型，自回归图像生成模型的代表。这是VQVAE使用的第二阶段图像生成模型。有兴趣可以了解一下。</p>
+<p><em>Deep Unsupervised Learning using Nonequilibrium Thermodynamics</em>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1503.03585">https://arxiv.org/abs/1503.03585</a> DDPM的前作，首个提出扩散模型思想的文章。其核心原理和DDPM几乎完全一致，但是模型结构和优化目标不够先进，生成效果没有改进后的DDPM好。数学公式较多，不必细读，可以在学习DDPM时对比着阅读。</p>
+<p><em>Denoising Diffusion Implicit Models</em> (DDIM): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2010.02502">https://arxiv.org/abs/2010.02502</a> 一种加速DDPM采样的方法，广泛运用在包含Stable Diffusion在内的扩散模型中。推荐阅读。</p>
+<p><em>Classifier-Free Diffusion Guidance</em>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2207.12598">https://arxiv.org/abs/2207.12598</a> 一种让扩散模型的输出更加贴近约束的方法，广泛运用在包含Stable Diffusion在内的扩散模型中，用于生成更符合文字描述的图片。推荐阅读。</p>
+<p><em>Generative Adversarial Networks</em> (GAN): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1406.2661">https://arxiv.org/abs/1406.2661</a> 以及 <em>A Style-Based Generator Architecture for Generative Adversarial Networks</em> (StyleGAN): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1812.04948">https://arxiv.org/abs/1812.04948</a> 可以了解一下GAN是怎么确保图像生成质量的，并认识CelebAHQ和FFHQ这两个常用的人脸数据集。 </p>
+<h3 id="其他必读文章"><a href="#其他必读文章" class="headerlink" title="其他必读文章"></a>其他必读文章</h3><p><em>Deep Residual Learning for Image Recognition</em> (ResNet): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1512.03385">https://arxiv.org/abs/1512.03385</a> 深度学习的经典文章。其中提出的残差连接被用到了DDPM中。</p>
+<p><em>Attention Is All You Need</em> (Transformer): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">https://arxiv.org/abs/1706.03762</a> 深度学习的经典文章。其中提出的自注意力模块被用到了DDPM中。</p>
+<h3 id="其他选读文章"><a href="#其他选读文章" class="headerlink" title="其他选读文章"></a>其他选读文章</h3><p><em>Learning Transferable Visual Models From Natural Language Supervision</em> (CLIP): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2103.00020">https://arxiv.org/abs/2103.00020</a> 提出了对齐文本和图像的方法。绝大多数文生图模型的核心。</p>
+<p><em>U-Net: Convolutional Networks for Biomedical Image Segmentation</em> (U-Net): <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1505.04597">https://arxiv.org/abs/1505.04597</a> 一种被广泛运用的神经网络架构。DDPM的神经网络的主架构。U-Net的结构很简单，可以不用去读论文，直接看代码。</p>
+<h2 id="我的解读文章"><a href="#我的解读文章" class="headerlink" title="我的解读文章"></a>我的解读文章</h2><p>我对这上面的很多论文都做过解读。如果你在阅读论文的时候碰到了困难，欢迎阅读我的解读。</p>
+<p>轻松理解 VQ-VAE：首个提出 codebook 机制的生成模型</p>
+<p>VQGAN 论文与源码解读：前Diffusion时代的高清图像生成模型</p>
+<p>扩散模型(Diffusion Model)详解：直观理解、数学原理、PyTorch 实现</p>
+<p>抛开数学，轻松学懂 VAE（附 PyTorch 实现）</p>
+<p>冷门的自回归生成模型 ~ 详解 PixelCNN 大家族</p>
+<p>DDIM 简明讲解与 PyTorch 实现：加速扩散模型采样的通用方法</p>
+<p>用18支画笔作画的AI ~ StyleGAN特点浅析</p>
+<p>ResNet 论文概览与精读</p>
+<p>Attention Is All You Need (Transformer) 论文精读</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/07/07/20230702-DDIM/" rel="prev" title="DDIM 简明讲解与 PyTorch 实现：加速扩散模型采样的通用方法">
+      <i class="fa fa-chevron-left"></i> DDIM 简明讲解与 PyTorch 实现：加速扩散模型采样的通用方法
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/01/23/20230709-SD2/" rel="next" title="Stable Diffusion 解读（二）：论文精读">
+      Stable Diffusion 解读（二）：论文精读 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8%E8%B0%88%E8%B5%B7"><span class="nav-number">1.</span> <span class="nav-text">从自编码器谈起</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%9D%A1%E8%B7%AF%E7%BA%BF%EF%BC%9AVAE-%E5%92%8C-DDPM"><span class="nav-number">2.</span> <span class="nav-text">第一条路线：VAE 和 DDPM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%9D%A1%E8%B7%AF%E7%BA%BF%EF%BC%9AVQVAE"><span class="nav-number">3.</span> <span class="nav-text">第二条路线：VQVAE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B7%AF%E7%BA%BF%E7%9A%84%E4%BA%A4%E6%B1%87%E7%82%B9%E2%80%94%E2%80%94Stable-Diffusion"><span class="nav-number">4.</span> <span class="nav-text">路线的交汇点——Stable Diffusion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E8%AE%BA%E6%96%87"><span class="nav-number">5.</span> <span class="nav-text">相关论文</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90%E5%BF%85%E8%AF%BB%E6%96%87%E7%AB%A0"><span class="nav-number">5.1.</span> <span class="nav-text">图像生成必读文章</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90%E9%80%89%E8%AF%BB%E6%96%87%E7%AB%A0"><span class="nav-number">5.2.</span> <span class="nav-text">图像生成选读文章</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E5%BF%85%E8%AF%BB%E6%96%87%E7%AB%A0"><span class="nav-number">5.3.</span> <span class="nav-text">其他必读文章</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E9%80%89%E8%AF%BB%E6%96%87%E7%AB%A0"><span class="nav-number">5.4.</span> <span class="nav-text">其他选读文章</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E7%9A%84%E8%A7%A3%E8%AF%BB%E6%96%87%E7%AB%A0"><span class="nav-number">6.</span> <span class="nav-text">我的解读文章</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

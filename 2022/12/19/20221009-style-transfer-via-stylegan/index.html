@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="如今，人脸风格迁移的效果越来越惊人。给定一张人脸照片，不管是变成卡通风格、二次元风格，甚至是变成讽刺画风格，AI都能轻轻松松做到。  AI能有这么强的生成效果，都得归功于创作力极强的StyleGAN。StyleGAN本身只是用来随机生成人脸的模型。随着研究的不断推进，StyleGAN被应用到了人脸风格迁移任务中。在这篇文章里，我将简要介绍一下基于StyleGAN的人脸风格迁移的最新pipeline">
+<meta property="og:type" content="article">
+<meta property="og:title" content="人脸风格迁移 + StyleGAN 的最新玩法">
+<meta property="og:url" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="如今，人脸风格迁移的效果越来越惊人。给定一张人脸照片，不管是变成卡通风格、二次元风格，甚至是变成讽刺画风格，AI都能轻轻松松做到。  AI能有这么强的生成效果，都得归功于创作力极强的StyleGAN。StyleGAN本身只是用来随机生成人脸的模型。随着研究的不断推进，StyleGAN被应用到了人脸风格迁移任务中。在这篇文章里，我将简要介绍一下基于StyleGAN的人脸风格迁移的最新pipeline">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/10.jpg">
+<meta property="article:published_time" content="2022-12-19T11:27:00.000Z">
+<meta property="article:modified_time" content="2022-12-19T11:27:00.989Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/20221009-style-transfer-via-stylegan/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>人脸风格迁移 + StyleGAN 的最新玩法 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221009-style-transfer-via-stylegan/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          人脸风格迁移 + StyleGAN 的最新玩法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-19 19:27:00" itemprop="dateCreated datePublished" datetime="2022-12-19T19:27:00+08:00">2022-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>如今，人脸风格迁移的效果越来越惊人。给定一张人脸照片，不管是变成卡通风格、二次元风格，甚至是变成讽刺画风格，AI都能轻轻松松做到。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/1.jpg" alt></p>
+<p>AI能有这么强的生成效果，都得归功于创作力极强的StyleGAN。StyleGAN本身只是用来随机生成人脸的模型。随着研究的不断推进，StyleGAN被应用到了人脸风格迁移任务中。在这篇文章里，我将简要介绍一下基于StyleGAN的人脸风格迁移的最新pipeline。</p>
+<h2 id="知识准备"><a href="#知识准备" class="headerlink" title="知识准备"></a>知识准备</h2><h3 id="风格迁移"><a href="#风格迁移" class="headerlink" title="风格迁移"></a>风格迁移</h3><p>在深度CNN展示出了强大的图像识别能力后，人们产生了疑问：CNN是感知图像的呢？为此，研究者找出了令深度CNN各层输出值最大的输入图片。这些图片能表明CNN各层“看到了”什么。实验结果显示，浅层网络关注轮廓信息，而深层网络会关注更抽象的信息。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/2.jpg" alt></p>
+<p>受此启发，有人提出了一种叫做神经网络风格迁移[1]的应用——输入一张内容图像(C)和一张风格图像(S)，输出一幅融合内容与风格的图片(G)。这一应用是通过对齐图像在深度CNN中各层的输出结果实现的。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/3.jpg" alt></p>
+<p>风格迁移的具体介绍可以参见我之前的文章：<a href>Neural Style Transfer 风格迁移经典论文讲解</a>。</p>
+<h3 id="StyleGAN"><a href="#StyleGAN" class="headerlink" title="StyleGAN"></a>StyleGAN</h3><p>GAN能够根据一个高维向量$z$生成图像（$z$可以看成图像的身份证号）。但是，早期的图像GAN不能对图像生成的过程加以干预。</p>
+<p>对此，人们提出了可控的图像生成网络StyleGAN[2]。在这个模型生成完一幅图像后，可以对图片进行由粗至精共18种微调：对于人脸生成而言，既可以调整性别、年龄这种更宏观的属性，也可以调整肤色、发色这种更具体的属性。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/4.jpg" alt></p>
+<p>StyleGAN 的详细介绍可以参见我之前的文章：<a href>用18支画笔作画的AI ~ StyleGAN特点浅析</a>。</p>
+<h2 id="基于-image-to-image-的风格迁移"><a href="#基于-image-to-image-的风格迁移" class="headerlink" title="基于 image-to-image 的风格迁移"></a>基于 image-to-image 的风格迁移</h2><p>在计算机眼中，无论是自然语言，还是图像，都是一堆数据。就像不同的语言之间可以翻译一样，不同风格之间也可以翻译。风格迁移任务，其实就可以看成把来自某一种风格的图像翻译到另一种风格中。早期的人脸风格迁移，都是通过图像翻译（image-to-image translation）框架实现的。</p>
+<p>对于语言翻译，需要准备好成对数据的数据集。比如在中文到英文翻译任务中，要给每一个中文句子准备其对应的英文翻译。而在风格迁移任务中，获得成对数据是几乎不可能的：哪有画家会去费心地给上千张人脸绘制出对应的漫画脸呢？因此，在风格迁移中，图像翻译都是通过无监督方式训练的，即不去使用成对的数据。</p>
+<p>无监督的图像翻译一般也是通过GAN实现。生成器的输入是普通的人脸照片，输出是其对应的风格人脸照片；判别器的输入是生成的假图或者风格数据集里的真图，输出为该图片是否是风格图片。受到StyleGAN的启发，风格迁移的图像翻译网络还会使用类似的“风格模块”，以提升风格迁移的效果。下图是近期的图像翻译风格迁移工作 U-GAT-IT[3] 的网络示意图。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/5.jpg" alt></p>
+<p>用图像翻译的想法来做风格迁移确实可行。但是，换一种新风格，就得花费大量精力去训练一个GAN，这一流程十分繁琐。</p>
+<h2 id="利用预训练-StyleGAN-的-Toonify"><a href="#利用预训练-StyleGAN-的-Toonify" class="headerlink" title="利用预训练 StyleGAN 的 Toonify"></a>利用预训练 StyleGAN 的 Toonify</h2><p>在StyleGAN面世后，热心的研究者们对其展开了各个角度的拓展。其中，有一篇短小精悍的文章用一种十分简单的方法让StyleGAN完成了风格迁移。这篇工作后来被称为Toonify[4]。</p>
+<p>先来看一下Toonify的使用效果。Toonify使用了两个StyleGAN，一个能够生成真实的人脸，一个能够生成风格化人脸。对于同一个高维向量输入$z$，只需要对两个StyleGAN的权重进行插值，就能让$z$对应的两幅图像之间发生风格迁移。下图中，a是真实StyleGAN的输出，b是风格化StyleGAN的输出，c, d是把两幅图像的内容和风格交换后的输出，e是精心组合两个StyleGAN权重得到的输出。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/6.jpg" alt></p>
+<p>Toonify使用的权重插值方法非常直接。StyleGAN生成图像时，会先生成分辨率较小的图片，再逐渐把图片放大。修改小分辨率处的权重，会改变图像的内容；修改大分辨率处的权重，会改变图像的风格。Toonify做的插值，仅仅是交换两个StyleGAN不同分辨率处的权重而已。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/7.jpg" alt></p>
+<p>以上只是Toonify的核心思想。要利用Toonify做风格迁移，还有两个问题要解决：</p>
+<ol>
+<li>怎么根据真实StyleGAN得到风格化的StyleGAN？</li>
+<li>StyleGAN的图片是通过$z$生成出来的。对于任意一幅真实人脸图像，怎么得到它的$z$呢？</li>
+</ol>
+<p>对于第一个问题，风格化的StyleGAN是通过微调得到的。作者用预训练的真实StyleGAN在新的风格化数据集上微调出了另一个StyleGAN。</p>
+<p>对于第二个问题，任意一张真实人脸图片的$z$可以通过简单的数学优化来实现：给定一张图片，我们要求一个$z$，使得$z$通过真实StyleGAN的输出和输入图片尽可能相似。当然，这种直接优化得到的$z$不一定是最优的。把任何一张图片嵌入进StyleGAN的隐空间是一个大的研究方向，叫做GAN Inversion.</p>
+<p>总结下来，Toonify使用的pipeline如下：</p>
+<ol>
+<li>在新风格上微调StyleGAN。</li>
+<li>通过GAN Inversion得到真实人脸的$z$。</li>
+<li>交换新旧StyleGAN的权重，得到插值StyleGAN。$z$在插值StyleGAN中的输出就是风格迁移后的图片。</li>
+</ol>
+<h2 id="基于-StyleGAN-的风格迁移"><a href="#基于-StyleGAN-的风格迁移" class="headerlink" title="基于 StyleGAN 的风格迁移"></a>基于 StyleGAN 的风格迁移</h2><p>Toonify这篇工作本身非常简短，但它却为风格迁移指出了一条新的路线。相比基于图像翻译的风格迁移，这种新方法有以下好处：</p>
+<ol>
+<li>训练代价大幅减小。新方法可以直接使用预训练好的StyleGAN，在几百幅新风格的图像上微调即可完成主要的模型训练，而无需从头训练一个GAN。</li>
+<li>可以直接利用StyleGAN的强大图像生成能力，甚至是StyleGAN的图像编辑能力（修改低分辨率或高分辨率的输入，以改变图像的内容和风格）。</li>
+</ol>
+<p>以发表在图形学顶刊ACM TOG上的AgileGAN[5]为例，我们来简单地看一下前沿的风格迁移框架是怎样的。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/8.jpg" alt></p>
+<p>模型训练分两部分，先训练编码器（完成GAN Inversion），再训练解码器（生成图像）。作者用VAE来建模编码器的训练过程，此时的解码器是固定权重的预训练StyleGAN。基于VAE的编码器训练好了之后，再固定编码器的权重，把预训练的StyleGAN在新数据集上微调，得到风格化的StyleGAN。</p>
+<p>在推理时，输入一张图片，VAE输出的分布的均值即是该图片的编码$z$。把$z$输入进微调后的StyleGAN，即可得到风格迁移的结果。</p>
+<p>由于使用了预训练StyleGAN，整个训练过程能在一小时内完成。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/9.jpg" alt></p>
+<p>作者还精心优化了StyleGAN的结构。StyleGAN的浅层决定了生成图像的抽象属性，比如性别、年龄。通过修改浅层的权重，即可得到不同性别、年龄的人脸图像。作者在StyleGAN的浅层网络中加入了多条路径（多条路径其实等价于多个网络），一条路径固定了一种人脸属性。比如第一条路径只能生成男性，第二条路径只能生成女性。每一条路径都有一个专门的判别器，该判别器集成了StyleGAN本身的预训练判别器和一个判断属性的判别器，保证一条路径生成的图像都满足某属性。</p>
+<p><img src="/2022/12/19/20221009-style-transfer-via-stylegan/./20221009-style-transfer-via-stylegan/10.jpg" alt></p>
+<p>从这个例子中，我们能够直观地认识到微调StyleGAN的风格迁移方法的优势。训练上的便捷性、StyleGAN强大的生成能力与编辑能力使得这一方法在众多风格迁移方法中脱颖而出。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>在这篇文章中，我简要介绍了一种前沿的风格迁移pipeline，并讲述了它是如何一步一步诞生的。从本文提及的前沿工作中也能看出，当前风格迁移的效果非常好，训练起来也不难，可以用其轻松地开发出人脸年轻化、性别转换、二次元化等等有趣的应用。如果你对相关的研究或应用感兴趣，欢迎参考这篇文章提及的文献进行学习。</p>
+<p>如果你很细心，会发现这篇文章开头展示的图片并不是本文介绍的任何一篇论文的输出结果。实际上，它是一篇更新的工作——DualStyleGAN——的输出结果。这篇工作的原理更加复杂，我会在之后的文章里对其做介绍。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>[1] Image style transfer using convolutional neural networks</p>
+<p>[2] A Style-Based Generator Architecture for Generative Adversarial Networks</p>
+<p>[3] U-GAT-IT: Unsupervised Generative Attentional Networks with Adaptive Layer-Instance Normalization for Image-to-Image Translation</p>
+<p>[4] Resolution Dependent GAN Interpolation for<br>Controllable Image Synthesis Between Domains</p>
+<p>[5] AgileGAN: Stylizing Portraits by Inversion-Consistent Transfer Learning</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/11/12/20220925-Transformer/" rel="prev" title="Attention Is All You Need (Transformer) 论文精读">
+      <i class="fa fa-chevron-left"></i> Attention Is All You Need (Transformer) 论文精读
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/12/19/20221016-VAE/" rel="next" title="抛开数学，轻松学懂 VAE（附 PyTorch 实现）">
+      抛开数学，轻松学懂 VAE（附 PyTorch 实现） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%A5%E8%AF%86%E5%87%86%E5%A4%87"><span class="nav-number">1.</span> <span class="nav-text">知识准备</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A3%8E%E6%A0%BC%E8%BF%81%E7%A7%BB"><span class="nav-number">1.1.</span> <span class="nav-text">风格迁移</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#StyleGAN"><span class="nav-number">1.2.</span> <span class="nav-text">StyleGAN</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-image-to-image-%E7%9A%84%E9%A3%8E%E6%A0%BC%E8%BF%81%E7%A7%BB"><span class="nav-number">2.</span> <span class="nav-text">基于 image-to-image 的风格迁移</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E9%A2%84%E8%AE%AD%E7%BB%83-StyleGAN-%E7%9A%84-Toonify"><span class="nav-number">3.</span> <span class="nav-text">利用预训练 StyleGAN 的 Toonify</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-StyleGAN-%E7%9A%84%E9%A3%8E%E6%A0%BC%E8%BF%81%E7%A7%BB"><span class="nav-number">4.</span> <span class="nav-text">基于 StyleGAN 的风格迁移</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">5.</span> <span class="nav-text">结语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">6.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

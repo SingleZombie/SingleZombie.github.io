@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="安装Tensorflow前言配编程环境考察的是利用搜索引擎的能力。在配环境时，应该多参考几篇文章。有英文阅读能力的应该去参考官方给的配置教程。出了问题把问题的出错信息放到搜索引擎上去查。一般多踩几次坑，多花点时间，环境总能配好。 本文只能给出一个大概率可行的指导，不能覆盖所有情况。如果在执行本文的安装步骤时出了问题，请灵活使用搜索引擎。 配置深度学习编程框架时，强烈推荐配置GPU版本。本文会介绍T">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》代码实战（七）：Windows&#x2F;Linux安装TensorFlow并实现多分类任务">
+<meta property="og:url" content="https://zhouyifan.net/2022/06/27/DLS-note-7-2/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="安装Tensorflow前言配编程环境考察的是利用搜索引擎的能力。在配环境时，应该多参考几篇文章。有英文阅读能力的应该去参考官方给的配置教程。出了问题把问题的出错信息放到搜索引擎上去查。一般多踩几次坑，多花点时间，环境总能配好。 本文只能给出一个大概率可行的指导，不能覆盖所有情况。如果在执行本文的安装步骤时出了问题，请灵活使用搜索引擎。 配置深度学习编程框架时，强烈推荐配置GPU版本。本文会介绍T">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/27/DLS-note-7-2/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/27/DLS-note-7-2/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/27/DLS-note-7-2/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/27/DLS-note-7-2/r1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/27/DLS-note-7-2/r2.jpg">
+<meta property="article:published_time" content="2022-06-27T08:22:23.000Z">
+<meta property="article:modified_time" content="2022-07-01T11:29:02.867Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/06/27/DLS-note-7-2/2.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/06/27/DLS-note-7-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》代码实战（七）：Windows/Linux安装TensorFlow并实现多分类任务 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/27/DLS-note-7-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》代码实战（七）：Windows/Linux安装TensorFlow并实现多分类任务
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-27 16:22:23" itemprop="dateCreated datePublished" datetime="2022-06-27T16:22:23+08:00">2022-06-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="安装Tensorflow"><a href="#安装Tensorflow" class="headerlink" title="安装Tensorflow"></a>安装Tensorflow</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>配编程环境考察的是利用搜索引擎的能力。在配环境时，应该多参考几篇文章。有英文阅读能力的应该去参考官方给的配置教程。出了问题把问题的出错信息放到搜索引擎上去查。一般多踩几次坑，多花点时间，环境总能配好。</p>
+<p>本文只能给出一个大概率可行的指导，不能覆盖所有情况。如果在执行本文的安装步骤时出了问题，请灵活使用搜索引擎。</p>
+<p>配置深度学习编程框架时，强烈推荐配置GPU版本。本文会介绍TensorFlow GPU版本的配置。如果只想用CPU版本的话，跳过“CUDA与cuDNN”一节即可。</p>
+<p>本文会同时介绍Windows和Linux下的安装方法。二者操作有区别的地方本文会特别强调，若没有强调则默认二者处理方法一致。</p>
+<h2 id="CUDA与cuDNN"><a href="#CUDA与cuDNN" class="headerlink" title="CUDA与cuDNN"></a>CUDA与cuDNN</h2><p>CUDA是NVIDIA显卡的GPU编程语言。cuDNN是基于CUDA编写的GPU深度学习编程库。在使用深度学习编程框架时，我们一般都要装好CUDA和cuDNN。</p>
+<p>这个安装步骤主要分三步：</p>
+<ol>
+<li>装显卡驱动</li>
+<li>装CUDA</li>
+<li>装cuDNN</li>
+</ol>
+<p>其中，显卡驱动一般不需要手动安装，尤其是在自带了NVIDIA显卡的Windows电脑上。</p>
+<h3 id="显卡驱动"><a href="#显卡驱动" class="headerlink" title="显卡驱动"></a>显卡驱动</h3><p>用<code>nvidia-smi</code>查看电脑的CUDA驱动最高支持版本。下图标出了命令运行成功后该信息所在位置：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/2.jpg" alt></p>
+<p>如果命令能成功运行，记住这个信息。</p>
+<p>如果这个命令失败了，就说明电脑需要重新安装显卡驱动。现在（2022年）CUDA的主流版本都是11.x，如果你发现驱动支持的最高版本偏低，也可以按照下面的步骤重新安装显卡驱动。</p>
+<p>访问NVIDIA驱动官网：<a target="_blank" rel="noopener" href="https://www.nvidia.cn/geforce/drivers/">https://www.nvidia.cn/geforce/drivers/</a>  。在网站上，输入显卡型号和操作系统等信息，即可找到对应的驱动安装程序。</p>
+<p>对于Windows，下载的是一个有GUI的安装器；对于Linux，下载的是一个shell脚本。如果你用的是Linux服务器，没有图形接口，可以先复制好下载链接，之后用<code>wget</code>下载脚本。</p>
+<p>之后，运行安装器，按照指引即可完成驱动的安装。</p>
+<p>注意，如果是带图形界面的Linux系统，可能要关闭图像界面再安装驱动。比如对于Ubuntu，一般要关闭nouveau再重启。请参考 <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/59618999">https://zhuanlan.zhihu.com/p/59618999</a> 等专门介绍Ubuntu显卡驱动安装的文章。</p>
+<p>能够执行<code>nvidia-smi</code>后，执行该命令，找到驱动支持的最高CUDA版本。</p>
+<h3 id="CUDA"><a href="#CUDA" class="headerlink" title="CUDA"></a>CUDA</h3><p>首先，我们要定一个CUDA安装版本。</p>
+<p>CUDA安装版本的第一个限制是，该版本不能大于刚刚在<code>nvidia-smi</code>中获取的最高CUDA版本。</p>
+<p>第二个限制是，TensorFlow版本必须支持当前CUDA版本。在 <a target="_blank" rel="noopener" href="https://www.tensorflow.org/install/source#gpu">https://www.tensorflow.org/install/source#gpu</a> 中，可以找到TensorFlow与CUDA、cuDNN的版本对应表。这个表格仅表示了经过测试的CUDA版本，不代表其他CUDA版本就一定不行。</p>
+<p>由于开发环境中可能会安装多个编程框架（TensorFlow，PyTorch），建议先安装一个比较常用、版本较高的CUDA，比如CUDA 11.1,11.2之类的。之后，让编程框架向CUDA版本妥协。</p>
+<p>如果之后安装TensorFlow后发现CUDA版本不对应，可以尝试升级TensorFlow版本。如果TensorFlow实在是支持不了当前的CUDA版本，最后再考虑降级当前的CUDA版本。</p>
+<p>选好了CUDA版本后，去 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/cuda-toolkit-archive">https://developer.nvidia.com/cuda-toolkit-archive</a> 上下载CUDA安装器。同样，Windows和Linux分别会得到GUI安装器和shell脚本。</p>
+<p>装完CUDA后，再控制台上输入<code>nvcc -V</code>。<code>nvcc</code>是CUDA专用的编译器，<code>-V</code>用于查询版本。如果这个命令能够运行，就说明CUDA已经装好了。以下是<code>nvcc -V</code>的输出：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/3.jpg" alt></p>
+<h3 id="cuDNN"><a href="#cuDNN" class="headerlink" title="cuDNN"></a>cuDNN</h3><p>打开下载网站 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/rdp/cudnn-download">https://developer.nvidia.com/rdp/cudnn-download</a> （最新版本） 或 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/rdp/cudnn-archive">https://developer.nvidia.com/rdp/cudnn-archive</a> （历史版本）。注册账号并登录。</p>
+<p>根据CUDA版本，找到合适版本的cuDNN。<a target="_blank" rel="noopener" href="https://docs.nvidia.com/deeplearning/cudnn/archives/index.html">https://docs.nvidia.com/deeplearning/cudnn/archives/index.html</a> 这个网站列出了每个cuDNN版本支持的CUDA版本(Support Matrix)。一般来说，可以去找最新的cuDNN，看它是否兼容当前的CUDA版本。如果不行，再考虑降级cuDNN。一般来说，CUDA 11.x 的兼容性都很好。</p>
+<p>选好了cuDNN版本后，去上面的下载网站上下载最新或某个历史版本的cuDNN。注意，应该下载一个压缩文件，而不应该下载一个可执行文件。比如对于所有的Linux系统，都应该下载”xxx for Linux x86_64 (Tar)”</p>
+<p>装CUDA和cuDNN，主要的目的是把它们的动态库放进环境变量里，把头文件放到系统头文件目录变量里。因此，下一步，我们要把cuDNN的文件放到系统能够找到的地方。由于CUDA的库目录、包含目录都会在安装时自动设置好，一种简单的配置方法是把cuDNN的文件放到CUDA的对应目录里。</p>
+<p>对于Windows，我们要找到CUDA的安装目录，比如<code>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2</code>。再找到刚刚cuDNN解压后的目录，比如<code>D:\Download\cudnn-11.1-windows-x64-v8.0.4.30\cuda</code>。把cuDNN目录下bin、include、lib里的文件分别复制到CUDA目录的对应文件夹中。</p>
+<p>对于Linux，CUDA的安装目录一般是<code>/usr/local/cuda</code>。再找到cuDNN的解压目录，比如<code>~/Downloads/cudnn-linux-x86_64-8.4.0.27_cuda11.6-archive</code>。切换到cuDNN的根目录下，输入类似下面的命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo cp include/* /usr/local/cuda/include</span><br><span class="line">sudo cp lib/lib* /usr/local/cuda/lib64</span><br><span class="line">sudo chmod a+r /usr/local/cuda/include/*</span><br><span class="line">sudo chmod a+r /usr/local/cuda/lib64/lib*</span><br></pre></td></tr></table></figure>
+<p>该命令用于把所有cuDNN的相关文件暴力复制到cuda的对应目录下，并修改它们的访问权限。一定要注意一下该命令中的路径，如果路径不对应的话要修改上述命令，比如有些cuDNN的库目录不叫<code>lib</code>而叫<code>lib64</code>。</p>
+<p>如果大家对操作系统熟悉的话，可以灵活地把复制改为剪切或者软链接。</p>
+<h2 id="Anaconda"><a href="#Anaconda" class="headerlink" title="Anaconda"></a>Anaconda</h2><p>Anaconda可以让用户更好地管理Python包。反正大家都在用，我也一直在用。</p>
+<p>无论是什么操作系统，都可以在这里下Anaconda：<br><a target="_blank" rel="noopener" href="https://www.anaconda.com/products/individual#Downloads">https://www.anaconda.com/products/individual#Downloads</a> </p>
+<p>同样，Windows和Linux分别会得到GUI安装器和shell脚本。</p>
+<p>下好了安装器后，按照默认配置安装即可。</p>
+<p>安装完成后，下一步是打开有Anaconda环境的控制台。</p>
+<p>在Windows下，点击任务栏中的搜索框，搜索Anaconda，打开<code>Anaconda Powershell Prompt (Anaconda)</code>或者<code>Anaconda Prompt (Anaconda)</code>。</p>
+<p>在Linux下，新建一个命令行即可。</p>
+<p>如果在命令行里看到了<code>(base)</code>，就说明安装成功了。</p>
+<p>之后，要创建<strong>某个Python版本</strong>的虚拟环境，专门放我们用来做深度学习的Python库。该命令如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda create --name &#123;env_name&#125; python=&#123;version&#125;</span><br></pre></td></tr></table></figure>
+<p>比如我要创建一个名字叫<code>pt</code>，Python版本3.7的虚拟环境：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda create --name pt python=3.7</span><br></pre></td></tr></table></figure>
+<p>创建完成后，使用下面的命令进入虚拟环境：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda activate &#123;env_name&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我的命令是：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conda activate pt</span><br></pre></td></tr></table></figure></p>
+<p>如果在命令行前面看到了<code>(&#123;env_name&#125;)</code>，就算是成功了：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/1.jpg" alt></p>
+<blockquote>
+<p>完成上述步骤后，在VSCode里用<code>ctrl+shift+p</code>打开命令面板，输入<code>select interpreter</code>，找到<code>Python: Select Interpreter</code>这个选项，选择刚刚新建好的虚拟环境中的Python解释器。这样，新建VSCode的控制台时，控制台就能自动进入到conda虚拟环境里了。</p>
+</blockquote>
+<h2 id="TensorFlow"><a href="#TensorFlow" class="headerlink" title="TensorFlow"></a>TensorFlow</h2><p>无论是GPU版还是CPU版，只需要在对应的虚拟环境中输入下面的命令即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install tensorflow</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如果下载速度较慢，请更换conda和pip的下载源。可参考的教程很多，比如 <a target="_blank" rel="noopener" href="https://blog.csdn.net/u011935830/article/details/10307">https://blog.csdn.net/u011935830/article/details/10307</a> 95。</p>
+</blockquote>
+<p>如果显卡驱动和conda都装好了，执行完上面的命令后，GPU版TensorFlow也就装好了。打开Python，执行下面的命令（或者写一个<code>.py</code>文件再运行），即可验证GPU版安装是否成功。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">tf.config.list_physical_devices(<span class="string">&#x27;GPU&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>如果最后输出了一大堆信息，最后一行是</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[PhysicalDevice(name=&#x27;/physical_device:GPU:0&#x27;, device_type=&#x27;GPU&#x27;)]</span><br></pre></td></tr></table></figure>
+<p>，那么就说明GPU版的TensorFlow安装成功了。</p>
+<h2 id="VSCode代码补全"><a href="#VSCode代码补全" class="headerlink" title="VSCode代码补全"></a>VSCode代码补全</h2><p>TensorFlow.keras在VSCode中无法生成代码补全，编程体验极差，不知道维护者在干什么东西。有人在issue中提出了解决方法。</p>
+<p>打开<code>tensorflow/__init__.py</code>，添加以下内容：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> _typing.TYPE_CHECKING:</span><br><span class="line">  <span class="keyword">from</span> tensorflow_estimator.python.estimator.api._v2 <span class="keyword">import</span> estimator <span class="keyword">as</span> estimator</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2 <span class="keyword">import</span> keras</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> losses</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> metrics</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> optimizers</span><br><span class="line">  <span class="keyword">from</span> keras.api._v2.keras <span class="keyword">import</span> initializers</span><br></pre></td></tr></table></figure></p>
+<h1 id="用TensorFlow实现多分类任务"><a href="#用TensorFlow实现多分类任务" class="headerlink" title="用TensorFlow实现多分类任务"></a>用TensorFlow实现多分类任务</h1><p>每当学习一门新的编程技术时，程序员们都会完成一个”Hello World”项目。让我们完成一个简单的点集多分类任务，作为TensorFlow的入门项目。这个项目只会用到比较底层的函数，而不会使用框架的高级特性，可以轻松地翻译成纯NumPy或者其他框架的实现。</p>
+<p>在这个项目中，我们会学到以下和TensorFlow有关的知识：</p>
+<ul>
+<li>TensorFlow与NumPy的相互转换</li>
+<li>TensorFlow的常量与变量</li>
+<li>TensorFlow的常见运算（矩阵乘法、激活函数、误差）</li>
+<li>TensorFlow的初始化器</li>
+<li>TensorFlow的优化器</li>
+<li>TensorFlow保存梯度中间结果的方法</li>
+<li>one-hot与标签的相互转换</li>
+</ul>
+<p>我们将按照程序运行的逻辑顺序，看看这个多分类器是怎么实现的。</p>
+<p>如果你看过我前几周的代码实战文章，欢迎比较一下这周和之前的代码，看看相比NumPy，TensorFlow节约了多少代码。</p>
+<p>欢迎在GitHub上面访问<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/MulticlassClassification">本项目</a>。</p>
+<h2 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h2><p>这周，我们要用到一个平面点数据集。在平面上，有三种颜色不同的点。我们希望用TensorFlow编写的神经网络能够区分这三种点。</p>
+<p><img src="/2022/06/27/DLS-note-7-2/r1.jpg" alt></p>
+<p>在项目中，我已经写好了生成数据集的函数。<code>generate_points</code>能根据数据集大小生成一个平面点数据集。<code>generate_plot_set</code>能生成最终测试平面上每一个“像素”的测试集。使用这两个函数，得到的<code>X</code>的形状为<code>[2, m]</code>（因为是平面点，所以只有两个通道），<code>Y</code>的形状为<code>[1, m]</code>。<code>Y</code>的元素是0-2的标签，分别表示红、绿、蓝三种颜色的点。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">train_X, train_Y = generate_points(<span class="number">400</span>)</span><br><span class="line">plot_X = generate_plot_set()</span><br><span class="line"></span><br><span class="line"><span class="comment"># X: [2, m]</span></span><br><span class="line"><span class="comment"># Y: [1, m]</span></span><br></pre></td></tr></table></figure>
+<h2 id="数据预处理与TensorFlow转换"><a href="#数据预处理与TensorFlow转换" class="headerlink" title="数据预处理与TensorFlow转换"></a>数据预处理与TensorFlow转换</h2><p>我们刚刚得到的<code>X, Y</code>都是NumPy数组，我们要把它们转换成TensorFlow认识的数据结构。</p>
+<p>TensorFlow用起来和C++很像，我们要决定一个数据是变量还是常量。由于<code>X</code>是不可变的训练数据，它应该属于常量。因此，我们用下面的语句把它转换成TensorFlow的常量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">train_X_tf = tf.constant(train_X, dtype=tf.float32)</span><br></pre></td></tr></table></figure>
+<p>TensorFlow常量的类型名叫做<code>tf.Tensor</code>，也就是说<code>train_X_tf</code>是一个<code>tf.Tensor</code>。</p>
+<p>而在使用<code>Y</code>时，我们要加一步转换到one-hot编码的步骤。回忆<a href>本周笔记中</a>有关多分类loss的知识，这里的<code>Y</code>是一个整型数组，表示每个数据的类别。而在loss的计算中，我们需要把每个整数转换成一个one-hot向量，得到一个one-hot向量的向量。</p>
+<p>因此，我们可以用下面的代码把<code>Y</code>预处理并转换成TensorFlow的数据结构：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">train_Y_tf = tf.transpose(tf.one_hot(train_Y.squeeze(<span class="number">0</span>), <span class="number">3</span>))</span><br></pre></td></tr></table></figure>
+<p><code>tf.one_hot()</code>用于生成one-hot编码，其第二个参数为总类别数。我们的数据集有3种点，因此取3。<code>tf.one_hot()</code>的输出是一个<code>[m, 3]</code>形状的张量，我们要把它<code>tf.transpose</code>转置一下，得到与其他代码相匹配的<code>[3, m]</code>张量。</p>
+<p>顺带一提，由于<code>tf.one_hot</code>是一个TensorFlow的运算，如果输入是一个numpy数组，输出会被自动转换成一个TensorFlow的常量<code>tf.Tensor</code>。所以，<code>Y</code>的类型也是<code>tf.Tensor</code>。</p>
+<p>经过上述操作，<code>X, Y</code>再被送入TensorFlow模型之前的形状是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># X: [2, m]</span></span><br><span class="line"><span class="comment"># Y: [3, m]</span></span><br></pre></td></tr></table></figure>
+<h2 id="TensorFlow多分类模型"><a href="#TensorFlow多分类模型" class="headerlink" title="TensorFlow多分类模型"></a>TensorFlow多分类模型</h2><p>处理完了数据，接下来，我们就要定义神经网络了。在神经网络中，我们要实现初始化、正向传播、误差、评估这四个方法。</p>
+<h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MulticlassClassificationNet</span>():</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, neuron_cnt: <span class="type">List</span>[<span class="built_in">int</span>]</span>):</span><br><span class="line">        <span class="variable language_">self</span>.num_layer = <span class="built_in">len</span>(neuron_cnt) - <span class="number">1</span></span><br><span class="line">        <span class="variable language_">self</span>.neuron_cnt = neuron_cnt</span><br><span class="line">        <span class="variable language_">self</span>.W = []</span><br><span class="line">        <span class="variable language_">self</span>.b = []</span><br><span class="line">        initializer = tf.keras.initializers.HeNormal(seed=<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>.num_layer):</span><br><span class="line">            <span class="variable language_">self</span>.W.append(</span><br><span class="line">                tf.Variable(</span><br><span class="line">                    initializer(shape=(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]))))</span><br><span class="line">            <span class="variable language_">self</span>.b.append(</span><br><span class="line">                tf.Variable(initializer(shape=(neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>))))</span><br><span class="line">        <span class="variable language_">self</span>.trainable_vars = <span class="variable language_">self</span>.W + <span class="variable language_">self</span>.b</span><br></pre></td></tr></table></figure>
+<p>和之前一样，我们通过<code>neuron_cnt</code>指定神经网络包含输出层在内每一层的神经元数。之后，根据每一层的神经元数，我们就可以初始化参数<code>W</code>和<code>b</code>了。</p>
+<p>使用TensorFlow，我们可以方便地完成一些高级初始化操作。比如我们要使用He Initialization，我们可以用<code>tf.keras.initializers.HeNormal(seed=1)</code>生成一个初始化器<code>initializer</code>，再用这个工具生成每一个初始化后的变量。</p>
+<p>使用<code>initializer(*shape)</code>即可生成某形状的参数。由于参数是需要被优化更新的，我们需要用<code>tf.Variable</code>来把参数转换成可以优化的变量。</p>
+<p>最后，我们用<code>self.trainable_vars = self.W + self.b</code>记录一下所有待优化变量，为之后的优化算法做准备。</p>
+<h3 id="正向传播"><a href="#正向传播" class="headerlink" title="正向传播"></a>正向传播</h3><p>正向传播的写法很简单，只要在每层算一个矩阵乘法和一次加法，再经过激活函数即可（在这个神经网络中，隐藏层的激活函数默认使用ReLU）：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, X</span>):</span><br><span class="line">    A = X</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>.num_layer):</span><br><span class="line">        Z = tf.matmul(<span class="variable language_">self</span>.W[i], A) + <span class="variable language_">self</span>.b[i]</span><br><span class="line">        <span class="keyword">if</span> i == <span class="variable language_">self</span>.num_layer - <span class="number">1</span>:</span><br><span class="line">            A = tf.keras.activations.softmax(Z)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            A = tf.keras.activations.relu(Z)</span><br></pre></td></tr></table></figure><br>在这份代码中,<code>tf.matmul</code>用于执行矩阵乘法，等价于<code>np.dot</code>。和NumPy里的张量一样，TensorFlow里的张量也可以直接用运算符<code>+</code>来完成加法。</p>
+<p>做完了线性层的运算后，我们可以方便地调用<code>tf.keras.activations</code>里的激活函数完成激活操作。</p>
+<p>值得一提的是，TensorFlow会自动帮我们计算导数。因此，之前我们在正向传播里保存中间运算结果的代码全都可以删掉。我们也不用再编写反向传播函数了。</p>
+<h3 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h3><p>使用下面的代码可以在一行内算完损失函数：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">loss</span>(<span class="params">self, Y, Y_hat</span>):</span><br><span class="line">    <span class="keyword">return</span> tf.reduce_mean(</span><br><span class="line">        tf.keras.losses.categorical_crossentropy(</span><br><span class="line">            tf.transpose(Y),tf.transpose(Y_hat)))</span><br></pre></td></tr></table></figure><br><code>tf.keras.losses.categorical_crossentropy</code>就是多分类使用的交叉熵误差。由于这个函数要求输入的形状为<code>[num_samples, num_classes]</code>，和我们的定义相反，我们要把两个输入都转置一下。算完误差后，我们用<code>tf.reduce_mean</code>算误差的平均数以得到最终的损失函数。这个函数等价于NumPy里用<code>mean</code>时令<code>keepdims=False</code>。</p>
+<h3 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h3><p>为了监控网络的运行结果，我们可以手写一个评估网络正确率和误差的函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">evaluate</span>(<span class="params">self, X, Y, return_loss=<span class="literal">False</span></span>):</span><br><span class="line">    Y_hat = <span class="variable language_">self</span>.forward(X)</span><br><span class="line">    Y_predict = tf.argmax(Y, <span class="number">0</span>)</span><br><span class="line">    Y_hat_predict = tf.argmax(Y_hat, <span class="number">0</span>)</span><br><span class="line">    res = tf.cast(Y_predict == Y_hat_predict, tf.float32)</span><br><span class="line">    accuracy = tf.reduce_mean(res)</span><br><span class="line">    <span class="keyword">if</span> return_loss:</span><br><span class="line">        loss = <span class="variable language_">self</span>.loss(Y, Y_hat)</span><br><span class="line">        <span class="keyword">return</span> accuracy, loss</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> accuracy</span><br></pre></td></tr></table></figure>
+<p>首先，我们使用<code>Y_hat = self.forward(X)</code>，根据<code>X</code>算出估计值<code>Y_hat</code>。之后我们就要对<code>Y</code>和<code>Y_hat</code>进行比较了。</p>
+<p><code>Y</code>和<code>Y_hat</code>都不是整数标签，而是用向量代表了标签。为了方便比较，我们要把它们转换回用整数表示的标签。这个转换函数是<code>tf.argmax</code>。</p>
+<p>和数学里的定义一样，<code>tf.argmax</code>返回令函数最大的参数值。而对于数组来说，就是返回数组里值最大的下标值。<code>tf.argmax</code>的第一个参数是参与运算的张量，第二个参数是参与运算的维度。<code>Y</code>和<code>Y_hat</code>的形状是<code>[3, m]</code>，我们要把长度为3的向量转换回标签向量，因此应该对第一维进行运算（即维度0）。</p>
+<p>得到了<code>Y_predict, Y_hat_predict</code>后，我们要比对它们以计算准确率。这时，我们可以用<code>res = Y_predict == Y_hat_predict</code>得到一个bool值的比对结果。TensorFlow的类型非常严格，bool值是无法参与普通运算的，我们要用<code>tf.cast</code>强制类型转换。由于最终的准确率是一个浮点数，我们要转换成<code>tf.float32</code>浮点类型。</p>
+<p>最后，用<code>accuracy = tf.reduce_mean(res)</code>就可以得到准确率了。</p>
+<p>由于我们前面写好了<code>loss</code>方法，计算loss时直接调用方法就行了。</p>
+<h2 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h2><p>写完了模型，该训练模型了。下面是模型训练的主要代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train</span>(<span class="params">model: MulticlassClassificationNet,</span></span><br><span class="line"><span class="params">          X,</span></span><br><span class="line"><span class="params">          Y,</span></span><br><span class="line"><span class="params">          step,</span></span><br><span class="line"><span class="params">          learning_rate,</span></span><br><span class="line"><span class="params">          print_interval=<span class="number">100</span></span>):</span><br><span class="line">    optimizer = tf.keras.optimizers.Adam(learning_rate)</span><br><span class="line">    <span class="keyword">for</span> s <span class="keyword">in</span> <span class="built_in">range</span>(step):</span><br><span class="line">        <span class="keyword">with</span> tf.GradientTape() <span class="keyword">as</span> tape:</span><br><span class="line">            Y_hat = model.forward(X)</span><br><span class="line">            cost = model.loss(Y, Y_hat)</span><br><span class="line">        grads = tape.gradient(cost, model.trainable_vars)</span><br><span class="line">        optimizer.apply_gradients(<span class="built_in">zip</span>(grads, model.trainable_vars))</span><br></pre></td></tr></table></figure>
+<p>TensorFlow使用一系列的优化器来维护梯度下降的过程。我们只需要用<code>tf.keras.optimizers.Adam(learning_rate)</code>即可获取一个Adam优化器。</p>
+<p>接下来，我们看<code>for s in range(step):</code>里每一步更新参数的过程。</p>
+<p>在TensorFlow里，为了计算梯度，我们要使用一个上下文<code>with tf.GradientTape() as tape:</code>。在这个上下文中，执行完运算后，所有<code>Variable</code>的求导中间结果都会被记录下来。因此，我们应该调用网络的前向传播和损失函数，完成整套的计算过程。</p>
+<p>计算出损失函数后，我们用<code>grads = tape.gradient(cost, model.trainable_vars)</code>算出最终的梯度，并调用<code>optimizer.apply_gradients(zip(grads, model.trainable_vars))</code>更新参数。</p>
+<p>可以看出，相比完全用NumPy实现，TensorFlow用起来十分方便。只要我们用心定义好了前向传播函数和损失函数，维护梯度和优化参数都可以交给编程框架来完成。</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>做完了所有准备后，我们用下面的代码初始化模型并调用训练函数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">n_x = <span class="number">2</span></span><br><span class="line">neuron_list = [n_x, <span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>]</span><br><span class="line">model = MulticlassClassificationNet(neuron_list)</span><br><span class="line">train(model, train_X_tf, train_Y_tf, <span class="number">5000</span>, <span class="number">0.001</span>, <span class="number">1000</span>)</span><br></pre></td></tr></table></figure><br>这里要注意一下，由于数据有三种类别，神经网络最后一层必须是3个神经元。</p>
+<p>网络训练完成后，我们用下面的代码把网络推理结果转换成可视化要用的NumPy结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">plot_result = model.forward(plot_X)</span><br><span class="line">plot_result = tf.argmax(plot_result, <span class="number">0</span>).numpy()</span><br><span class="line">plot_result = np.expand_dims(plot_result, <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>运行完<code>plot_result = model.forward(plot_X)</code>后，我们得到的是一个<code>[3, m]</code>的概率t矩阵。我们要用<code>tf.argmax(plot_result, 0)</code>把它转换回整型标签。</p>
+<p>之后，我们对TensorFlow的张量调用<code>.numpy()</code>，即可使用我们熟悉的NumPy张量了。为了对齐可视化API的格式，我用<code>expand_dims</code>把最终的标签转换成了<code>[1, m]</code>的形状。</p>
+<p>完成了转换，只需调用我写的可视化函数即可看出模型是怎样对二维平面分类的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">visualize(train_X, train_Y, plot_result)</span><br></pre></td></tr></table></figure>
+<p>我的一个运行结果如下：</p>
+<p><img src="/2022/06/27/DLS-note-7-2/r2.jpg" alt></p>
+<p>只能说，神经网络实在太强啦。</p>
+<h2 id="附录：TensorFlow的GPU版本"><a href="#附录：TensorFlow的GPU版本" class="headerlink" title="附录：TensorFlow的GPU版本"></a>附录：TensorFlow的GPU版本</h2><p>在使用TensorFlow时，我唯一发现它比PyTorch更便捷的地方，就是TensorFlow能够自动选择运算时的设备。如果电脑按上面的流程装好了驱动、CUDA和cuDNN，TensorFlow就会很主动地把张量放到GPU上运算。而如果没有检测到GPU，TensorFlow也会用CPU计算。</p>
+<p>如果想要手动管理张量的运算设备，可以参考下面的代码。当我想在CPU上初始化张量时：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.device(<span class="string">&#x27;/CPU:0&#x27;</span>):</span><br><span class="line">    a = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>], [<span class="number">4.0</span>, <span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br><span class="line">    b = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>], [<span class="number">3.0</span>, <span class="number">4.0</span>], [<span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br></pre></td></tr></table></figure><br>想初始化多个GPU中的某个GPU上的张量：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> tf.device(<span class="string">&#x27;/device:GPU:2&#x27;</span>):</span><br><span class="line">    a = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>], [<span class="number">4.0</span>, <span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br><span class="line">    b = tf.constant([[<span class="number">1.0</span>, <span class="number">2.0</span>], [<span class="number">3.0</span>, <span class="number">4.0</span>], [<span class="number">5.0</span>, <span class="number">6.0</span>]])</span><br></pre></td></tr></table></figure><br>这里GPU的名称可以用我们之前见过的<code>tf.config.list_physical_devices(&#39;GPU&#39;)</code>来查找：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">&gt;</span><span class="language-bash">&gt;&gt; tf.config.list_physical_devices(<span class="string">&#x27;GPU&#x27;</span>)</span></span><br><span class="line">[PhysicalDevice(name=&#x27;/physical_device:GPU:0&#x27;, device_type=&#x27;GPU&#x27;)]</span><br></pre></td></tr></table></figure>
+<p>有趣的是，这个项目的代码用TensorFlow在GPU上运行，比我之前的NumPy项目用CPU运行还慢。感觉是这个项目的计算过于简单，GPU无法发挥性能上的优势。GPU计算的一些其他开销盖过了运算时间的减少。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>在这篇笔记中，我介绍了TensorFlow在Windows/Linux下的从零安装方法，并且介绍了一个简单的TensorFlow多分类项目。希望大家能通过这篇笔记，成功上手TensorFlow。</p>
+<p>项目链接：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/MulticlassClassification">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/MulticlassClassification</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/21/DLS-note-7/" rel="prev" title="吴恩达《深度学习专项》笔记（七）：调参、批归一化、多分类任务、编程框架">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》笔记（七）：调参、批归一化、多分类任务、编程框架
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/06/27/DLS-note-summary-2/" rel="next" title="吴恩达《深度学习专项》第二阶段总结与第三阶段预览">
+      吴恩达《深度学习专项》第二阶段总结与第三阶段预览 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Tensorflow"><span class="nav-number">1.</span> <span class="nav-text">安装Tensorflow</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CUDA%E4%B8%8EcuDNN"><span class="nav-number">1.2.</span> <span class="nav-text">CUDA与cuDNN</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%BE%E5%8D%A1%E9%A9%B1%E5%8A%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">显卡驱动</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CUDA"><span class="nav-number">1.2.2.</span> <span class="nav-text">CUDA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cuDNN"><span class="nav-number">1.2.3.</span> <span class="nav-text">cuDNN</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Anaconda"><span class="nav-number">1.3.</span> <span class="nav-text">Anaconda</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TensorFlow"><span class="nav-number">1.4.</span> <span class="nav-text">TensorFlow</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#VSCode%E4%BB%A3%E7%A0%81%E8%A1%A5%E5%85%A8"><span class="nav-number">1.5.</span> <span class="nav-text">VSCode代码补全</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%A8TensorFlow%E5%AE%9E%E7%8E%B0%E5%A4%9A%E5%88%86%E7%B1%BB%E4%BB%BB%E5%8A%A1"><span class="nav-number">2.</span> <span class="nav-text">用TensorFlow实现多分类任务</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">2.1.</span> <span class="nav-text">数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%A2%84%E5%A4%84%E7%90%86%E4%B8%8ETensorFlow%E8%BD%AC%E6%8D%A2"><span class="nav-number">2.2.</span> <span class="nav-text">数据预处理与TensorFlow转换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TensorFlow%E5%A4%9A%E5%88%86%E7%B1%BB%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.3.</span> <span class="nav-text">TensorFlow多分类模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">2.3.1.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A3%E5%90%91%E4%BC%A0%E6%92%AD"><span class="nav-number">2.3.2.</span> <span class="nav-text">正向传播</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="nav-number">2.3.3.</span> <span class="nav-text">损失函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0"><span class="nav-number">2.3.4.</span> <span class="nav-text">评估</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83"><span class="nav-number">2.4.</span> <span class="nav-text">模型训练</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">2.5.</span> <span class="nav-text">实验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95%EF%BC%9ATensorFlow%E7%9A%84GPU%E7%89%88%E6%9C%AC"><span class="nav-number">2.6.</span> <span class="nav-text">附录：TensorFlow的GPU版本</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

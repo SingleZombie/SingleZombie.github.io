@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="我在学习今年的一篇和人脸生成相关的论文时，看到了一个约束人脸相似度的 loss。这个 loss 基于经典的 ArcFace 人脸识别网络。ArcFace 是 2019年发表的，这么久了还有人用，说明这是一篇适用性很强的工作。于是，我顺手学了一下 ArcFace 的相关背景。在这篇文章中，我将简要分享 ArcFace 人脸识别网络的发展历程，并介绍如何快速利用它的开源 PyTorch 项目计算任意两">
+<meta property="og:type" content="article">
+<meta property="og:title" content="快速上手 PyTorch 人脸相似度计算方法 ArcFace">
+<meta property="og:url" content="https://zhouyifan.net/2022/12/19/20221126-ArcFace/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="我在学习今年的一篇和人脸生成相关的论文时，看到了一个约束人脸相似度的 loss。这个 loss 基于经典的 ArcFace 人脸识别网络。ArcFace 是 2019年发表的，这么久了还有人用，说明这是一篇适用性很强的工作。于是，我顺手学了一下 ArcFace 的相关背景。在这篇文章中，我将简要分享 ArcFace 人脸识别网络的发展历程，并介绍如何快速利用它的开源 PyTorch 项目计算任意两">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221126-ArcFace/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221126-ArcFace/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221126-ArcFace/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221126-ArcFace/4.jpg">
+<meta property="article:published_time" content="2022-12-19T11:27:37.000Z">
+<meta property="article:modified_time" content="2022-12-19T11:27:37.597Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/12/19/20221126-ArcFace/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/12/19/20221126-ArcFace/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>快速上手 PyTorch 人脸相似度计算方法 ArcFace | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221126-ArcFace/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          快速上手 PyTorch 人脸相似度计算方法 ArcFace
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-19 19:27:37" itemprop="dateCreated datePublished" datetime="2022-12-19T19:27:37+08:00">2022-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>我在学习今年的一篇和人脸生成相关的论文时，看到了一个约束人脸相似度的 loss。这个 loss 基于经典的 ArcFace 人脸识别网络。ArcFace 是 2019年发表的，这么久了还有人用，说明这是一篇适用性很强的工作。于是，我顺手学了一下 ArcFace 的相关背景。在这篇文章中，我将简要分享 ArcFace 人脸识别网络的发展历程，并介绍如何快速利用它的开源 PyTorch 项目计算任意两幅人脸的相似度。</p>
+<h2 id="人脸识别与-ArcFace"><a href="#人脸识别与-ArcFace" class="headerlink" title="人脸识别与 ArcFace"></a>人脸识别与 ArcFace</h2><p>人脸识别是在深度学习时代取得较大突破的一项任务：给定一个登记了 N 个人的人脸数据库，再输入一幅人脸，输出这个人是否是 N 个人中的某一个。</p>
+<p>多数深度学习算法会用一个 CNN 来提取所有人脸图片的特征，如果输入的图片特征和数据库里的某个特征的向量相似度大于某个阈值，就说明识别成功。也就是说，人脸识别的关键在于如何用 CNN 生成一个「好」的特征。特征的「好」体现在两点上：1) 同一个人的人脸特征要尽可能相似；2) 不同人的人脸之间的特征要尽可能不同。</p>
+<p>为了达成这个目的，研究者提出了不同的学习特征的方法。最直观的方式是像学习词嵌入一样，用一个具体的任务来学习特征提取。恰好，人脸识别可以天然地被当成一个多分类任务：对于一个有 N 个人的人脸训练集，人脸识别就是一个 N 分类任务。只要在特征提取后面加一个线性层和一个 softmax 就可以做多分类了。训练好多分类器后，扔掉线性层和 softmax 层，就得到了一个特征提取器。</p>
+<p>这种基于 softmax 分类器的学习方法确实能够区分训练集中的人脸，但在辨别开放人脸数据集时表现不佳。这是因为 softmax 的学习目标仅仅是区分不同类别的人脸，而没有要求这种区分有多么分明。后续的多篇工作，包括 ArcFace，都是在改进训练目标 softmax，使得每类对象之间有一个较大的间隔。</p>
+<p><img src="/2022/12/19/20221126-ArcFace/1.jpg" alt></p>
+<p>为了让不同的类别之间存在间隔，研究者们详细分析了 softmax 函数。假设$x \in \mathbb{R}^d$是人脸图片提取出的维度为$d$的特征向量，它属于$N$类里的第$y$类。softmax 前的线性层的参数是$W\in \mathbb{R}^{d\times N}, b\in \mathbb{R}^N$。则基于 softmax 的多分类误差可以写成：</p>
+<script type="math/tex; mode=display">
+L = -log\frac{e^{W^{T}_{y}x+b_y}}{\sum_{j=1}^{N}e^{W^{T}_{j}x+b_j}}</script><p>其中，向量内积$W^T_jx$可以展开为：$W^T_jx=||W^T_j||  ||x||  cos \theta_j$，其中$\theta_j$是两个向量的夹角。如果对向量$W^T_j$和$x$都做归一化的话，再令$b=0$，则新的误差可以写成：</p>
+<script type="math/tex; mode=display">
+L = -log\frac{e^{cos\theta_y}}{\sum_{j=1}^{N}e^{cos\theta_j}}</script><p>也就是说，对于这种归一化的多分类误差，对误差产生贡献的只有特征向量和$W$的列向量的夹角。那么，我们就可以换一个视角来看待这个误差：$W$其实是$N$个维度为$d$的向量的数组，它们表示了$N$个人脸类别的中心特征向量。误差要求每个特征和它对应的中心向量的夹角更小。</p>
+<p>为了让不同的类别之间有更大的间隔，相同类别内部更加聚拢，ArcFace 在误差的$cos$中加了一个常数项。</p>
+<script type="math/tex; mode=display">
+L = -log\frac{e^{cos(\theta_y+m)}}{e^{cos(\theta_y+m)}+\sum_{j=1, j \neq y}^{N}e^{cos\theta_j}}</script><p>直观上来看，加这一项就是把角度远离类别中心的惩罚扩大，使得各个类别的数据都更加靠近中心。这一优化是有效的。作者做了一个简单的实验，用8类人脸的训练集训练了一个维度为2的特征。其可视化结果如下（线是各个类别中心的方向向量，点是样本的特征向量）：</p>
+<p><img src="/2022/12/19/20221126-ArcFace/2.jpg" alt></p>
+<p>ArcFace 的核心思想就是其 loss 的设计。ArcFace 的网络架构没有特别的要求，一般使用 ResNet 就行。</p>
+<h2 id="使用-ArcFace-开源项目"><a href="#使用-ArcFace-开源项目" class="headerlink" title="使用 ArcFace 开源项目"></a>使用 ArcFace 开源项目</h2><blockquote>
+<p>其实用这个库的时候可以完全不懂 ArcFace 的原理。</p>
+</blockquote>
+<p>可能是由于「ArcFace」这个名字和其他项目撞车了，ArcFace 的官方 GitHub 仓库叫做 insightface。其 PyTorch 实现的网址是 <a target="_blank" rel="noopener" href="https://github.com/deepinsight/insightface/tree/master/recognition/arcface_torch。">https://github.com/deepinsight/insightface/tree/master/recognition/arcface_torch。</a></p>
+<p>早期该论文没有官方的 PyTorch 实现。有人用 PyTorch 复现了该论文（<a target="_blank" rel="noopener" href="https://github.com/TreB1eN/InsightFace_Pytorch">https://github.com/TreB1eN/InsightFace_Pytorch</a> ）。我使用的项目是这个复现版，它更完整一点，包含了人脸预处理代码。</p>
+<p>人脸识别任务最简单的例子是输出两幅人脸的相似度。接下来我将介绍如何安装这个项目，并用它来编写一个简单的计算人脸相似度的 demo。</p>
+<p>安装这个库很方便，只要一键 <code>git clone</code> 就行。这个项目基本不依赖什么第三方库，环境里有 PyTorch，NumPy 等常见库就行了。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone git@github.com:TreB1eN/InsightFace_Pytorch.git</span><br></pre></td></tr></table></figure>
+<p>获取仓库后，在 README 的链接里下载 IR-SE50 模型 <code>model_ir_se50.pth</code>。随便放在哪个目录里。比如下载 <a target="_blank" rel="noopener" href="https://1drv.ms/u/s!AhMqVPD44cDOhkPsOU2S_HFpY9dC">IR-SE50 @ Onedrive</a> 。</p>
+<p>最后，还要准备一下测试图片。我很机智地使用了吴恩达《深度学习专项》里讲人脸识别时用到的图片，分别命名为<code>face1.jpg, face2.jpg, face3.jpg</code>。</p>
+<p><img src="/2022/12/19/20221126-ArcFace/3.jpg" alt></p>
+<p>准备就绪后，就可以编写 demo 了。在做一个人脸相关的项目时，一般会先对人脸做预处理，让所有的人脸图片都有相同的分辨率，且五官的位置对齐。我们的 demo 也是先利用了项目中的人脸预处理库对齐人脸，再调用模型计算相似度。这三张图片的对齐结果如下：</p>
+<p><img src="/2022/12/19/20221126-ArcFace/4.jpg" alt></p>
+<p>这个demo会输出第一张人脸和第二、第三张人脸之间的相似度。完整的 demo 代码如下（注意修改其中的路径）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> model <span class="keyword">import</span> Backbone</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">from</span> mtcnn <span class="keyword">import</span> MTCNN</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> torchvision.transforms <span class="keyword">import</span> Compose, ToTensor, Normalize</span><br><span class="line"></span><br><span class="line">mtcnn = MTCNN()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_img</span>(<span class="params">img_path, device</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(img_path)</span><br><span class="line">    face = mtcnn.align(img)</span><br><span class="line">    transfroms = Compose(</span><br><span class="line">        [ToTensor(), Normalize([<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>], [<span class="number">0.5</span>, <span class="number">0.5</span>, <span class="number">0.5</span>])])</span><br><span class="line">    <span class="keyword">return</span> transfroms(face).to(device).unsqueeze(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">device = <span class="string">&#x27;cuda&#x27;</span></span><br><span class="line">img1 = get_img(<span class="string">&#x27;face1.jpg&#x27;</span>, device)</span><br><span class="line">img2 = get_img(<span class="string">&#x27;face2.jpg&#x27;</span>, device)</span><br><span class="line">img3 = get_img(<span class="string">&#x27;face3.jpg&#x27;</span>, device)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(img1.shape)</span><br><span class="line"></span><br><span class="line">model = Backbone(num_layers=<span class="number">50</span>, drop_ratio=<span class="number">0.6</span>, mode=<span class="string">&#x27;ir_se&#x27;</span>)</span><br><span class="line">model.load_state_dict(torch.load(<span class="string">&#x27;model_ir_se50.pth&#x27;</span>))</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line">model.to(device)</span><br><span class="line"></span><br><span class="line">emb1 = model(img1)[<span class="number">0</span>]</span><br><span class="line">emb2 = model(img2)[<span class="number">0</span>]</span><br><span class="line">emb3 = model(img3)[<span class="number">0</span>]</span><br><span class="line"><span class="built_in">print</span>(emb1.shape)</span><br><span class="line"></span><br><span class="line">sim_12 = emb1.dot(emb2).item()</span><br><span class="line">sim_13 = emb1.dot(emb3).item()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(sim_12)</span><br><span class="line"><span class="built_in">print</span>(sim_13)</span><br></pre></td></tr></table></figure>
+<p>可能是 NumPy 更新的原因，代码在读取<code>.npy</code>时少了<code>allow_pickle=True</code>，会报错。要在<code>mtcnn_pytorch/src/get_nets.py</code>的几个<code>np.load</code>的地方加上<code>allow_pickle=True</code>。不知道在哪加也没关系，报错了再补上即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># mtcnn_pytorch/src/get_nets.py</span></span><br><span class="line"><span class="comment"># 约55行</span></span><br><span class="line">weights = np.load(<span class="string">&#x27;mtcnn_pytorch/src/weights/pnet.npy&#x27;</span>,</span><br><span class="line">                          allow_pickle=<span class="literal">True</span>)[()]</span><br><span class="line"><span class="comment"># 约100行</span></span><br><span class="line">weights = np.load(<span class="string">&#x27;mtcnn_pytorch/src/weights/rnet.npy&#x27;</span>,</span><br><span class="line">                          allow_pickle=<span class="literal">True</span>)[()]</span><br><span class="line"><span class="comment"># 约151行</span></span><br><span class="line">weights = np.load(<span class="string">&#x27;mtcnn_pytorch/src/weights/rnet.npy&#x27;</span>,</span><br><span class="line">                          allow_pickle=<span class="literal">True</span>)[()]</span><br></pre></td></tr></table></figure>
+<p>修改完毕后，直接运行脚本就行了。其输出大致为：</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">torch.Size([1, 3, 112, 112])</span><br><span class="line">torch.Size([512])</span><br><span class="line">0.5305924415588379</span><br><span class="line">0.03854911029338837</span><br></pre></td></tr></table></figure>
+<p>第一个输出是模型输入张量的形状。第二个输出是模型输出的特征的性质。了解这两个形状信息有助于我们调用此库。</p>
+<p>第三个输出是第一、第二张人脸的cos相似度，第四个输出是第二、第三张人脸的cos相似度。我们已经事先知道了，第一和第二张人脸图片是同一个人，第一和第三张人脸图片是两个人。所以说，这个输出结果非常正确。</p>
+<p>在我们自己的人脸项目中，一般都会准备好人脸预处理的代码。因此，在调用这个库时，可以只把 <code>model.Backbone</code> 里的代码复制过去，只使用该项目的模型即可。使用时注意输入输出的形状要求。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>ArcFace 论文：ArcFace: Additive Angular Margin Loss for Deep Face Recognition</p>
+<p>官方仓库：<a target="_blank" rel="noopener" href="https://github.com/deepinsight/insightface">https://github.com/deepinsight/insightface</a></p>
+<p>PyTorch 复现仓库：<a target="_blank" rel="noopener" href="https://github.com/TreB1eN/InsightFace_Pytorch">https://github.com/TreB1eN/InsightFace_Pytorch</a></p>
+<p>《人脸识别的 loss》：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/34404607">https://zhuanlan.zhihu.com/p/34404607</a> <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/34436551">https://zhuanlan.zhihu.com/p/34436551</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/12/19/20221029-torch-parallel-training/" rel="prev" title="PyTorch 并行训练极简 Demo">
+      <i class="fa fa-chevron-left"></i> PyTorch 并行训练极简 Demo
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/12/19/20221213-toefl-listening/" rel="next" title="用深度学习的思想准备托福听力">
+      用深度学习的思想准备托福听力 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB%E4%B8%8E-ArcFace"><span class="nav-number">1.</span> <span class="nav-text">人脸识别与 ArcFace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-ArcFace-%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE"><span class="nav-number">2.</span> <span class="nav-text">使用 ArcFace 开源项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">3.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

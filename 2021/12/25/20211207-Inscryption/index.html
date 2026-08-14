@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="做为天才卡牌游戏玩家兼设计师，我十分热爱卡牌游戏，经常向他人安利我喜欢的卡牌游戏。 一天，我的好朋友和我讲：“最近出了款叫《邪恶冥刻》的卡牌游戏，融合了”炉石”、”万智牌”、”游戏王”的玩法，还有《杀戮尖塔》中的Roguelike机制，强烈推荐你去玩。” “这是款对称卡牌游戏吗？”做为资深卡牌游戏玩家，我立马提出了这个问题。所谓对称卡牌游戏，就是每个玩家的规则都是一样的，用同样的方式击败对手。而非">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《邪恶冥刻》简评：虎头蛇尾">
+<meta property="og:url" content="https://zhouyifan.net/2021/12/25/20211207-Inscryption/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="做为天才卡牌游戏玩家兼设计师，我十分热爱卡牌游戏，经常向他人安利我喜欢的卡牌游戏。 一天，我的好朋友和我讲：“最近出了款叫《邪恶冥刻》的卡牌游戏，融合了”炉石”、”万智牌”、”游戏王”的玩法，还有《杀戮尖塔》中的Roguelike机制，强烈推荐你去玩。” “这是款对称卡牌游戏吗？”做为资深卡牌游戏玩家，我立马提出了这个问题。所谓对称卡牌游戏，就是每个玩家的规则都是一样的，用同样的方式击败对手。而非">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-25T13:33:46.000Z">
+<meta property="article:modified_time" content="2021-12-25T13:33:46.696Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="游戏">
+<meta property="article:tag" content="游戏设计">
+<meta property="article:tag" content="卡牌游戏">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2021/12/25/20211207-Inscryption/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《邪恶冥刻》简评：虎头蛇尾 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2021/12/25/20211207-Inscryption/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《邪恶冥刻》简评：虎头蛇尾
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-25 21:33:46" itemprop="dateCreated datePublished" datetime="2021-12-25T21:33:46+08:00">2021-12-25</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/%E4%BD%9C%E5%93%81%E8%B5%8F%E6%9E%90/" itemprop="url" rel="index"><span itemprop="name">作品赏析</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>做为天才卡牌游戏玩家兼设计师，我十分热爱卡牌游戏，经常向他人安利我喜欢的卡牌游戏。</p>
+<p>一天，我的好朋友和我讲：“最近出了款叫《邪恶冥刻》的卡牌游戏，融合了”炉石”、”万智牌”、”游戏王”的玩法，还有《杀戮尖塔》中的Roguelike机制，强烈推荐你去玩。”</p>
+<p>“这是款对称卡牌游戏吗？”做为资深卡牌游戏玩家，我立马提出了这个问题。所谓对称卡牌游戏，就是每个玩家的规则都是一样的，用同样的方式击败对手。而非对称卡牌游戏一般出现在PVE（人对战电脑）中，玩家一般使用卡牌作战，而boss只有血量和技能，不使用卡牌战斗。</p>
+<p>“是的，但这款游戏做得很好。“朋友看出了我似乎有所顾虑，依然极力向我推荐着这款游戏。</p>
+<p>我将信将疑地去体验了这款游戏，结果不出我所料——游戏的平衡性出了大问题。</p>
+<p>最近我准备简单点评一些游戏。虽然我的点评可能会极度专业（我相信这个世界上没有多少人能提出像我这样专业的评论），且以批评、改进意见为主，但在介绍游戏的简况和优点时，我会用尽可能用通俗易懂的方式表达，让游戏经验较少的人也能读懂。《邪恶冥刻》给人的体验很糟糕。就像你去一家中端的饭店就餐，里面的装修、服务不输高档饭店。服务员热情地给你端上一块精美的一人餐蛋糕。虽说是一人餐，蛋糕上放满了琳琅满目的水果和巧克力。你舔了一口奶油，不禁感叹道：”太美味了！“你连忙又吃了几口，却发现这蛋糕越吃越没有味道。吃完之后，你发现肚子还是半饱。于是，你默默抱怨道：”有这个钱去装修饭店，不如在菜品上多下点功夫。“</p>
+<p>在我看来，《邪恶冥刻》是一款十分可惜的游戏。作者很有实力，有丰富的游戏制作经验。他做出了一款画面表现力强的大杂烩游戏。刚玩一会儿，你会觉得游戏的各个机制都很吸引人。但是，游戏的平衡性极差，你很快就觉得游戏没有挑战性了。玩完了一个又一个看起来很有新意的关卡后，你用十来个小时就通关了整款游戏，看着作者花了不少时间做出来的演出（即玩家不能交互，而是像看电影一样看游戏剧情），感到索然无味。整款游戏可以用虎头蛇尾来评价，甚至是”虎头蛇身“。作者明明有丰富的游戏设计经验，却浪费了很多时间与资源去做冗余的游戏机制和演出，真的很令人惋惜。整款游戏的创意运用得好的话，这将是一部足以记入卡牌游戏历史的游戏。可能是因为卡牌游戏本身的平衡太难掌握了吧。</p>
+<p>下面我将按照老规矩，先介绍游戏的亮点，再详细列出游戏的缺点。</p>
+<p><strong>本文有一定剧透，虽然游戏不是由剧情主导的，被剧透也没啥关系</strong></p>
+<h2 id="卡牌游戏大杂烩"><a href="#卡牌游戏大杂烩" class="headerlink" title="卡牌游戏大杂烩"></a>卡牌游戏大杂烩</h2><p>”我的回合！抽取一张松鼠牌！献祭一张松鼠，召唤一张狼崽。狼崽会在下一回合，变成3攻2血的狼，并在回合结束时朝前方自动攻击。失败的天平，会向你那边倾斜3点。“</p>
+<p>”战斗胜利，我选择移动主角，朝左边的路前进，在篝火处升级我的狼崽。现在狼崽的生命，从1点变成了3点。”</p>
+<p>如果玩家需要在游玩的同时描述游戏内容，我一定会这样进行解说。</p>
+<p>有经验的卡牌游戏玩家在看完上面两段描述后，一定会露出会心的微笑：《邪恶冥刻》借鉴了许多游戏，包括”游戏王“的献祭系统、《炉石传说》的攻击与血量、《Artifact》的自动攻击、《杀戮尖塔》的Roguelike卡牌系统。</p>
+<p>加入游戏机制是一件简单的事情。但难能可贵的是，《邪恶冥刻》把各个机制结合起来，创造了一套小而精的卡牌游戏规则：说它小，是因为游戏战场小，卡牌数量少，战斗结束得块；说它精，是因为游戏规则有趣且自洽。</p>
+<p>小的游戏，做精自然容易。但这样的游戏往往会面临游戏内容不足的情况（比如《陷阵之志》（”into the breach”)，体量小而近乎完美）。作者似乎意识到了这一点，他用一种特别的方式来添加游戏内容：通过大幅度改变游戏的玩法来创造新的关卡。</p>
+<h2 id="游戏系统大杂烩"><a href="#游戏系统大杂烩" class="headerlink" title="游戏系统大杂烩"></a>游戏系统大杂烩</h2><p>除了最初的Roguelike卡牌系统外，作者在保持核心玩法是卡牌对战的前提下，还引入数个不同的游戏系统。”像素画面“、”开卡包“、”向上下左右四个方向拓展地图的塞尔达式2D地图“。这些本不可能在同一部游戏中出现的元素，奇迹般地出现在了这同一部游戏里。作者的初衷算是达到了——随着游戏内容的增加，玩家的游戏时间确实得到了延长。</p>
+<p>除了一些常见的”对战“、”冒险“游戏机制外，《邪恶冥刻》还把解谜要素（在我的定义里，”解密“指打开隐藏砖块、用钥匙打开门、发现boss弱点这种轻度的需要玩家动脑的游戏机制，”解谜“则指独特、高难度的谜题机制，需要玩家认真思考，这些机制一般是游戏的核心玩法）融入了游戏的所有章节里。在完成卡牌游戏的挑战之余，玩家一定要通过解谜来推动游戏的进度。这些解谜没有冗余之感，是玩家在激烈的卡牌对战过后的完美调剂品。</p>
+<p>在一部游戏中塞入数个大的游戏系统，这是一般的游戏不敢做的事情。也只有有经验的独立游戏作者，敢于在自己的作品里炫技。很难得，这些游戏系统融合得不错，过度没有很突兀，值得游戏经验不是很丰富的设计师学习。</p>
+<h2 id="成也卡牌，败也卡牌"><a href="#成也卡牌，败也卡牌" class="headerlink" title="成也卡牌，败也卡牌"></a>成也卡牌，败也卡牌</h2><p>卡牌游戏的特点是什么？</p>
+<p>从玩家的角度出发，卡牌游戏最大的特点就是趣味性。简单的规则，狭小的战场，就能演绎出一部部精彩的对局。如前文所讲，得益于卡牌游戏本身的特性，《邪恶冥刻》设计了一种简单而趣味性极强的卡牌游戏机制。如何打出强力卡牌，怎么摆放卡牌，怎么样造成有效伤害……卡牌游戏的每一个机制都引入了思考。在一切都确认完毕后，玩家就能双手离开键盘，看着卡牌自动攻击，并触发卡牌效果的联动，最终获得游戏的胜利（或者翻车），体验着思考带来的成就感。（关于卡牌游戏的认真研究将会出现在以后的文章）</p>
+<p>但从设计师的角度来看，卡牌游戏的设计难度是极大的。卡牌本身具有的随机性，加上卡牌间难以量化的联动效果，让卡牌游戏的平衡性成为了一个难题。《邪恶冥刻》主要就输在了平衡性这一点上——游戏在后期实在太简单了，战斗胜利丝毫不能给玩家带来乐趣。</p>
+<p>越是机制精致、联动性强的卡牌游戏，越能给玩家带来耳目一新之感，也越难维持平衡性。这真是一件矛盾的事情。</p>
+<p>这里将先分章节，再从宏观到具体，逐条列出<strong>我还能记住的</strong>游戏平衡性上的具体问题。这些内容是写给玩过游戏的玩家看的。</p>
+<h3 id="总体"><a href="#总体" class="headerlink" title="总体"></a>总体</h3><h4 id="游戏机制"><a href="#游戏机制" class="headerlink" title="游戏机制"></a>游戏机制</h4><ol>
+<li>血量差为5点的胜利条件，对于先手行动的玩家来说，过于容易触发。反过来，boss太强，玩家就会被秒杀。这是游戏的核心机制，也是一切平衡问题的根源，确实不好改进，不然游戏就完全变了。一些可能的改进意见会在后文提及。</li>
+<li>缺乏对手牌臃肿的惩罚。一般情况下，卡牌游戏要求卡组精简，不然抽到关键牌的概率会缩小，卡组整体强度降低。做为一个每回合抽一张卡的游戏，理论上卡组臃肿带来的影响是很大的。但因为第1条胜利和失败都过于简单，为了让玩家在前几回合不被秒杀，作者在设计时让对手的卡组进攻性不至于太强，其结果玩家卡手几回合都没什么关系。这无论在单机卡牌游戏还是多人卡牌游戏中都是不允许的。</li>
+<li>缺乏抽牌上的联动。这一条导致了第2条问题，玩家容易卡手，对手强度不敢太强，玩家卡手反而不被惩罚。</li>
+<li>对手下回合策略已知。这条由《杀戮尖塔》发扬的机制是回合制游戏的一项历史性突破，我非常喜欢它，且赞同这条机制出现在卡牌游戏里。但无疑这条机制令游戏的难度又降了一层。</li>
+<li>游戏中，有”站场“这个概念，即上回合生存的生物，下回合还能进行攻击。这是一条滚雪球的机制，有场面的玩家会一直扩大优势。而对手对于场面的控制极差。这导致玩家控制场面后很容易获得胜利。</li>
+</ol>
+<h4 id="细节"><a href="#细节" class="headerlink" title="细节"></a>细节</h4><ol>
+<li>部分卡牌效果过强。如”检索牌库中的一张牌“。</li>
+</ol>
+<h3 id="第一章"><a href="#第一章" class="headerlink" title="第一章"></a>第一章</h3><h4 id="游戏机制-1"><a href="#游戏机制-1" class="headerlink" title="游戏机制"></a>游戏机制</h4><ol>
+<li>”检索牌库中的一张牌“与无限资源之间的组合过于BT。比如令所有松鼠牌具有”检索“效果，这等于让玩家自由地控制手牌，所有战斗都失去了难度。作者保留这些强大的组合，可能是想让玩家觉得游戏很有趣。但是，还是那句话，卡牌游戏是以难度恰到好处的战斗为核心。一旦玩家无敌了，后面的战斗都是垃圾时间，有什么趣味可言呢？</li>
+<li>强行打脸牌过弱（飞行牌），这导致防守牌（防空牌）也没有价值了。可能作者想设计出面对对面的打脸牌，玩家可以用防空牌来防御，也可以用打脸牌还击这样的充满抉择的游戏体验。但是，战场就那么点大，血就那么多，战斗一下就一边倒了，这种抉择根本体现不出来。如果战场更大，血量更多，维持血量差的博弈才会更加明显。</li>
+<li>高费牌都难以打出，尤其是骨头牌。</li>
+<li>种族机制联动不足，一旦联动了又过于强大。</li>
+</ol>
+<h4 id="细节-1"><a href="#细节-1" class="headerlink" title="细节"></a>细节</h4><ol>
+<li>剧毒秒最终boss很有趣，但平衡性因此更加差劲了。</li>
+<li>第三关boss难度实在太低了，这是很明显的设计水平有问题。第二阶段，玩家至少可以拿走对方一张牌，而且玩家场面上是有牌的，至少有一张牌可以直接攻击到对面。玩家轻松就可以在第二阶段一开始秒杀boss。</li>
+<li>几大终极奖励的强度明显不一样。”每回合抽两张牌“、”抽牌变成检索“无疑是超强的能力，而”战斗开始获得8个骨头“的强度太低了。</li>
+</ol>
+<h3 id="第二章"><a href="#第二章" class="headerlink" title="第二章"></a>第二章</h3><h4 id="游戏机制-2"><a href="#游戏机制-2" class="headerlink" title="游戏机制"></a>游戏机制</h4><ol>
+<li>献祭机制配合几乎无消耗的骨头机制过强。高费献祭牌太容易被召唤了。</li>
+<li>高费骨头牌太难召唤了。</li>
+<li>宝石机制（万智牌机制）的强度过低。</li>
+<li>我现在根本记不住boss的卡组了。boss的卡组实在太弱了，且后面的boss不比前面厉害多少，我前期随便组的一套卡组就能打过所有的游戏内容。我虽然不能说出boss卡组设计上具体的问题，但很明显boss的卡组强度过低。</li>
+</ol>
+<h4 id="细节-2"><a href="#细节-2" class="headerlink" title="细节"></a>细节</h4><ol>
+<li>游戏的一场战斗是可以无限次进行的，这导致玩家可以获得无限多的金钱，进而获得无限多的卡牌。”能无限获得的资源，必然要有一个能无限输出的途径“，这是我在小学的时候就领悟的游戏设计原则。在这样一个卡牌游戏里，能无限获取卡牌就是不合理的。玩家可以刷无限的牌，让游戏的攒卡机制报废。虽然这游戏的平衡实在太烂，战斗太简单，玩家根本不需要去刷钱就能获取胜利。</li>
+<li>对应游戏机制的第1条，有张无消耗的牌，效果是能用一根骨头换一个骷髅。这张牌能瞬间产生大量的祭品，让高费献祭牌登场。这牌强度太高了。</li>
+</ol>
+<h3 id="第三章"><a href="#第三章" class="headerlink" title="第三章"></a>第三章</h3><h3 id="游戏机制-3"><a href="#游戏机制-3" class="headerlink" title="游戏机制"></a>游戏机制</h3><ol>
+<li>游戏流程过长，后期各种卡牌效果联动、堆叠，整套卡组的强度已经爆表了，多强的boss都打不过玩家。</li>
+<li>自定义卡牌很有趣，但这导致了第1条的效果堆叠问题。剧毒、顺劈、回手，这样一张无限资源的牌一旦摸到，游戏直接胜利。</li>
+<li>电路通路的太难触发了，而且到了游戏后期，其他牌已经过强了，这个机制变成了鸡肋。</li>
+</ol>
+<h4 id="细节-3"><a href="#细节-3" class="headerlink" title="细节"></a>细节</h4><ol>
+<li>有一个给卡牌加1攻，但卡牌死亡后永久被移除卡组的效果。这个效果的设计水平很低。这个效果的本意是加强一张卡，但要冒风险。但是，加1攻并不是多大的提升，反倒是移除一张卡能够提升整套卡组的质量。设计的本意很难达成。</li>
+<li>有一张低费卡，能够对初次出现的敌人造成1点伤害。这张牌效果的强度太高了，比不少高费牌还强，直接让防守变得特别简单。</li>
+</ol>
+<h3 id="提升平衡性的建议"><a href="#提升平衡性的建议" class="headerlink" title="提升平衡性的建议"></a>提升平衡性的建议</h3><p>游戏小而精的机制，令游戏平衡性很难提升。但在对卡牌游戏设计有诸多思考的我看来，在核心机制不变的前提下，游戏的平衡性仍然有很多提升的余地：</p>
+<h4 id="非对称性"><a href="#非对称性" class="headerlink" title="非对称性"></a>非对称性</h4><p>关于PVE卡牌的对称性上的思考，是我在比较《炉石传说》冒险模式和《杀戮尖塔》之后进行的。《炉石传说》本来是PVP游戏，凭借着玩家间的博弈，游戏的平衡性天然能够得到维持。所有卡牌都是为聪明的人类玩家设计的。但在炉石的PVE中，AI的水平很差，游戏的平衡性直接就崩溃了。由于游戏的胜负极大取决于对战双方的水平，哪怕给AI塞很多好卡来强行提升PVE对战的平衡性，玩家还是很难从PVE中获取足够的乐趣。反观《杀戮尖塔》，整套游戏就是基于非对称战斗的。只有玩家在使用卡牌，怪物只会按照简单的规则放技能。玩家不和对手博弈，只需要最大化自己卡组的能力即可。非对称的战斗，绝对更加适合PVE卡牌游戏。</p>
+<p>坚持使用对称卡牌机制是造成新游戏规则无法拓展、难做平衡的最重要的原因（所以说在玩游戏之前，我就很在意这是不是一款对称性卡牌游戏）。在《邪恶冥刻》中，游戏机制可以向非对称的方向修改。玩家的操作可以一直用卡牌来表示，但是敌人的表达形式可以多种多样。事实上，游戏中就有一些非对称的战斗：战斗的胜利不再是使血量差大于5，而是杀死特定的敌人。朝这个方向做就对了呀！</p>
+<h4 id="血量与场面"><a href="#血量与场面" class="headerlink" title="血量与场面"></a>血量与场面</h4><p>自始至终，游戏的胜利条件都是血量差大于等于5点。“血量差”这个概念令游戏的攻守之间的抉择非常有趣。但是，很明显，5点的血量差非常容易产生，boss战可能顷刻之间就结束了。</p>
+<p>提升胜利所需血量差是一个眼见的提升平衡性的手段。但如果无脑提升血量，并不能改善游戏的平衡性。游戏的胜利条件表面上是血量占优，但实际上只要控制住场面，再大的血量差都能产生。也就是说，游戏真正的胜利条件，是取得场面的胜利。</p>
+<p>在传统有卡牌战场的游戏里，血量这一机制的设定，其实是给游戏新增了一个胜利条件：我可以靠控制住场面，慢慢打死你；也可以通过快速造成伤害，在你的怪物还没召完前把你“抢血”抢死。这对应了传统卡牌游戏的控制卡组和快攻卡组。在《邪恶冥刻》中，设计师可能是为了让游戏多一种胜利条件，让快攻卡组可行，才令血量差这么小。</p>
+<p>可惜，游戏的胜利条件设置得太糟糕了。作者也注意到5点伤害太容易打出，所以给boss加了很多“嘲讽”（令对方单位无法直接对我方角色造成伤害）怪物。这反过来使玩家的快攻卡组几乎不可行了。血量差5点的设定，讽刺般的起到了反效果，游戏只剩下了控制场面这一种赢法。</p>
+<p>血量差5点是一个核心机制，几乎所有卡牌都围绕这一点做平衡，要改起来恐怕很难。但如果让我来对游戏修改的话，我会在游戏初期保持5点血量差的胜利条件，前期的弱卡以此为平衡标准进行设计。随着游戏进行，血量差的要求会逐渐放大，后续卡牌强度也逐渐增加，以新的血量差为平衡标准。</p>
+<p>但我不能保证这种修改是有效的，实际的平衡性还需要在测试中确定。可以想到，由于胜利条件是血量差而不是血量，玩家可以通过不断进攻来代替防守，使得防守变成了一个很没有意义的事情。想把这个机制下的平衡做好还是太难了。游戏做得小而精，就不得不面对这种平衡性上的重大挑战，这种游戏还是太难设计了。</p>
+<h4 id="技能卡"><a href="#技能卡" class="headerlink" title="技能卡"></a>技能卡</h4><p>游戏设置了许多新颖的机制，但令人意外的是技能卡（相对于怪物卡的概念，能立刻产生效果，用完立刻丢弃）这种基础机制竟然没有出现在游戏里。大概能够猜到，引入技能卡的话，游戏的平衡性将会更难维持。而且电脑的AI很不好写，想产生势均力敌的对称性战斗更难了。</p>
+<p>如果让我做的话，无论会引入多少新的困难，我都会加入技能卡的设定。技能卡是对游戏机制做加法，而且是对游戏内容维度上的提升，可以极大扩充游戏的设计空间。也就是说，设计师有更多的空间去设置卡牌的能力，更容易设计出不一样的卡来。只要把游戏最基础的平衡性搭好，后续添加新卡、维护新卡的平衡性都会简单很多。</p>
+<p>但估计还是出于维护那小而精的游戏机制，设计师没有向游戏里添加技能卡的设定。反正我是认为加入技能卡能大幅提升游戏的可玩性、平衡性。</p>
+<h4 id="手牌资源"><a href="#手牌资源" class="headerlink" title="手牌资源"></a>手牌资源</h4><p>卡牌游戏一大核心、一大可玩之处，就是抽牌系统。玩家牌库中哪怕有再强的牌，手牌数量不够，或者因为卡组臃肿抽不到想要的牌，都会导致当前的战斗陷入窘境。抽牌系统是卡牌游戏必须要做好的一点。</p>
+<p>理论上，卡牌间不仅要有场面上的交互机制，还应该有手牌上的交互机制：比如什么有某一种族就抽一张牌，抽一张同名牌等。玩家需要动脑去最大化抽牌效果。《邪恶冥刻》的手牌资源控制得极为糟糕：要么是无脑强而无聊的手牌资源机制，什么消耗一根骨头获得一张白板卡，什么亡语把卡牌回手，什么去牌库中检索一张牌；要么这张卡就和抽牌一点关系都没有。连”抽一张牌“这种再基础不过的效果都没有。设计师根本没有花心思在抽牌系统上，根本没有去想怎么样构建一套好玩的抽牌体系。</p>
+<p>没有考虑手牌资源，导致玩家的牌库很容易臃肿；牌库臃肿，玩家就容易卡手；玩家卡手，如果boss强度过大，玩家一两个回合就撑不住了。设计师很明显发现了这个问题，所以根本不敢给boss太强的卡组，以照顾那些很容易卡手的卡组。这让游戏的平衡性崩溃得一塌糊涂，让卡牌游戏的一大玩法——构筑精简的卡组彻底消失。</p>
+<p>让我来做的话，一定会考虑加入更多与手牌资源有关的机制，且和现有的种族、场面等机制结合起来。但同理，加入这些设定会让游戏发生翻天覆地的变化，很多东西都要重新设计。</p>
+<h3 id="平衡性总结"><a href="#平衡性总结" class="headerlink" title="平衡性总结"></a>平衡性总结</h3><p>我玩完游戏已经一个多月了，但我随手一列，还是能从机制和细节上列出这么多平衡性问题。可以看出作者对于卡牌游戏平衡性的把握是如此糟糕。这要放到一个PVP卡牌游戏中，设计师早就被玩家喷死了。</p>
+<p>成也卡牌，败也卡牌。基于有趣的卡牌游戏框架，设计师设计了一个简单的卡牌游戏系统，这个卡牌游戏玩个几盘感觉还不错。但是，设计师必须为这样一个简单的系统付出代价：这样的系统的平衡性非常难做，很难往里面添加有趣的新卡。糟糕的平衡性，会极大拖累游戏的可玩性。这样一个卡牌游戏系统，撑死了就只能支持10来个小时的游戏时间。等玩家稍微熟悉整套系统后，这个卡牌游戏就一点也不好玩了。</p>
+<h2 id="丰富性与平衡性的讨论"><a href="#丰富性与平衡性的讨论" class="headerlink" title="丰富性与平衡性的讨论"></a>丰富性与平衡性的讨论</h2><p>这一节，我就不理性地进行分析，而是发表下我个人的看法了。</p>
+<p>我喷了这么多平衡上的问题，也夸过游戏在丰富性的创新。综合而言，我对设计师的这种设计思想极度不满，对这部作品感到十分惋惜。</p>
+<p>你说你做一个小体量的卡牌游戏，游戏机制差不多自洽。哪怕内容不多，几小时就玩完了，玩家体验尚可。我会认为这游戏非常有新意，做得很值得学习。</p>
+<p>你说你做了一个小体量、平衡性极差，又臭又长的游戏，我会说这是个垃圾游戏，不用去玩。</p>
+<p>问题是《邪恶冥刻》在初期以一个新颖的卡牌游戏系统吸引了玩家的眼球，后来又用这个差劲的系统浪费了玩家很多时间，同时炫技般地不断加入丰富多彩的游戏系统。不管是大一点的构筑/roguelike/有限资源这样的游戏资源系统，还是爬塔式/塞尔达式/自由式的地图系统，还是小一点的自制卡牌、读取玩家电脑信息、修改卡牌、临时添加战斗机制等一系列在现有游戏机制上的装饰，都做得十分丰富。设计师真的是设计水平很高。这要换一个游戏框架，比如换一个2D平台游戏，游戏一定会非常好玩。</p>
+<p>但可惜，这就是一个卡牌游戏。卡牌游戏的趣味的核心，是恰到好处的难度。这种靠平衡性吃饭的游戏，就是考验设计师的硬实力，怎么样在设计好的游戏框架下，添加合理的游戏内容。加再多花里胡哨的装饰品，试图在游戏框架上扩充，而不去认真把框架内的东西填充好，是无法提升游戏的平衡性，无法做出一个足够好的游戏的。这就好比你写作文，内容乱七八糟，你说“我字写得很好看”；你写程序，逻辑混乱不堪，你说“我变量名取得好，注释写得清楚”；谈个恋爱，你长得不帅，没有钱，不会说话，你说“我程序写得很好”。这有用吗？最核心的评价指标达不到，其他的东西做得再好，有什么用呢？</p>
+<p>我不会推荐，甚至会大力阻止别人去玩这款游戏。不是因为我不喜欢这款游戏。我从这个游戏里学到了很多东西：无论是好的设计思路，还是需要规避的缺点。我也十分认可设计师本身的水平。但是我太喜欢这款游戏了，以至于我会不断想象这款游戏如果是我做出来的会怎么样。如果是我做出了这样的游戏，我会非常难过：明明很有水平，也很有想法，却做得这么不好玩。这比做出了一款纯粹的烂游戏更加令人心疼。我这种矛盾的心理，令我对《邪恶冥刻》给出了极低的评价。这事关一个艺术家、一个设计师的尊严：费尽心思却做得有失水准的东西，宁可扔掉，也不该拿出来展示。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B8%B8%E6%88%8F/" rel="tag"># 游戏</a>
+              <a href="/tags/%E6%B8%B8%E6%88%8F%E8%AE%BE%E8%AE%A1/" rel="tag"># 游戏设计</a>
+              <a href="/tags/%E5%8D%A1%E7%89%8C%E6%B8%B8%E6%88%8F/" rel="tag"># 卡牌游戏</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/12/05/20211205-metroid-dread/" rel="prev" title="《密特罗德：生存恐惧》简评：风光不再">
+      <i class="fa fa-chevron-left"></i> 《密特罗德：生存恐惧》简评：风光不再
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/12/31/20211226-goodbye-my-sweet-dream/" rel="next" title="合眼告别美梦">
+      合眼告别美梦 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%A1%E7%89%8C%E6%B8%B8%E6%88%8F%E5%A4%A7%E6%9D%82%E7%83%A9"><span class="nav-number">1.</span> <span class="nav-text">卡牌游戏大杂烩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%B8%E6%88%8F%E7%B3%BB%E7%BB%9F%E5%A4%A7%E6%9D%82%E7%83%A9"><span class="nav-number">2.</span> <span class="nav-text">游戏系统大杂烩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E4%B9%9F%E5%8D%A1%E7%89%8C%EF%BC%8C%E8%B4%A5%E4%B9%9F%E5%8D%A1%E7%89%8C"><span class="nav-number">3.</span> <span class="nav-text">成也卡牌，败也卡牌</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E4%BD%93"><span class="nav-number">3.1.</span> <span class="nav-text">总体</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B8%B8%E6%88%8F%E6%9C%BA%E5%88%B6"><span class="nav-number">3.1.1.</span> <span class="nav-text">游戏机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%86%E8%8A%82"><span class="nav-number">3.1.2.</span> <span class="nav-text">细节</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E7%AB%A0"><span class="nav-number">3.2.</span> <span class="nav-text">第一章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B8%B8%E6%88%8F%E6%9C%BA%E5%88%B6-1"><span class="nav-number">3.2.1.</span> <span class="nav-text">游戏机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%86%E8%8A%82-1"><span class="nav-number">3.2.2.</span> <span class="nav-text">细节</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E7%AB%A0"><span class="nav-number">3.3.</span> <span class="nav-text">第二章</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B8%B8%E6%88%8F%E6%9C%BA%E5%88%B6-2"><span class="nav-number">3.3.1.</span> <span class="nav-text">游戏机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%86%E8%8A%82-2"><span class="nav-number">3.3.2.</span> <span class="nav-text">细节</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E7%AB%A0"><span class="nav-number">3.4.</span> <span class="nav-text">第三章</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B8%B8%E6%88%8F%E6%9C%BA%E5%88%B6-3"><span class="nav-number">3.5.</span> <span class="nav-text">游戏机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%86%E8%8A%82-3"><span class="nav-number">3.5.1.</span> <span class="nav-text">细节</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E5%8D%87%E5%B9%B3%E8%A1%A1%E6%80%A7%E7%9A%84%E5%BB%BA%E8%AE%AE"><span class="nav-number">3.6.</span> <span class="nav-text">提升平衡性的建议</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%9E%E5%AF%B9%E7%A7%B0%E6%80%A7"><span class="nav-number">3.6.1.</span> <span class="nav-text">非对称性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%80%E9%87%8F%E4%B8%8E%E5%9C%BA%E9%9D%A2"><span class="nav-number">3.6.2.</span> <span class="nav-text">血量与场面</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8A%80%E8%83%BD%E5%8D%A1"><span class="nav-number">3.6.3.</span> <span class="nav-text">技能卡</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%8B%E7%89%8C%E8%B5%84%E6%BA%90"><span class="nav-number">3.6.4.</span> <span class="nav-text">手牌资源</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B3%E8%A1%A1%E6%80%A7%E6%80%BB%E7%BB%93"><span class="nav-number">3.7.</span> <span class="nav-text">平衡性总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%B0%E5%AF%8C%E6%80%A7%E4%B8%8E%E5%B9%B3%E8%A1%A1%E6%80%A7%E7%9A%84%E8%AE%A8%E8%AE%BA"><span class="nav-number">4.</span> <span class="nav-text">丰富性与平衡性的讨论</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

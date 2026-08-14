@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="我正在美国丹佛参加 CVPR 2026，一直停留到当地时间 6 月 7 日会议结束。我想在此期间结交在 AI 科研、创业方向上有共同语言的，各个层面上的合作者。具体内容如下： CVPR 2026 Poster 展示：Log-linear Sparse Attention我参加 CVPR 2026 的基本任务是完成 Poster 展示。 活动名：Poster Session 2 &amp; Exhi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CVPR 2026 | Sparse Attention Poster &#x2F; Foundation 研究 &#x2F; AI + 游戏 &#x2F; 女装 Cosplay">
+<meta property="og:url" content="https://zhouyifan.net/2026/06/03/20260603-CVPR-2026-msg/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="我正在美国丹佛参加 CVPR 2026，一直停留到当地时间 6 月 7 日会议结束。我想在此期间结交在 AI 科研、创业方向上有共同语言的，各个层面上的合作者。具体内容如下： CVPR 2026 Poster 展示：Log-linear Sparse Attention我参加 CVPR 2026 的基本任务是完成 Poster 展示。 活动名：Poster Session 2 &amp; Exhi">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-06-03T10:00:24.000Z">
+<meta property="article:modified_time" content="2026-06-04T00:22:37.596Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2026/06/03/20260603-CVPR-2026-msg/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CVPR 2026 | Sparse Attention Poster / Foundation 研究 / AI + 游戏 / 女装 Cosplay | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2026/06/03/20260603-CVPR-2026-msg/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CVPR 2026 | Sparse Attention Poster / Foundation 研究 / AI + 游戏 / 女装 Cosplay
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-06-03 18:00:24" itemprop="dateCreated datePublished" datetime="2026-06-03T18:00:24+08:00">2026-06-03</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>我正在美国丹佛参加 CVPR 2026，一直停留到当地时间 6 月 7 日会议结束。我想在此期间结交在 AI 科研、创业方向上有共同语言的，各个层面上的合作者。具体内容如下：</p>
+<h2 id="CVPR-2026-Poster-展示：Log-linear-Sparse-Attention"><a href="#CVPR-2026-Poster-展示：Log-linear-Sparse-Attention" class="headerlink" title="CVPR 2026 Poster 展示：Log-linear Sparse Attention"></a>CVPR 2026 Poster 展示：Log-linear Sparse Attention</h2><p>我参加 CVPR 2026 的基本任务是完成 Poster 展示。</p>
+<p>活动名：Poster Session 2 &amp; Exhibit Hall w/ Coffee Break</p>
+<p>时间：6 月 5 号 周五，16:00 - 18:00</p>
+<p>地点：Exhall A &amp; F (210)</p>
+<p>论文名：Trainable Log-linear Sparse Attention for Efficient Diffusion Transformers (Highlight)</p>
+<p>这篇论文基于去年比较火的 Sparse Attention 系列算法 （如 Native Sparse Attention, Mixture of Block Attention），提出了一种将稀疏操作复杂度由 $O(N^2)$ 优化至 $O(N \log N)$ 的通用改进策略。目前，尽管 Sparse Attention 的相关研究很多，但鲜有从同样的角度做优化的研究，我认为这篇文章的设计足够新颖。我们提供了高性能 GPU 实现，并已经在 GitHub 上开源，使用时仅需替换 attention 操作那一行代码。</p>
+<p>去年，我已经做过该论文的分享。链接如下：</p>
+<p><a href="https://zhouyifan.net/2025/12/19/20251211-llsa-1/">https://zhouyifan.net/2025/12/19/20251211-llsa-1/</a></p>
+<p>除了正式的 Poster 环节外，这篇论文还会在其他场合展示。</p>
+<h3 id="Workshop-BigMAC-Big-Model-Adaptation-for-Computer-Vision"><a href="#Workshop-BigMAC-Big-Model-Adaptation-for-Computer-Vision" class="headerlink" title="(Workshop) BigMAC: Big Model Adaptation for Computer Vision"></a>(Workshop) BigMAC: Big Model Adaptation for Computer Vision</h3><p>官网链接：<a target="_blank" rel="noopener" href="https://cvpr2026-bigmac-workshop.limitlab.xyz/">https://cvpr2026-bigmac-workshop.limitlab.xyz/</a></p>
+<p>活动名：BigMAC: Big Model Adaptation for Computer Vision (Networking / Poster Session)</p>
+<p>时间：6 月 4 号 周四，15:55 - 17:30</p>
+<p>地点：Colorado Convention Center - Room Four Seasons 2 (5)</p>
+<h3 id="NVIDIA-Tech-Talk-Hold"><a href="#NVIDIA-Tech-Talk-Hold" class="headerlink" title="NVIDIA Tech Talk Hold"></a>NVIDIA Tech Talk Hold</h3><p>活动名：CVPR NVIDIA Tech Talk Hold </p>
+<p>时间：6 月 6 号 周六，13:00 - 13:20</p>
+<p>地点：NVIDIA (Booth 211)</p>
+<h2 id="科研创业合作交流"><a href="#科研创业合作交流" class="headerlink" title="科研创业合作交流"></a>科研创业合作交流</h2><p>我希望借助 CVPR 这次线下交流机会，与志同道合的人建立初始 connection，为未来学术和事业的深度交流铺路。</p>
+<p>我为一作的论文都偏向于 Foundation 的研究，比如之前研究为什么 Diffusion Model 存在平移抖动现象，这次研究的是 Sparse Attention 通用改进策略。我平时也在个人博客里对这种类型的论文做了不少解读。在未来 1~2 年里，我会继续做这种偏底层、通用的研究，而尽量不去聚焦具体应用及实现效果。我很期待和类似研究风格的学者进行交流。</p>
+<p>完成我的学校科研生涯后，我计划追逐我一直以来的人生理想——游戏设计。我目前的初步想法是实现 「AI + 游戏<strong>玩法</strong>设计」的科研、开发工具、游戏产品。我计划执行偏个人创业的工作模式。欢迎对「AI + 游戏」方向感兴趣的朋友来相互交流、合作。</p>
+<p>此外，我所在的潘新钢老师（<a target="_blank" rel="noopener" href="https://xingangpan.github.io/）团队研究方向多元，涉及世界模型、3D">https://xingangpan.github.io/）团队研究方向多元，涉及世界模型、3D</a> 重建、视觉生成等多个领域。已有相关研究，对我们团队的其他论文感兴趣，也可以来和我交流。</p>
+<h3 id="交流方式"><a href="#交流方式" class="headerlink" title="交流方式"></a>交流方式</h3><p>我的邮箱：yifanzhou1107@gmail.com</p>
+<ul>
+<li>在我自己 Poster 演讲的前后，欢迎进行那篇论文以外的科研、创业交流。 </li>
+<li>如果你也会进行 Poster 演讲，欢迎私信/发邮件告知 Poster 时间/地点/论文名，时间充足的话我可以直接拜访。</li>
+<li>对长期合作感兴趣的朋友，欢迎发邮件详述你的个人背景与未来想做的事情，后续可以在邮件里沟通。</li>
+</ul>
+<h2 id="女装-Cosplay"><a href="#女装-Cosplay" class="headerlink" title="女装 Cosplay"></a>女装 Cosplay</h2><p>受 CVPR 2024 芙莉莲 coser 启发，在 6 月 5 号我的 Poster 展示当天，我会 cosplay 成 “BanG Dream!” 系列的角色「丰川祥子」。我承认这是个宣传噱头，但我确实也热爱扮演此角色，并为此尽力准备了。这方面的感想后续会分享在博客上。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/19/20251211-llsa-1/" rel="prev" title="作者亲述 | Log-linear Sparse Attention：首个 $O(N \log N)$ 高性能稀疏注意力">
+      <i class="fa fa-chevron-left"></i> 作者亲述 | Log-linear Sparse Attention：首个 $O(N \log N)$ 高性能稀疏注意力
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#CVPR-2026-Poster-%E5%B1%95%E7%A4%BA%EF%BC%9ALog-linear-Sparse-Attention"><span class="nav-number">1.</span> <span class="nav-text">CVPR 2026 Poster 展示：Log-linear Sparse Attention</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Workshop-BigMAC-Big-Model-Adaptation-for-Computer-Vision"><span class="nav-number">1.1.</span> <span class="nav-text">(Workshop) BigMAC: Big Model Adaptation for Computer Vision</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NVIDIA-Tech-Talk-Hold"><span class="nav-number">1.2.</span> <span class="nav-text">NVIDIA Tech Talk Hold</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A7%91%E7%A0%94%E5%88%9B%E4%B8%9A%E5%90%88%E4%BD%9C%E4%BA%A4%E6%B5%81"><span class="nav-number">2.</span> <span class="nav-text">科研创业合作交流</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%A4%E6%B5%81%E6%96%B9%E5%BC%8F"><span class="nav-number">2.1.</span> <span class="nav-text">交流方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A5%B3%E8%A3%85-Cosplay"><span class="nav-number">3.</span> <span class="nav-text">女装 Cosplay</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

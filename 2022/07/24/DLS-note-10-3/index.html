@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="学完了CNN的基本构件，看完了用TensorFlow实现的CNN，让我们再用PyTorch来搭建一个CNN，并用这个网络完成之前那个简单的猫狗分类任务。 这份PyTorch实现会尽量和TensorFlow实现等价。同时，我也会分享编写此项目过程中发现的PyTorch与TensorFlow的区别。 项目网址：https:&#x2F;&#x2F;github.com&#x2F;SingleZombie&#x2F;DL-Demos&#x2F;tree&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》代码实战（十）：2.用 PyTorch 实现简单的 CNN 二分类器">
+<meta property="og:url" content="https://zhouyifan.net/2022/07/24/DLS-note-10-3/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="学完了CNN的基本构件，看完了用TensorFlow实现的CNN，让我们再用PyTorch来搭建一个CNN，并用这个网络完成之前那个简单的猫狗分类任务。 这份PyTorch实现会尽量和TensorFlow实现等价。同时，我也会分享编写此项目过程中发现的PyTorch与TensorFlow的区别。 项目网址：https:&#x2F;&#x2F;github.com&#x2F;SingleZombie&#x2F;DL-Demos&#x2F;tree&#x2F;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-10-3/DLS-note-10-2/1.jpg">
+<meta property="article:published_time" content="2022-07-23T16:30:54.000Z">
+<meta property="article:modified_time" content="2022-07-23T16:30:54.988Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="PyTorch">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/07/24/DLS-note-10-3/DLS-note-10-2/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/07/24/DLS-note-10-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》代码实战（十）：2.用 PyTorch 实现简单的 CNN 二分类器 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-10-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》代码实战（十）：2.用 PyTorch 实现简单的 CNN 二分类器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-24 00:30:54" itemprop="dateCreated datePublished" datetime="2022-07-24T00:30:54+08:00">2022-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>学完了CNN的基本构件，看完了<a href>用TensorFlow实现的CNN</a>，让我们再用PyTorch来搭建一个CNN，并用这个网络完成之前那个简单的猫狗分类任务。</p>
+<p>这份PyTorch实现会尽量和TensorFlow实现等价。同时，我也会分享编写此项目过程中发现的PyTorch与TensorFlow的区别。</p>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/BasicCNN</a></p>
+<h2 id="获取数据集"><a href="#获取数据集" class="headerlink" title="获取数据集"></a>获取数据集</h2><p>和之前几次的代码实战任务一样，我们这次还用的是Kaggle上的猫狗数据集。我已经写好了数据预处理的函数。使用如下的接口即可获取数据集：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">train_X, train_Y, test_X, test_Y = get_cat_set(</span><br><span class="line">    <span class="string">&#x27;dldemos/LogisticRegression/data/archive/dataset&#x27;</span>,</span><br><span class="line">    train_size=<span class="number">1500</span>,</span><br><span class="line">    <span class="built_in">format</span>=<span class="string">&#x27;nchw&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span>(train_X.shape)  <span class="comment"># (m, 3, 224, 224)</span></span><br><span class="line"><span class="built_in">print</span>(train_Y.shape)  <span class="comment"># (m, 1)</span></span><br></pre></td></tr></table></figure>
+<p>这次的数据格式和之前项目中的有一些区别。</p>
+<p>在使用全连接网络时，每一个输入样本都是一个一维向量。之前在预处理数据集时，我做了一个flatten操作，把图片的所有颜色值塞进了一维向量中。而在CNN中，对于卷积操作，每一个输入样本都是一个三维张量。用OpenCV读取完图片后，不用对图片Resize，直接拿过来用就可以了。</p>
+<p>另外，在用NumPy实现时，我们把数据集大小N当作了最后一个参数；在用TensorFlow时，张量格式是”NHWC(数量-高度-宽度-通道数)”。而PyTorch中默认的张量格式是”NCHW(数量-通道数-高度-宽度)”。因此，在预处理数据集时，我令<code>format=&#39;nchw&#39;</code>。</p>
+<h2 id="初始化模型"><a href="#初始化模型" class="headerlink" title="初始化模型"></a>初始化模型</h2><p>根据课堂里讲的CNN构建思路，我搭了一个这样的网络。</p>
+<p><img src="/2022/07/24/DLS-note-10-3/DLS-note-10-2/1.jpg" alt></p>
+<p>由于这个二分类任务比较简单，我在设计时尽可能让可训练参数更少。刚开始用一个大步幅、大卷积核的卷积快速缩小图片边长，之后逐步让图片边长减半、深度翻倍。</p>
+<p>这样一个网络用PyTorch实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">init_model</span>(<span class="params">device=<span class="string">&#x27;cpu&#x27;</span></span>):</span><br><span class="line">    model = nn.Sequential(nn.Conv2d(<span class="number">3</span>, <span class="number">16</span>, <span class="number">11</span>, <span class="number">3</span>), nn.BatchNorm2d(<span class="number">16</span>),</span><br><span class="line">                          nn.ReLU(<span class="literal">True</span>), nn.MaxPool2d(<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                          nn.Conv2d(<span class="number">16</span>, <span class="number">32</span>, <span class="number">5</span>), nn.BatchNorm2d(<span class="number">32</span>),</span><br><span class="line">                          nn.ReLU(<span class="literal">True</span>), nn.MaxPool2d(<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                          nn.Conv2d(<span class="number">32</span>, <span class="number">64</span>, <span class="number">3</span>, padding=<span class="number">1</span>), nn.BatchNorm2d(<span class="number">64</span>),</span><br><span class="line">                          nn.ReLU(<span class="literal">True</span>), nn.Conv2d(<span class="number">64</span>, <span class="number">64</span>, <span class="number">3</span>),</span><br><span class="line">                          nn.BatchNorm2d(<span class="number">64</span>), nn.ReLU(<span class="literal">True</span>),</span><br><span class="line">                          nn.MaxPool2d(<span class="number">2</span>, <span class="number">2</span>), nn.Flatten(),</span><br><span class="line">                          nn.Linear(<span class="number">3136</span>, <span class="number">2048</span>), nn.ReLU(<span class="literal">True</span>),</span><br><span class="line">                          nn.Linear(<span class="number">2048</span>, <span class="number">1</span>), nn.Sigmoid()).to(device)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">weights_init</span>(<span class="params">m</span>):</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(m, nn.Conv2d):</span><br><span class="line">            torch.nn.init.xavier_normal_(m.weight)</span><br><span class="line">            m.bias.data.fill_(<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(m, nn.BatchNorm2d):</span><br><span class="line">            m.weight.data.normal_(<span class="number">1.0</span>, <span class="number">0.02</span>)</span><br><span class="line">            m.bias.data.fill_(<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(m, nn.Linear):</span><br><span class="line">            torch.nn.init.xavier_normal_(m.weight)</span><br><span class="line">            m.bias.data.fill_(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">    model.apply(weights_init)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(model)</span><br><span class="line">    <span class="keyword">return</span> model</span><br></pre></td></tr></table></figure>
+<p>让我们从函数定义开始一点一点看起。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">init_model</span>(<span class="params">device=<span class="string">&#x27;cpu&#x27;</span></span>):</span><br></pre></td></tr></table></figure>
+<p>在PyTorch中，所有张量所在的运算设备需要显式指定。我们的模型中带有可学习参数，这些参数都是张量。因此，在初始化模型时，我们要决定参数所在设备。最常见的设备是<code>&#39;cpu&#39;</code>和<code>&#39;cuda:0&#39;</code>。对于模块或者张量，使用<code>x.to(device)</code>即可让对象<code>x</code>中的数据迁移到设备<code>device</code>上。</p>
+<p>接着，是初始化模型结构。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">model = nn.Sequential(nn.Conv2d(<span class="number">3</span>, <span class="number">16</span>, <span class="number">11</span>, <span class="number">3</span>), nn.BatchNorm2d(<span class="number">16</span>),</span><br><span class="line">                          nn.ReLU(<span class="literal">True</span>), nn.MaxPool2d(<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                          nn.Conv2d(<span class="number">16</span>, <span class="number">32</span>, <span class="number">5</span>), nn.BatchNorm2d(<span class="number">32</span>),</span><br><span class="line">                          nn.ReLU(<span class="literal">True</span>), nn.MaxPool2d(<span class="number">2</span>, <span class="number">2</span>),</span><br><span class="line">                          nn.Conv2d(<span class="number">32</span>, <span class="number">64</span>, <span class="number">3</span>, padding=<span class="number">1</span>), nn.BatchNorm2d(<span class="number">64</span>),</span><br><span class="line">                          nn.ReLU(<span class="literal">True</span>), nn.Conv2d(<span class="number">64</span>, <span class="number">64</span>, <span class="number">3</span>),</span><br><span class="line">                          nn.BatchNorm2d(<span class="number">64</span>), nn.ReLU(<span class="literal">True</span>),</span><br><span class="line">                          nn.MaxPool2d(<span class="number">2</span>, <span class="number">2</span>), nn.Flatten(),</span><br><span class="line">                          nn.Linear(<span class="number">3136</span>, <span class="number">2048</span>), nn.ReLU(<span class="literal">True</span>),</span><br><span class="line">                          nn.Linear(<span class="number">2048</span>, <span class="number">1</span>), nn.Sigmoid()).to(device)</span><br></pre></td></tr></table></figure>
+<p><code>torch.nn.Sequential()</code>用于创建一个串行的网络（前一个模块的输出就是后一个模块的输入）。网络各模块用到的初始化参数的介绍如下：</p>
+<ul>
+<li><code>Conv2d</code>: 输入通道数、输出通道数、卷积核边长、步幅、填充个数padding。</li>
+<li><code>BatchNormalization</code>: 输入通道数。</li>
+<li><code>ReLU</code>: 一个bool值<code>inplace</code>。是否使用<code>inplace</code>，就和用<code>a += 1</code>还是<code>a + 1</code>一样，后者会多花一个中间变量来存结果。</li>
+<li><code>MaxPool2d</code>: 卷积核边长、步幅。</li>
+<li><code>Linear</code>（全连接层）：输入通道数、输出通道数。</li>
+</ul>
+<blockquote>
+<p>相比TensorFlow，PyTorch里的模块更独立一些，不能附加激活函数，不能直接直接写上初始化方法。</p>
+<p>TensorFlow是静态图（会有一个类似“编译”的过程，把模块串起来），除了第一个模块外，后续模块都可以不指定输入通道数。而PyTorch是动态图，需要指定某些模块的输入通道数。</p>
+</blockquote>
+<p>根据之前的设计，把参数填入这些模块即可。 </p>
+<p>由于PyTorch在初始化模块时不能自动初始化参数，我们要手动写上初始化参数的逻辑。</p>
+<p>在此之前，要先认识一下<code>torch.nn.Module</code>的<code>apply</code>函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">model.apply(weights_init)</span><br></pre></td></tr></table></figure>
+<p>PyTorch的模型模块<code>torch.nn.Module</code>是自我嵌套的。一个<code>torch.nn.Module</code>的实例可能由多个<code>torch.nn.Module</code>的实例组成。<code>model.apply(func)</code>可以对某<code>torch.nn.Module</code>实例的所有某子模块执行<code>func</code>函数。我们使用的参数初始化函数叫做<code>weights_init</code>，所以用上面那行代码就可以初始化所有模块。</p>
+<p>初始化参数函数是这样写的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">weights_init</span>(<span class="params">m</span>):</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">isinstance</span>(m, nn.Conv2d):</span><br><span class="line">        torch.nn.init.xavier_normal_(m.weight)</span><br><span class="line">        m.bias.data.fill_(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">elif</span> <span class="built_in">isinstance</span>(m, nn.BatchNorm2d):</span><br><span class="line">        m.weight.data.normal_(<span class="number">1.0</span>, <span class="number">0.02</span>)</span><br><span class="line">        m.bias.data.fill_(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">elif</span> <span class="built_in">isinstance</span>(m, nn.Linear):</span><br><span class="line">        torch.nn.init.xavier_normal_(m.weight)</span><br><span class="line">        m.bias.data.fill_(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>其中，<code>m</code>就是子模块的示例。通过对其进行类型判断，我们可以对不同的模块执行不同的初始化方式。初始化的函数都在<code>torch.nn.init</code>，我这里用的是<code>torch.nn.init.xavier_normal_</code>。</p>
+<blockquote>
+<p>理论上写了batch normalization的话前一个模块就不用加bias。为了让代码稍微简单一点，我没有做这个优化。</p>
+</blockquote>
+<p>模型初始化完后，调用<code>print(model)</code>可以查看网络各层的参数信息。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Sequential(</span><br><span class="line">  (0): Conv2d(3, 16, kernel_size=(11, 11), stride=(3, 3))</span><br><span class="line">  (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)</span><br><span class="line">  (2): ReLU(inplace=True)</span><br><span class="line">  (3): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)</span><br><span class="line">    ......</span><br><span class="line">  (18): Linear(in_features=2048, out_features=1, bias=True)</span><br><span class="line">  (19): Sigmoid()</span><br></pre></td></tr></table></figure>
+<h2 id="准备优化器和loss"><a href="#准备优化器和loss" class="headerlink" title="准备优化器和loss"></a>准备优化器和loss</h2><p>初始化完模型后，可以用下面的代码初始化优化器与loss。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">model = init_model(device)</span><br><span class="line">optimizer = torch.optim.Adam(model.parameters(), <span class="number">5e-4</span>)</span><br><span class="line">loss_fn = torch.nn.BCELoss()</span><br></pre></td></tr></table></figure>
+<p><code>torch.optim.Adam</code>可以初始化一个Adam优化器。它的第一个参数是所有可训练参数，直接对一个<code>torch.nn.Module</code>调用<code>.parameters()</code>即可一键获取参数。它的第二个参数是学习率，这个可以根据实验情况自行调整。</p>
+<p><code>torch.nn.BCELoss</code>是二分类用到的交叉熵误差。这里只是对它进行了初始化。在调用时，使用方法是<code>loss(input, target)</code>。<code>input</code>是用于比较的结果，<code>target</code>是被比较的标签。</p>
+<h2 id="训练与推理"><a href="#训练与推理" class="headerlink" title="训练与推理"></a>训练与推理</h2><p>接下来，我们来编写模型训练和推理（准确来说是评估）的代码。</p>
+<p>先看训练函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train</span>(<span class="params">model: nn.Module,</span></span><br><span class="line"><span class="params">          train_X: np.ndarray,</span></span><br><span class="line"><span class="params">          train_Y: np.ndarray,</span></span><br><span class="line"><span class="params">          optimizer: torch.optim.Optimizer,</span></span><br><span class="line"><span class="params">          loss_fn: nn.Module,</span></span><br><span class="line"><span class="params">          batch_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">          num_epoch: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">          device: <span class="built_in">str</span> = <span class="string">&#x27;cpu&#x27;</span></span>):</span><br></pre></td></tr></table></figure>
+<p>在训练时，我们采用mini-batch策略。因此，开始迭代前，我们要编写预处理mini-batch的代码。</p>
+<blockquote>
+<p>这部分的代码讲解请参考我之前<a href>有关优化算法的文章</a>。</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">m = train_X.shape[<span class="number">0</span>]</span><br><span class="line">    indices = np.random.permutation(m)</span><br><span class="line">    shuffle_X = train_X[indices, ...]</span><br><span class="line">    shuffle_Y = train_Y[indices, ...]</span><br><span class="line">    num_mini_batch = math.ceil(m / batch_size)</span><br><span class="line">    mini_batch_XYs = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(num_mini_batch):</span><br><span class="line">        <span class="keyword">if</span> i == num_mini_batch - <span class="number">1</span>:</span><br><span class="line">            mini_batch_X = shuffle_X[i * batch_size:, ...]</span><br><span class="line">            mini_batch_Y = shuffle_Y[i * batch_size:, ...]</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            mini_batch_X = shuffle_X[i * batch_size:(i + <span class="number">1</span>) * batch_size, ...]</span><br><span class="line">            mini_batch_Y = shuffle_Y[i * batch_size:(i + <span class="number">1</span>) * batch_size, ...]</span><br><span class="line">        mini_batch_X = torch.from_numpy(mini_batch_X)</span><br><span class="line">        mini_batch_Y = torch.from_numpy(mini_batch_Y).<span class="built_in">float</span>()</span><br><span class="line">        mini_batch_XYs.append((mini_batch_X, mini_batch_Y))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;Num mini-batch: <span class="subst">&#123;num_mini_batch&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>PyTorch有更方便的实现mini-batch的方法。但为了少引入一些新知识，我这里没有使用。后续文章中会对这部分内容进行介绍。</p>
+</blockquote>
+<p>这里还有一些有关PyTorch的知识需要讲解。<code>torch.from_numpy</code>可以把一个NumPy数组转换成<code>torch.Tensor</code>。由于标签<code>Y</code>是个整形张量，而PyTorch算loss时又要求标签是个float，这里要调用<code>.float()</code>把张量强制类型转换到float型。同理，其他类型也可以用类似的方法进行转换。</p>
+<p>分配好了mini-batch后，就可以开心地调用框架进行训练了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> e <span class="keyword">in</span> <span class="built_in">range</span>(num_epoch):</span><br><span class="line">        <span class="keyword">for</span> mini_batch_X, mini_batch_Y <span class="keyword">in</span> mini_batch_XYs:</span><br><span class="line">            mini_batch_X = mini_batch_X.to(device)</span><br><span class="line">            mini_batch_Y = mini_batch_Y.to(device)</span><br><span class="line">            mini_batch_Y_hat = model(mini_batch_X)</span><br><span class="line">            loss: torch.Tensor = loss_fn(mini_batch_Y_hat, mini_batch_Y)</span><br><span class="line"></span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            loss.backward()</span><br><span class="line">            optimizer.step()</span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;Epoch <span class="subst">&#123;e&#125;</span>. loss: <span class="subst">&#123;loss&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>由于GPU计算资源有限，只有当我们需要计算某数据时，才把数据用<code>to(device)</code>放到对应设备上。</p>
+<p>直接用<code>model(x)</code>即可让模型<code>model</code>执行输入<code>x</code>的前向传播。</p>
+<p>之后几行代码就属于训练的常规操作了。先计算loss，再清空优化器的梯度，做反向传播，最后调用优化器更新所有参数。</p>
+<p>推理并评估的函数定义如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">evaluate</span>(<span class="params">model: nn.Module,</span></span><br><span class="line"><span class="params">             test_X: np.ndarray,</span></span><br><span class="line"><span class="params">             test_Y: np.ndarray,</span></span><br><span class="line"><span class="params">             device=<span class="string">&#x27;cpu&#x27;</span></span>):</span><br></pre></td></tr></table></figure></p>
+<p>它的实现和之前的NumPy版本极为类似，这里不再重复讲解了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">test_X = torch.from_numpy(test_X).to(device)</span><br><span class="line">test_Y = torch.from_numpy(test_Y).to(device)</span><br><span class="line">test_Y_hat = model(test_X)</span><br><span class="line">predicts = torch.where(test_Y_hat &gt; <span class="number">0.5</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">score = torch.where(predicts == test_Y, <span class="number">1.0</span>, <span class="number">0.0</span>)</span><br><span class="line">acc = torch.mean(score)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&#x27;Accuracy: <span class="subst">&#123;acc&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="main函数"><a href="#main函数" class="headerlink" title="main函数"></a>main函数</h2><p>做好了所有准备，现在可以把所有的流程串起来了。让我们看看main函数的所有代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    train_X, train_Y, test_X, test_Y = get_cat_set(</span><br><span class="line">        <span class="string">&#x27;dldemos/LogisticRegression/data/archive/dataset&#x27;</span>,</span><br><span class="line">        train_size=<span class="number">1500</span>,</span><br><span class="line">        <span class="built_in">format</span>=<span class="string">&#x27;nchw&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(train_X.shape)  <span class="comment"># (m, 3, 224, 224)</span></span><br><span class="line">    <span class="built_in">print</span>(train_Y.shape)  <span class="comment"># (m, 1)</span></span><br><span class="line"></span><br><span class="line">    device = <span class="string">&#x27;cuda:0&#x27;</span></span><br><span class="line">    num_epoch = <span class="number">20</span></span><br><span class="line">    batch_size = <span class="number">16</span></span><br><span class="line">    model = init_model(device)</span><br><span class="line">    optimizer = torch.optim.Adam(model.parameters(), <span class="number">5e-4</span>)</span><br><span class="line">    loss_fn = torch.nn.BCELoss()</span><br><span class="line">    train(model, train_X, train_Y, optimizer, loss_fn, batch_size, num_epoch,</span><br><span class="line">          device)</span><br><span class="line">    evaluate(model, test_X, test_Y, device)</span><br></pre></td></tr></table></figure>
+<p>这里，我们先准备好了数据集，再初始化好了模型、优化器、loss，之后训练，最后评估。</p>
+<p>这里的<code>cuda:0</code>可以改成<code>cpu</code>，这样所有运算都会在CPU上完成。</p>
+<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><p>由于数据量较少，我只执行了20个epoch。loss已经降到很低了。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">poch 19. loss: 0.0308767631649971</span><br></pre></td></tr></table></figure>
+<p>但是，测试集上的精度非常低。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Accuracy: 0.5824999809265137</span><br></pre></td></tr></table></figure>
+<p>在完成本项目时，我本来想让这次的PyTorch实现和上次的TensorFlow实现完全等价。但是，上次的loss大概是0.06，准确率是0.74。可以看出，在训练误差上PyTorch模型没什么问题，而准确率却差了很多。我猜测是TensorFlow的代码过于“高级”，隐藏了很多细节。也许它默认的配置里使用了某些正则化手段。而在今天这份PyTorch实现中，我们没有使用任何正则化的方法。</p>
+<p>不管怎么说，从训练的角度来看，相比前几周用的全连接网络，CNN的效果出彩很多。相信加入更多训练数据，并使用一些正则化方法的话，模型在测试集上的表现会更好。</p>
+<p>PyTorch和TensorFlow在使用体验和性能上更有优劣。相比TensorFlow的高度封装的函数，PyTorch要手写的地方会多一点。不过，在项目逐渐复杂起来，高度封装的函数用不了了之后，还是PyTorch写起来会更方便一点。毕竟PyTorch是动态图，可以随心所欲地写前向推理的过程。也正因为如此，PyTorch的性能会略逊一些。</p>
+<p>使用编程框架是不是很爽？可不要得意忘形哦。在之后的文章中，我还会介绍卷积的等价NumPy实现，让我们重温一下“难用”的NumPy，打下坚实的编程基础。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/24/DLS-note-10-2/" rel="prev" title="吴恩达《深度学习专项》代码实战（十）：1.用 TensorFlow 实现简单的 CNN 二分类器">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》代码实战（十）：1.用 TensorFlow 实现简单的 CNN 二分类器
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/24/DLS-note-10-4/" rel="next" title="吴恩达《深度学习专项》代码实战（十）：3.用 NumPy 复现参数一致的 torch.conv2d 前向传播">
+      吴恩达《深度学习专项》代码实战（十）：3.用 NumPy 复现参数一致的 torch.conv2d 前向传播 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">1.</span> <span class="nav-text">获取数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">初始化模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E4%BC%98%E5%8C%96%E5%99%A8%E5%92%8Closs"><span class="nav-number">3.</span> <span class="nav-text">准备优化器和loss</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">训练与推理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#main%E5%87%BD%E6%95%B0"><span class="nav-number">5.</span> <span class="nav-text">main函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">6.</span> <span class="nav-text">实验结果</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

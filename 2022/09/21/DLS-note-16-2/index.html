@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Transformer中的“注意力”最早来自于NLP里的注意力模型。通过动手实现一遍注意力模型，我们能够更深刻地理解注意力的原理，以便于学习Transformer等后续那些基于注意力的模型。在这篇文章中，我将分享如何用PyTorch的基本API实现注意力模型，完成一个简单的机器翻译项目——把各种格式的日期“翻译”成统一格式的日期。 有关机器翻译、注意力模型相关知识请参考我之前的文章。如序列模型与注">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PyTorch 注意力模型实现详解（以简单的机器翻译为例）">
+<meta property="og:url" content="https://zhouyifan.net/2022/09/21/DLS-note-16-2/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="Transformer中的“注意力”最早来自于NLP里的注意力模型。通过动手实现一遍注意力模型，我们能够更深刻地理解注意力的原理，以便于学习Transformer等后续那些基于注意力的模型。在这篇文章中，我将分享如何用PyTorch的基本API实现注意力模型，完成一个简单的机器翻译项目——把各种格式的日期“翻译”成统一格式的日期。 有关机器翻译、注意力模型相关知识请参考我之前的文章。如序列模型与注">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-16-2/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-16-2/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-16-2/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-16-2/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-16-2/5.jpg">
+<meta property="article:published_time" content="2022-09-21T09:47:45.000Z">
+<meta property="article:modified_time" content="2022-09-21T09:47:45.229Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="PyTorch">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/09/21/DLS-note-16-2/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/09/21/DLS-note-16-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PyTorch 注意力模型实现详解（以简单的机器翻译为例） | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-16-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PyTorch 注意力模型实现详解（以简单的机器翻译为例）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-21 17:47:45" itemprop="dateCreated datePublished" datetime="2022-09-21T17:47:45+08:00">2022-09-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Transformer中的“注意力”最早来自于NLP里的注意力模型。通过动手实现一遍注意力模型，我们能够更深刻地理解注意力的原理，以便于学习Transformer等后续那些基于注意力的模型。在这篇文章中，我将分享如何用PyTorch的基本API实现注意力模型，完成一个简单的机器翻译项目——把各种格式的日期“翻译”成统一格式的日期。</p>
+<p>有关机器翻译、注意力模型相关知识请参考我之前的文章。如<a href>序列模型与注意力机制</a>。</p>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/attention">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/attention</a></p>
+<h2 id="知识背景"><a href="#知识背景" class="headerlink" title="知识背景"></a>知识背景</h2><p>注意力模型发源自机器翻译任务。最早，基于RNN的机器翻译模型都采用如下的架构：</p>
+<p><img src="/2022/09/21/DLS-note-16-2/1.jpg" alt></p>
+<p>前半部分的RNN只有输入，后半部分的RNN只有输出。两个部分通过一个简单的隐状态来传递信息。把隐状态看成输入信息的一种编码的话，前半部分可以叫做“编码器”，后半部分可以叫做“解码器”。这种架构因而被称为“编码器-解码器”架构。</p>
+<p>这种架构在翻译短句子时确实有效，但面对长文章时就捉襟见肘了。使用“编码器-解码器”架构时，无论输入有多长，输入都会被压缩成一个简短的编码。也就是说，模型要一次性阅读完所有输入，再一次性输出所有翻译。这显然不是一种好的方法。联想一下，我们人类在翻译时，一般会读一句话，翻译一句话，读一句话，翻译一句话。基于这种思想，有人提出了注意力模型。注意力模型能够有效地翻译长文章。</p>
+<p><img src="/2022/09/21/DLS-note-16-2/2.jpg" alt></p>
+<p>在注意力模型中，编码器和解码器以另一种方式连接在一起。在完成编码后，解码器会以不同的权重去各个编码输出中取出相关信息，也就是以不同的“注意力”去关注输入信息。</p>
+<p><img src="/2022/09/21/DLS-note-16-2/3.jpg" alt></p>
+<p>具体来说，注意力模型的结构如下。</p>
+<p><img src="/2022/09/21/DLS-note-16-2/4.jpg" alt></p>
+<p>对于每一轮的输出$\hat{y}^{&lt; t &gt;}$，它的解码RNN的输入由上一轮输出$\hat{y}^{&lt; t - 1&gt;}$和注意力上下文$c^{&lt; t &gt;}$拼接而成。注意力上下文$c^{&lt; t &gt;}$，就是所有输入的编码RNN的隐变量$a^{&lt; t &gt;}$的一个加权平均数。这里加权平均数的权重$\alpha$就是该输出对每一个输入的注意力。每一个$\alpha$由编码RNN本轮状态$a^{&lt; t’ &gt;}$和解码RNN上一轮状态$s^{&lt; t - 1 &gt;}$决定。这两个输入会被送入一个简单的全连接网络，输出权重$e$（一个实数）。所有输入元素的$e$经过一个softmax输出$\alpha$。</p>
+<h2 id="日期翻译任务及其数据集"><a href="#日期翻译任务及其数据集" class="headerlink" title="日期翻译任务及其数据集"></a>日期翻译任务及其数据集</h2><p>为了简化项目的实现，我们来完成一个简单的日期翻译任务。在这个任务中，输入是各式各样的日期，输出是某一个标准格式的日期。比如：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>input</th>
+<th>output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nov 23, 1999</td>
+<td>1999-11-23</td>
+</tr>
+<tr>
+<td>3 April 2005</td>
+<td>2005-04-03</td>
+</tr>
+<tr>
+<td>14/01/1989</td>
+<td>1989-01-14</td>
+</tr>
+<tr>
+<td>Thursday, February 7, 1985</td>
+<td>1985-02-07</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>我们可以自己动手用Python生成数据集。在生成数据集时，我们要用到随机生成日期的<code>faker</code>库和格式化日期的<code>babel</code>库。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install faker babel</span><br></pre></td></tr></table></figure>
+<p>运行下面这段代码，我们可以生成不同格式的日期。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> random</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> babel.dates <span class="keyword">import</span> format_date</span><br><span class="line"><span class="keyword">from</span> faker <span class="keyword">import</span> Faker</span><br><span class="line"></span><br><span class="line">faker = Faker()</span><br><span class="line">format_list = [</span><br><span class="line">    <span class="string">&#x27;short&#x27;</span>, <span class="string">&#x27;medium&#x27;</span>, <span class="string">&#x27;long&#x27;</span>, <span class="string">&#x27;full&#x27;</span>, <span class="string">&#x27;d MMM YYY&#x27;</span>, <span class="string">&#x27;d MMMM YYY&#x27;</span>, <span class="string">&#x27;dd/MM/YYY&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;dd-MM-YYY&#x27;</span>, <span class="string">&#x27;EE d, MMM YYY&#x27;</span>, <span class="string">&#x27;EEEE d, MMMM YYY&#x27;</span></span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    <span class="keyword">for</span> <span class="built_in">format</span> <span class="keyword">in</span> format_list:</span><br><span class="line">        date_obj = faker.date_object()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;<span class="subst">&#123;<span class="built_in">format</span>&#125;</span>:&#x27;</span>, date_obj,</span><br><span class="line">              format_date(date_obj, <span class="built_in">format</span>=<span class="built_in">format</span>, locale=<span class="string">&#x27;en&#x27;</span>))</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Possible output:</span><br><span class="line">short: 1986-02-25 2/25/86</span><br><span class="line">medium: 1979-08-05 Aug 5, 1979</span><br><span class="line">long: 1971-12-15 December 15, 1971</span><br><span class="line">full: 2017-02-14 Tuesday, February 14, 2017</span><br><span class="line">d MMM YYY: 1984-02-21 21 Feb 1984</span><br><span class="line">d MMMM YYY: 2011-06-22 22 June 2011</span><br><span class="line">dd/MM/YYY: 1991-08-02 02/08/1991</span><br><span class="line">dd-MM-YYY: 1987-06-12 12-06-1987</span><br><span class="line">EE d, MMM YYY: 1986-11-02 Sun 2, Nov 1986</span><br><span class="line">EEEE d, MMMM YYY: 1996-01-26 Friday 26, January 1996</span><br></pre></td></tr></table></figure>
+<p><code>Faker()</code>是生成随机数据的代理类，用它的<code>date_object()</code>方法可以随机生成一个日期字符串<code>date_obj</code>。这个日期就是我们期望的标准格式。而通过使用<code>format_date</code>函数，我们可以通过改变该函数的<code>format</code>参数来得到格式不一样的日期字符串。各种格式的日期示例可以参考上面的输出。</p>
+<p>利用这些工具函数，我们可以编写下面这些生成、读取数据集的函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">generate_date</span>():</span><br><span class="line">    <span class="built_in">format</span> = random.choice(format_list)</span><br><span class="line">    date_obj = faker.date_object()</span><br><span class="line">    formated_date = format_date(date_obj, <span class="built_in">format</span>=<span class="built_in">format</span>, locale=<span class="string">&#x27;en&#x27;</span>)</span><br><span class="line">    <span class="keyword">return</span> formated_date, date_obj</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_date_data</span>(<span class="params">count, filename</span>):</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filename, <span class="string">&#x27;w&#x27;</span>) <span class="keyword">as</span> fp:</span><br><span class="line">        <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(count):</span><br><span class="line">            formated_date, date_obj = generate_date()</span><br><span class="line">            fp.write(<span class="string">f&#x27;<span class="subst">&#123;formated_date&#125;</span>\t<span class="subst">&#123;date_obj&#125;</span>\n&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_date_data</span>(<span class="params">filename</span>):</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filename, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> fp:</span><br><span class="line">        lines = fp.readlines()</span><br><span class="line">        <span class="keyword">return</span> [line.strip(<span class="string">&#x27;\n&#x27;</span>).split(<span class="string">&#x27;\t&#x27;</span>) <span class="keyword">for</span> line <span class="keyword">in</span> lines]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">generate_date_data(<span class="number">50000</span>, <span class="string">&#x27;dldemos/attention/train.txt&#x27;</span>)</span><br><span class="line">generate_date_data(<span class="number">10000</span>, <span class="string">&#x27;dldemos/attention/test.txt&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="注意力模型"><a href="#注意力模型" class="headerlink" title="注意力模型"></a>注意力模型</h2><p>在这个项目中，最难的部分是注意力模型的实现，即如何把上一节那个结构图用PyTorch描述出来。所有模型实现的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">from</span> torch.nn.utils.rnn <span class="keyword">import</span> pad_sequence</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader, Dataset</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dldemos.attention.dataset <span class="keyword">import</span> generate_date, load_date_data</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">EMBEDDING_LENGTH = <span class="number">128</span></span><br><span class="line">OUTPUT_LENGTH = <span class="number">10</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AttentionModel</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 embeding_dim=<span class="number">32</span>,</span></span><br><span class="line"><span class="params">                 encoder_dim=<span class="number">32</span>,</span></span><br><span class="line"><span class="params">                 decoder_dim=<span class="number">32</span>,</span></span><br><span class="line"><span class="params">                 dropout_rate=<span class="number">0.5</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.drop = nn.Dropout(dropout_rate)</span><br><span class="line">        <span class="variable language_">self</span>.embedding = nn.Embedding(EMBEDDING_LENGTH, embeding_dim)</span><br><span class="line">        <span class="variable language_">self</span>.attention_linear = nn.Linear(<span class="number">2</span> * encoder_dim + decoder_dim, <span class="number">1</span>)</span><br><span class="line">        <span class="variable language_">self</span>.softmax = nn.Softmax(-<span class="number">1</span>)</span><br><span class="line">        <span class="variable language_">self</span>.encoder = nn.LSTM(embeding_dim,</span><br><span class="line">                               encoder_dim,</span><br><span class="line">                               <span class="number">1</span>,</span><br><span class="line">                               batch_first=<span class="literal">True</span>,</span><br><span class="line">                               bidirectional=<span class="literal">True</span>)</span><br><span class="line">        <span class="variable language_">self</span>.decoder = nn.LSTM(EMBEDDING_LENGTH + <span class="number">2</span> * encoder_dim,</span><br><span class="line">                               decoder_dim,</span><br><span class="line">                               <span class="number">1</span>,</span><br><span class="line">                               batch_first=<span class="literal">True</span>)</span><br><span class="line">        <span class="variable language_">self</span>.output_linear = nn.Linear(decoder_dim, EMBEDDING_LENGTH)</span><br><span class="line">        <span class="variable language_">self</span>.decoder_dim = decoder_dim</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x: torch.Tensor, n_output: <span class="built_in">int</span> = OUTPUT_LENGTH</span>):</span><br><span class="line">        <span class="comment"># x: [batch, n_sequence, EMBEDDING_LENGTH]</span></span><br><span class="line">        batch, n_squence = x.shape[<span class="number">0</span>:<span class="number">2</span>]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># x: [batch, n_sequence, embeding_dim]</span></span><br><span class="line">        x = <span class="variable language_">self</span>.drop(<span class="variable language_">self</span>.embedding(x))</span><br><span class="line"></span><br><span class="line">        <span class="comment"># a: [batch, n_sequence, hidden]</span></span><br><span class="line">        a, _ = <span class="variable language_">self</span>.encoder(x)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># prev_s: [batch, n_squence=1, hidden]</span></span><br><span class="line">        <span class="comment"># prev_y: [batch, n_squence=1, EMBEDDING_LENGTH]</span></span><br><span class="line">        <span class="comment"># y: [batch, n_output, EMBEDDING_LENGTH]</span></span><br><span class="line">        prev_s = x.new_zeros(batch, <span class="number">1</span>, <span class="variable language_">self</span>.decoder_dim)</span><br><span class="line">        prev_y = x.new_zeros(batch, <span class="number">1</span>, EMBEDDING_LENGTH)</span><br><span class="line">        y = x.new_empty(batch, n_output, EMBEDDING_LENGTH)</span><br><span class="line">        tmp_states = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">for</span> i_output <span class="keyword">in</span> <span class="built_in">range</span>(n_output):</span><br><span class="line">            <span class="comment"># repeat_s: [batch, n_squence, hidden]</span></span><br><span class="line">            repeat_s = prev_s.repeat(<span class="number">1</span>, n_squence, <span class="number">1</span>)</span><br><span class="line">            <span class="comment"># attention_input: [batch * n_sequence, hidden_s + hidden_a]</span></span><br><span class="line">            attention_input = torch.cat((repeat_s, a),</span><br><span class="line">                                        <span class="number">2</span>).reshape(batch * n_squence, -<span class="number">1</span>)</span><br><span class="line">            alpha = <span class="variable language_">self</span>.softmax(<span class="variable language_">self</span>.attention_linear(attention_input))</span><br><span class="line">            c = torch.<span class="built_in">sum</span>(a * alpha.reshape(batch, n_squence, <span class="number">1</span>), <span class="number">1</span>)</span><br><span class="line">            c = c.unsqueeze(<span class="number">1</span>)</span><br><span class="line">            decoder_input = torch.cat((prev_y, c), <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> tmp_states <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">                prev_s, tmp_states = <span class="variable language_">self</span>.decoder(decoder_input)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                prev_s, tmp_states = <span class="variable language_">self</span>.decoder(decoder_input, tmp_states)</span><br><span class="line"></span><br><span class="line">            prev_y = <span class="variable language_">self</span>.output_linear(prev_s)</span><br><span class="line">            y[:, i_output] = prev_y.squeeze(<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">return</span> y</span><br></pre></td></tr></table></figure>
+<p>让我们把这份实现一点一点过一遍。</p>
+<p>在实现前，我们要准备一些常量。我们首先要决定“词汇表”的大小。在日期翻译任务中，输入和输出应当看成是字符序列。字符最多有128个，因此我们可以令“词汇表”大小为128。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EMBEDDING_LENGTH = <span class="number">128</span></span><br></pre></td></tr></table></figure>
+<p>在我们这个任务中，输出序列的长度是固定的。对于<code>yyyy-mm-dd</code>这个日期字符串，其长度为10。我们要把这个常量也准备好。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OUTPUT_LENGTH = <span class="number">10</span></span><br></pre></td></tr></table></figure>
+<p>接下来是模型的实现。先看<code>__init__</code>里的结构定义。一开始，按照RNN模型的惯例，我们要让输入过Dropout和嵌入层。对于单词序列，使用预训练的单词嵌入会好一点。然而，我们这个项目用的是字符序列，直接定义一个可学习的嵌入层即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">self</span>.drop = nn.Dropout(dropout_rate)</span><br><span class="line"><span class="variable language_">self</span>.embedding = nn.Embedding(EMBEDDING_LENGTH, embeding_dim)</span><br></pre></td></tr></table></figure>
+<p>接下来是编码器和解码器。在注意力模型中，编码器和解码器是两个不同的RNN。为了充分利用输入信息，可以把双向RNN当作编码器。而由于机器翻译是一个生成答案的任务，每轮生成元素时需要用到上一轮生成出来的元素，解码器必须是一个单向RNN。在本项目中，我使用的RNN是LSTM。模块定义代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">self</span>.encoder = nn.LSTM(embeding_dim,</span><br><span class="line">                        encoder_dim,</span><br><span class="line">                        <span class="number">1</span>,</span><br><span class="line">                        batch_first=<span class="literal">True</span>,</span><br><span class="line">                        bidirectional=<span class="literal">True</span>)</span><br><span class="line"><span class="variable language_">self</span>.decoder = nn.LSTM(EMBEDDING_LENGTH + <span class="number">2</span> * encoder_dim,</span><br><span class="line">                        decoder_dim,</span><br><span class="line">                        <span class="number">1</span>,</span><br><span class="line">                        batch_first=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>这里要注意一下这两个模块的输入通道数。<code>encoder</code>的输入来自嵌入层，因此是<code>embeding_dim</code>，这个很好理解。<code>decoder</code>的输入通道则需要计算一番了。<code>decoder</code>的输入由模型上一轮的输出和注意力输出拼接而成。模型每轮会输出一个字符，字符的通道数是“词汇表”大小，即<code>EMBEDDING_LENGTH</code>。注意力的输出是<code>encoder</code>的隐变量的加权和，因此其通道数和<code>encoder</code>的隐变量一致。<code>encoder</code>是双向RNN，其隐变量的通道数是<code>2 * encoder_dim</code>。最终，<code>decoder</code>的输入通道数应是<code>EMBEDDING_LENGTH + 2 * encoder_dim</code>。</p>
+<p>在注意力模块中，解码RNN对各编码RNN的注意力由一个线性层计算而得。该线性层的输入由解码RNN和编码RNN的隐变量拼接而成，因此其通道数为<code>2 * encoder_dim + decoder_dim</code>；该线性层的输出是注意力权重——一个实数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">self</span>.attention_linear = nn.Linear(<span class="number">2</span> * encoder_dim + decoder_dim, <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>解码结束后，还需要经过一个线性层才能输出结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">self</span>.output_linear = nn.Linear(decoder_dim, EMBEDDING_LENGTH)</span><br></pre></td></tr></table></figure>
+<p>看完了<code>__init__</code>，来看看<code>forward</code>里各模块是怎么连接起来的。</p>
+<p>机器翻译其实是一个生成序列的任务。一般情况下，生成序列的长度是不确定的，需要用一些额外的技巧来选择最佳的输出序列。为了简化实现，在这个项目中，我们生成一个固定长度的输出序列。该长度应该在<code>forward</code>的参数里指定。因此，<code>forward</code>的参数如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x: torch.Tensor, n_output: <span class="built_in">int</span> = OUTPUT_LENGTH</span>):</span><br></pre></td></tr></table></figure></p>
+<p>一开始，先获取一些形状信息。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># x: [batch, n_sequence, EMBEDDING_LENGTH]</span></span><br><span class="line">batch, n_squence = x.shape[<span class="number">0</span>:<span class="number">2</span>]</span><br></pre></td></tr></table></figure>
+<p>输入通过嵌入层和dropout层。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># x: [batch, n_sequence, embeding_dim]</span></span><br><span class="line">x = <span class="variable language_">self</span>.drop(<span class="variable language_">self</span>.embedding(x))</span><br></pre></td></tr></table></figure>
+<p>再通过编码器，得到编码隐状态<code>a</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># a: [batch, n_sequence, hidden]</span></span><br><span class="line">a, _ = <span class="variable language_">self</span>.encoder(x)</span><br></pre></td></tr></table></figure>
+<p>接下来，要用for循环输出每一轮的结果了。在此之前，我们要准备一些中间变量：用于计算注意力的解码器上一轮状态<code>prev_s</code>，用于解码器输入的上一轮输出<code>prev_y</code>，输出张量<code>y</code>。另外，由于我们要在循环中手动调用<code>decoder</code>完成每一轮的计算，还需要保存<code>decoder</code>的所有中间变量<code>tmp_states</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># prev_s: [batch, n_squence=1, hidden]</span></span><br><span class="line"><span class="comment"># prev_y: [batch, n_squence=1, EMBEDDING_LENGTH]</span></span><br><span class="line"><span class="comment"># y: [batch, n_output, EMBEDDING_LENGTH]</span></span><br><span class="line">prev_s = x.new_zeros(batch, <span class="number">1</span>, <span class="variable language_">self</span>.decoder_dim)</span><br><span class="line">prev_y = x.new_zeros(batch, <span class="number">1</span>, EMBEDDING_LENGTH)</span><br><span class="line">y = x.new_empty(batch, n_output, EMBEDDING_LENGTH)</span><br><span class="line">tmp_states = <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p>在每一轮输出中，我们首先要获得当前的解码器对于每一个输入的注意力<code>alpha</code>。每一个<code>alpha</code>由解码器上一轮状态<code>prev_s</code>和编码器本轮状态决定（一个全连接层+softmax）。为了充分利用并行计算，我们可以把所有alpha的计算打包成batch，一步做完。</p>
+<p><img src="/2022/09/21/DLS-note-16-2/5.jpg" alt></p>
+<blockquote>
+<p>注意，这里的全连接层+softmax和普通的全连接网络不太一样。这里全连接层的输出通道数是1，会对n组输入做n次计算，得到n个结果，再对n个结果做softmax。我们之所以能一次得到n个结果，是巧妙地把n放到了batch那一维。</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i_output <span class="keyword">in</span> <span class="built_in">range</span>(n_output):</span><br><span class="line">    <span class="comment"># repeat_s: [batch, n_squence, hidden]</span></span><br><span class="line">    repeat_s = prev_s.repeat(<span class="number">1</span>, n_squence, <span class="number">1</span>)</span><br><span class="line">    <span class="comment"># attention_input: [batch * n_sequence, hidden_s + hidden_a]</span></span><br><span class="line">    attention_input = torch.cat((repeat_s, a),</span><br><span class="line">                                <span class="number">2</span>).reshape(batch * n_squence, -<span class="number">1</span>)</span><br><span class="line">    <span class="comment"># x: [batch * n_sequence, 1]</span></span><br><span class="line">    x = <span class="variable language_">self</span>.attention_linear(attention_input)</span><br><span class="line">    <span class="comment"># x: [batch, n_sequence]</span></span><br><span class="line">    x = x.reshape(batch, n_squence)</span><br><span class="line">    alpha = <span class="variable language_">self</span>.softmax(x)</span><br></pre></td></tr></table></figure>
+<p>求出了注意力<code>alpha</code>后，就可以用它来算出注意力上下文<code>c</code>了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c = torch.<span class="built_in">sum</span>(a * alpha.reshape(batch, n_squence, <span class="number">1</span>), <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>之后，我们把<code>c</code>和上一轮输出<code>prev_y</code>拼一下，作为解码器的输出。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">c = c.unsqueeze(<span class="number">1</span>)</span><br><span class="line">decoder_input = torch.cat((prev_y, c), <span class="number">2</span>)</span><br></pre></td></tr></table></figure><br>再调用解码器即可。这里我利用PyTorch的机制偷了个懒。理论上解码器第一轮的状态应该是全零张量，我们应该初始化两个全零张量作为LSTM的初始状态。但是，在PyTorch里，如果调用RNN时不传入状态，就默认会使用全零状态。因此，在第一轮调用时，我们可以不去传状态参数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> tmp_states <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">    prev_s, tmp_states = <span class="variable language_">self</span>.decoder(decoder_input)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    prev_s, tmp_states = <span class="variable language_">self</span>.decoder(decoder_input, tmp_states)</span><br></pre></td></tr></table></figure>
+<p>最后，用线性层算出这轮的输出，维护输出变量<code>y</code>。循环结束后，返回<code>y</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">    prev_y = <span class="variable language_">self</span>.output_linear(prev_s)</span><br><span class="line">    y[:, i_output] = prev_y.squeeze(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">return</span> y</span><br></pre></td></tr></table></figure>
+<h2 id="训练、测试、推理"><a href="#训练、测试、推理" class="headerlink" title="训练、测试、推理"></a>训练、测试、推理</h2><p>写完了最核心的注意力模型，剩下的代码就比较简单了。</p>
+<p>首先，我们要准备一个<code>Dataset</code>类。这个类可以读取输入、输出字符串，并把它们转换成整形数组。字符和整形数字间的映射非常暴力，一个字符的序号就是该字符的ASCII码。这样写比较简洁，但由于很多字符是用不到的，会浪费一些计算性能。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">stoi</span>(<span class="params"><span class="built_in">str</span></span>):</span><br><span class="line">    <span class="keyword">return</span> torch.LongTensor([<span class="built_in">ord</span>(char) <span class="keyword">for</span> char <span class="keyword">in</span> <span class="built_in">str</span>])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">itos</span>(<span class="params">arr</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;&#x27;</span>.join([<span class="built_in">chr</span>(x) <span class="keyword">for</span> x <span class="keyword">in</span> arr])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DateDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, lines</span>):</span><br><span class="line">        <span class="variable language_">self</span>.lines = lines</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(<span class="variable language_">self</span>.lines)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, index</span>):</span><br><span class="line">        line = <span class="variable language_">self</span>.lines[index]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> stoi(line[<span class="number">0</span>]), stoi(line[<span class="number">1</span>])</span><br></pre></td></tr></table></figure>
+<p>准备好DataSet后，就可以生成DataLoader了。在序列任务中，各个样本的序列长度可能是不一致的。我们可以用PyTorch的<code>pad_sequence</code>对长度不足的样本进行0填充，使得一个batch里的所有样本都有着同样的序列长度。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_dataloader</span>(<span class="params">filename</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">collate_fn</span>(<span class="params">batch</span>):</span><br><span class="line">        x, y = <span class="built_in">zip</span>(*batch)</span><br><span class="line">        x_pad = pad_sequence(x, batch_first=<span class="literal">True</span>)</span><br><span class="line">        y_pad = pad_sequence(y, batch_first=<span class="literal">True</span>)</span><br><span class="line">        <span class="keyword">return</span> x_pad, y_pad</span><br><span class="line"></span><br><span class="line">    lines = load_date_data(filename)</span><br><span class="line">    dataset = DateDataset(lines)</span><br><span class="line">    <span class="keyword">return</span> DataLoader(dataset, <span class="number">32</span>, collate_fn=collate_fn)</span><br></pre></td></tr></table></figure>
+<p>这里要稍微注意一下，<code>pad_sequence</code>默认会做0填充，0填充在我们的项目里是合理的。在我们定义的“词汇表”里，0对应的是ASCII里的0号字符，这个字符不会和其他字符起冲突。</p>
+<p>做好一切准备工作后，可以开始训练模型了。训练模型的代码非常常规，定义好Adam优化器、交叉熵误差，跑完模型后reshape一下算出loss再反向传播即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    device = <span class="string">&#x27;cuda:0&#x27;</span></span><br><span class="line">    train_dataloader = get_dataloader(<span class="string">&#x27;dldemos/attention/train.txt&#x27;</span>)</span><br><span class="line">    test_dataloader = get_dataloader(<span class="string">&#x27;dldemos/attention/test.txt&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    model = AttentionModel().to(device)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># train</span></span><br><span class="line"></span><br><span class="line">    optimizer = torch.optim.Adam(model.parameters(), lr=<span class="number">0.001</span>)</span><br><span class="line">    citerion = torch.nn.CrossEntropyLoss()</span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">20</span>):</span><br><span class="line"></span><br><span class="line">        loss_sum = <span class="number">0</span></span><br><span class="line">        dataset_len = <span class="built_in">len</span>(train_dataloader.dataset)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> x, y <span class="keyword">in</span> train_dataloader:</span><br><span class="line">            x = x.to(device)</span><br><span class="line">            y = y.to(device)</span><br><span class="line">            hat_y = model(x)</span><br><span class="line">            n, Tx, _ = hat_y.shape</span><br><span class="line">            hat_y = torch.reshape(hat_y, (n * Tx, -<span class="number">1</span>))</span><br><span class="line">            label_y = torch.reshape(y, (n * Tx, ))</span><br><span class="line">            loss = citerion(hat_y, label_y)</span><br><span class="line"></span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            loss.backward()</span><br><span class="line">            torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="number">0.5</span>)</span><br><span class="line">            optimizer.step()</span><br><span class="line"></span><br><span class="line">            loss_sum += loss * n</span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;Epoch <span class="subst">&#123;epoch&#125;</span>. loss: <span class="subst">&#123;loss_sum / dataset_len&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    torch.save(model.state_dict(), <span class="string">&#x27;dldemos/attention/model.pth&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>训练完模型后，我们可以测试一下模型在测试集上的正确率。在日期翻译任务中，我们可以把“正确”定义为输出和真值一模一样。比如一条日期的真值是”2000-01-01”，模型的输出必须也是”2000-01-01”才能说这个输出是正确的。编写并行化计算正确率的代码稍有难度。</p>
+<p>模型的输出<code>hat_y</code>表示各个字符的出现概率。我们先用<code>prediction = torch.argmax(hat_y, 2)</code>把序列里每个概率最大的字符作为模型预测的字符。现在，我们要用并行化编程判断每对序列（整形标签数组）<code>predition[i]</code>和<code>y[i]</code>是否相等（注意，<code>predition</code>和<code>y</code>是带了batch那个维度的）。这里，我们可以让<code>predition[i]</code>和<code>y[i]</code>做减法再求和。仅当这个和为0时，我们才能说<code>predition[i]</code>和<code>y[i]</code>完全相等。通过这样一种曲折的实现方法，我们可以并行地算出正确率。</p>
+<blockquote>
+<p>也许有更方便的API可以完成这个逻辑判断，但去网上搜索这么复杂的一个需求太麻烦了，我偷了个懒。</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># test</span></span><br><span class="line">model.load_state_dict(torch.load(<span class="string">&#x27;dldemos/attention/model.pth&#x27;</span>))</span><br><span class="line"></span><br><span class="line">accuracy = <span class="number">0</span></span><br><span class="line">dataset_len = <span class="built_in">len</span>(test_dataloader.dataset)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> x, y <span class="keyword">in</span> test_dataloader:</span><br><span class="line">    x = x.to(device)</span><br><span class="line">    y = y.to(device)</span><br><span class="line">    hat_y = model(x)</span><br><span class="line">    prediction = torch.argmax(hat_y, <span class="number">2</span>)</span><br><span class="line">    score = torch.where(torch.<span class="built_in">sum</span>(prediction - y, -<span class="number">1</span>) == <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">    accuracy += torch.<span class="built_in">sum</span>(score)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&#x27;Accuracy: <span class="subst">&#123;accuracy / dataset_len&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>最后，我们也可以临时生成几个测试用例，输出模型的预测结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># inference</span></span><br><span class="line"><span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">    x, y = generate_date()</span><br><span class="line">    origin_x = x</span><br><span class="line">    x = stoi(x).unsqueeze(<span class="number">0</span>).to(device)</span><br><span class="line">    hat_y = model(x)</span><br><span class="line">    hat_y = hat_y.squeeze(<span class="number">0</span>).argmax(<span class="number">1</span>)</span><br><span class="line">    hat_y = itos(hat_y)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;input: <span class="subst">&#123;origin_x&#125;</span>, prediction: <span class="subst">&#123;hat_y&#125;</span>, gt: <span class="subst">&#123;y&#125;</span>&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>训练20-30个epoch后，模型差不多就收敛了。我训练的模型在测试集上的正确率约有98%。下面是随机测试用例的推理结果，可以看出模型的判断确实很准确。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">input: 4 November 1988, prediction: 1988-11-04, gt: 1988-11-04</span><br><span class="line">input: Friday 26, March 2021, prediction: 2021-03-26, gt: 2021-03-26</span><br><span class="line">input: Saturday 2, December 1989, prediction: 1989-12-02, gt: 1989-12-02</span><br><span class="line">input: 15/10/1971, prediction: 1971-10-15, gt: 1971-10-15</span><br><span class="line">input: Mon 9, Oct 1989, prediction: 1989-10-09, gt: 1989-10-09</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我展示了一个用PyTorch编写的注意力模型，它用于完成日期翻译任务。在这个项目中，最重要的是注意力模型的编写。如今，注意力模型已经不是功能最强大的模型架构了。不过，通过动手实现这个模型，我们可以对注意力机制有着更深刻的认识，有助于理解那些更先进的模型。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/09/21/DLS-note-15/" rel="prev" title="吴恩达《深度学习专项》笔记（十五）：词嵌入 (Word2Vec, GloVe)">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》笔记（十五）：词嵌入 (Word2Vec, GloVe)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/09/21/DLS-note-16/" rel="next" title="吴恩达《深度学习专项》笔记（十六）：序列模型与注意力机制">
+      吴恩达《深度学习专项》笔记（十六）：序列模型与注意力机制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%A5%E8%AF%86%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">知识背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E6%9C%9F%E7%BF%BB%E8%AF%91%E4%BB%BB%E5%8A%A1%E5%8F%8A%E5%85%B6%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">2.</span> <span class="nav-text">日期翻译任务及其数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%A8%A1%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">注意力模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E3%80%81%E6%B5%8B%E8%AF%95%E3%80%81%E6%8E%A8%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">训练、测试、推理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

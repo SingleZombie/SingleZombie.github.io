@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="FID 是一种衡量图像生成模型质量的指标。对于这种常见的指标，一般都能找到好用的 PyTorch 计算接口。然而，当我用 PyTorch 的官方库 TorchEval 来算 FID 指标时，却发现它的结果和多数非官方库无法对齐。我花了不少时间，总算把 TorchEval 的 FID 计算接口修好了。在这篇文章中，我将分享有关 FID 计算的知识以及我调试 TorchEval 的经历，并总结用 py">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FID 指标简介与修正 TorchEval FID 计算接口经历分享">
+<meta property="og:url" content="https://zhouyifan.net/2024/04/04/20240221-TorchEval-FID/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="FID 是一种衡量图像生成模型质量的指标。对于这种常见的指标，一般都能找到好用的 PyTorch 计算接口。然而，当我用 PyTorch 的官方库 TorchEval 来算 FID 指标时，却发现它的结果和多数非官方库无法对齐。我花了不少时间，总算把 TorchEval 的 FID 计算接口修好了。在这篇文章中，我将分享有关 FID 计算的知识以及我调试 TorchEval 的经历，并总结用 py">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-04-04T06:08:44.000Z">
+<meta property="article:modified_time" content="2024-06-24T10:52:49.169Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="PyTorch">
+<meta property="article:tag" content="吐槽">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/04/04/20240221-TorchEval-FID/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>FID 指标简介与修正 TorchEval FID 计算接口经历分享 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/04/04/20240221-TorchEval-FID/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FID 指标简介与修正 TorchEval FID 计算接口经历分享
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-04-04 14:08:44" itemprop="dateCreated datePublished" datetime="2024-04-04T14:08:44+08:00">2024-04-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>FID 是一种衡量图像生成模型质量的指标。对于这种常见的指标，一般都能找到好用的 PyTorch 计算接口。然而，当我用 PyTorch 的官方库 TorchEval 来算 FID 指标时，却发现它的结果和多数非官方库无法对齐。我花了不少时间，总算把 TorchEval 的 FID 计算接口修好了。在这篇文章中，我将分享有关 FID 计算的知识以及我调试 TorchEval 的经历，并总结用 pytorch-fid, torch-fidelity, TorchEval 算 FID 的方法。文章最后，我还会分享一个偶然发现的用于反映模型训练时的当前 FID 的方法。</p>
+<h2 id="FID-指标简介"><a href="#FID-指标简介" class="headerlink" title="FID 指标简介"></a>FID 指标简介</h2><p>FID 的全称是 Fréchet Inception Distance，它用于衡量两个图像分布之间的差距。如果令一个图像分布是训练集，再用生成模型输出的图像构成另一个分布，那么 FID 指标就表示了生成出来的图片和训练集整体上的相似度，也就间接反映了模型对训练集的拟合程度。FID 名字中的 Fréchet Distance 是一种描述两个样本分布的距离的指标，其定位和 KL 散度一样，但某些情况下会比 KL 散度更加合适。FID 用来算 Fréchet Distance 的样本来自预训练 InceptionV3 模型，它名称中的 Inception 由此而来。</p>
+<p>计算 FID 的过程如下：</p>
+<ol>
+<li>准备两个图片文件夹。一般一个是训练集，另一个存储了生成模型随机生成的图片。 </li>
+<li>用预训练的 InceptionV3 模型把每个输入图片转换成一个 2048 维的向量。</li>
+<li>计算训练集、生成集上输出向量的均值、协方差。</li>
+<li>把均值、协方差代入进下面这个算 Fréchet Distance 的公式，就得到了 FID。</li>
+</ol>
+<script type="math/tex; mode=display">
+FID = ||\mu - \mu_w||^2 + tr(\Sigma + \Sigma_w - 2(\Sigma\Sigma_w)^{\frac{1}{2}})</script><p>实际上，在用 FID 的时候我们完全不用管它的原理，只要知道它的值越小就越好，并且会调用相关接口即可。需注意的是，由于 FID 是一种和集合相关的指标，算 FID 时一定要给足图片。在构建自己模型的输出集合时，至少得有 10000 张图片，推荐生成 50000 张。否则 FID 的结果会不准确。</p>
+<h2 id="用-PyTorch-计算-FID-的第三方库"><a href="#用-PyTorch-计算-FID-的第三方库" class="headerlink" title="用 PyTorch 计算 FID 的第三方库"></a>用 PyTorch 计算 FID 的第三方库</h2><p>由于 FID 的计算需要用到一个预训练的 InceptionV3 模型，只有在模型实现完全一致的情况下，FID 的输出结果才是可比的。因此，所有论文汇报的 FID 都基于提出 FID 的作者的官方实现。这份官方实现是用 TensorFlow 写的，后来也有完全等价的 PyTorch 实现。在这一节里，我们就来学习如何用这些基于 PyTorch 的库算 FID。</p>
+<p>GitHub 上点赞最多的 PyTorch FID 库是 <code>pytorch-fid</code>。这个库被 FID 官方仓库推荐，且 Stable Diffusion 论文也用了这个库，结果绝对可靠。使用该库的方法很简单，只需要先安装它。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pytorch-fid</span><br></pre></td></tr></table></figure>
+<p>再准备好两个用于计算 FID 的文件夹，将文件夹路径传给脚本即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -m pytorch_fid path/to/dataset1 path/to/dataset2</span><br></pre></td></tr></table></figure>
+<p>另一个较为常见的用 PyTorch 算指标的库叫做 <code>torch-fidelity</code>。它用起来和 <code>pytorch-fid</code> 一样简单。一开始，需要用 pip 安装它。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torch-fidelity</span><br></pre></td></tr></table></figure>
+<p>之后，同样是准备好两个图片文件夹，将文件夹路径传给脚本。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fidelity --gpu <span class="number">0</span> --fid --input1 path/to/dataset1 --input2 path/to/dataset2</span><br></pre></td></tr></table></figure>
+<p>除了命令行脚本外，<code>torch-fidelity</code> 还提供了 Python API。我们可以在 Python 脚本里加入算 FID 的代码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch_fidelity</span><br><span class="line"></span><br><span class="line">metrics_dict = torch_fidelity.calculate_metrics(</span><br><span class="line">    input1=<span class="string">&#x27;path1&#x27;</span>,</span><br><span class="line">    input2=<span class="string">&#x27;path2&#x27;</span>,</span><br><span class="line">    fid=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(metrics_dict)</span><br></pre></td></tr></table></figure>
+<p><code>torch-fidelity</code> 还提供了其他便捷的功能。比如直接以某个生成模型为 API 的输入 <code>input1</code>，而不是先把图像生成到一个文件夹里，再把文件夹路径传给 <code>input1</code>。同时，<code>torch-fidelity</code> 还支持计算其他指标，我们只需要在命令行脚本或者 API 里多加几个参数就行了。</p>
+<h2 id="修正-TorchEval-里的-FID-计算接口"><a href="#修正-TorchEval-里的-FID-计算接口" class="headerlink" title="修正 TorchEval 里的 FID 计算接口"></a>修正 TorchEval 里的 FID 计算接口</h2><p>尽管这些第三方库已经足够好用了，我还是想用 PyTorch 官方近年来推出的指标计算库 TorchEval 来算 FID 指标。原因有两点：</p>
+<ol>
+<li>我的项目其他地方都是用 PyTorch 官方库实现的 （<code>torch</code> 以及 <code>torchvision</code>），算指标也用官方库会让整体代码风格更加统一。我已经用 TorchEval 算了 PSNR、SSIM，使用体验还可以。</li>
+<li>目前，似乎只有 TorchEval 支持在线更新指标的值。也就是说，我可以先生成一部分图片，储存算 FID 需要的中间结果；再生成一部分图片，最终计算此前所有图片与训练集的 FID。这种计算方法的好处我会在文章后面介绍。</li>
+</ol>
+<p>以前我都是用 pytorch-fid 来算 FID。而当我换成用 TorchEval 后，却发现结果对不齐。于是，漫长的调试之路开始了。</p>
+<p>当你有两块时间不一样的手表时，应该怎样确认时间呢？答案是，再找到第三块表。如果三块表中能有两块表时间一样，那么它们的时间就是正确的。一开始，我并不能确定是哪个库写错了，所以我又测试了 torch-fidelity 的结果。实验发现，torch-fidelity 和 pytorch-fid 的结果是一致的。并且我去确认了 Stable Diffusion 的论文，其中用来计算 FID 的库也是 pytorch-fid。看来，是 TorchEval 结果不对。</p>
+<p>像 FID 这么常见的指标，大家的中间计算过程肯定都没错，就是一些细微的预处理不太一样。抱着这样的想法，我随意地比对了一下二者的代码，很快就发现 TorchEval 把输入尺寸调成 <code>[299, 299]</code> 了，而 pytorch-fid 没做。可删掉这段代码，程序直接报错了。我深入阅读了 pytorch-fid 的代码，发现它的写法和 TorchEval 不一样，把调整尺寸为 <code>[299, 299]</code> 写到了另一个地方。且通过调查发现，InceptionV3 网络的输入尺寸必须是 <code>[299, 299]</code> 的，是我孤陋寡闻了。唉，看来这次的调试不能太随意啊。</p>
+<p>我准备拿出我的真实实力来调 bug。我认真整理了一下算 FID 的步骤，将其主要过程总结为以下几步：</p>
+<ol>
+<li>用预训练权重初始化 InceptionV3</li>
+<li>用 InceptionV3 算两个数据集输出的均值、协方差</li>
+<li>根据均值、协方差算距离</li>
+</ol>
+<p>最后那个算距离的过程不涉及任何神经网络，输出该是什么就是什么。这一块是最不容易出错，且最容易调试的。于是，我决定先排除第三步是否对齐。我把 TorchEval 得到的均值、协方差存下来，用 pytorch-fid 算距离。发现结果和原 TorchEval 的输出差不多。看来算距离这一步没有问题。</p>
+<p>接下来，我很自然地想到是不是均值和协方差算错了。我存下了两个库得到的均值、协方差，算了两个库输出之间的误差。结果发现，均值的误差在 0.09 左右，协方差的误差在 0.0002 左右。图像的数据范围在 0~1 之间，0.09 算是一个很大的误差了。可见，第一步和第二步一定存在着无法对齐的部分。</p>
+<p>模型输出不同，最容易想到的是模型权重不同。于是，我尝试交换使用二者的模型权重，再比较输出的 FID。两个库的模型定义不太一样，不能直接换模型文件名。我用强大的代码魔改实力强行让新权重分别都跑起来了。结果非常神奇，算上之前的两个 FID，我一共得到了 4 个不一样的 FID 结果。也就是说，A 库 A 模型、B 库 B 模型、A 库 B 模型，B 库 A 模型，结果均不一样。</p>
+<p>我被这两个库气得不行，决定认真研究对比二者的模型定义。眼尖的我发现初始化 pytorch-fid 的 InceptionV3 时有一个参数叫 <code>use_fid_inception</code>。作者对此的注释写道：「如果设置为 true，则用 TensorFlow 版 FID 实现；否则，用 torchvision 版 Inception 模型。TensorFlow 的 FID Inception 模型和 torchvision 的在权重和结构上有细微的差别。如果你要计算 FID，强烈推荐将此值设置为 true，以得到和其他论文可比的结果。」总结来说，TorchEval 用的是 torchvision 里的标准 PyTorch 版 InceptionV3，而 pytorch-fid 在标准 PyTorch 版 InceptionV3 外又封装了一层，改了一些模块的定义。为什么要改这些东西呢？这是因为原来的 FID Inception 模型是在 TensorFlow 里实现的，需要改一些结构来将 PyTorch 模型对齐过去。除了模型结构外，二者的权重也有一定差别。大家都是用 TensorFlow 版模型算 FID，一切都应该以 pytorch-fid 的为准。这个 TorchEval 太离谱了，我也懒得认真修改了，直接注释掉 TorchEval 里原 <code>FIDInceptionV3</code> 的定义，然后大笔一挥：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pytorch_fid.inception <span class="keyword">import</span> \</span><br><span class="line">    InceptionV3 <span class="keyword">as</span> FIDInceptionV3</span><br></pre></td></tr></table></figure>
+<p>按理说，这下权重和模型结构都对齐了。FID 计算的第一、第二步绝对不会有错。而开始的结果表明，FID 计算的第三步也没有错。那么，两个库就应该对齐了。我激动地又测了 TorchEval 的结果，发现结果还是无法对齐！</p>
+<p>这不应该啊？难道哪步测错了？人生就是在不断自我怀疑中度过的。而怀疑自我，首先会怀疑最久远的自我。所以，我感觉是最早测第三步的时候有问题。之前我是把 TorchEval 的均值、协方差放到 pytorch-fid 里，结果与 TorchEval 自己的输出一致。这次我反过来，把 pytorch-fid 的均值、协方差放到 TorchEval 的算距离函数里算。这次，我第一次见到 TorchEval 输出了正确的 FID。由此可见，第三步没错。难道是均值和协方差又没对齐了？</p>
+<p>自我怀疑开始进一步推进，我开始怀疑第二步输出的均值、协方差还是没有对齐。我再次计算了 pytorch-fid 和 TorchEval 的输出之间的误差，发现误差这次仅有 1e-16，可以认为没有区别。我花了很多时间复习协方差的计算，想找出 TorchEval 里的 bug。可是越学习，越觉得 TorchEval 写得很对。这一回，我找不到错误了。</p>
+<p>调试代码，不怕到处有错，而怕「没错却有错」。「没错」，指的是每一步中间步骤都找不到错误；「有错」，指的是最终结果还是错了。没有错误，就得创造错误。我开启了随机乱调模式，希望能触发一个错误。回忆一下，算 FID 要用到两个数据集，一般一个是训练集，一个是模型输出的集合。在 TorchEval 最后一步算距离时，我乱改代码，让一个集合的均值、协方差不变，即来自原 TorchEval 的 Inception 模型的输出；而让另一个的集合的均值、协方差来自 pytorch-fid。理论上说，如果两个库的均值、协方差是对齐的，那么这次输出的 FID 也应该是正确的。欸，这回代码报错了，运行不了。报错说数据精度不统一。原来，TorchEval 的输出精度是 float32，而 pytorch-fid 的输出精度是 float64。之前测试距离计算函数时，数据要么全来自 TorchEval，要么全来自 pytorch-fid，所以没报过这个错。可是这个错只是一个运行上的错误，稍微改改就好了。</p>
+<p>我把 pytorch-fid 相关数据的精度统一成了 float32。这下代码跑起来了，可 FID 不对了。调试过程中，如果上一次成功，而这一次失败，则应该想办法把代码退回上一次的，再次测试。因此，我又修改了最后用 TorchEval 计算距离的数据来源，让所有数据都来自 pytorch-fid。可是，修改后，FID 输出没变，还是错的。</p>
+<p>为什么两轮测试之前，我全用 pytorch-fid 的输出、TorchEval 的距离计算函数没有错，这次却错了？到底是哪里不同？当测试两份差不多的代码后，一份对了，一份错了，那么错误就可以定位到两份代码的差异处。仔细回顾一下我的调试经历，相信你可以推理出 bug 出自哪了。</p>
+<p>没错！我仔细比对了当前代码和我记忆中两轮测试前的代码，仅发现了一处不同——我把 pytorch-fid 的输出数据的精度改成了 float32。把精度改回 float64 就对了。同样，如果把 TorchEval 的输出数据的精度改成 float64，再扔进 TorchEval 的距离计算函数里算，结果也是对的。问题出在 TorchEval 的距离计算函数的数据精度上。</p>
+<p>定位到了 bug 的位置，再找出 bug 的原因就很简单了。对比 pytorch-fid 的距离计算函数和 TorchEval 的，可以发现二者描述的计算公式完全相同。然而，pytorch-fid 是用 NumPy 算的，而 TorchEval 是用 PyTorch 算的。算 FID 的距离时，会涉及矩阵特征值等较为复杂的运算，它们对数据精度要求较高。像 NumPy 这种久经考验的库应该会自动把数据变成高精度再计算，而 PyTorch 就没做这么多细腻的处理了。</p>
+<p>汇总一下我调试的结论。TorchEval 在权重初始化、模型计算、距离计算这三步中均有错误。前两步没有让 InceptionV3 模型和普遍使用的 TensorFlow 版对齐，最后一步没有考虑输入精度，用了不够稳定的 PyTorch API 来做复杂矩阵运算。要用 TorchEval 算出正确的 FID，需要做以下修改：</p>
+<ul>
+<li>安装 pytorch-fid 和 TorchEval</li>
+<li>打开 torcheval/metrics/image/fid.py</li>
+<li>注释掉 <code>FIDInceptionV3</code> 类，在文件开头加上 <code>from pytorch_fid.inception import InceptionV3 as FIDInceptionV3</code></li>
+<li>在 <code>FrechetInceptionDistance</code> 类的构造函数中，在定义所有浮点数据时加上 <code>dtype=torch.float64</code></li>
+</ul>
+<p>这里点名批评 TorchEval。开源的时候吹得天花乱坠，结果根本没人用，这么简单的有关 FID 的 bug 也发现不了。我发了一个修正此 bug 的相关 issue <code>https://github.com/pytorch/torcheval/issues/192</code>，截至目前还是没有官方人员回复。这个库的开发水平实在太逆天了，希望他们能尽快维护好。</p>
+<h2 id="在线计算-FID"><a href="#在线计算-FID" class="headerlink" title="在线计算 FID"></a>在线计算 FID</h2><p>前文提到，我用 TorchEval 的原因是它支持在线计算 FID。具体来说，可以建立一个 FID 管理类，之后用 <code>update</code> 方法来不断往某个集合加入新图片，并随时使用 <code>compute</code> 方法算出当前所有图片的 FID。我之前写代码忘了清空旧图片的中间结果时发现了一个相关应用。经我使用下来，这种应用非常有用，我们可以用它高效估计训练时的当前 FID。</p>
+<p>回顾一下，要得到准确的 FID 值，一般需要 50000 张图片。而训练图像生成模型时，如果每次验证都要生成这么多图片，则大部分时间都会消耗在验证上了。为了加快 FID 的验证，我发现可以用一种 「全局 FID」来近似表示当前的模型拟合情况。具体来说，我先用训练集的所有图片初始化 FID 的集合 1 的中间结果，再在模型训练中每次验证时随机生成 500 张图片，将其中间结果加到 FID 的集合 2 中，并输出一次当前 FID。这样，随着训练不断推进，算 FID 的图片的数量会逐渐满足 50000 张的要求，但是这些图片并不是来自同一个模型，而是来自不同训练程度的模型。这样得到的 FID 仅能大致反映当前的真实 FID 值，有时偏高、有时偏低。但经我测试发现，这种全局 FID 的相对关系很能反映最终的真实 FID 的相对关系。训练两个不同超参的模型时，如果一个全局 FID 较大，那它最终的 FID 一般也会较大。同时，如果训练一切正常，则全局 FID 会随验证轮数单调递减（因为图片数量变多，且拟合情况不会变差）。如果某一次验证时全局 FID 增加了，则模型也一定在这段时间里变差了。通过这种验证方式，我们能够大致评估模型在训练中的拟合情况。这应该是一种很容易想到的工程技巧，但由于分享自己训练生成模型的经验帖较少，且重要性不足以写进论文，我没有在任何地方看到有人介绍这种技巧。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>FID 是评估图像生成模型的重要指标。通过 pytorch-fid 等库，我们能轻松地用 PyTorch 计算两个图像分布间的 FID。而通过计算输出分布和训练分布之间的 FID，我们就能评估当前模型的拟合情况。</p>
+<p>FID 的计算本身是很简单的。所以在介绍 FID 的计算方法之外，我分享了我调试 TorchEval 的漫长过程。这段经历很有意思，我学到了不少调 bug 的新知识。此前我从来没想到过数据精度竟然会大幅影响某个值的结果。这段经历启示我们，做一些复杂运算时，不要用 PyTorch 算，最好拿 NumPy 等更稳定的库来计算。如果你调 bug 的经验不足，这段经历也能给你许多参考。</p>
+<p>文章最后我分享了一种算全局 FID 的方法。它可以高效反映生成模型在训练时的拟合情况。该功能很容易实现，感兴趣的话可以自己尝试一下。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+              <a href="/tags/%E5%90%90%E6%A7%BD/" rel="tag"># 吐槽</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/03/09/20240228-DiffMorpher/" rel="prev" title="CVPR 2024 | DiffMorpher：实现两张图像间的平滑变形">
+      <i class="fa fa-chevron-left"></i> CVPR 2024 | DiffMorpher：实现两张图像间的平滑变形
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/06/05/20240405-SVD/" rel="next" title="Stable Video Diffusion 结构浅析与论文速览">
+      Stable Video Diffusion 结构浅析与论文速览 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#FID-%E6%8C%87%E6%A0%87%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">FID 指标简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8-PyTorch-%E8%AE%A1%E7%AE%97-FID-%E7%9A%84%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93"><span class="nav-number">2.</span> <span class="nav-text">用 PyTorch 计算 FID 的第三方库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%AD%A3-TorchEval-%E9%87%8C%E7%9A%84-FID-%E8%AE%A1%E7%AE%97%E6%8E%A5%E5%8F%A3"><span class="nav-number">3.</span> <span class="nav-text">修正 TorchEval 里的 FID 计算接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E7%BA%BF%E8%AE%A1%E7%AE%97-FID"><span class="nav-number">4.</span> <span class="nav-text">在线计算 FID</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

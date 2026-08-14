@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="比较可惜的是，从这章开始，这门课的内容就讲得很不细致了。很多内容只能从一个很高的层次进行介绍，无法深入细节。一旦讲到了偏硬件的东西，由于难以进行实践，又和数学等理科知识关系不大，和电路等学科关系密切，课本就只能划水。 计算机组成原理复习：第五章 存储系统和结构本章先从整体上介绍了计算机的存储结构，再着重介绍主存的存储思想以及具体的主存种类。之后讲了多个主存储器是如何构成一个系统的。最后稍微介绍了一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="计算机组成原理复习：第五章 存储系统和结构">
+<meta property="og:url" content="https://zhouyifan.net/2020/01/07/Principles-of-Computer-Composition-cources-review-5/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="比较可惜的是，从这章开始，这门课的内容就讲得很不细致了。很多内容只能从一个很高的层次进行介绍，无法深入细节。一旦讲到了偏硬件的东西，由于难以进行实践，又和数学等理科知识关系不大，和电路等学科关系密切，课本就只能划水。 计算机组成原理复习：第五章 存储系统和结构本章先从整体上介绍了计算机的存储结构，再着重介绍主存的存储思想以及具体的主存种类。之后讲了多个主存储器是如何构成一个系统的。最后稍微介绍了一">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-01-06T17:28:55.000Z">
+<meta property="article:modified_time" content="2022-04-23T16:33:55.639Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="计算机科学">
+<meta property="article:tag" content="计算机组成">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2020/01/07/Principles-of-Computer-Composition-cources-review-5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>计算机组成原理复习：第五章 存储系统和结构 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2020/01/07/Principles-of-Computer-Composition-cources-review-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          计算机组成原理复习：第五章 存储系统和结构
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-07 01:28:55" itemprop="dateCreated datePublished" datetime="2020-01-07T01:28:55+08:00">2020-01-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>比较可惜的是，从这章开始，这门课的内容就讲得很不细致了。很多内容只能从一个很高的层次进行介绍，无法深入细节。一旦讲到了偏硬件的东西，由于难以进行实践，又和数学等理科知识关系不大，和电路等学科关系密切，课本就只能划水。</p>
+<h1 id="计算机组成原理复习：第五章-存储系统和结构"><a href="#计算机组成原理复习：第五章-存储系统和结构" class="headerlink" title="计算机组成原理复习：第五章 存储系统和结构"></a>计算机组成原理复习：第五章 存储系统和结构</h1><p>本章先从整体上介绍了计算机的存储结构，再着重介绍主存的存储思想以及具体的主存种类。之后讲了多个主存储器是如何构成一个系统的。最后稍微介绍了一些其他cache、虚拟内存等内容。</p>
+<p>我只针对复习PPT提到的重点和我们课后习题涉及到的内容进行复习。</p>
+<h2 id="主存储器的组织"><a href="#主存储器的组织" class="headerlink" title="主存储器的组织"></a>主存储器的组织</h2><p>这一节围绕主存是如何存储数据的，介绍了主存储器整体的工作原理，和前面编码的内容有一些关联。主存储器本身的结构在后面的小节里介绍。</p>
+<h3 id="存储单元"><a href="#存储单元" class="headerlink" title="存储单元"></a>存储单元</h3><p>数据的最小单位是位，被叫做<strong>存储位</strong>。按位存取效率太低，多个存储位在一起就成了<strong>存储字</strong>，这是访问的最小单元。存存储字的结构叫<strong>存储单元</strong>，地址和存储单元是一一对应的。大量存储单元构成了<strong>存储体</strong>。</p>
+<h3 id="主存部分技术指标"><a href="#主存部分技术指标" class="headerlink" title="主存部分技术指标"></a>主存部分技术指标</h3><h4 id="存取时间"><a href="#存取时间" class="headerlink" title="存取时间"></a>存取时间</h4><p>执行一次读或写操作的时间。</p>
+<h4 id="存取周期"><a href="#存取周期" class="headerlink" title="存取周期"></a>存取周期</h4><p>两次执行访问操作的间隔时间。因为除了完成存取操作外，主存内部还有一些其他的操作，存取周期一般略大于存取时间。</p>
+<h4 id="带宽"><a href="#带宽" class="headerlink" title="带宽"></a>带宽</h4><p>等于主存等效工作频率乘主存位宽。</p>
+<h3 id="数据在主存的存放"><a href="#数据在主存的存放" class="headerlink" title="数据在主存的存放"></a>数据在主存的存放</h3><p>可能出现主存的存储字长比较大，而计算机传来的数据比较小的情况。比如主存的存储字长是64位，而计算机传来的数据可能是8~64位的。如何存这些数据是一个问题：</p>
+<p>如果每个数据紧挨着存，那么主存空间没有浪费。但是万一一个存储字剩余容量较小，突然来了一个64位数据，那么这个数据就得拆成两半，存在两个存储字里了。</p>
+<p>如果每个数据都存在一个存储字里，那就太浪费了。如果所有数据都是一个字节，那么大量的空间要被浪费。</p>
+<p>因此，边界对齐的存取法被提出。这种方法综合了以上两种方法的优点。比如，在存储字为64位的主存储器里，64位数据只能从一个存储字开头从，32位数据只能从半个存储字开头存，16位位数据只能从四分之一个存储字开头存。</p>
+<h2 id="主存储器结构与工作原理"><a href="#主存储器结构与工作原理" class="headerlink" title="主存储器结构与工作原理"></a>主存储器结构与工作原理</h2><p>这一节前面讲了很多和电路的东西，我们缺乏基础知识，学不懂。我只复习DRAM的刷新以及RAM芯片的一些参数。</p>
+<h3 id="DRAM的刷新"><a href="#DRAM的刷新" class="headerlink" title="DRAM的刷新"></a>DRAM的刷新</h3><p>由于DRAM电路的问题，需要经常刷新才能维护数据。</p>
+<p>注意，刷新是指对每个芯片的刷新。芯片一般会排成正方向阵列，比如16K的芯片，就会排成128*128。之后谈到的按行刷新，这个“行”指的就是128。刷新就等于读了一遍，因此刷新周期等于读写周期。这个刷新周期是以行为单位的。</p>
+<p>为了提高整体的工作效率，有几种不同的刷新策略：</p>
+<h4 id="集中刷新"><a href="#集中刷新" class="headerlink" title="集中刷新"></a>集中刷新</h4><p>在最大允许的刷新间隔内，把工作分成两个阶段：读写操作和刷新。在所有读写操作执行一段时间后，集中刷新所有的存储芯片，再继续读写。等于说每个刷新间隔构成了一个循环的工作周期。</p>
+<h4 id="分散刷新"><a href="#分散刷新" class="headerlink" title="分散刷新"></a>分散刷新</h4><p>每次读或写之后，立刻刷新。也就是读写操作和刷新绑定。这样可以保证内存正常，但是刷新过于频繁，读写周期变长，没有充分利用最大允许刷新间隔</p>
+<h4 id="异步刷新"><a href="#异步刷新" class="headerlink" title="异步刷新"></a>异步刷新</h4><p>异步刷新综合以上两种方法，把主存按行分组。先做一会儿读写操作，就停下来刷新第一行；再做一会儿读写操作，就刷新第二行……。在最大允许刷新间隔内，把所有行都刷新一遍。</p>
+<p>课本上对以上三种方法都画了一个图，看了图就很好理解。</p>
+<h3 id="RAM芯片引脚"><a href="#RAM芯片引脚" class="headerlink" title="RAM芯片引脚"></a>RAM芯片引脚</h3><ul>
+<li>地址线</li>
+<li>数据线</li>
+<li>片选线 CS</li>
+<li>读写控制线 WE</li>
+<li>Vcc 电源</li>
+<li>GND 地</li>
+</ul>
+<p>其中片选线的意思可能不能通过字面来理解。片选线决定该芯片是否工作。</p>
+<p>上述引脚的字母打的不是很准确。这篇文章我不打算渲染公式，所以就简单写一下。</p>
+<p>先复习一下这些引脚是因为之后的内容会用到。</p>
+<h2 id="主存储器的连接与控制"><a href="#主存储器的连接与控制" class="headerlink" title="主存储器的连接与控制"></a>主存储器的连接与控制</h2><p>本节讲的是多个主存储器是如何协作的。</p>
+<h3 id="主存储器扩展"><a href="#主存储器扩展" class="headerlink" title="主存储器扩展"></a>主存储器扩展</h3><p>存储芯片一般比较小。为了得到一个较大的主存储器，需要把存储芯片连接扩展。</p>
+<p>先提一句，芯片用数据量和数据位数来表示。比如64K X 1就是地址64K，数据只有1位的芯片。</p>
+<p>考试主要考察的就是画图。注意，一堆线要画成粗的线。箭头表示数据传输方向，数据线的箭头是双向的，其他线的箭头是单向的。</p>
+<p>有以下三种扩展方法：</p>
+<h4 id="位扩展"><a href="#位扩展" class="headerlink" title="位扩展"></a>位扩展</h4><p>用一堆地址一样的芯片扩展位数。</p>
+<p>地址线、片选线并联进每一个芯片。</p>
+<p>数据线每一根接一个芯片。</p>
+<p>以64K X 1拓展到64K X 8为例：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>芯片1</th>
+<th>芯片2</th>
+<th>芯片3</th>
+<th>…</th>
+<th>芯片8</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A0</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+</tr>
+<tr>
+<td>…</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+</tr>
+<tr>
+<td>A15</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+</tr>
+<tr>
+<td>CS</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+<td>——l——</td>
+</tr>
+<tr>
+<td>D0</td>
+<td>——l——</td>
+<td>—————</td>
+<td>—————</td>
+<td>—————</td>
+<td>—————</td>
+</tr>
+<tr>
+<td>…</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>D7</td>
+<td>—————</td>
+<td>—————</td>
+<td>—————</td>
+<td>—————</td>
+<td>——l——</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="地址扩展"><a href="#地址扩展" class="headerlink" title="地址扩展"></a>地址扩展</h4><p>假设一堆芯片位数相同，但存储量不够，可以把它们并在一起扩展地址</p>
+<p>这种方法的思想是，地址线的高位用来片选，也就是选择使用那片芯片；低位直接输入芯片。</p>
+<p>此处看书上的图很好理解。</p>
+<h4 id="字和位同时扩展"><a href="#字和位同时扩展" class="headerlink" title="字和位同时扩展"></a>字和位同时扩展</h4><p>同时执行上面两种扩展。</p>
+<p>看书上的图很好理解。</p>
+<h3 id="存储芯片的地址分配与片选"><a href="#存储芯片的地址分配与片选" class="headerlink" title="存储芯片的地址分配与片选"></a>存储芯片的地址分配与片选</h3><p>上一节地址扩展中，出现了如何分配地址这个问题。上一节是用一个译码器来分配地址高位，得到片选结果。本节具体介绍了分配地址时存储芯片片选的方式。</p>
+<h4 id="线选法"><a href="#线选法" class="headerlink" title="线选法"></a>线选法</h4><p>地址高位的每一位直接就代表是否选中某个芯片，而不经过移码。由于片选时0表示有效，因此用于片选的地址高位只能有一个0。</p>
+<h4 id="全译码法"><a href="#全译码法" class="headerlink" title="全译码法"></a>全译码法</h4><p>就是上一节的方法，把高位输入译码器进行译码，输出选择哪一个芯片。有可能输入的地址组合量大于需要的量，比如输入9位，但只有4个芯片。这个时候译码结果只有4个是有效的，其他508个都是无效的。</p>
+<h4 id="部分译码法"><a href="#部分译码法" class="headerlink" title="　部分译码法"></a>　部分译码法</h4><p>在全移码的基础上，只把部分位输入译码器。比如要选择4个芯片，只输入2位就行了。这样的话地址的高位完全用不到，会产生地址重叠。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" rel="tag"># 计算机科学</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BB%84%E6%88%90/" rel="tag"># 计算机组成</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/01/06/Principles-of-Computer-Composition-cources-review-4/" rel="prev" title="计算机组成原理复习：第四章 数值的机器运算">
+      <i class="fa fa-chevron-left"></i> 计算机组成原理复习：第四章 数值的机器运算
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/01/07/Principles-of-Computer-Composition-cources-review-6/" rel="next" title="计算机组成原理复习：第六章 中央处理器">
+      计算机组成原理复习：第六章 中央处理器 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E5%A4%8D%E4%B9%A0%EF%BC%9A%E7%AC%AC%E4%BA%94%E7%AB%A0-%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F%E5%92%8C%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">计算机组成原理复习：第五章 存储系统和结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%AD%98%E5%82%A8%E5%99%A8%E7%9A%84%E7%BB%84%E7%BB%87"><span class="nav-number">1.1.</span> <span class="nav-text">主存储器的组织</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%8D%95%E5%85%83"><span class="nav-number">1.1.1.</span> <span class="nav-text">存储单元</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E5%AD%98%E9%83%A8%E5%88%86%E6%8A%80%E6%9C%AF%E6%8C%87%E6%A0%87"><span class="nav-number">1.1.2.</span> <span class="nav-text">主存部分技术指标</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%98%E5%8F%96%E6%97%B6%E9%97%B4"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">存取时间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%98%E5%8F%96%E5%91%A8%E6%9C%9F"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">存取周期</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B8%A6%E5%AE%BD"><span class="nav-number">1.1.2.3.</span> <span class="nav-text">带宽</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%9C%A8%E4%B8%BB%E5%AD%98%E7%9A%84%E5%AD%98%E6%94%BE"><span class="nav-number">1.1.3.</span> <span class="nav-text">数据在主存的存放</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%AD%98%E5%82%A8%E5%99%A8%E7%BB%93%E6%9E%84%E4%B8%8E%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">主存储器结构与工作原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DRAM%E7%9A%84%E5%88%B7%E6%96%B0"><span class="nav-number">1.2.1.</span> <span class="nav-text">DRAM的刷新</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E4%B8%AD%E5%88%B7%E6%96%B0"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">集中刷新</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E6%95%A3%E5%88%B7%E6%96%B0"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">分散刷新</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E5%88%B7%E6%96%B0"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">异步刷新</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RAM%E8%8A%AF%E7%89%87%E5%BC%95%E8%84%9A"><span class="nav-number">1.2.2.</span> <span class="nav-text">RAM芯片引脚</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%AD%98%E5%82%A8%E5%99%A8%E7%9A%84%E8%BF%9E%E6%8E%A5%E4%B8%8E%E6%8E%A7%E5%88%B6"><span class="nav-number">1.3.</span> <span class="nav-text">主存储器的连接与控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E5%AD%98%E5%82%A8%E5%99%A8%E6%89%A9%E5%B1%95"><span class="nav-number">1.3.1.</span> <span class="nav-text">主存储器扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%8D%E6%89%A9%E5%B1%95"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">位扩展</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E6%89%A9%E5%B1%95"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">地址扩展</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%97%E5%92%8C%E4%BD%8D%E5%90%8C%E6%97%B6%E6%89%A9%E5%B1%95"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">字和位同时扩展</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E8%8A%AF%E7%89%87%E7%9A%84%E5%9C%B0%E5%9D%80%E5%88%86%E9%85%8D%E4%B8%8E%E7%89%87%E9%80%89"><span class="nav-number">1.3.2.</span> <span class="nav-text">存储芯片的地址分配与片选</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BA%BF%E9%80%89%E6%B3%95"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">线选法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%A8%E8%AF%91%E7%A0%81%E6%B3%95"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">全译码法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%83%A8%E5%88%86%E8%AF%91%E7%A0%81%E6%B3%95"><span class="nav-number">1.3.2.3.</span> <span class="nav-text">　部分译码法</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="今年第一次参加 CVPR 的前后发生了很多糟心事。我被气得受不了了。  美国签证不太好申，我周围所有因参加学术会议而申请签证的人都被审查了一个月。我决定参会与申请签证的时间较晚，过签的时间非常仅限。在会议开始前的倒数第二周，我收到了签证通过的通知，并得知我需要在一周后，也就是会议开始前的最后几个工作日领取带了美国签证的护照。能够恰好拿到签证，算得上是运气不错。可下一周发生的种种事情，却谈不上了幸运">
+<meta property="og:type" content="article">
+<meta property="og:title" content="顽抗生活中的厄运">
+<meta property="og:url" content="https://zhouyifan.net/2024/06/24/20240622-CVPR2024/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="今年第一次参加 CVPR 的前后发生了很多糟心事。我被气得受不了了。  美国签证不太好申，我周围所有因参加学术会议而申请签证的人都被审查了一个月。我决定参会与申请签证的时间较晚，过签的时间非常仅限。在会议开始前的倒数第二周，我收到了签证通过的通知，并得知我需要在一周后，也就是会议开始前的最后几个工作日领取带了美国签证的护照。能够恰好拿到签证，算得上是运气不错。可下一周发生的种种事情，却谈不上了幸运">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-06-24T11:18:57.000Z">
+<meta property="article:modified_time" content="2024-06-24T11:18:57.249Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="吐槽">
+<meta property="article:tag" content="日记">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/06/24/20240622-CVPR2024/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>顽抗生活中的厄运 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/06/24/20240622-CVPR2024/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          顽抗生活中的厄运
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-06-24 19:18:57" itemprop="dateCreated datePublished" datetime="2024-06-24T19:18:57+08:00">2024-06-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/%E8%AE%B0%E5%8F%99%E6%96%87/" itemprop="url" rel="index"><span itemprop="name">记叙文</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>今年第一次参加 CVPR 的前后发生了很多糟心事。我被气得受不了了。</p>
+<hr>
+<p>美国签证不太好申，我周围所有因参加学术会议而申请签证的人都被审查了一个月。我决定参会与申请签证的时间较晚，过签的时间非常仅限。在会议开始前的倒数第二周，我收到了签证通过的通知，并得知我需要在一周后，也就是会议开始前的最后几个工作日领取带了美国签证的护照。能够恰好拿到签证，算得上是运气不错。可下一周发生的种种事情，却谈不上了幸运了。</p>
+<p>会议开始前一周的周三早上，我赶早骑行前往学校参加会议前的最后一次周会。骑至半途，忽然天降暴雨。在新加坡，这种现象我已经见怪不怪了。我先穿上日常携带的雨衣，再将书包背到雨衣外，以免背上出太多汗。我又用手机向导师报告我可能会推迟参会，随后将手机和浸满了雨水的眼镜装进口袋。</p>
+<p>这场雨就像老天给我开的一个玩笑。我一到目的地，雨就小了下来。上楼，掀开笔记本电脑，发现电脑被穿透了书包的一点雨水浸湿，开不了机。伸手一摸口袋，眼镜竟然也不见了。</p>
+<p>这种雨中骑车的事我已经做过好多回了，但我从来没碰到过这么多意外。我有多次电脑进水的经历，可这是我第一次知道穿透书包的那一点水也能弄坏电脑。另外，本来我这条裤子的口袋是不会掉东西的，可这次恰好我要用手机发消息，而眼镜和手机放在了一起，顺势掉了出来。</p>
+<p>无论多么令人懊恼，生活都得继续。我用上了我所有的规划能力来处理问题。我先和导师商议将周会延期。随后，我请同学陪我一起找眼镜。还好，眼镜在楼下就找到了，但是被我自己或者其他人踩了一脚，一边的镜框断了。我艰难地用半副眼镜处理完一天的杂事，于傍晚赶往市中心将电脑送修。晚上回家，我用强力胶将断裂的镜框部件粘在一起，眼镜勉强可以用了。第二天周四，我领完美国签证，同时得知电脑严重进水，一天修不好。我回家立刻拿出老电脑并配好工作环境。周五，我准备好一切出国开会所需资料，总算安顿好了一切。</p>
+<p>周六，出发前一天，我去换美元。付款时要输入储蓄卡密码，我多次尝试也没能把密码输对，卡被冻结。这时我才想起来为什么我会不记得卡的密码：这张卡的密码是系统随机设置的，平时用卡根本不需要密码，所以我既忘了密码，也忘了密码不是我自己设的。这下去美国用不了这张卡了。还好，我还有国内的信用卡，完成了在新加坡后续的付款。</p>
+<p>启程的飞机将于周日早上九点起飞。我起了个大早，提前前往机场。兴冲冲地首次坐上长途国际航班后，我立刻收到了飞机因故障无法起飞的通知，灰溜溜地下了飞机。航空公司给我安排的新航班是 36 小时之后，周一晚上九点。为表赔偿，航空公司给我们预订了新加坡五星级酒店的住宿，并附带了早中晚餐各 20 新币的代金券。走进五星级酒店最普通的房间，我原以为能享受一番，却又被正餐 30 新币起步（还不含税）的菜单气晕了过去。上午我在机场吃过了，中午我就随便点了个 20 新币的汤应付了过去。晚上我兼顾价格与饱腹度，点了一个 30 多新币的披萨。晚餐送至房间，我将代金券和 20 新币交给服务员后，服务员将代金券收走，现金还回，说道：“可以拿明天的早餐钱来抵这顿晚饭。”唉，我又亏了将近 10 新币，早知道点一个更好的披萨了。</p>
+<p>周一，白天没有安排，我决定去解决新加坡储蓄卡的事。手机应用有挂失换卡的功能，却楞是没有申请解冻的功能。我只好顶着烈日，跨越条条街道，又穿梭于人山人海的购物中心，找到银行的支行。这个支行只有通过视频交流的虚拟柜台。为了确认身份，柜员问了我三个有关账户的验证问题。有一个问题的华文名词我听不懂，没答上来。因此，卡解冻失败，柜员建议我前往线下柜台。我真是纳闷，我有银行账户的一切访问权限，有身份证、护照，为什么要用这种方法来验证我的身份。但我今天时间多，不跟你们计较了。我又匆忙坐上满载的地铁，赶往下一处有线下柜台的支行。地图上说银行 4 点关门，我是三点半到的，可银行已经关门了。我突然感到一股违和感：今天是周一，为什么地铁那么多人？为什么购物中心那么多人？为什么银行提早下班？我一查，果然如我所料，原来今天是新加坡法定假日。今天，到美国开会的同学在当地开开心心地旅游，留在本地的人则能享受假期。就我一个人，飞机没坐上，假没休息到，事情没办成，从一对对情侣旁边擦身而过，在我本不该在的繁华市区里奔波。没办法，休息一下，晚上早点去坐飞机吧。</p>
+<p>晚上，刚进机场，我的镜框因没有粘牢又断开了。还好我早有准备，拿出透明胶勉强固定了镜框。</p>
+<p>过安检，我被选为 SSSS 级“幸运”用户，被安检警察拎到队伍前面，进行细致的搜身检查。也好，我也不会带什么危险物品，顺便插了个队。</p>
+<blockquote>
+<p>SSSS 是美国TSA （美国运输安全管理局）随机选取需要接受二次安检的乘客。安检人员看到SSSS的登机牌后会对乘客格外注意，在经过普通的X光扫描检查以后，行李会被拆开进行人工检查，人工彻底搜身，电子产品会接受爆炸物探测。</p>
+</blockquote>
+<p>上了飞机，我总算坐上了有着小屏幕的美联航高级国际航班。航班要航行 15 个小时，我计划在这段时间里写一篇文章。一看时间还早，我就开了两把小游戏。玩到一半，电脑啪地屏幕一黑，没电了。飞机上的插座怎么充不进电啊？过了好一会儿，机长发来广播：“很抱歉，有乘客反映插座失灵，我们将重启设备，尽快修好。（翻译自英文）”我满怀期待地等着电脑的开机，这一等就等到了飞机降落。临走前，贴心的乘务长向大家诚恳地致歉：“今天有一些旅客一直没有接上插座，我们真是深表歉意呢~（翻译自英文）”</p>
+<p>第一趟飞机在旧金山降落，我还需要乘坐中转西雅图的飞机。由于下一站是国内航班，我需要在这里完成入境。入境的队伍很长，一眼望去，四五十分钟都不见得能排完队。帮我安排航班的工作人员想必之前是一位极限运动的教练，给我安排了一小时后结束登机、一个半小时后起飞的第二趟航班，让我在这里锻炼极限的时间管理。排队五十分钟后，我极速应付完安检人员的问题，总算顺利入境。眼下飞机只有十分钟就要停止登机了，在这种极限条件下，我的身体潜能与语言表达潜能被猛然激活。我背着沉甸甸的书包——我唯一的行李，仔细地看遍每一个路标，在机场里沿着最短路线狂奔，流畅地办理登机、安检。我这一个多小时一直没来得及上厕所。跑至空荡荡的登机口前，我遗憾地望了一眼对面的厕所后，急忙向柜台后的空乘人员出示机票。“啊！你很幸运啊！快点上飞机。”在我的极限运营下，我成功在起飞前登机，就是肚子下面不太舒服。到了原定的起飞时间，我正双目紧闭静待起飞，忽然听见了机长包含温情的广播：“我们得知有部分旅客还在转机，飞机将在约十五分钟后起飞。”不早说啊！我这么赶是为了什么啊！快把厕所门打开！</p>
+<p>飞机起飞，我如愿以偿地解了个手，满足地回座位睡了一觉。可能是剧烈运动导致新陈代谢加快，醒来后，我又是一阵内急。可又好巧不巧，飞机刚开始降落，我还要等半个多小时才能下飞机上厕所。在这段时间里，我仿佛领悟了长生不老之道，一分钟可以当十分钟来过。我思考了我为什么这么难受，为什么上这趟飞机，为什么会存在这个世界上。恍惚的精神慢慢回归，我规划出了飞机降落后最快的下机方式。总算到站了，舱门一打开，我就背起书包，右手紧扣腹部，面露难色，名正言顺地在下机的队伍里插队。一路小跑到厕所前，这下没人看，不用演戏了。可我的手却怎么都不肯从肚子上松开——哦，原来我真的憋得肚子不舒服了。好在厕所只有一步之遥了。我特意找了个高级包厢，坐下来不紧不慢地上起了厕所。这是我第一次憋得这么难受，也是第一次觉得上厕所是人生中最幸福的事。</p>
+<p>当地时间凌晨两点，我总算来到了西雅图机场出口。没有飞机要赶，没有厕所要上，充足休息了近 20 个小时的我，即将迎来光明的前程。我没有办理美国的流量，因为我知道在需要用网络的地方都有免费无线网络。按照网上的攻略，我前往停车场的某处，准备用 Uber 打车。一到停车场，凌冽的寒气扑面而来。这冷空调开得有点大啊。不对！这是室外的正常气温。我来美国之前是看了天气预报的，每天的温度都是 10 到 20 多度。我过了太久的夏天，对 10 度的天气没有概念，也没有料到我大晚上还会待在室外。但没事啊，打上车就好了。我在机场就配置好了 Uber，只差呼叫司机这一步了。欸，怎么付款前还要验证手机号？这里信号很差，接收国内手机的短信要三分钟左右。当然，这个延迟是我在多次发送短信后才意识到的。由于我多次输入了上一次短信的验证码，Uber 最后忍无可忍，把我的账号禁用了。寒风中，我身着短袖短裤，在空荡的候车处死盯没有回应的手机，打着牙颤，默默无语。冷静了一会儿，我想我有信用卡有钱，为什么非得用软件打车不可。于是，我走到了普通打车处，稍等片刻，上车，最终总算抵达了酒店。</p>
+<p>第一次出国开会，第一次前往美国旅行。对于多数人来说快乐的事情，到我这为什么就成了渡劫呢？这些事或许算不上什么人生大事，但攒在一起总是会令人烦恼。诚然，有些事是我考虑不周，但大多数事是我完全无法控制的。不过这些都没关系。在麻将等概率游戏中搏杀已久的我知道，过去是无法改变的，结果通常是无法控制的，我们能做的只有在此刻寻找问题的最优解。哪怕是碰到了这么多事，我还是拿出了我玩解谜游戏的所有实力，尽力去处理好每一件事。<del>如果还是对生活的不幸感到愤愤不平，不如带着幸灾乐祸的心理想一想我这次事件里的美联航。他们的航班延误，影响了那么多乘客，最后给每个人都赔了一晚的五星级酒店，还不是把问题解决了。</del></p>
+<hr>
+<p>以上是我头脑冷静时写的东西。参会过程省略以示愤怒。</p>
+<hr>
+<p>本来我准备了很多要写的东西，回程的时候又被气到了，累死了，不写了。这“一天”里，我提前3小时到机场，坐2小时飞机，等5小时飞机，又坐15小时飞机。累计睡眠5~6乘1个小时。到了新加坡我还想省钱，没打车，在机场走了半小时，又坐了1小时地铁。下地铁后走回家，莫名其妙绕了路，在太阳底下穿长裤走了1个多小时。好不容易回到家，洗完澡想刷个牙，牙膏还没了。真作假时假亦真，没睡醒时醒亦困。看上去我这几天睡了很多次觉，但我根本没有睡醒。算上在美国的时间，我已经颠沛流离了好几天，各种硬抗时差，已经不知道睡够六小时是怎样的感觉了。别人比我早一两天来，晚一两天走，玩得开开心心。我除了在会场当3天“好学生”外，剩下近一周时间全在参与人生的极限挑战。怪不得学术大佬都不愿意出来开会，从明年开始我也是学术大佬了。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%90%90%E6%A7%BD/" rel="tag"># 吐槽</a>
+              <a href="/tags/%E6%97%A5%E8%AE%B0/" rel="tag"># 日记</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/06/05/20240407-SVD-1/" rel="prev" title="Stable Video Diffusion 源码解读 (Diffusers 版)">
+      <i class="fa fa-chevron-left"></i> Stable Video Diffusion 源码解读 (Diffusers 版)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/07/14/20240703-SD3/" rel="next" title="Stable Diffusion 3 论文及源码概览">
+      Stable Diffusion 3 论文及源码概览 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

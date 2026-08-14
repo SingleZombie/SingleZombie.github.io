@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="第三阶段回顾在过去两周里，我们学习了改进深度学习模型的一些策略。让我们来回顾一下。 首先，我们应该设置好任务的目标。选取开发&#x2F;测试集时，应参考实际应用中使用的数据分布。设置优化指标时，应使用单一目标。可以设置一个最优化目标和多个满足目标。 在搭建模型时，我们可以根据现有的数据量、问题的难易度，选择端到端学习或者是多阶段学习。 训练模型前，如果有和该任务相似的预训练模型，我们可以采取迁移学习，把其他">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》第三阶段总结与第四阶段预览">
+<meta property="og:url" content="https://zhouyifan.net/2022/07/10/DLS-note-summary-3/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="第三阶段回顾在过去两周里，我们学习了改进深度学习模型的一些策略。让我们来回顾一下。 首先，我们应该设置好任务的目标。选取开发&#x2F;测试集时，应参考实际应用中使用的数据分布。设置优化指标时，应使用单一目标。可以设置一个最优化目标和多个满足目标。 在搭建模型时，我们可以根据现有的数据量、问题的难易度，选择端到端学习或者是多阶段学习。 训练模型前，如果有和该任务相似的预训练模型，我们可以采取迁移学习，把其他">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-07-09T17:39:41.000Z">
+<meta property="article:modified_time" content="2022-07-23T17:39:54.196Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/07/10/DLS-note-summary-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》第三阶段总结与第四阶段预览 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/10/DLS-note-summary-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》第三阶段总结与第四阶段预览
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-10 01:39:41" itemprop="dateCreated datePublished" datetime="2022-07-10T01:39:41+08:00">2022-07-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="第三阶段回顾"><a href="#第三阶段回顾" class="headerlink" title="第三阶段回顾"></a>第三阶段回顾</h1><p>在过去两周里，我们学习了改进深度学习模型的一些策略。让我们来回顾一下。</p>
+<p>首先，我们应该设置好任务的目标。选取开发/测试集时，应参考实际应用中使用的数据分布。设置优化指标时，应使用单一目标。可以设置一个最优化目标和多个满足目标。</p>
+<p>在搭建模型时，我们可以根据现有的数据量、问题的难易度，选择端到端学习或者是多阶段学习。</p>
+<p>训练模型前，如果有和该任务相似的预训练模型，我们可以采取迁移学习，把其他任务的模型权重搬过来；如果我们的模型要完成多个相似的任务，可以同时训练多个任务的模型。</p>
+<p>有了目标，搭好了模型之后，就可以开始训练模型了。有了训练好的模型后，我们可以根据模型的训练误差、训练开发误差、开发误差来诊断模型当前存在的问题。当然，在诊断之前，我们可以先估计一下人类在该问题上的最低误差，以此为贝叶斯误差的一个估计。通过比较贝叶斯误差和训练误差，我们能知道模型是否存在偏差问题；通过比较训练误差和训练开发误差，我们能知道模型是否存在方差问题；通过比较训练开发误差和开发误差，我们能知道模型是否存在数据不匹配问题。</p>
+<p>另一方面，如果在改进模型时碰到了问题，不妨采取错误分析技术，看看模型究竟错在哪。我们可以拿出开发集的一个子集，统计一下模型的具体错误样例，看看究竟是模型在某些条件下表现得不好，还是标错的数据太多了。</p>
+<p>这些内容可能比较偏向于工程经验，没有过多的数学理论。但是，相信大家在搭建自己的深度学习项目时，这些知识一定能派上用场。</p>
+<h1 id="第四阶段预览"><a href="#第四阶段预览" class="headerlink" title="第四阶段预览"></a>第四阶段预览</h1><p>在这之后，我们要分别学习两大类神经网络：处理图像的网络和处理序列数据的网络。在第四门课《卷积神经网络》中，我们就会学习能够处理图像问题的卷积神经网络。一起来看看接下来要学的内容吧。</p>
+<p>《卷积神经网络》的课需花四周学完。第一周，我们会学习卷积神经网络的基本构件，建立对卷积神经网络的基本认识，为后续的学习做准备。具体的内容有：</p>
+<ul>
+<li>卷积操作<ul>
+<li>从卷积核到卷积</li>
+<li>卷积的属性——填充、步幅</li>
+<li>卷积层</li>
+</ul>
+</li>
+<li>池化操作</li>
+<li>卷积神经网络示例</li>
+</ul>
+<p>最简单的计算机视觉任务是图像分类。第二周，我们将学习一系列图像分类网络。这些网络不仅能在图像分类上取得优秀的成绩，还是很多其他计算机视觉任务的基石。通过学习它们，我们不仅能见识一些经典网络的架构，更能从中学习到搭建卷积神经网络的一般规律。其内容有：</p>
+<ul>
+<li>早期神经网络<ul>
+<li>LeNet-5</li>
+<li>AlexNet</li>
+<li>VGG</li>
+</ul>
+</li>
+<li>残差神经网络</li>
+<li>Inception 网络</li>
+<li>MobileNet</li>
+<li>搭建卷积网络项目<ul>
+<li>使用开源代码</li>
+<li>迁移学习</li>
+<li>数据增强</li>
+</ul>
+</li>
+</ul>
+<p>第三周，我们将学习计算机视觉中一个比较热门的任务——目标检测。目标检测要求算法不仅能辨别出图片中的物体，还要能把物体精确地框出来。我们会一步一步学习如何搭建完成目标检测的卷积神经网络：</p>
+<ul>
+<li>目标定位与关键点检测</li>
+<li>使用卷积神经网络的目标检测<ul>
+<li>滑动窗口算法</li>
+<li>基于卷积的滑动窗口</li>
+</ul>
+</li>
+<li>YOLO 算法<ul>
+<li>结合目标定位与滑动窗口</li>
+<li>交并比(IoU)</li>
+<li>NMS（非极大值抑制）</li>
+<li>锚框(Anchor boxes)</li>
+</ul>
+</li>
+<li>R-CNN 系列算法简介</li>
+</ul>
+<p>此外，这周还会稍微提及另一个计算机视觉任务——语义分割的基本知识：</p>
+<ul>
+<li>基于U-Net的语义分割<ul>
+<li>反卷积</li>
+<li>U-Net架构</li>
+</ul>
+</li>
+</ul>
+<p>最后一周，第四周，我们又会认识两个新任务：人脸检测与神经网络风格迁移。具体的内容有：</p>
+<ul>
+<li>人脸检测<ul>
+<li>人脸检测问题与一次性学习</li>
+<li>孪生神经网络</li>
+<li>三元组误差</li>
+<li>转化成二分类问题</li>
+</ul>
+</li>
+<li>神经网络风格迁移<ul>
+<li>风格迁移简介</li>
+<li>利用神经网络学到的东西</li>
+<li>风格迁移中的误差</li>
+<li>推广到1维和3维</li>
+</ul>
+</li>
+</ul>
+<p>相比之前的课，学习第四门课时需要花更多的精力，主要因为以下几点：</p>
+<ol>
+<li>课程难度变高。</li>
+<li>课程的编程练习很多。</li>
+<li>课堂上介绍了很多论文作为拓展学习的方向。</li>
+</ol>
+<p>如果你未来要以计算机视觉为研究方向的话，这四周的内容一定要认真掌握。同时，编程练习和论文阅读也不能落下。据我估计，如果要打好计算机视觉方向上的坚实的基础，至少还要多花费两周时间去认真阅读经典论文，做好相关的技术调研。</p>
+<p>在未来的几周里，我仅会上传课堂笔记，并尽最大可能复现一下课后的习题。在所有的五门课上完后（大约2个月后），我会回过头来补充计算机视觉相关的论文阅读笔记、项目实现笔记，对视频课中没来得及讲完的内容查缺补漏，以呈现一套翔实的深度学习学习笔记，辅助大家更好地入门深度学习。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/08/20220707-ZeroDCE/" rel="prev" title="Zero-DCE 论文解读 | 无需参考数据的实时低光照增强算法">
+      <i class="fa fa-chevron-left"></i> Zero-DCE 论文解读 | 无需参考数据的实时低光照增强算法
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/11/DLS-note-10/" rel="next" title="吴恩达《深度学习专项》笔记（十）：卷积神经网络的基础构件">
+      吴恩达《深度学习专项》笔记（十）：卷积神经网络的基础构件 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">第三阶段回顾</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E9%98%B6%E6%AE%B5%E9%A2%84%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text">第四阶段预览</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）安装一个编程环境&#x2F;编程库的过程是无比烦人的。安装环境时不可避免地涉及一些和该环境有关的知识，而配环境的人多半是新手，面对未知的知识时总会碰到许多麻烦。比如第一次配和C++有关的库的时候，新手就不知道.dll应该加入环境变量，.h应该加入include。而在写教程的时候，也一般都是新手在写教程，老手们对配">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）">
+<meta property="og:url" content="https://zhouyifan.net/2021/08/19/20210813-PytorchInstall/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）安装一个编程环境&#x2F;编程库的过程是无比烦人的。安装环境时不可避免地涉及一些和该环境有关的知识，而配环境的人多半是新手，面对未知的知识时总会碰到许多麻烦。比如第一次配和C++有关的库的时候，新手就不知道.dll应该加入环境变量，.h应该加入include。而在写教程的时候，也一般都是新手在写教程，老手们对配">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2021/08/19/20210813-PytorchInstall/p1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2021/08/19/20210813-PytorchInstall/p2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2021/08/19/20210813-PytorchInstall/p3.jpg">
+<meta property="article:published_time" content="2021-08-18T18:24:42.000Z">
+<meta property="article:modified_time" content="2022-06-21T06:00:30.896Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Pytorch">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2021/08/19/20210813-PytorchInstall/p1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2021/08/19/20210813-PytorchInstall/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置） | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2021/08/19/20210813-PytorchInstall/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-08-19 02:24:42" itemprop="dateCreated datePublished" datetime="2021-08-19T02:24:42+08:00">2021-08-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E5%B7%A5%E5%85%B7%E7%94%A8%E6%B3%95%E6%8C%87%E5%8D%97/" itemprop="url" rel="index"><span itemprop="name">工具用法指南</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）"><a href="#Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）" class="headerlink" title="Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）"></a>Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）</h1><p>安装一个编程环境/编程库的过程是无比烦人的。安装环境时不可避免地涉及一些和该环境有关的知识，而配环境的人多半是新手，面对未知的知识时总会碰到许多麻烦。比如第一次配和C++有关的库的时候，新手就不知道.dll应该加入环境变量，.h应该加入include。而在写教程的时候，也一般都是新手在写教程，老手们对配环境这一“简单”的事情不屑一顾。因此，我们一般只能在网上看到新手写的配环境教程，上面都是按部就班地介绍一步一步的操作，讲不出每一步操作为什么要这样做，那些操作可以更改或者跳过，碰到了问题又怎么样。教程的不详细同样是配编程环境令人感到烦人的原因。</p>
+<p>基于上述情况，配编程环境考察的是人利用搜索引擎的能力。在配环境时，应该多参考几篇文章，有英文阅读能力的应该去参考官方给的配置教程。出了问题把问题的出错信息放到搜索引擎上去查。一般多踩几次坑，多花点时间，环境总能配好。</p>
+<p>也正是基于这些原因，我觉得写一篇环境配置的文章很没有意思。没有技术性和原创性、繁琐而无趣。但恰逢我第三次配置pytorch环境，一切都轻车熟路了。我准备在等待文件下载安装之余截几张图，水一篇文章。</p>
+<h2 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h2><p>去搜索引擎搜索<code>pytorch安装  你的操作系统</code>。比如我这次是在win10上安装，就选择输入”pytorch 安装 win10”.当然，一般会用到Anaconda来安装python上的一些库。在搜索中加入”anaconda”关键字可以搜到更多的教程。</p>
+<p>当然，官方网站上也已经给出了不少信息了：<a target="_blank" rel="noopener" href="https://pytorch.org/get-started/locally/">https://pytorch.org/get-started/locally/</a></p>
+<p>我的博客是随手写的，看这篇文章可能解决不了所有问题。正如前言中所说，应该多参考几篇教程。</p>
+<h2 id="安装Anaconda"><a href="#安装Anaconda" class="headerlink" title="安装Anaconda"></a>安装Anaconda</h2><p>Anaconda可以让用户更好地管理python包，配置pytorch需要先安装Anaconda。我说不出它的优点，反正大家都在用，我也一直在用。</p>
+<p><a target="_blank" rel="noopener" href="https://www.anaconda.com/products/individual#Downloads">https://www.anaconda.com/products/individual#Downloads</a> 这里可以下载Anaconda</p>
+<p>如果使用的是Windows，安装以后，点击任务栏中的搜索框，搜索Anaconda，打开<code>Anaconda Powershell Prompt (Anaconda)</code>或者<code>Anaconda Prompt (Anaconda)</code>。Ubuntu貌似进入命令行进入了Anaconda。</p>
+<p>在conda命令行中输入<code>conda create --name env_name python=3.7</code></p>
+<p><code>env_name</code>是虚拟环境的名字。装Python库，就好像在一个新房子里放家具一样，时间久了东西越来越乱。Anaconda给了你无限创造新房子的机会。你可以在一个完全没有“家具”，甚至连Python都没有的虚拟环境里，重新配置库文件。<code>env_name</code>就是虚拟环境的名字，我一般命名为<code>pt</code>，这样输入起来很快。后面的<code>python=3.7</code>是可选的，python版本可选，这句话加不加也可选。没加的话晚点安装python也行。</p>
+<p>创建完环境之后，输入<code>conda activate pt</code>就可以进入新的虚拟环境。前面的<code>(base)</code>应该会变为<code>(pt)</code></p>
+<p><img src="/2021/08/19/20210813-PytorchInstall/p1.jpg" alt></p>
+<p>搞成上图那样就算配得差不多了。</p>
+<h2 id="CPU版本的Pytorch"><a href="#CPU版本的Pytorch" class="headerlink" title="CPU版本的Pytorch"></a>CPU版本的Pytorch</h2><p>Pytorch等深度学习框架分CPU版和GPU版。GPU版速度快，但装起来有点复杂。如果只想稍微学习一下编程框架，以后用GPU服务器跑正式代码，可以只装CPU版。</p>
+<p>这个时候，为了避免GPU版教程的干扰，应该在搜索引擎中搜索<code>Pytorch CPU 你的操作系统</code></p>
+<p>一般输入<code>conda install pytorch-cpu torchvision-cpu -c pytorch</code>就可以安装好了。但这个时候，一般有一个坑会碰到：下载速度奇慢无比。</p>
+<p>这个时候，应该去网上搜索<code>conda 下载慢</code>类似的关键字。网上一般会给出以下几个办法：换源、直接下载安装包、用pip下载。源就是下载的来源网站，在国内的话最好切换到国内的下载网站比较快。我选择换conda源的方法下载。明确了方法后，要继续换搜索的关键字，应搜索<code>conda 换源</code>。我搜索到的办法是：输入<code>conda config --set show_channel_urls yes</code>。之后在用户根目录(比如C:\Users\Yifan Zhou)下编辑<code>.condarc</code>，加入以下内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">channels:</span><br><span class="line">  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/</span><br><span class="line">  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/</span><br><span class="line">  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/</span><br><span class="line">ssl_verify: true</span><br></pre></td></tr></table></figure>
+<p>我发现换了源还是下载得很慢，于是直接挂了个VPN再下载（哈哈哈）</p>
+<p>比较好的方式开始用换了源的pip</p>
+<p>下好之后稍微验证以下。比如安装之后，继续在Anaconda的虚拟环境中输入以下内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">python</span><br><span class="line">import torch</span><br><span class="line">print(torch.__verion__)</span><br></pre></td></tr></table></figure>
+<h2 id="GPU版本的Pytorch"><a href="#GPU版本的Pytorch" class="headerlink" title="GPU版本的Pytorch"></a>GPU版本的Pytorch</h2><h3 id="确认显卡驱动"><a href="#确认显卡驱动" class="headerlink" title="确认显卡驱动"></a>确认显卡驱动</h3><p>在安装GPU版本Pytorch之前，还要保证电脑中有<strong>版本正确</strong>的cuda和cudnn。cuda是一套GPU上的编程库，cudnn是基于cuda的深度学习库。Pytorch依赖这两个库，而cudnn版本依赖cuda版本。而由于cuda貌似更新比Pytorch快，出于向下兼容的考虑，应该先在电脑支持的CUDA版本和Pytorch支持的CUDA版本中选择一个较小者，再下载该版本的CUDA和CUDNN。</p>
+<p>但是，在安装这些东西之前，还可能碰到一个坑——显卡没装驱动。这里默认电脑使用的是N卡。在控制台中输入<code>nvidia-smi</code>，如果出现了类似下面这种信息：</p>
+<p><img src="/2021/08/19/20210813-PytorchInstall/p2.jpg" alt></p>
+<p>就说明驱动已经安装好了。如果没有，请搜索<code>显卡驱动</code>，适当加入”Nvidia Cuda Cudnn pytorch tensorflow python”等关键词，多看几篇教程总能把驱动装好。</p>
+<p>输出信息中的CUDA Version就是电脑显卡最高支持的CUDA版本。到网上下CUDA也应该不超过这个版本。</p>
+<h3 id="CUDA"><a href="#CUDA" class="headerlink" title="CUDA"></a>CUDA</h3><p>记录下<code>nvidia-smi</code>命令输出的CUDA版本（比如我的是11.1），再在 <a target="_blank" rel="noopener" href="https://pytorch.org/get-started/previous-versions/">https://pytorch.org/get-started/previous-versions/</a> 查Pytorch是否支持该CUDA版本。如果不支持，就选一个网站上有，且版本小于命令输出的CUDA版本的。之后去 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/cuda-toolkit-archive">https://developer.nvidia.com/cuda-toolkit-archive</a> 找到合适的CUDA版本，选择版本后选择自己对应的操作系统。下载了可执行文件后直接运行安装。</p>
+<h3 id="CUDNN"><a href="#CUDNN" class="headerlink" title="CUDNN"></a>CUDNN</h3><p>打开 <a target="_blank" rel="noopener" href="https://developer.nvidia.com/rdp/cudnn-archive">https://developer.nvidia.com/rdp/cudnn-archive</a> 这个网站。注册账号并登录。根据CUDA版本，找到合适版本在合适操作系统下的CUDNN。（注意是下载<code>cuDNN Library</code>，比如<code>[cuDNN Library for Windows10 (x86)]</code>）</p>
+<p>正如前面所描述的，CUDNN是个库，不需要安装，只需要把其文件复制到CUDA文件夹下即可使用。要把CUDNN中的bin，include，lib都复制到CUDA的对应目录下。</p>
+<p>注意，CUDA的bin文件夹应该被添加进环境变量。用默认设置安装CUDA时一般该文件夹会自动被加入环境变量。</p>
+<h3 id="Pytorch"><a href="#Pytorch" class="headerlink" title="Pytorch"></a>Pytorch</h3><p>在 <a target="_blank" rel="noopener" href="https://pytorch.org/get-started/locally/">https://pytorch.org/get-started/locally/</a> 中，选择合适的操作系统和CUDA版本。参考<strong>CPU版本的Pytorch</strong>这一小节的内容，用conda一键下好pytorch。如果网速慢，请利用搜索引擎解决问题。</p>
+<p>一切都下载完后，在环境中输入以下内容，看到True就是胜利。</p>
+<p><img src="/2021/08/19/20210813-PytorchInstall/p3.jpg" alt></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">python</span><br><span class="line">import torch</span><br><span class="line">import torchvision</span><br><span class="line">torch.cuda.is_available() </span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/Pytorch/" rel="tag"># Pytorch</a>
+              <a href="/tags/CUDA/" rel="tag"># CUDA</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/08/05/20210801-RainyNight/" rel="prev" title="风雨夜行记 ~ Adventure in a Rainy Night">
+      <i class="fa fa-chevron-left"></i> 风雨夜行记 ~ Adventure in a Rainy Night
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/09/09/20210827-FridayAfternoon/" rel="next" title="星期五的下午">
+      星期五的下午 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Pytorch%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B%EF%BC%88%E5%8C%85%E5%90%AB%E5%AF%B9%E9%BD%90cuda%E3%80%81cudnn%E7%89%88%E6%9C%AC%EF%BC%8CVSCode%E4%B8%ADAnaconda%E7%9A%84%E8%AE%BE%E7%BD%AE%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">Pytorch安装教程（包含对齐cuda、cudnn版本，VSCode中Anaconda的设置）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87"><span class="nav-number">1.1.</span> <span class="nav-text">准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Anaconda"><span class="nav-number">1.2.</span> <span class="nav-text">安装Anaconda</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CPU%E7%89%88%E6%9C%AC%E7%9A%84Pytorch"><span class="nav-number">1.3.</span> <span class="nav-text">CPU版本的Pytorch</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GPU%E7%89%88%E6%9C%AC%E7%9A%84Pytorch"><span class="nav-number">1.4.</span> <span class="nav-text">GPU版本的Pytorch</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AE%E8%AE%A4%E6%98%BE%E5%8D%A1%E9%A9%B1%E5%8A%A8"><span class="nav-number">1.4.1.</span> <span class="nav-text">确认显卡驱动</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CUDA"><span class="nav-number">1.4.2.</span> <span class="nav-text">CUDA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CUDNN"><span class="nav-number">1.4.3.</span> <span class="nav-text">CUDNN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pytorch"><span class="nav-number">1.4.4.</span> <span class="nav-text">Pytorch</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

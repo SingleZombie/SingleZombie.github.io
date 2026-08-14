@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="学习提示一直以来，我们都用梯度下降法作为神经网络的优化算法。但是，这个优化算法还有很多的改进空间。这周，我们将学习一些更高级的优化技术，希望能够从各个方面改进普通的梯度下降算法。 我们要学习的改进技术有三大项：分批梯度下降、高级更新方法、学习率衰减。这三项是平行的，可以同时使用。 分批梯度下降是从数据集的角度改进梯度下降。我们没必要等遍历完了整个数据集后再进行参数更新，而是可以遍历完一小批数据后就">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》笔记+代码实战（六）：改进梯度下降算法">
+<meta property="og:url" content="https://zhouyifan.net/2022/06/15/DLS-note-6/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="学习提示一直以来，我们都用梯度下降法作为神经网络的优化算法。但是，这个优化算法还有很多的改进空间。这周，我们将学习一些更高级的优化技术，希望能够从各个方面改进普通的梯度下降算法。 我们要学习的改进技术有三大项：分批梯度下降、高级更新方法、学习率衰减。这三项是平行的，可以同时使用。 分批梯度下降是从数据集的角度改进梯度下降。我们没必要等遍历完了整个数据集后再进行参数更新，而是可以遍历完一小批数据后就">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/11.jpg">
+<meta property="article:published_time" content="2022-06-15T09:31:30.000Z">
+<meta property="article:modified_time" content="2022-06-15T09:39:23.311Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/06/15/DLS-note-6/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/06/15/DLS-note-6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》笔记+代码实战（六）：改进梯度下降算法 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/15/DLS-note-6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》笔记+代码实战（六）：改进梯度下降算法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-15 17:31:30" itemprop="dateCreated datePublished" datetime="2022-06-15T17:31:30+08:00">2022-06-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>一直以来，我们都用梯度下降法作为神经网络的优化算法。但是，这个优化算法还有很多的改进空间。这周，我们将学习一些更高级的优化技术，希望能够从各个方面改进普通的梯度下降算法。</p>
+<p>我们要学习的改进技术有三大项：分批梯度下降、高级更新方法、学习率衰减。这三项是平行的，可以同时使用。</p>
+<p>分批梯度下降是从数据集的角度改进梯度下降。我们没必要等遍历完了整个数据集后再进行参数更新，而是可以遍历完一小批数据后就进行更新。</p>
+<p>高级更新方法指不使用参数的梯度值，而是使用一些和梯度相关的中间结果来更新参数。通过使用这些更高级的优化算法，我们能够令参数的更新更加平滑，更加容易收敛到最优值。这些高级的算法包括gradient descent with momentum, RMSProp, Adam。其中Adam是前两种算法的结合版，这是目前最流行的优化器之一。</p>
+<p>学习率衰减指的是随着训练的进行，我们可以想办法减小学习率的值，从而减少参数的震荡，令参数更快地靠近最优值。</p>
+<p>在这周的课里，我们要更关注每种优化算法的单独、组合使用方法，以及应该在什么场合用什么算法，最后再去关注算法的实现原理。对于多数技术，“会用”一般要优先于“会写”。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="分批梯度下降"><a href="#分批梯度下降" class="headerlink" title="分批梯度下降"></a>分批梯度下降</h2><blockquote>
+<p>这项技术的英文名称取得极其糟糕。之前我们使用的方法被称为”batch gradient descent”, 改进后的方法被称为”mini-batch gradient descent”。但是，这两种方法的本质区别是是否把整个数据集分成多个子集。因此，我们认为我的中文翻译“分批梯度下降”、“整批梯度下降”比原来的英文名词或者“小批量梯度下降”等中文翻译要更贴切名词本身的意思。</p>
+</blockquote>
+<h3 id="使用mini-batch"><a href="#使用mini-batch" class="headerlink" title="使用mini-batch"></a>使用mini-batch</h3><p>在之前的学习中，我们都是用整个训练集的平均梯度来更新模型参数的。而如果训练集特别大的话，遍历整个数据集要花很长时间，梯度下降的速度将十分缓慢。</p>
+<p>其实，我们不一定要等遍历完了整个数据集再做梯度下降。相较于每次遍历完所有$m$个训练样本再更新，我们可以遍历完一小批次(mini-batch)的样本就更新。让我们来看课件里的一个例子：</p>
+<p><img src="/2022/06/15/DLS-note-6/1.jpg" alt></p>
+<p>假设整个数据集大小$m=5,000,000$。我们可以把数据集划分成5000个mini-batch，其中每一个batch包含1000个数据。做梯度下降时，我们每跑完一个batch里的1000个数据，就用它们的平均梯度去更新参数，再去跑下一个batch。</p>
+<p>这里要介绍一个新的标记。设整个数据集$X$的形状是$(n_x, m)(m=5,000,000)$，则第<strong>$i$个数据集的标记</strong>为 $X^{\lbrace i \rbrace}$ ,形状为$(n_x, 1000)$。</p>
+<p>再次总结一下标记：$x^{(i)[j]\lbrace k\rbrace}$中的上标分别表示和第i个样本相关、和第j层相关、和第k个批次的样本集相关。实际上这三个标记几乎不会同时出现。</p>
+<p>使用了分批梯度下降后，算法的写法由</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m):</span><br><span class="line">    update parameters</span><br></pre></td></tr></table></figure>
+<p>变成</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m / batch_size)</span><br><span class="line">  <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(batch_size):</span><br><span class="line">      update parameters</span><br></pre></td></tr></table></figure>
+<p>。现在的梯度下降法每进行一次内层循环，就更新一次参数。我们还是把一次内层循环称为一个”step（步）”。此外，我们把一次外层循环称为一个”epoch(直译为’时代’，简称‘代’)”，因为每完成一次外层循环就意味着训练集被遍历了一次。</p>
+<h3 id="mini-batch-的损失函数变化趋势"><a href="#mini-batch-的损失函数变化趋势" class="headerlink" title="mini-batch 的损失函数变化趋势"></a>mini-batch 的损失函数变化趋势</h3><p>使用分批梯度下降后，损失函数的变化趋势会有所不同:</p>
+<p><img src="/2022/06/15/DLS-note-6/2.jpg" alt></p>
+<p>如图所示，如果是使用整批梯度下降，则损失函数会一直下降。但是，使用分批梯度下降后，损失函数可能会时升时降，但总体趋势保持下降。</p>
+<p>这种现象主要是因为之前我们计算的是整个训练集的损失函数，而现在计算的是每个mini-batch的损失函数。每个mini-batch的损失函数时高时低，可以理解为：某批数据比较简单，损失函数较低；另一批数据难度较大，损失函数较大。</p>
+<h3 id="选择批次大小"><a href="#选择批次大小" class="headerlink" title="选择批次大小"></a>选择批次大小</h3><p>批次大小(batch size)对训练速度有很大的影响。</p>
+<p>如果批次过大，甚至极端情况下<code>batch_size=m</code>，那么这等价于整批梯度下降。我们刚刚也学过了，如果数据集过大，整批梯度下降是很慢的。</p>
+<p>如果批次过小，甚至小到<code>batch_size=1</code>（这种梯度下降法有一个特别的名字：随机梯度下降（Stochastic Gradient Descent）），那么这种计算方法又会失去向量化计算带来的加速效果。</p>
+<blockquote>
+<p>回想一下第二周的内容：向量化计算指的是一次对多个数据做加法、乘法等运算。这种计算方式比用循环对每个数据做计算要快。</p>
+</blockquote>
+<p>出于折中的考虑，我们一般会选用一个介于<code>1-m</code>之间的数作为批次大小。</p>
+<p>如果数据集过小(<code>m&lt;2000</code>)，那就没必要使用分批梯度下降，直接拿整个数据集做整批梯度下降即可。</p>
+<p>如果数据集再大一点，就可以考虑使用<strong>64, 128, 256, 512</strong>这些数作为<code>batch_size</code>。这几个数都是2的次幂。由于电脑的硬件容量经常和2的次幂相关，把<code>batch_size</code>恰好设成2的次幂往往能提速。</p>
+<p>当然，刚刚也讲了，使用较大<code>batch_size</code>的一个目的是充分利用向量化计算。而向量化计算要求参与运算的数据全部在CPU/GPU内存上。如果设备的内存不够，则设过大的<code>batch_size</code>也没有意义。</p>
+<h2 id="一段数据的平均值"><a href="#一段数据的平均值" class="headerlink" title="一段数据的平均值"></a>一段数据的平均值</h2><blockquote>
+<p>在课堂上，这段内容是从数学的角度切入介绍的。我认为这种介绍方式比较突兀。我将从计算机科学的角度切入，用更好理解的方式介绍“指数加权移动平均”。</p>
+</blockquote>
+<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>假设我们绘制了某年每日气温的散点图：</p>
+<p><img src="/2022/06/15/DLS-note-6/3.jpg" alt></p>
+<p>假如让你来描述全年气温的趋势，你会怎么描述呢？</p>
+<p>作为人类，我们肯定会说：“这一年里，冬天的气温较低。随后气温逐渐升高，在夏天来到最高值。夏天过后，气温又逐渐下降，直至冬天的最低值。”</p>
+<p>但是，要让计算机看懂天气的变化趋势，应该怎么办呢？直接拿相邻的天气的差作为趋势可不行。冬天也会出现第二天气温突然升高的情况，夏天也会出现第二天气温突然降低的情况。我们需要一个能够概括<strong>一段时间内</strong>气温情况的指标。</p>
+<h3 id="移动平均数"><a href="#移动平均数" class="headerlink" title="移动平均数"></a>移动平均数</h3><p>一段时间里的值，其实就是几天内多个值的总体情况。多个值的总体情况，可以用平均数表示。严谨地来说，假如这一年有365天，我们用$t$表示这一年每天的天气，那么：</p>
+<script type="math/tex; mode=display">
+t_i=\left\{
+\begin{aligned}
+&第i天的天气 &(1 \leq i \leq 365) \\
+&0 &(i取其他值)
+\end{aligned}
+\right.</script><p>我们可以定义一种叫做<strong>移动平均数(Moving Averages)</strong> 的指标，表示某天及其前几天温度的平均值。比如对于5天移动平均数$ma$，其定义如下：</p>
+<script type="math/tex; mode=display">
+ma_i=\frac{t_i+t_{i-1}+t_{i-2}+t_{i-3}+t_{i-4}}{5} (1 \leq i \leq 365)</script><p>假如要让计算机<strong>依次输出</strong>每天的移动平均数，该怎么编写算法呢？我们来看几个移动平均数的例子：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+ma_5=(t_5+t_4+t_3+t_2+t_1)/5 \\
+ma_6=(t_6+t_5+t_4+t_3+t_2)/5 \\
+ma_7=(t_7+t_6+t_5+t_4+t_3)/5
+\end{aligned}</script><p>通过观察，我们可以发现$ma_6=ma_5+(t_6-t_1)/5$，$ma_7=ma_6+(t_7-t_2)/5$。</p>
+<p>也就是说，在算n天里的m天移动平均数（我们刚刚计算的是5天移动平均数）时，我们不用在n次的外层循环里再写一个m次的循环，只需要根据前一天的移动平均数，减一个值加一个值即可。这种依次输出移动平均数的算法如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> temperature[<span class="number">0</span>:n]</span><br><span class="line"><span class="built_in">input</span> m</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_temperature</span>(<span class="params">i</span>):</span><br><span class="line">    <span class="keyword">return</span> temperature[i] <span class="keyword">if</span> i &gt;= <span class="number">0</span> <span class="keyword">and</span> i &lt; n <span class="keyword">else</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line">ma = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">    ma += (get_temperature(i) - get_temperature(i - m)) / m</span><br><span class="line">    ma_i = ma</span><br><span class="line">    output ma_i</span><br></pre></td></tr></table></figure>
+<p>这种求移动平均数的方法确实很高效。但是，我们上面这个算法是基于所有温度值<strong>一次性给出</strong>的情况。假如我们正在算今年每天温度的移动平均数，每天的温度是一天一天给出的，而不是一次性给出的，上面的算法应该怎么修改呢？让我们来看修改后的算法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">input</span> m</span><br><span class="line">temp_i_day_ago = zeros((m))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">update_temperature</span>(<span class="params">t</span>):</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(m - <span class="number">1</span>):</span><br><span class="line">        temp_i_day_ago[i+<span class="number">1</span>] = temp_i_day_ago[i]</span><br><span class="line">    temp_i_day_ago[<span class="number">0</span>] = t</span><br><span class="line"></span><br><span class="line">ma = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">    <span class="built_in">input</span> t_i</span><br><span class="line">    update_temperature(t_i)</span><br><span class="line">    ma += (temp_i_day_ago[<span class="number">0</span>] - temp_i_day_ago[m]) / m</span><br><span class="line">    ma_i = ma</span><br><span class="line">    output ma_i</span><br></pre></td></tr></table></figure>
+<p>由于我们不能提前知道每天的天气，我们需要一个大小为m的数组<code>temp_i_day_ago</code>记录前几天的天气，以计算m天移动平均数。</p>
+<p>上述代码的时间复杂度还是有优化空间的。可以用更好的写法去掉<code>update_temperature</code>里的循环，把计算每天移动平均数的时间复杂度变为$O(1)$。但是，这份代码的空间复杂度是无法优化的。为了算m天移动平均数，我们必须要维护一个长度为m的数组，空间复杂度一定是$O(m)$。</p>
+<p>对于一个变量的m移动平均数，$O(m)$的空间复杂度还算不大。但假如我们要同时维护l个变量的m移动平均数，整个算法的空间复杂度就是$O(ml)$。在l很大的情况下，m对空间的影响是很大的。哪怕m取5这种很小的数，也意味着要多花4倍的空间去存储额外的数据。空间复杂度里这多出来的这个$m$是不能接受的。</p>
+<h3 id="指数加权移动平均"><a href="#指数加权移动平均" class="headerlink" title="指数加权移动平均"></a>指数加权移动平均</h3><p>作为移动平均数的替代，人们提出了<strong>指数加权移动平均数（Exponential Weighted Moving Average）</strong> 这种表示一段时期内数据平均值的指标。其计算公式为：</p>
+<script type="math/tex; mode=display">
+v_i=\beta v_{i-1} + (1 - \beta)t_i</script><p>这个公式直观上的意义为：一段时间内的平均温度，等于上一段时间的平均温度与当日温度的加权和。</p>
+<p>相比普通的移动平均数，指数平均数最大的好处就是减小了空间复杂度。在迭代更新这个新的移动平均数时，我们只需要维护一个当前平均数$v_i$，一个当前的温度$t_i$即可，空间复杂度为$O(1)$。</p>
+<p>让我们进一步理解公式中的参数$\beta$。把公式展开可得：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+v_i&=(1 - \beta)t_i + \beta v_{i-1} \\
+v_i&=(1 - \beta)t_i + (1 - \beta)\beta t_{i-1} +\beta^2 v_{i-2} \\ 
+v_i&=(1 - \beta)t_i + (1 - \beta)\beta t_{i-1} + (1 - \beta)\beta ^2t_{i-2}+ \beta^3 v_{i-2} \\
+...
+\end{aligned}</script><p>从这个式子可以看出，之前数据的权重都在以$\beta$的速度指数衰减。根据$(1-\epsilon)^{\frac{1}{\epsilon}} \approx \frac{1}{e}$，并且我们可以认为一个数到了$\frac{1}{e}$就小到可以忽视了，那么指数平均数表示的就是$\frac{1}{1-\beta}$天内数据的平均情况。比如$\beta=0.9$表示的是10天内的平均数据，$\beta=0.99$表示的是100天内的平均数据。</p>
+<h3 id="偏差矫正"><a href="#偏差矫正" class="headerlink" title="偏差矫正"></a>偏差矫正</h3><p>指数平均数存在一个问题。在刚刚初始化时，指数平均数的值可能不太正确，请看：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+v_1 &=  (1 - \beta)t_1 \\
+v_2 &=  (1 - \beta)\beta t_1 +(1 - \beta)t_2
+\end{aligned}</script><p>让我们把每一项前面的权重加起来。对于$v_1$，前面的权重和是$(1-\beta)$；对于$v_2$，前面的权重和是$(1-\beta)(\beta+1)$。显然，这两个权重和都不为1。而计算平均数时，我们希望所有数据的权重和为1，这样才能反映出数据的真实大小情况。这里出现了权重上的“偏差”。</p>
+<p>为了矫正这个偏差，我们应该想办法把权重和矫正为1。观察刚才的算式可以发现，第$i$项的权重和如下：</p>
+<script type="math/tex; mode=display">
+w_i = (1-\beta)(1+\beta+\beta^2+...\beta^i)</script><p>根据等比数列求和公式，上式化简为：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+w_i &= (1-\beta)\frac{(1-\beta^i)}{(1-\beta)} \\
+w_i &= 1-\beta^i
+\end{aligned}</script><p>为了令权重和为1，我们可以令每一项指数平均数都除以这个和，即用下面的式子计算矫正后的指数平均数$v_i’$:</p>
+<script type="math/tex; mode=display">
+v_i'=\frac{v_i}{1-\beta^i}</script><p>但是，在实践中，由于这个和$1-\beta^i$收敛得很快，我们不会特地写代码做这个矫正。</p>
+<h2 id="Momentum"><a href="#Momentum" class="headerlink" title="Momentum"></a>Momentum</h2><p>Gradient Descent with Momentum (使用动量的梯度下降) 是一种利用梯度的指数加权移动平均数更新参数的策略。在每次更新学习率时，我们不用本轮梯度的方向作为梯度下降的方向，而是用梯度的指数加权移动平均数作为梯度下降的方向。即对于每个参数，我们用下式做梯度下降：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+V_{dw}&=\beta V_{dw}+ (1-\beta)dw \\
+V_{db}&=\beta V_{db}+ (1-\beta)db \\
+w &:= w - \alpha V_{dw} \\
+b &:= b - \alpha V_{db}
+\end{aligned}</script><p>也就是说，对于每个参数$p$，我们用它的指数平均值$v_{dp}$代替$dp$进行参数的更新。</p>
+<p>使用梯度的平均值来更新有什么好处呢？让我们来看一个可视化的例子：</p>
+<p><img src="/2022/06/15/DLS-note-6/4.jpg" alt></p>
+<p>不使用 Momentum 的话，每次参数更新的方向可能变化幅度较大，如上图中的蓝线所示。而使用 Momentum 后，每次参数的更新方向都会在之前的方向上稍作修改，每次的更新方向会更加平缓一点，如上图的红线所示。这样，梯度下降算法可以更快地找到最低点。</p>
+<p>在实现时，我们不用去使用偏差矫正。$\beta$取0.9在大多数情况下都适用，有余力的话这个参数也可以调一下。</p>
+<h2 id="RMSProp-和-Adam"><a href="#RMSProp-和-Adam" class="headerlink" title="RMSProp 和 Adam"></a>RMSProp 和 Adam</h2><blockquote>
+<p>课堂上并没有对RMSProp的原理做过多的介绍，我们只需要记住它的公式就行。我会在其他文章中介绍这几项技术的原理。</p>
+</blockquote>
+<p>在一个神经网络中，不同的参数需要的更新幅度可能不一样。但是，在默认情况下，所有参数的更新幅度都是一样的（即学习率）。为了平衡各个参数的更新幅度，RMSProp(Root Mean Squared Propagation)  在参数更新公式中添加了一个和参数大小相关的权重$S$。与 Momentum 类似，RMSProp使用了某种移动平均值来平滑这个权重的更新。其梯度下降公式如下：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+S_{dw}&=\beta S_{dw}+ (1-\beta)dw^2 \\
+S_{db}&=\beta S_{db}+ (1-\beta)db^2 \\
+w &:= w - \alpha \frac{dw}{\sqrt{S_{dw}}} \\
+b &:= b - \alpha \frac{db}{\sqrt{S_{db}}}
+\end{aligned}</script><p>在编程实现时，我们应该给分母加一个极小值$\epsilon$，防止分母出现0。</p>
+<p>Adam (Adaptive Moment Estimation) 是 Momentum 与 RMSProp 的结合版。为了使用Adam，我们要先计算 Momentum 和 RMSProp 的中间变量：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+V_{dw}&=\beta_1 V_{dw}+ (1-\beta_1)dw \\
+V_{db}&=\beta_1 V_{db}+ (1-\beta_1)db \\
+S_{dw}&=\beta_2 S_{dw}+ (1-\beta_2)dw^2 \\
+S_{db}&=\beta_2 S_{db}+ (1-\beta_2)db^2 
+\end{aligned}</script><p>之后，根据前面的偏差矫正，获得这几个变量的矫正值：</p>
+<blockquote>
+<p>如前文所述，在实现时添加偏差矫正意义不大。估计这里加上偏差矫正是因为原论文加了。</p>
+</blockquote>
+<script type="math/tex; mode=display">
+\begin{aligned}
+V_{dw}'&=\frac{V_{dw}}{1-\beta_1^t} \\
+V_{db}'&=\frac{V_{db}}{1-\beta_1^t} \\
+S_{dw}'&=\frac{S_{dw}}{1-\beta_2^t} \\
+S_{db}'&=\frac{S_{db}}{1-\beta_2^t} \\
+\end{aligned}</script><p>最后，进行参数的更新：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+w &:= w - \alpha \frac{V_{dw}'}{\sqrt{S_{dw}'}+\epsilon} \\
+b &:= b - \alpha \frac{V_{db}'}{\sqrt{S_{db}'}+\epsilon}
+\end{aligned}</script><p>和之前一样，这里的$\epsilon$是一个极小值。在编程时添加$\epsilon$，一般都是为了防止分母中出现0。</p>
+<p>Adam是目前非常流行的优化算法，它的表现通常都很优秀。为了用好这个优化算法，我们要知道它的超参数该怎么调。在原论文中，这个算法的超参数取值如下：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\beta_1 &= 0.9 \\
+\beta_2 &= 0.999 \\
+\epsilon &= 10^{-8}
+\end{aligned}</script><p>绝大多数情况下，我们不用手动调这三个超参数。</p>
+<h2 id="学习率衰减"><a href="#学习率衰减" class="headerlink" title="学习率衰减"></a>学习率衰减</h2><p>训练时的学习率不应该是一成不变的。在优化刚开始时，参数离最优值还差很远，选较大的学习率能加快学习速度。但是，经过了一段时间的学习后，参数离最优值已经比较近了。这时，较大的学习率可能会让参数错过最优值。因此，在训练一段时间后，减小学习率往往能够加快网络的收敛速度。这种训练一段时间后减小学习率的方法叫做<strong>学习率衰减</strong>。</p>
+<p>其实学习率衰减只是一种比较宏观的训练策略，并没有绝对正确的学习率衰减方法。我们可以设置初始学习率$\alpha_0$，之后按下面的公式进行学习率衰减：</p>
+<script type="math/tex; mode=display">
+\alpha = \frac{1}{1 + DecayRate \ast EpochNum}\alpha_0</script><p>这个公式非常简单，初始学习率会随着一个衰减率(DecayRate)和训练次数(EpochNum)衰减。</p>
+<p>同样，我们还可以使用指数衰减：</p>
+<script type="math/tex; mode=display">
+\alpha = 0.95^{EpochNum}\alpha_0</script><p>或者其他一些奇奇怪怪的衰减方法(k是超参数）：</p>
+<script type="math/tex; mode=display">
+\alpha = \frac{k}{\sqrt{EpochNum}}\alpha_0</script><p>甚至我们可以手动调学习率，每训练一段时间就把学习率调整成一个更小的常数。</p>
+<p>总之，学习率衰减是一条启发性的规则。我们可以有意识地在训练中后期调小学习率。</p>
+<h2 id="局部最优值"><a href="#局部最优值" class="headerlink" title="局部最优值"></a>局部最优值</h2><p>在执行梯度下降算法时，局部最优值可能会影响算法的表现：在局部最优值处，各个参数的导数都是0。梯度是0（所有导数为0），意味着梯度下降法将不再更新了。</p>
+<p>在待优化参数较少时，陷入局部最优值是一种比较常见的情况。而对于参数量巨大的深度学习项目来说，整个模型陷入局部最优值是一个几乎不可能发生的事情。某参数在梯度为0时，既有可能是局部最优值，也可能是局部最差值。不妨设两种情况的概率都是0.5。如果整个模型都陷入了局部最优值，那么所有参数都得处于局部最优值上。假设我们的深度学习模型有10000个参数，则一个梯度为0的点是局部最优值的概率是$0.5^{10000}$，这是一个几乎不可能发生的事件。</p>
+<p>所以，在深度学习中，更常见的梯度为0的点是鞍点（某处梯度为0，但不是局部最值）。在鞍点处，有很多参数都处于局部最差值上，只要稍微对这些参数做一些扰动，参数就会往更小的方向移动。因此，鞍点不会对学习算法产生影响。</p>
+<p>在深度学习中，一种会影响学习速度的情况叫做“高原”（plateau）。在高原处，梯度的值一直都很小。只有跨过了这段区域，学习的速度才会快起来。这种情况的可视化结果如下：</p>
+<p><img src="/2022/06/15/DLS-note-6/5.jpg" alt></p>
+<p>总而言之，深度学习问题和简单的优化问题不太一样，不用过多担心局部最优值的问题。而高原现象确实会影响学习的速度。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这周，我们围绕深度学习的优化算法，学习了许多提升梯度下降法性能的技术。让我们来捋一捋。</p>
+<p>首先，我们可以在处理完一小批数据后就执行梯度下降，而不必等处理完整个数据集后再执行。这种算法叫分批梯度下降（mini-batch gradient descent)。这是一种对梯度下降法的通用改进方法，即默认情况下，这种算法都可以和其他改进方法同时使用。</p>
+<p>之后，我们学习了移动平均的概念，知道移动平均值可以更平滑地反映数据在一段时间内的趋势。基于移动平均值，有 gradient descent with momentum 和 RMSProp 这两种梯度下降的改进方法。而现在非常常用的 Adam 优化算法是Momentum 和 RMSProp 的结合版。</p>
+<p>最后，我们学习了学习率衰减的一些常见方法。</p>
+<p>学完本课的内容后，我认为我们应该对相关知识达到下面的掌握程度：</p>
+<ul>
+<li>分批梯度下降<ul>
+<li>了解原理</li>
+<li>掌握如何选取合适的 batch size</li>
+</ul>
+</li>
+<li>高级优化算法<ul>
+<li>了解移动平均数的思想</li>
+<li>了解 Adam 的公式</li>
+<li>记住 Adam 超参数的常见取值</li>
+<li>未来学习了编程框架后，会调用 Momentum，Adam 优化器</li>
+</ul>
+</li>
+<li>学习率衰减<ul>
+<li>掌握“学习率衰减能加速收敛”这一概念</li>
+<li>在训练自己的模型时，能够有意识地去调小学习率</li>
+</ul>
+</li>
+<li>局部最优值<ul>
+<li>不用管这个问题</li>
+</ul>
+</li>
+</ul>
+<h1 id="代码实战"><a href="#代码实战" class="headerlink" title="代码实战"></a>代码实战</h1><p>这周，官方的编程作业还是点集分类。我觉得这个任务太简单了，还是挑战小猫分类比较有意思。</p>
+<p>在这周的代码实战项目中，让我们先回顾一下整个项目的框架，再实现这周学到的技术，包括分批梯度下降(Mini-batch Gradient Descent)、高级梯度下降算法(Mini-batch Gradient Descent)、学习率衰减。</p>
+<p>项目链接：<br>​<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/AdvancedOptimizer">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/AdvancedOptimizer</a></p>
+<h2 id="小猫分类项目框架"><a href="#小猫分类项目框架" class="headerlink" title="小猫分类项目框架"></a>小猫分类项目框架</h2><h3 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h3><p>和之前一样，我们即将使用一个 kaggle 上的<a target="_blank" rel="noopener" href="https://www.kaggle.com/datasets/fusicfenta/cat-and-dog?resource=download">猫狗分类数据集</a>。我已经写好了读取数据的函数，该函数的定义如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_cat_set</span>(<span class="params"></span></span><br><span class="line"><span class="params">    data_root: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    img_shape: <span class="type">Tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>] = (<span class="params"><span class="number">224</span>, <span class="number">224</span></span>),</span></span><br><span class="line"><span class="params">    train_size=<span class="number">1000</span>,</span></span><br><span class="line"><span class="params">    test_size=<span class="number">200</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="type">Tuple</span>[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:</span><br></pre></td></tr></table></figure></p>
+<p>填入数据集根目录、图像Reszie后的大小、一半训练集的大小、一半测试集的大小，我们就能得到预处理后的<code>train_X, train_Y, dev_X, dev_Y</code>。其中，X的形状是<code>(n_x, m)</code>, Y的形状是<code>(1, m)</code>。<code>n_x</code>是图像的特征数，对于一个大小为(224, 224)的图像，<code>n_x = 224*224*3</code>。m是样本数量，如果<code>train_size=1000</code>，则<code>m=2000</code>。</p>
+<p>在之前的实战中，我的模型在训练集上的表现都十分糟糕，还没有用到“测试集”的机会。因此，我们之前那个“测试集”，既可以认为是开发集，也可以认为是测试集。从这周开始，出于严谨性的考虑，我准备把之前的“测试集”正式称作开发集（dev set）。</p>
+<h3 id="模型类"><a href="#模型类" class="headerlink" title="模型类"></a>模型类</h3><p>和之前一样，我们用<code>BaseRegressionModel</code>来表示一个最后一层使用sigmoid，loss用交叉熵的二分类模型基类。这个基类的定义如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">BaseRegressionModel</span>(metaclass=abc.ABCMeta):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, X: np.ndarray, train_mode=<span class="literal">True</span></span>) -&gt; np.ndarray:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">backward</span>(<span class="params">self, Y: np.ndarray</span>) -&gt; np.ndarray:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_grad_dict</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray]:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">save</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray]:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self, state_dict: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray]</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">loss</span>(<span class="params">self, Y: np.ndarray, Y_hat: np.ndarray</span>) -&gt; np.ndarray:</span><br><span class="line">        <span class="keyword">return</span> np.mean(-(Y * np.log(Y_hat) + (<span class="number">1</span> - Y) * np.log(<span class="number">1</span> - Y_hat)))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">evaluate</span>(<span class="params">self, X: np.ndarray, Y: np.ndarray, return_loss=<span class="literal">False</span></span>):</span><br><span class="line">        Y_hat = <span class="variable language_">self</span>.forward(X, train_mode=<span class="literal">False</span>)</span><br><span class="line">        Y_hat_predict = np.where(Y_hat &gt; <span class="number">0.5</span>, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">        accuracy = np.mean(np.where(Y_hat_predict == Y, <span class="number">1</span>, <span class="number">0</span>))</span><br><span class="line">        <span class="keyword">if</span> return_loss:</span><br><span class="line">            loss = <span class="variable language_">self</span>.loss(Y, Y_hat)</span><br><span class="line">            <span class="keyword">return</span> accuracy, loss</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> accuracy</span><br></pre></td></tr></table></figure>
+<p>在模型类中，和训练有关的主要有<code>forward, backward, get_grad_dict</code>这三个方法，分别表示前向传播、反向传播、梯度获取。</p>
+<p>这里要对<code>get_grad_dict</code>做一个说明。之前我们都是直接在模型类里实现梯度下降的，但在这周学了新的优化算法后，这种编程方式就不太方便拓展了。因此，从这周开始，我们应该用一个<code>BaseOptimizer</code>类来表示各种梯度下降算法。模型通过<code>get_grad_dict</code>把梯度传给优化器。</p>
+<p>除了和训练相关的方法外，模型类通过<code>save, load</code>来把数据存入/取自一个词典，通过<code>loss, evaluate</code>来获取一些模型评测指标。</p>
+<p><code>BaseRegressionModel</code>只是一个抽象基类。实际上，我在本项目使用的是第四周学习的深层神经网络（任意层数的全连接网络）<code>DeepNetwork</code>。只需要传入每一层神经元个数、每一层的激活函数，我们就能得到一个全连接分类网络：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">DeepNetwork</span>(<span class="title class_ inherited__">BaseRegressionModel</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, neuron_cnt: <span class="type">List</span>[<span class="built_in">int</span>], activation_func: <span class="type">List</span>[<span class="built_in">str</span>]</span>):</span><br><span class="line">        ...</span><br></pre></td></tr></table></figure>
+<p>在第四周代码的基础上，我修改了一下参数初始化的方法。由于隐藏层的激活函数都用的是ReLU，我打算默认使用 He Initialization:<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>.num_layer):</span><br><span class="line">    <span class="variable language_">self</span>.W.append(</span><br><span class="line">        np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) *</span><br><span class="line">        np.sqrt(<span class="number">2</span> / neuron_cnt[i]))</span><br></pre></td></tr></table></figure></p>
+<p>除此之外，我没有在这个模型上添加其他高级功能。我也没有添加正则化。现在网络还处于欠拟合状态，等我有资格解决过拟合问题时再去考虑正则化。</p>
+<h3 id="优化器类"><a href="#优化器类" class="headerlink" title="优化器类"></a>优化器类</h3><p>看完了模型类，接下来，我们来看一看这周要实现的优化器类。所有的优化器类都继承自基类<code>BaseOptimizer</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">BaseOptimizer</span>(metaclass=abc.ABCMeta):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params"></span></span><br><span class="line"><span class="params">            self,</span></span><br><span class="line"><span class="params">            param_dict: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray],</span></span><br><span class="line"><span class="params">            learning_rate: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">            lr_scheduler: <span class="type">Callable</span>[[<span class="built_in">float</span>, <span class="built_in">int</span>], <span class="built_in">float</span>] = const_lr</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="variable language_">self</span>.param_dict = param_dict</span><br><span class="line">        <span class="variable language_">self</span>._epoch = <span class="number">0</span></span><br><span class="line">        <span class="variable language_">self</span>._num_step = <span class="number">0</span></span><br><span class="line">        <span class="variable language_">self</span>._learning_rate_zero = learning_rate</span><br><span class="line">        <span class="variable language_">self</span>._lr_scheduler = lr_scheduler</span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">epoch</span>(<span class="params">self</span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>._epoch</span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">learning_rate</span>(<span class="params">self</span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>._lr_scheduler(<span class="variable language_">self</span>._learning_rate_zero, <span class="variable language_">self</span>.epoch)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">increase_epoch</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>._epoch += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">save</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>:</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&#x27;epoch&#x27;</span>: <span class="variable language_">self</span>._epoch, <span class="string">&#x27;num_step&#x27;</span>: <span class="variable language_">self</span>._num_step&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self, state_dict: <span class="type">Dict</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>._epoch = state_dict[<span class="string">&#x27;epoch&#x27;</span>]</span><br><span class="line">        <span class="variable language_">self</span>._num_step = state_dict[<span class="string">&#x27;num_step&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">zero_grad</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.grad_dict:</span><br><span class="line">            <span class="variable language_">self</span>.grad_dict[k] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">add_grad</span>(<span class="params">self, grad_dict: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray]</span>):</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.grad_dict:</span><br><span class="line">            <span class="variable language_">self</span>.grad_dict[k] += grad_dict[k]</span><br><span class="line"></span><br><span class="line"><span class="meta">    @abc.abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">step</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<p>这个优化器基类实现了以下功能：</p>
+<ul>
+<li>维护当前的<code>epoch</code>和<code>step</code>，以辅助其他参数的计算。</li>
+<li>维护当前的学习率，并通过使用<code>_lr_scheduler</code>的方式支持学习率衰减。</li>
+<li>定义了从词典中保存/读取优化器的方法<code>save, load</code>。</li>
+<li>定义了维护的梯度的清空梯度方法<code>zero_grad</code>和新增梯度方法<code>add_grad</code>。</li>
+<li>允许子类实现<code>step</code>方法，以使用不同策略更新参数。</li>
+</ul>
+<p>在后续章节中，我会介绍该如何使用这个基类实现这周学过的优化算法。</p>
+<h3 id="模型训练"><a href="#模型训练" class="headerlink" title="模型训练"></a>模型训练</h3><p>基于上述的<code>BaseRegressionModel</code>和<code>BaseOptimizer</code>，我们可以写出下面的模型训练函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train</span>(<span class="params">model: BaseRegressionModel,</span></span><br><span class="line"><span class="params">          optimizer: BaseOptimizer,</span></span><br><span class="line"><span class="params">          X,</span></span><br><span class="line"><span class="params">          Y,</span></span><br><span class="line"><span class="params">          total_epoch,</span></span><br><span class="line"><span class="params">          batch_size,</span></span><br><span class="line"><span class="params">          model_name: <span class="built_in">str</span> = <span class="string">&#x27;model&#x27;</span>,</span></span><br><span class="line"><span class="params">          save_dir: <span class="built_in">str</span> = <span class="string">&#x27;work_dirs&#x27;</span>,</span></span><br><span class="line"><span class="params">          recover_from: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">          print_interval: <span class="built_in">int</span> = <span class="number">100</span>,</span></span><br><span class="line"><span class="params">          dev_X=<span class="literal">None</span>,</span></span><br><span class="line"><span class="params">          dev_Y=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="keyword">if</span> recover_from:</span><br><span class="line">        load_state_dict(model, optimizer, recover_from)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># Prepare mini_batch</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> e <span class="keyword">in</span> <span class="built_in">range</span>(total_epoch):</span><br><span class="line">        <span class="keyword">for</span> mini_batch_X, mini_batch_Y <span class="keyword">in</span> mini_batch_XYs:</span><br><span class="line">            mini_batch_Y_hat = model.forward(mini_batch_X)</span><br><span class="line">            model.backward(mini_batch_Y)</span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            optimizer.add_grad(model.get_grad_dict())</span><br><span class="line">            optimizer.step()</span><br><span class="line"></span><br><span class="line">        currrent_epoch = optimizer.epoch</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> currrent_epoch % print_interval == <span class="number">0</span>:</span><br><span class="line">            <span class="comment"># print loss</span></span><br><span class="line">            ...</span><br><span class="line"></span><br><span class="line">        optimizer.increase_epoch()</span><br><span class="line"></span><br><span class="line">    save_state_dict(model, optimizer,</span><br><span class="line">                    os.path.join(save_dir, <span class="string">f&#x27;<span class="subst">&#123;model_name&#125;</span>_latest.npz&#x27;</span>))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>训练之前，我们可以从模型文件<code>recover_from</code>里读取模型状态和优化器状态。读取数据是通过<code>load_state_dict</code>实现的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_state_dict</span>(<span class="params">model: BaseRegressionModel, optimizer: BaseOptimizer,</span></span><br><span class="line"><span class="params">                    filename: <span class="built_in">str</span></span>):</span><br><span class="line">    state_dict = np.load(filename)</span><br><span class="line">    model.load(state_dict[<span class="string">&#x27;model&#x27;</span>])</span><br><span class="line">    optimizer.load(state_dict[<span class="string">&#x27;optimizer&#x27;</span>])</span><br></pre></td></tr></table></figure>
+<p>在得到某一批训练数据<code>X, Y</code>后，我们可以用下面的代码执行一步梯度下降：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Y_hat = model.forward(X)</span><br><span class="line">model.backward(Y)</span><br><span class="line">optimizer.zero_grad()</span><br><span class="line">optimizer.add_grad(model.get_grad_dict())</span><br><span class="line">optimizer.step()</span><br></pre></td></tr></table></figure>
+<p>我们会先调用模型的前向传播<code>forward</code>和反向传播<code>backward</code>，令模型存下本轮的梯度。之后，我们重置优化器，把梯度从模型传到优化器，再调用优化器进行更新。</p>
+<p>训练代码中，默认使用了mini-batch。我会在后续章节介绍mini-batch的具体实现方法。</p>
+<p>完成了梯度的更新后，我们要维护当前的训练代数<code>epoch</code>。训练了几代后，我们可以评测模型在整个训练集和开发集上的性能指标。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">currrent_epoch = optimizer.epoch</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> currrent_epoch % print_interval == <span class="number">0</span>:</span><br><span class="line">    <span class="comment"># print loss</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">optimizer.increase_epoch()</span><br></pre></td></tr></table></figure>
+<p>最后，模型训练结束后，我们要保存模型。保存模型是通过<code>save_state_dict</code>实现的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">save_state_dict</span>(<span class="params">model: BaseRegressionModel, optimizer: BaseOptimizer,</span></span><br><span class="line"><span class="params">                    filename: <span class="built_in">str</span></span>):</span><br><span class="line">    state_dict = &#123;<span class="string">&#x27;model&#x27;</span>: model.save(), <span class="string">&#x27;optimizer&#x27;</span>: optimizer.save()&#125;</span><br><span class="line">    np.savez(filename, **state_dict)</span><br></pre></td></tr></table></figure>
+<p>如果你对<code>np.savez</code>函数不熟，欢迎回顾我在第四周代码实战中对其的介绍。</p>
+<p>总之，基于我们定义的<code>BaseRegressionModel</code>和<code>BaseOptimizer</code>，我们可以在初始化完这个两个类的对象后，调用<code>train</code>来完成模型的训练。</p>
+<h2 id="使用-Mini-batch"><a href="#使用-Mini-batch" class="headerlink" title="使用 Mini-batch"></a>使用 Mini-batch</h2><h3 id="注意-I-O-开销！"><a href="#注意-I-O-开销！" class="headerlink" title="注意 I/O 开销！"></a>注意 I/O 开销！</h3><p>重申一下，Mini-batch gradient descent 的本意是加快训练速度。如果实现了 Mini-batch 后，程序在其他地方跑得更慢了，那么使用这个算法就毫无意义了。</p>
+<p>在我们这个小型的深度学习项目中，从硬盘上读取数据的开销是极大的。下图是执行包含前后处理在内的一轮训练的时间开销分布：</p>
+<p><img src="/2022/06/15/DLS-note-6/6.jpg" alt></p>
+<p>从图中可以看出，相对于一轮训练，读取数据的开销是极大的。读取数据的时间甚至约等于两轮训练的时间。</p>
+<p>在之前的项目中，我一直默认是把训练数据全部读取到内存中，然后再进行训练。这样的好处是网络的训练速度不受硬盘读写速度限制，会加快不少，坏处是训练数据的总量受到电脑内存的限制。</p>
+<p>在使用分批梯度下降算法时，为了比较算法在性能上的提升，我们应该继续使用相同的数据管理策略，即把数据放到内存中处理。如果换了算法，还换了数据管理策略，把一次性读取数据改成每次需要数据的时候再去读取，那么我们就无法观察到算法对于性能的提升。</p>
+<p>事实上，在大型深度学习项目中，模型执行一轮训练的速度很慢，I/O的开销相对来说会小很多。在这种时候，我们可以仅在需要时再读取数据。不过，在这种情况下，我们依然要保证内存/显存足够支持一轮mini-batch的前向/反向传播。这里要注意一下我们这个小demo和实际深度学习项目的区别。</p>
+<h3 id="mini-batch-预处理"><a href="#mini-batch-预处理" class="headerlink" title="mini-batch 预处理"></a>mini-batch 预处理</h3><p>在执行一个epoch(代)的训练时，我们应该保证训练数据是打乱的，以避免极端数据分布给训练带来的副作用。</p>
+<p>epoch 与 epoch 之间 mini-batch 的划分是否相同到不是那么重要。理论上来说，数据越平均越好，最好能每个 epoch 都重新划分 mini-batch。但是，为了加速训练，同时让使用 mini-batch 的逻辑更加易懂，我打算先预处理出 mini-batch，之后每个 epoch 都使用相同的划分。</p>
+<p>为了方便之后的处理，我们把每个mini-batch的X和Y都单独存入数组<code>mini_batch_XYs</code>。这样，在之后的训练循环里，每个mini-batch的数据就可以直接拿来用了。以下是预处理mini-batch的代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">m = X.shape[<span class="number">1</span>]</span><br><span class="line">indices = np.random.permutation(m)</span><br><span class="line">shuffle_X = X[:, indices]</span><br><span class="line">shuffle_Y = Y[:, indices]</span><br><span class="line">num_mini_batch = math.ceil(m / batch_size)</span><br><span class="line">mini_batch_XYs = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(num_mini_batch):</span><br><span class="line">    <span class="keyword">if</span> i == num_mini_batch - <span class="number">1</span>:</span><br><span class="line">        mini_batch_X = shuffle_X[:, i * batch_size:]</span><br><span class="line">        mini_batch_Y = shuffle_Y[:, i * batch_size:]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        mini_batch_X = shuffle_X[:, i * batch_size:(i + <span class="number">1</span>) * batch_size]</span><br><span class="line">        mini_batch_Y = shuffle_Y[:, i * batch_size:(i + <span class="number">1</span>) * batch_size]</span><br><span class="line">    mini_batch_XYs.append((mini_batch_X, mini_batch_Y))</span><br></pre></td></tr></table></figure>
+<p>在这段代码中，我们首先用第二周编程练习中学过的<code>permutation</code>生成一个随机排列，并根据这个随机排列打乱数据。</p>
+<p>之后的代码就是一段常见的数据除法分块逻辑。对于除得尽和除不尽的mini-batch，我们分开处理，提取出每个mini_batch的X和Y。</p>
+<h3 id="mini-batch-训练"><a href="#mini-batch-训练" class="headerlink" title="mini-batch 训练"></a>mini-batch 训练</h3><p>预处理得当的话，用mini-batch进行训练的代码非常简洁。我们只需要在原来的训练循环里加一个对mini-batch的遍历即可：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> e <span class="keyword">in</span> <span class="built_in">range</span>(num_epoch):</span><br><span class="line">    <span class="keyword">for</span> mini_batch_X, mini_batch_Y <span class="keyword">in</span> mini_batch_XYs:</span><br><span class="line">        mini_batch_Y_hat = model.forward(mini_batch_X)</span><br><span class="line">        model.backward(mini_batch_Y)</span><br><span class="line">        model.gradient_descent(learning_rate)</span><br></pre></td></tr></table></figure>
+<h3 id="mini-batch-的损失函数曲线"><a href="#mini-batch-的损失函数曲线" class="headerlink" title="mini-batch 的损失函数曲线"></a>mini-batch 的损失函数曲线</h3><p>和我们在课堂里学的一样，使用mini-batch后，损失函数的曲线可能不像之前那么平滑。这是因为我们画损失函数曲线时用的是每个mini-batch上的损失函数，而不是整个训练集的损失函数。我得到的一个mini-batch损失函数曲线如下：</p>
+<p><img src="/2022/06/15/DLS-note-6/7.jpg" alt></p>
+<p>在训练时，我顺手存了一下每个mini-batch的梯度，并在训练结束后对它们进行可视化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mini_batch_loss_list = []</span><br><span class="line"><span class="keyword">for</span> e <span class="keyword">in</span> <span class="built_in">range</span>(num_epoch):</span><br><span class="line">    <span class="keyword">for</span> mini_batch_X, mini_batch_Y <span class="keyword">in</span> mini_batch_XYs:</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> plot_mini_batch:</span><br><span class="line">            loss = model.loss(mini_batch_Y, mini_batch_Y_hat)</span><br><span class="line">            mini_batch_loss_list.append(loss)</span><br><span class="line"><span class="keyword">if</span> plot_mini_batch:</span><br><span class="line">    plot_length = <span class="built_in">len</span>(mini_batch_loss_list)</span><br><span class="line">    plot_x = np.linspace(<span class="number">0</span>, plot_length, plot_length)</span><br><span class="line">    plot_y = np.array(mini_batch_loss_list)</span><br><span class="line">    plt.plot(plot_x, plot_y)</span><br><span class="line">    plt.show()</span><br></pre></td></tr></table></figure>
+<h2 id="实现高级优化算法"><a href="#实现高级优化算法" class="headerlink" title="实现高级优化算法"></a>实现高级优化算法</h2><p>有了基类<code>BaseOptimizer</code>后，我们只需要实现子类的构造函数和更新函数，就可以实现各种各样的改进梯度下降算法了。让我们看一下这周学习的Momentum, RMSProp, Adam该如何实现。</p>
+<h3 id="Momentum-1"><a href="#Momentum-1" class="headerlink" title="Momentum"></a>Momentum</h3><p>Momentum的主要实现代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Momentum</span>(<span class="title class_ inherited__">BaseOptimizer</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 param_dict: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray],</span></span><br><span class="line"><span class="params">                 learning_rate: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">                 beta: <span class="built_in">float</span> = <span class="number">0.9</span>,</span></span><br><span class="line"><span class="params">                 from_scratch=<span class="literal">False</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__(param_dict, learning_rate)</span><br><span class="line">        <span class="variable language_">self</span>.beta = beta</span><br><span class="line">        <span class="variable language_">self</span>.grad_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">        <span class="keyword">if</span> from_scratch:</span><br><span class="line">            <span class="variable language_">self</span>.velocity_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.velocity_dict:</span><br><span class="line">                <span class="variable language_">self</span>.velocity_dict[k] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">step</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>._num_step += <span class="number">1</span></span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.param_dict:</span><br><span class="line">            <span class="variable language_">self</span>.velocity_dict[k] = <span class="variable language_">self</span>.beta * <span class="variable language_">self</span>.velocity_dict[k] + \</span><br><span class="line">                (<span class="number">1</span> - <span class="variable language_">self</span>.beta) * <span class="variable language_">self</span>.grad_dict[k]</span><br><span class="line">            <span class="variable language_">self</span>.param_dict[k] -= <span class="variable language_">self</span>.learning_rate * <span class="variable language_">self</span>.velocity_dict[k]</span><br></pre></td></tr></table></figure>
+<p>在Momentum中，我们主要是维护<code>velocity_dict</code>这个变量。根据课堂里学过的知识，这个变量的值等于梯度的指数移动平均值。因此，我们只需要在<code>step</code>里维护一个指数平均数即可。</p>
+<p>为了保存优化器的状态，我们应该在<code>save, load</code>里保存<code>velocity_dict</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">save</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>:</span><br><span class="line">    state_dict = <span class="built_in">super</span>().save()</span><br><span class="line">    state_dict[<span class="string">&#x27;velocity_dict&#x27;</span>] = <span class="variable language_">self</span>.velocity_dict</span><br><span class="line">    <span class="keyword">return</span> state_dict</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self, state_dict: <span class="type">Dict</span></span>):</span><br><span class="line">    <span class="variable language_">self</span>.velocity_dict = state_dict.get(<span class="string">&#x27;velocity_dict&#x27;</span>, <span class="literal">None</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.velocity_dict <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="variable language_">self</span>.velocity_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.velocity_dict:</span><br><span class="line">            <span class="variable language_">self</span>.velocity_dict[k] = <span class="number">0</span></span><br><span class="line">    <span class="built_in">super</span>().load(state_dict)</span><br></pre></td></tr></table></figure>
+<h3 id="RMSProp"><a href="#RMSProp" class="headerlink" title="RMSProp"></a>RMSProp</h3><p>RMSProp的主要实现代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">RMSProp</span>(<span class="title class_ inherited__">BaseOptimizer</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 param_dict: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray],</span></span><br><span class="line"><span class="params">                 learning_rate: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">                 beta: <span class="built_in">float</span> = <span class="number">0.9</span>,</span></span><br><span class="line"><span class="params">                 eps: <span class="built_in">float</span> = <span class="number">1e-6</span>,</span></span><br><span class="line"><span class="params">                 from_scratch=<span class="literal">False</span>,</span></span><br><span class="line"><span class="params">                 correct_param=<span class="literal">True</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__(param_dict, learning_rate)</span><br><span class="line">        <span class="variable language_">self</span>.beta = beta</span><br><span class="line">        <span class="variable language_">self</span>.eps = eps</span><br><span class="line">        <span class="variable language_">self</span>.grad_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">        <span class="variable language_">self</span>.correct_param = correct_param</span><br><span class="line">        <span class="keyword">if</span> from_scratch:</span><br><span class="line">            <span class="variable language_">self</span>.s_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.s_dict:</span><br><span class="line">                <span class="variable language_">self</span>.s_dict[k] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">step</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>._num_step += <span class="number">1</span></span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.param_dict:</span><br><span class="line">            <span class="variable language_">self</span>.s_dict[k] = <span class="variable language_">self</span>.beta * <span class="variable language_">self</span>.s_dict[k] + \</span><br><span class="line">                (<span class="number">1</span> - <span class="variable language_">self</span>.beta) * np.square(<span class="variable language_">self</span>.grad_dict[k])</span><br><span class="line">            <span class="keyword">if</span> <span class="variable language_">self</span>.correct_param:</span><br><span class="line">                s = <span class="variable language_">self</span>.s_dict[k] / (<span class="number">1</span> - <span class="variable language_">self</span>.beta**<span class="variable language_">self</span>._num_step)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                s = <span class="variable language_">self</span>.s_dict[k]</span><br><span class="line">            <span class="variable language_">self</span>.param_dict[k] -= <span class="variable language_">self</span>.learning_rate * <span class="variable language_">self</span>.grad_dict[k] / (</span><br><span class="line">                np.sqrt(s + <span class="variable language_">self</span>.eps))</span><br></pre></td></tr></table></figure>
+<p>和Momentum类似，我们要维护一个指数平均数权重<code>s_dict</code>，并在更新参数时算上这个权重。由于RMSProp是除法运算，为了防止偶尔出现的除以0现象，我们要在分母里加一个极小值<code>eps</code>。</p>
+<p>我在这个优化器中加入了偏差校准功能。如果开启了校准，指数平均数会除以一个<code>(1 - self.beta**self._num_step)</code>。</p>
+<p>类似地，RMSProp中也用<code>save, load</code>来保存状态<code>s_dict</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">save</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>:</span><br><span class="line">    state_dict = <span class="built_in">super</span>().save()</span><br><span class="line">    state_dict[<span class="string">&#x27;s_dict&#x27;</span>] = <span class="variable language_">self</span>.s_dict</span><br><span class="line">    <span class="keyword">return</span> state_dict</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self, state_dict: <span class="type">Dict</span></span>):</span><br><span class="line">    <span class="variable language_">self</span>.s_dict = state_dict.get(<span class="string">&#x27;s_dict&#x27;</span>, <span class="literal">None</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.s_dict <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="variable language_">self</span>.s_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.s_dict:</span><br><span class="line">            <span class="variable language_">self</span>.s_dict[k] = <span class="number">0</span></span><br><span class="line">    <span class="built_in">super</span>().load(state_dict)</span><br></pre></td></tr></table></figure>
+<p>注意，RMSProp实际上是对学习率进行了一个放缩。在把模型的优化算法从Momentum改成RMSProp后，学习率要从头调整。一般来说，RMSProp里的权重<code>s_dict</code>是一个小于1的数。这个数做了分母，等价于放大了学习率。因此，使用RMSProp后，可以先尝试把学习率调小100倍左右，再做进一步的调整。</p>
+<h3 id="Adam"><a href="#Adam" class="headerlink" title="Adam"></a>Adam</h3><p>Adam 的主要实现代码如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Adam</span>(<span class="title class_ inherited__">BaseOptimizer</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 param_dict: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray],</span></span><br><span class="line"><span class="params">                 learning_rate: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">                 beta1: <span class="built_in">float</span> = <span class="number">0.9</span>,</span></span><br><span class="line"><span class="params">                 beta2: <span class="built_in">float</span> = <span class="number">0.999</span>,</span></span><br><span class="line"><span class="params">                 eps: <span class="built_in">float</span> = <span class="number">1e-8</span>,</span></span><br><span class="line"><span class="params">                 from_scratch=<span class="literal">False</span>,</span></span><br><span class="line"><span class="params">                 correct_param=<span class="literal">True</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__(param_dict, learning_rate)</span><br><span class="line">        <span class="variable language_">self</span>.beta1 = beta1</span><br><span class="line">        <span class="variable language_">self</span>.beta2 = beta2</span><br><span class="line">        <span class="variable language_">self</span>.eps = eps</span><br><span class="line">        <span class="variable language_">self</span>.grad_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">        <span class="variable language_">self</span>.correct_param = correct_param</span><br><span class="line">        <span class="keyword">if</span> from_scratch:</span><br><span class="line">            <span class="variable language_">self</span>.v_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">            <span class="variable language_">self</span>.s_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.v_dict:</span><br><span class="line">                <span class="variable language_">self</span>.v_dict[k] = <span class="number">0</span></span><br><span class="line">                <span class="variable language_">self</span>.s_dict[k] = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">step</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>._num_step += <span class="number">1</span></span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.param_dict:</span><br><span class="line">            <span class="variable language_">self</span>.v_dict[k] = <span class="variable language_">self</span>.beta1 * <span class="variable language_">self</span>.v_dict[k] + \</span><br><span class="line">                (<span class="number">1</span> - <span class="variable language_">self</span>.beta1) * <span class="variable language_">self</span>.grad_dict[k]</span><br><span class="line">            <span class="variable language_">self</span>.s_dict[k] = <span class="variable language_">self</span>.beta2 * <span class="variable language_">self</span>.s_dict[k] + \</span><br><span class="line">                (<span class="number">1</span> - <span class="variable language_">self</span>.beta2) * (<span class="variable language_">self</span>.grad_dict[k] ** <span class="number">2</span>)</span><br><span class="line">            <span class="keyword">if</span> <span class="variable language_">self</span>.correct_param:</span><br><span class="line">                v = <span class="variable language_">self</span>.v_dict[k] / (<span class="number">1</span> - <span class="variable language_">self</span>.beta1**<span class="variable language_">self</span>._num_step)</span><br><span class="line">                s = <span class="variable language_">self</span>.s_dict[k] / (<span class="number">1</span> - <span class="variable language_">self</span>.beta2**<span class="variable language_">self</span>._num_step)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                v = <span class="variable language_">self</span>.v_dict[k]</span><br><span class="line">                s = <span class="variable language_">self</span>.s_dict[k]</span><br><span class="line">            <span class="variable language_">self</span>.param_dict[k] -= <span class="variable language_">self</span>.learning_rate * v / (np.sqrt(s) +</span><br><span class="line">                                                            <span class="variable language_">self</span>.eps)</span><br></pre></td></tr></table></figure></p>
+<p>Adam 就是把 Momentum 和 RMSProp 结合一下。在Adam中，我们维护<code>v_dict</code>和<code>s_dict</code>两个变量，并根据公式利用这两个变量更新参数。</p>
+<blockquote>
+<p>这里有一个小细节：在Adam中，<code>eps</code>是写在根号外的，而RMSProp中<code>eps</code>是在根号里面的。这是为了与原论文统一。其实<code>eps</code>写哪都差不多，只要不让分母为0即可。</p>
+</blockquote>
+<p>类似地，Adam要在状态词典里保存两个变量：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">save</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>:</span><br><span class="line">    state_dict = <span class="built_in">super</span>().save()</span><br><span class="line">    state_dict[<span class="string">&#x27;v_dict&#x27;</span>] = <span class="variable language_">self</span>.v_dict</span><br><span class="line">    state_dict[<span class="string">&#x27;s_dict&#x27;</span>] = <span class="variable language_">self</span>.s_dict</span><br><span class="line">    <span class="keyword">return</span> state_dict</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self, state_dict: <span class="type">Dict</span></span>):</span><br><span class="line">    <span class="variable language_">self</span>.v_dict = state_dict.get(<span class="string">&#x27;v_dict&#x27;</span>, <span class="literal">None</span>)</span><br><span class="line">    <span class="variable language_">self</span>.s_dict = state_dict.get(<span class="string">&#x27;s_dict&#x27;</span>, <span class="literal">None</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.v_dict <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="variable language_">self</span>.v_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.v_dict:</span><br><span class="line">            <span class="variable language_">self</span>.v_dict[k] = <span class="number">0</span></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.s_dict <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="variable language_">self</span>.s_dict = deepcopy(<span class="variable language_">self</span>.param_dict)</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable language_">self</span>.s_dict:</span><br><span class="line">            <span class="variable language_">self</span>.s_dict[k] = <span class="number">0</span></span><br><span class="line">    <span class="built_in">super</span>().load(state_dict)</span><br></pre></td></tr></table></figure>
+<p>Adam使用的学习率和RMSProp差不多。如果有一个在RMSProp上调好的学习率，可以直接从那个学习率开始调。</p>
+<h2 id="学习率衰减-1"><a href="#学习率衰减-1" class="headerlink" title="学习率衰减"></a>学习率衰减</h2><p>要实现学习率衰减非常容易，我们只需要用一个实时计算学习率的学习率<code>getter</code>来代替静态的学习率即可。在<code>BaseOptimizer</code>中，我们可以这样实现学习率衰减：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">BaseOptimizer</span>(metaclass=abc.ABCMeta):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params"></span></span><br><span class="line"><span class="params">            self,</span></span><br><span class="line"><span class="params">            param_dict: <span class="type">Dict</span>[<span class="built_in">str</span>, np.ndarray],</span></span><br><span class="line"><span class="params">            learning_rate: <span class="built_in">float</span>,</span></span><br><span class="line"><span class="params">            lr_scheduler: <span class="type">Callable</span>[[<span class="built_in">float</span>, <span class="built_in">int</span>], <span class="built_in">float</span>] = const_lr</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="variable language_">self</span>.param_dict = param_dict</span><br><span class="line">        <span class="variable language_">self</span>._epoch = <span class="number">0</span></span><br><span class="line">        <span class="variable language_">self</span>._num_step = <span class="number">0</span></span><br><span class="line">        <span class="variable language_">self</span>._learning_rate_zero = learning_rate</span><br><span class="line">        <span class="variable language_">self</span>._lr_scheduler = lr_scheduler</span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">learning_rate</span>(<span class="params">self</span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>._lr_scheduler(<span class="variable language_">self</span>._learning_rate_zero, <span class="variable language_">self</span>.epoch)</span><br></pre></td></tr></table></figure>
+<p>在<code>BaseOptimizer</code>类中，我们用<code>@property</code>装饰器装饰一个<code>learning_rate</code>方法，以实现一个<code>getter</code>函数。这样，我们在获取<code>optimizer.learning_rate</code>这个属性时，实际上是在调用<code>learning_rate</code>这个函数。</p>
+<p>在<code>getter</code>中，我们用<code>_lr_scheduler</code>来实时计算一个学习率。<code>_lr_scheduler</code>是一个函数，该函数应该接受初始学习率、当前的epoch这两个变量，返回一个当前学习率。通过修改这个<code>_lr_scheduler</code>，我们就能使用不同的学习率衰减算法。</p>
+<p>在代码中，我只实现了两个简单的学习率衰减函数。首先是常数学习率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">const_lr</span>(<span class="params">learning_rate_zero: <span class="built_in">float</span>, epoch: <span class="built_in">int</span></span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">    <span class="keyword">return</span> learning_rate_zero</span><br></pre></td></tr></table></figure>
+<p>之后是课堂上学过的双曲线衰减函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_hyperbola_func</span>(<span class="params">decay_rate: <span class="built_in">float</span></span>) -&gt; <span class="type">Callable</span>[[<span class="built_in">float</span>, <span class="built_in">int</span>], <span class="built_in">float</span>]:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">scheduler</span>(<span class="params">learning_rate_zero: <span class="built_in">float</span>, epoch: <span class="built_in">int</span></span>):</span><br><span class="line">        <span class="keyword">return</span> learning_rate_zero / (<span class="number">1</span> + epoch * decay_rate)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> scheduler</span><br></pre></td></tr></table></figure>
+<p><code>get_hyperbola_func</code>是一个返回函数的函数。我们可以用<code>get_hyperbola_func(decay_rate)</code>生成一个某衰减率的学习率衰减函数。</p>
+<h2 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h2><p>经实验，高级优化技术确实令训练速度有显著的提升。为了比较不同优化技术的性能，我使用2000个小猫分类样本作为训练集，使用了下图所示的全连接网络，比较了<strong>不同batch size</strong>、<strong>不同优化算法</strong>、<strong>不同学习率衰减方法</strong>下整个数据集的损失函数变化趋势。</p>
+<p><img src="/2022/06/15/DLS-note-6/8.jpg" alt></p>
+<p>以下是实验的结果：</p>
+<p>首先，我比较了不同batch size下的mini-batch梯度下降。</p>
+<p><img src="/2022/06/15/DLS-note-6/9.jpg" alt></p>
+<p>从理论上来看，对于同一个数据集，执行相同的epoch，batch size越小，执行优化的次数越多，优化的效果越好。但是，batch size越小，执行一个epoch花的时间就越多。batch size过小的话，计算单元的向量化计算无法得到充分利用，算法的优化效率（单位时间内的优化量）反而下降了。</p>
+<p>上面的实验结果和理论一致。执行相同的epoch，batch size越小，优化的效果越好。同时，batch size越小，误差也更容易出现震荡。虽然看上去batch size越小效果就越好，但由于向量化计算的原因，batch size为64,128,2000时跑一个epoch都差不多快，batch size为8时跑一个epoch就很慢了。我还尝试了batch size为1的随机梯度下降，算法跑一个epoch的速度奇慢无比，程序运行效率极低。最终，我把64作为所有优化算法的batch size。</p>
+<p>之后，我比较了普通梯度下降、Momentum、RMSProp、Adam的优化结果。在普通梯度下降和Momentum中，我的学习率为1e-3；在RMSProp和Adam中，我的学习率为1e-5。</p>
+<p><img src="/2022/06/15/DLS-note-6/10.jpg" alt></p>
+<p>由于不同算法的学习率“尺度”不一样，因此，应该去比较普通梯度下降和Momentum，RMSProp和Adam这两组学习率尺度一样的实验。</p>
+<p>对比普通梯度下降和Momentum，可以看出Momentum能够显著地提升梯度下降的性能，并且让误差的变化更加平滑。</p>
+<p>对比RMSProp和Adam，可以看出学习率相同且偏小的情况下，Adam优于RMSProp。</p>
+<p>感觉Adam的性能还是最优秀的。如果把Adam的学习率再调一调，优化效果应该能够超过其他算法。</p>
+<p>最后，我还尝试了三个学习率衰减策略实验。每次实验都使用Adam优化器，初始学习率都是1e-5。第一次实验固定学习率，之后的两次实验分别使用衰减系数0.2，0.005的双曲线衰减公式。以下是实验结果：</p>
+<p><img src="/2022/06/15/DLS-note-6/11.jpg" alt></p>
+<p>从图中可以看出，由于初始学习率较低，在使用了比较大的衰减系数（=0.2）时，虽然学习的过程很平滑，但是学习速度较慢。而如果使用了恰当的衰减系数，虽然学习率在缓缓降低，但学习的步伐可能更加恰当，学习的速度反而变快了。</p>
+<p>不过，RMSProp本身就自带调度学习率的效果。主动使用学习率衰减的效果可能没有那么明显。相比mini-batch和高级优化算法，学习率衰减确实只能算是一种可选的策略。</p>
+<h2 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h2><p>我的实验还做得不是很充分。理论上可以再调一调学习率，更加公平地比较不同的学习算法。但是，我已经没有动力去进一步优化超参数了——由于目前学习算法的性能过于优秀，模型已经在训练集上过拟合了，训练准确率达到了80%多，远大于58%的开发准确率。因此，根据上一周学的知识，我的下一步任务不是继续降低训练误差，而是应该使用正则化方法或者其他手段，提高模型的泛化能力。在后续的课程中，我们还会接着学习改进深度学习项目的方法，届时我将继续改进这个小猫分类模型。</p>
+<p>其实，过拟合对我来说是一件可喜可贺的事情。前两周，仅使用普通梯度下降时，模型的训练准确率和测试准确率都很低，我还在怀疑是不是我的代码写错了。现在看来，这完全是梯度下降算法的锅。朴素的梯度下降算法的性能实在是太差了。稍微使用了mini-batch、高级优化算法等技术后，模型的训练速度就能有一个质的飞跃。在深度学习项目中，mini-batch, Adam优化器应该成为优化算法的默认配置。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/11/DLS-note-5/" rel="prev" title="吴恩达《深度学习专项》笔记+代码实战（五）：深度学习的实践层面">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》笔记+代码实战（五）：深度学习的实践层面
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/06/21/DLS-note-7/" rel="next" title="吴恩达《深度学习专项》笔记（七）：调参、批归一化、多分类任务、编程框架">
+      吴恩达《深度学习专项》笔记（七）：调参、批归一化、多分类任务、编程框架 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E6%8F%90%E7%A4%BA"><span class="nav-number">1.</span> <span class="nav-text">学习提示</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BE%E5%A0%82%E7%AC%94%E8%AE%B0"><span class="nav-number">2.</span> <span class="nav-text">课堂笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%89%B9%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D"><span class="nav-number">2.1.</span> <span class="nav-text">分批梯度下降</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8mini-batch"><span class="nav-number">2.1.1.</span> <span class="nav-text">使用mini-batch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mini-batch-%E7%9A%84%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E5%8F%98%E5%8C%96%E8%B6%8B%E5%8A%BF"><span class="nav-number">2.1.2.</span> <span class="nav-text">mini-batch 的损失函数变化趋势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E6%89%B9%E6%AC%A1%E5%A4%A7%E5%B0%8F"><span class="nav-number">2.1.3.</span> <span class="nav-text">选择批次大小</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E6%AE%B5%E6%95%B0%E6%8D%AE%E7%9A%84%E5%B9%B3%E5%9D%87%E5%80%BC"><span class="nav-number">2.2.</span> <span class="nav-text">一段数据的平均值</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.2.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E5%B9%B3%E5%9D%87%E6%95%B0"><span class="nav-number">2.2.2.</span> <span class="nav-text">移动平均数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E6%95%B0%E5%8A%A0%E6%9D%83%E7%A7%BB%E5%8A%A8%E5%B9%B3%E5%9D%87"><span class="nav-number">2.2.3.</span> <span class="nav-text">指数加权移动平均</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%81%8F%E5%B7%AE%E7%9F%AB%E6%AD%A3"><span class="nav-number">2.2.4.</span> <span class="nav-text">偏差矫正</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Momentum"><span class="nav-number">2.3.</span> <span class="nav-text">Momentum</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RMSProp-%E5%92%8C-Adam"><span class="nav-number">2.4.</span> <span class="nav-text">RMSProp 和 Adam</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E7%8E%87%E8%A1%B0%E5%87%8F"><span class="nav-number">2.5.</span> <span class="nav-text">学习率衰减</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E6%9C%80%E4%BC%98%E5%80%BC"><span class="nav-number">2.6.</span> <span class="nav-text">局部最优值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.7.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E6%88%98"><span class="nav-number">3.</span> <span class="nav-text">代码实战</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%8C%AB%E5%88%86%E7%B1%BB%E9%A1%B9%E7%9B%AE%E6%A1%86%E6%9E%B6"><span class="nav-number">3.1.</span> <span class="nav-text">小猫分类项目框架</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">3.1.1.</span> <span class="nav-text">数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E7%B1%BB"><span class="nav-number">3.1.2.</span> <span class="nav-text">模型类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%99%A8%E7%B1%BB"><span class="nav-number">3.1.3.</span> <span class="nav-text">优化器类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83"><span class="nav-number">3.1.4.</span> <span class="nav-text">模型训练</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Mini-batch"><span class="nav-number">3.2.</span> <span class="nav-text">使用 Mini-batch</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F-I-O-%E5%BC%80%E9%94%80%EF%BC%81"><span class="nav-number">3.2.1.</span> <span class="nav-text">注意 I&#x2F;O 开销！</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mini-batch-%E9%A2%84%E5%A4%84%E7%90%86"><span class="nav-number">3.2.2.</span> <span class="nav-text">mini-batch 预处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mini-batch-%E8%AE%AD%E7%BB%83"><span class="nav-number">3.2.3.</span> <span class="nav-text">mini-batch 训练</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mini-batch-%E7%9A%84%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E6%9B%B2%E7%BA%BF"><span class="nav-number">3.2.4.</span> <span class="nav-text">mini-batch 的损失函数曲线</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E9%AB%98%E7%BA%A7%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95"><span class="nav-number">3.3.</span> <span class="nav-text">实现高级优化算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Momentum-1"><span class="nav-number">3.3.1.</span> <span class="nav-text">Momentum</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RMSProp"><span class="nav-number">3.3.2.</span> <span class="nav-text">RMSProp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Adam"><span class="nav-number">3.3.3.</span> <span class="nav-text">Adam</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E7%8E%87%E8%A1%B0%E5%87%8F-1"><span class="nav-number">3.4.</span> <span class="nav-text">学习率衰减</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">3.5.</span> <span class="nav-text">实验结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%84%9F%E6%83%B3"><span class="nav-number">3.6.</span> <span class="nav-text">感想</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

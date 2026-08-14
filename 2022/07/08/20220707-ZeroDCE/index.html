@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="拍照时，我们可能辛辛苦苦地找了个角度，却忘记了调整光线，拍出了黑乎乎的照片：  这种情况下，最常见的补救方法是P图。打开PhotoShop，按下”ctrl+m”，就能够打开调整图像亮度的界面：  这个界面中间灰色的区域表示图像的亮度分布。坐标轴横轴表示亮度，纵轴表示对应亮度的像素的数量。可以看出，整幅图片非常暗，亮度低的像素占了大多数。 为了提亮图片，我们可以调整中间那条曲线。这条曲线表示如何把某">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Zero-DCE 论文解读 | 无需参考数据的实时低光照增强算法">
+<meta property="og:url" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="拍照时，我们可能辛辛苦苦地找了个角度，却忘记了调整光线，拍出了黑乎乎的照片：  这种情况下，最常见的补救方法是P图。打开PhotoShop，按下”ctrl+m”，就能够打开调整图像亮度的界面：  这个界面中间灰色的区域表示图像的亮度分布。坐标轴横轴表示亮度，纵轴表示对应亮度的像素的数量。可以看出，整幅图片非常暗，亮度低的像素占了大多数。 为了提亮图片，我们可以调整中间那条曲线。这条曲线表示如何把某">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/12.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/13.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/14.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/15.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/15_res.jpg">
+<meta property="article:published_time" content="2022-07-07T16:06:31.000Z">
+<meta property="article:modified_time" content="2022-08-07T14:19:20.158Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="PyTorch">
+<meta property="article:tag" content="低光照">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Zero-DCE 论文解读 | 无需参考数据的实时低光照增强算法 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/08/20220707-ZeroDCE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Zero-DCE 论文解读 | 无需参考数据的实时低光照增强算法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-08 00:06:31" itemprop="dateCreated datePublished" datetime="2022-07-08T00:06:31+08:00">2022-07-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文阅读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>拍照时，我们可能辛辛苦苦地找了个角度，却忘记了调整光线，拍出了黑乎乎的照片：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/1.jpg" alt></p>
+<p>这种情况下，最常见的补救方法是P图。打开PhotoShop，按下”ctrl+m”，就能够打开调整图像亮度的界面：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/2.jpg" alt></p>
+<p>这个界面中间灰色的区域表示图像的亮度分布。坐标轴横轴表示亮度，纵轴表示对应亮度的像素的数量。可以看出，整幅图片非常暗，亮度低的像素占了大多数。</p>
+<p>为了提亮图片，我们可以调整中间那条曲线。这条曲线表示如何把某一种亮度映射到另一种亮度上。初始情况下，曲线是$y=x$，也就是不改变原图片的亮度。由于低亮度的像素占比较多，我打算构造一个对低亮度像素进行较大增强，而尽可能保持高亮度像素的曲线。其运行结果如下：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/3.jpg" alt></p>
+<p>嗯，不错。看起来图像确实变亮了不少。但感觉图片看上去还不够自然。有没有一种自动帮我们提亮图像的工具呢？</p>
+<p>Zero-DCE就是一个利用深度学习自动调亮图片的算法。让我们看看它的运行结果：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/4.jpg" alt></p>
+<p>哇！这也太强了。除了效果好之外，Zero-DCE还有许多亮点：</p>
+<ul>
+<li>不需要带标注的数据，甚至不需要参考数据（这里的参考数据指一张暗图对应的亮图）！</li>
+<li>训练数据少，训练时间短，只需约30分钟。</li>
+<li>推理速度极快。在手机上也能实时运行。</li>
+</ul>
+<p>让我们来读一下Zero-DCE的论文，看看这个算法是怎么实现的。看完论文后，我还会解读一下官方的PyTorch代码实现。</p>
+<h1 id="Zero-DCE-论文解读"><a href="#Zero-DCE-论文解读" class="headerlink" title="Zero-DCE 论文解读"></a>Zero-DCE 论文解读</h1><h2 id="核心思想"><a href="#核心思想" class="headerlink" title="核心思想"></a>核心思想</h2><p>自从CNN（卷积神经网络）火了以后，很多图像问题都可以用CNN来解决：把图像输入进CNN，乱卷一通，最后根据任务的需要，输出分类的概率（图像分类）、检测框和类别（目标检测）或另一幅图像（超分辨率）。</p>
+<p>同时，对于输出也是一幅图像的问题，人们会利用GAN（生成对抗网络）能生成图像的特性，尝试用GAN来解决问题。比如在超分辨率任务中，GAN就得到了广泛的使用。</p>
+<p>而图像提亮问题恰好就是一个输入、输出都是图像的问题。在此之前，既有基于CNN的方法，也有基于GAN的方法。人们尝试构造更精巧的网络，希望网络能输出亮度更合适的图像。</p>
+<p>可是，Zero-DCE别出心裁，返璞归真地用了一种更简单的方式来生成亮度更合适的图像。还记得本文开头提到的，PhotoShop里的那个亮度映射曲线吗？实际上，我们只需要一条简简单单的曲线，把不同亮度的像素映射到一个新的亮度上，就足以产生亮度恰好合适的图像了。Zero-DCE就是用神经网络来拟合一条亮度映射曲线，再根据曲线和原图像生成提亮图像。整个计算过程是可导的，可以轻松地用梯度下降法优化神经网络。</p>
+<p>另外，与其他一些任务不同，「亮度」是一个很贴近数学的属性。对于物品的种类、文字的意思这种抽象信息，我们很难用数字来表达。而亮度用一个数字来表示就行了。因此，在图像提亮问题中，我们不一定需要带标签的训练数据，而是可以根据图像本身的某些性质，自动判断出一幅图像是不是“亮度合理”的。</p>
+<p>为了让计算机自动判断生成图像的亮度、与原图像的相似度等和图像质量相关的属性，Zero-DCE在训练中使用了一些新颖的误差函数。通过用这些误差函数约束优化过程，算法既能保证生成出来的图片亮度合理，又能保证图片较为真实、贴近原图像。</p>
+<p>拟合亮度映射的曲线、不需要标签的误差函数，这两项精巧的设计共同决定了Zero-DCE算法的优势。原论文总结了该工作的三条贡献：</p>
+<ol>
+<li>这是第一个不需要参考结果的低光照增强网络，直接避免了统计学习中的过拟合问题。算法能够适应不同光照条件下的图片。</li>
+<li>该工作设计了一种随输入图像而变的映射曲线。该曲线是高阶的。每个像素有一条单独的曲线。曲线能高效地完成映射过程。</li>
+<li>本作的方法表明，在缺乏参考图像时，可以设计一个与任务相关而与参考图像无关的误差，以完成深度图像增强模型的训练。</li>
+</ol>
+<p>除了学术上的贡献外，算法也十分易用。算法的提亮效果优于其他方法，训练速度和推理速度更是冠绝一方。</p>
+<p>接下来，让我们详细探究一下亮度映射曲线、误差函数这两大亮点究竟是怎么设计的。</p>
+<h2 id="提亮曲线"><a href="#提亮曲线" class="headerlink" title="提亮曲线"></a>提亮曲线</h2><p>本文使用的亮度映射曲线被称作<strong>提亮曲线(Light-Enhancement Curve, LE-curve)</strong>。设计该曲线时，应满足几个原则：</p>
+<ol>
+<li>由于亮度值落在区间$[0, 1]$，为保证亮度值的值域不变，曲线在0处值要为0，在1处值要为1。</li>
+<li>曲线必须是单调递增的。不然可能会出现图像中原本较亮的地方反而变暗。</li>
+<li>曲线公式必须简单，以保证可导。</li>
+</ol>
+<p>因此，本作使用了如下的公式描述曲线：</p>
+<script type="math/tex; mode=display">
+LE(I(\mathbf{x}); \alpha)=I(\mathbf{x})+\alpha I(\mathbf{x})(1-I(\mathbf{x}))</script><p>其中，$\mathbf{x}$是像素坐标，$\alpha \in [-1, 1]$是可学习参数，$LE(I(\mathbf{x}); \alpha)$是输入$I(\mathbf{x})$的增强图像（三个颜色通道分别处理）。这个函数非常巧妙，大家可以验证一下它是不是满足刚刚那三条原则。</p>
+<p>$\alpha$是公式里唯一一个可变参数。我们来看看不同的$\alpha$能产生怎样的曲线；</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/5.jpg" alt></p>
+<p>可以看出，$\alpha$虽然能够上下调节曲线，但由于曲线本质上是一个二次函数，曲线的变化还不够丰富。为了拟合更复杂的曲线，本作<strong>迭代</strong>嵌套了这个函数。也就是说：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+LE_1(\mathbf{x})&=I(\mathbf{x})+\alpha_1 I(\mathbf{x})(1-I(\mathbf{x})) \\
+LE_2(\mathbf{x})&=LE_1(\mathbf{x})+\alpha_2 LE_1(\mathbf{x})(1-LE_1(\mathbf{x})) \\
+......
+\end{aligned}</script><p>一般地，</p>
+<script type="math/tex; mode=display">
+LE_n(\mathbf{x})=LE_{n-1}(\mathbf{x})+\alpha_n LE_{n-1}(\mathbf{x})(1-LE_{n-1}(\mathbf{x})) \\</script><p>迭代嵌套开始那个二次函数，就能够表示一个更高次的函数了。每一轮迭代，都有一个新的参数$\alpha_n$。本作令最大的$n$为8，即调用二次函数8次，拟合某个$2^8$次函数。</p>
+<p>但是，我们不希望每个像素都用同样的提亮函数。比如如果图像中某个地方亮着灯，那么这个地方的像素值就不用改变。因此，每个像素应该有独立的$\alpha$。最终的提亮函数为：</p>
+<script type="math/tex; mode=display">
+LE_n(\mathbf{x})=LE_{n-1}(\mathbf{x})+A_n(\mathbf{x}) LE_{n-1}(\mathbf{x})(1-LE_{n-1}(\mathbf{x}))</script><p>这一改动还是很有必要的。下图显示了某输入图片在不同像素处的$\alpha$的绝对值：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/6.jpg" alt></p>
+<p>可以看出，在较亮的地方，图像没有变化，$\alpha$几乎为0；而在较暗的地方，$\alpha$的数值也较大。</p>
+<p>知道了要拟合的目标曲线的公式，下面我们来看看拟合该曲线的神经网络长什么样。</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/7.jpg" alt></p>
+<p>由于要拟合的数据不是很复杂，本作使用到的网络DCE-Net非常简单。它一共有7层（6个隐藏层，1个输出层）。所有层都是普通的3x3等长(stride=1)卷积层。为保持相邻像素间的联系，卷积层后不使用Batch Normalization。隐藏层激活函数为ReLU，由于输出落在$[-1, 1]$，输出层的激活函数是tanh。如图所示，6个隐藏层使用了和U-Net类似的对称跳连。3、4层的输出会拼接到一起再送入第5层，2、5层输出拼接送入第6层，1、6层输出拼接送入第7层。经过输出层后，每个像素有24个通道——有RGB 3个颜色通道，每个通道有8个参数。</p>
+<blockquote>
+<p>似乎开源代码里没有去掉Batch Normalization。</p>
+</blockquote>
+<p>看完了网络结构与其输出的意义，我们继续看一下误差函数是怎么设置的。</p>
+<h2 id="无需参考的误差函数"><a href="#无需参考的误差函数" class="headerlink" title="无需参考的误差函数"></a>无需参考的误差函数</h2><p>为了能不使用参考数据，本作精心设计了四个误差函数，以从不同的角度约束增强后的图像。</p>
+<h3 id="空间一致误差-Spatial-Consistency-Loss"><a href="#空间一致误差-Spatial-Consistency-Loss" class="headerlink" title="空间一致误差(Spatial Consistency Loss)"></a>空间一致误差(Spatial Consistency Loss)</h3><p>图像增强后，我们肯定不希望图像的内容发生改变。更准确一点描述，我们不希望某像素的值和其相邻像素的值的差发生过大的改变。因此，我们可以设置下述误差：</p>
+<script type="math/tex; mode=display">
+L_{spa}=\frac{1}{K}\Sigma_{i=1}^{K}\Sigma_{j\in \Omega(i)}(|Y_i-Y_j|-|I_i-I_j|)^2</script><p>，其中$K$是像素数，$i$是对像素的遍历。$\Omega(i)$是第$i$个像素的4邻域。$Y, I$分别是增强图像和输入图像。</p>
+<p>但实际上，我们的要求不必那么苛刻，不用要求每个像素和周围像素的相对值都不改变。在实现中，$i$其实是一个$4 \times 4$的一个“大像素”区域，每个大像素的值是其中所有像素值的平均值。在实现时，大像素可以通过平均池化来求得。因此，上式中的$K$其实指的是大像素的数量，$Y, I$分别是增强图像和输入图像经池化后得到的图像。</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/9.jpg" alt></p>
+<h3 id="曝光控制误差-Exposure-Control-Loss"><a href="#曝光控制误差-Exposure-Control-Loss" class="headerlink" title="曝光控制误差(Exposure Control Loss)"></a>曝光控制误差(Exposure Control Loss)</h3><p>为了不让某些地方过暗，某些地方过亮，我们可以让极端亮度更少，即让每个像素的亮度更靠近某个中间值。这个约束可以用如下的误差函数表达：</p>
+<script type="math/tex; mode=display">
+L_{exp}=\frac{1}{M}\Sigma_{k=1}^{M}|Y_k-E|</script><p>，其中常数$E$描述了亮度的中间值，根据经验可以取0.6。和之前的$Y$类似，这里的$Y$也是一个大像素区域中亮度的平均值。大像素宽度可调，文中使用的宽度是16。$M$是大像素的总个数。</p>
+<h3 id="颜色恒定误差-Color-Constancy-Loss"><a href="#颜色恒定误差-Color-Constancy-Loss" class="headerlink" title="颜色恒定误差(Color Constancy Loss)"></a>颜色恒定误差(Color Constancy Loss)</h3><p>根据前人研究中的某些结论，图像某一颜色通道的数值不应显著超出其他通道。因此，有如下误差：</p>
+<script type="math/tex; mode=display">
+L_{col}=\Sigma_{\forall(p, q)\in\epsilon}(J_p-J_q)^2, \epsilon=\lbrace(R, G), (R, B), (G, B)\rbrace</script><p>，这里，$(p, q)$遍历了三个颜色通道中所有两两组合，$J_p$表示颜色通道$p$的亮度平均值。</p>
+<h3 id="光照平滑误差-Illumination-Smoothness-Loss"><a href="#光照平滑误差-Illumination-Smoothness-Loss" class="headerlink" title="光照平滑误差(Illumination Smoothness Loss)"></a>光照平滑误差(Illumination Smoothness Loss)</h3><p>为了保持相邻像素的单调关系，即让相邻像素之间的亮度改变不是那么显著，我们需要让相邻像素间的参数$\alpha \in A$更相近一点。这种要求可以这样表示：</p>
+<script type="math/tex; mode=display">
+L_{tv_A}=\frac{1}{M}\Sigma_{n=1}^N\Sigma_{c\in \xi}(|\nabla_x A_n^c|+|\nabla_y A_n^c|)^2,\xi=\lbrace R, G, B\rbrace</script><p>，其中，$N$是迭代次数，$\nabla_x, \nabla_y$分别是水平和垂直的梯度算子。对于图像，水平梯度和垂直梯度就是和左方、上方相邻像素之间的数值的差。</p>
+<blockquote>
+<p>网上公开出来的论文中，这个公式少了一个左绝对值号。</p>
+</blockquote>
+<h3 id="总误差"><a href="#总误差" class="headerlink" title="总误差"></a>总误差</h3><p>总误差即上述四个误差的加权和：</p>
+<script type="math/tex; mode=display">
+L_{total}=W_1L_{spa}+W_2L_{exp}+W_3L_{col}+W_4L_{tv_A}</script><blockquote>
+<p>理论上，描述4个量的相对加权关系至少要3个权重（默认剩下一个权重为1）。但是，原论文只写了两个权重。而代码里却有3个权重。我认为是论文没写清楚。</p>
+</blockquote>
+<p>在开源代码中，上述四个权重分别为$W_1=1, W_2=10, W_3=5, W_4=200$。</p>
+<p>这四个误差中，有几个误差的作用十分重要。大家可以看看去掉某项误差后，网络的复原效果：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/8.jpg" alt></p>
+<p>去掉$L_{spa}$后，生成出来的图像勉强还行。剩下的误差，哪怕去掉任何一个，生成图像的效果都会很差劲。</p>
+<h2 id="Zero-DCE"><a href="#Zero-DCE" class="headerlink" title="Zero-DCE++"></a>Zero-DCE++</h2><p>Zero-DCE是发表在CVPR会议上的。之后，Zero-DCE的拓展版Zero-DCE++发到了TPAMI期刊上。期刊版版面足够，原论文中一些来不及讲清的地方（比如空间一致误差）在期刊版中都有更详尽的说明。大家如果想读论文，建议直接读期刊版本的。论文层层递进，逻辑非常清楚，非常适合从头到尾读一遍。</p>
+<p>Zero-DCE++在方法上主要是对性能上进行了一些增强，而没有改进原作的核心思想。拓展点有：</p>
+<ol>
+<li>和MobileNet类似，把普通卷积替换成更快的逐通道可分卷积(depthwise separable convolution)。</li>
+<li>经研究，8次迭代中，每次的参数$\alpha$都差不多。因此，可以让网络只输出3个值，而不是24个值。</li>
+<li>由于该任务对图像尺寸不敏感，为了减小卷积开销，可以一开始对图像下采样，最后再上采样回来。</li>
+</ol>
+<p>经优化后，参数量减少8倍，运算量在一般大小的图像上减少上百倍，训练只需20分钟。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Zero-DCE是一个简单优美的低光照增强算法。该算法巧妙地建模了光照增强问题，并创造性地使用了和参考数据无关的误差，竟然让基于深度学习的低光照增强算法做到了训练块、性能高、对数据要求低。希望这篇文章用到的思想也能启发其他图像任务。</p>
+<p>然而，本文的第一作者在指导我们时说道：“低光图片增强问题要解决两件事：图像去模糊和亮度增强。而Zero-DCE只能完成后者。同时，低光图片的特例也非常多。现在想做一个低光照增强的商业应用是很困难的。”是啊，想让低光照增强落地，用手机瞬间点亮拍暗了的照片，任重而道远啊。</p>
+<h1 id="Zero-DCE-开源代码的使用"><a href="#Zero-DCE-开源代码的使用" class="headerlink" title="Zero-DCE 开源代码的使用"></a>Zero-DCE 开源代码的使用</h1><p>代码可以在 <a target="_blank" rel="noopener" href="https://github.com/Li-Chongyi/Zero-DCE">https://github.com/Li-Chongyi/Zero-DCE</a> 里找到。</p>
+<p>由于算法没那么复杂，实现所需的代码并不多。同时，这份代码也写得比较工整清楚。整份代码读起来还是非常轻松的。</p>
+<h2 id="安装与使用"><a href="#安装与使用" class="headerlink" title="安装与使用"></a>安装与使用</h2><p>直接clone仓库：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone git@github.com:Li-Chongyi/Zero-DCE.git</span><br></pre></td></tr></table></figure>
+<p>之后，切到内侧的文件夹：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd Zero-DCE/Zero-DCE_code</span><br></pre></td></tr></table></figure>
+<p>直接运行脚本就行了：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python lowlight_test.py </span><br></pre></td></tr></table></figure>
+<p>注意！！这份代码对Windows不太友好，有一处路径操作写得不好。在<code>lowlight_test.py</code>这份文件中，有一坨完成<code>os.makedirs()</code>的代码，建议改成：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dir</span>, fn = os.path.split(result_path)</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(<span class="built_in">dir</span>):</span><br><span class="line">    os.makedirs(<span class="built_in">dir</span>)</span><br></pre></td></tr></table></figure>
+<p>同时，代码用VSCode打开后编辑，会出现莫名其妙的缩进不对齐问题。建议拿个格式化工具修一下。为了编辑这份代码，我不得不把所有缩进重新调了一遍。</p>
+<p>这是我跑的一个结果，效果很不错：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/10.jpg" alt></p>
+<h2 id="代码选读"><a href="#代码选读" class="headerlink" title="代码选读"></a>代码选读</h2><p>代码实现中有一些可以讲一讲的地方。</p>
+<p>看一下神经网络的实现：</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/11.jpg" alt></p>
+<p>整个神经网络部分还是很简明的。</p>
+<p>那个求第一个误差空间一致误差<code>L_spa</code>的代码是很炫酷的。让我们忽略掉那个合成大像素的操作，直接看一下这里和相邻像素的差是怎么实现的。</p>
+<p>首先，这里定义了一堆“参数”。</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/12.jpg" alt></p>
+<p>之后，这些参数被扔进了卷积里，用来卷原图像和增强图像。这是在干什么呢？</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/13.jpg" alt></p>
+<p>原来啊，在深度学习时代之前，卷积本来就是图像处理里的一个普普通通的操作。开始那张图定义的不是参数，而是<code>3x3</code>常量卷积核。用那几个卷积核卷积图像，可以得到图像和上下左右之间的差。</p>
+<p>这种写法很帅，但是增加了很多计算量。文件里有很多没删干净的代码，不知道是不是本来还有其他设计。</p>
+<p>在第四个误差<code>L_TV</code>里，也有一个要算和相邻像素之间的差的梯度计算。这份实现就写得老实多了。</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/14.jpg" alt></p>
+<p>这份代码中就是这里有一点难看懂，其他地方都是非常基础的PyTorch调用，非常适合初学者用来学习PyTorch。</p>
+<h1 id="彩蛋"><a href="#彩蛋" class="headerlink" title="彩蛋"></a>彩蛋</h1><p>其实我的头像一开始也拍得很暗。我是拿PS把这张照片提亮的。</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/15.jpg" alt></p>
+<p>非常凑巧，我在提亮这张照片时，也是用PS里的那个曲线迭代了几次。每次的曲线也恰巧都是一个二次函数。其实现过程和这篇工作如出一辙。</p>
+<p>那么，让Zero-DCE来增强这幅图像，能达到怎样的效果呢？</p>
+<p><img src="/2022/07/08/20220707-ZeroDCE/15_res.jpg" alt></p>
+<p>看来，这个算法还是不太行啊。脸部的光照过于均匀，以至于失去了真实性。头发也白了。比我自己P的差多了。而且，我根本不会用PS，只是随手调了一下，P得也不是很好。AI想战胜人类，还是早了一万年啊。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+              <a href="/tags/%E4%BD%8E%E5%85%89%E7%85%A7/" rel="tag"># 低光照</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/04/20220704-wemedia-thoughts/" rel="prev" title="最近做自媒体小有感想">
+      <i class="fa fa-chevron-left"></i> 最近做自媒体小有感想
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/10/DLS-note-summary-3/" rel="next" title="吴恩达《深度学习专项》第三阶段总结与第四阶段预览">
+      吴恩达《深度学习专项》第三阶段总结与第四阶段预览 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Zero-DCE-%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">Zero-DCE 论文解读</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="nav-number">1.1.</span> <span class="nav-text">核心思想</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E4%BA%AE%E6%9B%B2%E7%BA%BF"><span class="nav-number">1.2.</span> <span class="nav-text">提亮曲线</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0%E9%9C%80%E5%8F%82%E8%80%83%E7%9A%84%E8%AF%AF%E5%B7%AE%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.</span> <span class="nav-text">无需参考的误差函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A9%BA%E9%97%B4%E4%B8%80%E8%87%B4%E8%AF%AF%E5%B7%AE-Spatial-Consistency-Loss"><span class="nav-number">1.3.1.</span> <span class="nav-text">空间一致误差(Spatial Consistency Loss)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9B%9D%E5%85%89%E6%8E%A7%E5%88%B6%E8%AF%AF%E5%B7%AE-Exposure-Control-Loss"><span class="nav-number">1.3.2.</span> <span class="nav-text">曝光控制误差(Exposure Control Loss)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%9C%E8%89%B2%E6%81%92%E5%AE%9A%E8%AF%AF%E5%B7%AE-Color-Constancy-Loss"><span class="nav-number">1.3.3.</span> <span class="nav-text">颜色恒定误差(Color Constancy Loss)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%89%E7%85%A7%E5%B9%B3%E6%BB%91%E8%AF%AF%E5%B7%AE-Illumination-Smoothness-Loss"><span class="nav-number">1.3.4.</span> <span class="nav-text">光照平滑误差(Illumination Smoothness Loss)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E8%AF%AF%E5%B7%AE"><span class="nav-number">1.3.5.</span> <span class="nav-text">总误差</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zero-DCE"><span class="nav-number">1.4.</span> <span class="nav-text">Zero-DCE++</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Zero-DCE-%E5%BC%80%E6%BA%90%E4%BB%A3%E7%A0%81%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">Zero-DCE 开源代码的使用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">安装与使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E9%80%89%E8%AF%BB"><span class="nav-number">2.2.</span> <span class="nav-text">代码选读</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BD%A9%E8%9B%8B"><span class="nav-number">3.</span> <span class="nav-text">彩蛋</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

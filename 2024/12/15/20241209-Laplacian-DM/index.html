@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="受到经典图像表示方法拉普拉斯金字塔（Laplacian Pyramid）的启发，英伟达最近公布了一种叫做 Laplacian Diffusion Model （拉普拉斯扩散模型，后文简称 LaDM）的新型像素空间扩散模型，并用这种架构实现了文生图、超分辨率、ControlNet 等多种任务。在这篇博文里，我们来着重学习一下这种新型扩散模型的设计思想。 以往工作扩散模型奠基之作 DDPM 及其升级版">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文速览 | Laplacian Diffusion Models：将图像拆成不同频率分量并分别生成">
+<meta property="og:url" content="https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="受到经典图像表示方法拉普拉斯金字塔（Laplacian Pyramid）的启发，英伟达最近公布了一种叫做 Laplacian Diffusion Model （拉普拉斯扩散模型，后文简称 LaDM）的新型像素空间扩散模型，并用这种架构实现了文生图、超分辨率、ControlNet 等多种任务。在这篇博文里，我们来着重学习一下这种新型扩散模型的设计思想。 以往工作扩散模型奠基之作 DDPM 及其升级版">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://files.mdnice.com/user/32105/77511764-0811-43a3-bb35-a47167e3c6e8.png">
+<meta property="og:image" content="https://files.mdnice.com/user/32105/c52677ed-e078-44ba-94a1-7de05ebc959f.png">
+<meta property="og:image" content="https://files.mdnice.com/user/32105/dcba9b54-b812-4060-98ea-080dabb8ec1c.png">
+<meta property="og:image" content="https://files.mdnice.com/user/32105/acdf00af-0ff3-406f-a182-97a03c888469.png">
+<meta property="article:published_time" content="2024-12-15T13:55:03.000Z">
+<meta property="article:modified_time" content="2024-12-30T08:14:31.344Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta property="article:tag" content="论文速览">
+<meta property="article:tag" content="多尺度生成">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://files.mdnice.com/user/32105/77511764-0811-43a3-bb35-a47167e3c6e8.png">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>论文速览 | Laplacian Diffusion Models：将图像拆成不同频率分量并分别生成 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/15/20241209-Laplacian-DM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          论文速览 | Laplacian Diffusion Models：将图像拆成不同频率分量并分别生成
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-15 21:55:03" itemprop="dateCreated datePublished" datetime="2024-12-15T21:55:03+08:00">2024-12-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>受到经典图像表示方法拉普拉斯金字塔（Laplacian Pyramid）的启发，英伟达最近公布了一种叫做 Laplacian Diffusion Model （拉普拉斯扩散模型，后文简称 LaDM）的新型<strong>像素空间</strong>扩散模型，并用这种架构实现了文生图、超分辨率、ControlNet 等多种任务。在这篇博文里，我们来着重学习一下这种新型扩散模型的设计思想。</p>
+<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>扩散模型奠基之作 DDPM 及其升级版 ADM (<em>Diffusion Models Beat GANs on Image Synthesis</em>) 都是像素空间里的扩散模型。相比 LDM (隐扩散模型，即 Stable Diffusion)，这类扩散模型不需要额外的自编码器来压缩图像，避免了编码解码带来的精度损失。</p>
+<p>将图像从分辨率的维度拆解是一种很常见的思想。比如 Cascaded Diffusion Models 就是一种先生成低分辨率图像，再不断超分的扩散模型。今年比较有名的 VAR（<em>Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction</em>）也是一种按分辨率自回归的生成模型。</p>
+<p>和这篇工作非常相关的早期工作是苹果在 2022 发表的 <em>f-DM: A Multi-stage Diffusion Model via Progressive Signal Transformation</em>。f-DM 将扩散模型的加噪推广到了降采样、模糊等其他退化策略上。降采样版的 f-DM 有非常多的设计和本工作很像。苹果该团队次年发表的 <em>Matryoshka Diffusion Models</em> 也用到了按分辨率逐次生成的设计。</p>
+<h2 id="将拉普拉斯金字塔融入扩散模型"><a href="#将拉普拉斯金字塔融入扩散模型" class="headerlink" title="将拉普拉斯金字塔融入扩散模型"></a>将拉普拉斯金字塔融入扩散模型</h2><p>拉普拉斯金字塔是一种图像表示方法，它把图像按频率成分拆成几张分辨率不同的图像，分辨率越低的图像表示频率越低的图像成分。我们直接通过下面的例子学习它的原理。假如 <code>x</code> 是原图，那么 <code>x(3)=down(down(x))</code>，<code>x(2)=down(x)-up(x(3))</code>, <code>x(1)=x-up(down(x))</code>。对 <code>x(1), x(2), x(3)</code> 求加权和就可以还原输入图像。</p>
+<p><img src="https://files.mdnice.com/user/32105/77511764-0811-43a3-bb35-a47167e3c6e8.png" alt></p>
+<p>受此启发，LaDM 将扩散模型的训练过程也用类似的方法分解：设 $\mathcal{X}$ 为训练图片集合，$\mathcal{X}^{(1)},\mathcal{X}^{(2)}, \mathcal{X}^{(3)}$ 分别是拉普拉斯金字塔不同成分构成的集合，那么我们在 $\mathcal{X}^{(3)}$, $\mathcal{X}^{(3)} \cup \mathcal{X}^{(2)}$，$\mathcal{X}$ 上分别训练三个去噪模型。也就是说，不同分辨率的模型生成不同层级的拉普拉斯金字塔复原结果。</p>
+<p>根据经验，扩散模型早期（加噪后期）生成低频内容，后期（加噪前期）生成高频内容，所以训练时我们让不同分辨率的输入图像随噪声的衰退速度也不同。图像所代表的频率越低，衰减速度越慢，越需要从早期开始去噪。这样，在生成时，我们能生成到中途后再逐渐加上高频细节。</p>
+<p><img src="https://files.mdnice.com/user/32105/c52677ed-e078-44ba-94a1-7de05ebc959f.png" alt></p>
+<p>在采样过程中，我们按照下图所示的路线从低频到高频生成图像。有了该分辨率的初始图像后，按正常 DDPM 采样的步骤就可以生成当前分辨率的图像了。问题在于某分辨率的初始图像怎么从上一个分辨率过渡而来。</p>
+<p>在切换当前带噪图像的分辨率时，我们既要放大其中的清晰图像（信号），也要放大其中的噪声。观察上一张图和下面的图，在分辨率切换时，新的高频成分（上图中的$\mathbf{x}^{(2)}$在时刻 3 及 $\mathbf{x}^{(2)}$ 在时刻 2）是一张纯黑图，新信号为零，所以对于信号的部分我们可以直接放大。而放大噪声时，我们要做一些噪声强度上的修改，保证放大后信噪比不变。这部分的细节详见论文。</p>
+<p><img src="https://files.mdnice.com/user/32105/dcba9b54-b812-4060-98ea-080dabb8ec1c.png" alt></p>
+<h2 id="1K-图像生成"><a href="#1K-图像生成" class="headerlink" title="1K 图像生成"></a>1K 图像生成</h2><p>为了生成 $1024 \times 1024$ 分辨率的图像，LaDM 采用了两阶段 Cascaded Diffusion Model 的设计，让生成高分辨率的图像约束于低分辨率图像。另外，由于注意力操作的时间复杂度很高，一般的像素扩散模型只能做到 $256 \times 256$ 大小。为了解决此问题，LaDM 依然用一个 $256 \times 256$ 的去噪模型来生成 1K 图片，但输入前后用小波变换来压缩/复原图像。</p>
+<p><img src="https://files.mdnice.com/user/32105/acdf00af-0ff3-406f-a182-97a03c888469.png" alt></p>
+<h2 id="批判性分析与总结"><a href="#批判性分析与总结" class="headerlink" title="批判性分析与总结"></a>批判性分析与总结</h2><p>这篇文章是一篇由公司发表的技术报告，展示了很多可视化结果，却没有任何定量结果，代码也没有开源，不知道它的生成能力和其他模型比起来如何。</p>
+<p>这篇文章提出的模型虽然是像素空间扩散模型，但是其拉普拉斯金字塔的设计与模型是像素空间模型还是隐空间模型无关。我们完全可以把这套设计搬到隐空间上。VAR 已经向我们证明了对隐空间图像做拉普拉斯分解是可行的。另外，这篇文章的主干网络是 U-Net 而不是 DiT。想对这个工作做一点简单的改进的话，可以弄一个 LDM + DiT 版本的。</p>
+<p>LaDM 设计最巧妙的点是其加噪过程，频率越高的成分越早变成纯噪声。这样的话我们可以在图像生成到一半的时候再直接把高频成分加上。如果高频成分一直在的话，我们还需要额外的设计在切换分辨率时把缺少的高频加上。</p>
+<p>有工作证明神经网络不擅长拟合高频信息。因此，在图像任务中，手动将输入图像拆成不同频率成分可能有助于网络的学习。我们可能可以沿着这个思路去改进之前多种图像任务的输入。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+              <a href="/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/" rel="tag"># 论文速览</a>
+              <a href="/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/" rel="tag"># 多尺度生成</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/12/09/20241208-Context-Window-Extension/" rel="prev" title="让预训练 Transformer 生成更长的文本/图像：位置编码长度外推技术">
+      <i class="fa fa-chevron-left"></i> 让预训练 Transformer 生成更长的文本/图像：位置编码长度外推技术
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/12/15/20241212-Pyramid-Flow/" rel="next" title="论文速览 | Pyramid Flow：以低分辨率的前几帧为约束高效生成视频">
+      论文速览 | Pyramid Flow：以低分辨率的前几帧为约束高效生成视频 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%BE%80%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">以往工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86%E6%8B%89%E6%99%AE%E6%8B%89%E6%96%AF%E9%87%91%E5%AD%97%E5%A1%94%E8%9E%8D%E5%85%A5%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">将拉普拉斯金字塔融入扩散模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1K-%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90"><span class="nav-number">3.</span> <span class="nav-text">1K 图像生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%B9%E5%88%A4%E6%80%A7%E5%88%86%E6%9E%90%E4%B8%8E%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">批判性分析与总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

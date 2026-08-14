@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在这篇文章中，我将详细地介绍一个英中翻译 Transformer 的 PyTorch 实现。这篇文章会完整地展示一个深度学习项目的搭建过程，从数据集准备，到模型定义、训练。这篇文章不仅会讲解如何把 Transformer 的论文翻译成代码，还会讲清楚代码实现中的诸多细节，并分享我做实验时碰到的种种坑点。相信初学者能够从这篇文章中学到丰富的知识。 项目网址: https:&#x2F;&#x2F;github.com&#x2F;S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PyTorch Transformer 英中翻译超详细教程">
+<meta property="og:url" content="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="在这篇文章中，我将详细地介绍一个英中翻译 Transformer 的 PyTorch 实现。这篇文章会完整地展示一个深度学习项目的搭建过程，从数据集准备，到模型定义、训练。这篇文章不仅会讲解如何把 Transformer 的论文翻译成代码，还会讲清楚代码实现中的诸多细节，并分享我做实验时碰到的种种坑点。相信初学者能够从这篇文章中学到丰富的知识。 项目网址: https:&#x2F;&#x2F;github.com&#x2F;S">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/5.jpg">
+<meta property="article:published_time" content="2023-06-10T16:09:48.000Z">
+<meta property="article:modified_time" content="2023-06-10T16:09:48.084Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="PyTorch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PyTorch Transformer 英中翻译超详细教程 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2023/06/11/20221106-transformer-pytorch/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PyTorch Transformer 英中翻译超详细教程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-11 00:09:48" itemprop="dateCreated datePublished" datetime="2023-06-11T00:09:48+08:00">2023-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">记录</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%B0%E5%BD%95/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在这篇文章中，我将详细地介绍一个英中翻译 Transformer 的 PyTorch 实现。这篇文章会完整地展示一个深度学习项目的搭建过程，从数据集准备，到模型定义、训练。这篇文章不仅会讲解如何把 Transformer 的论文翻译成代码，还会讲清楚代码实现中的诸多细节，并分享我做实验时碰到的种种坑点。相信初学者能够从这篇文章中学到丰富的知识。</p>
+<p>项目网址: <a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/Transformer">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/Transformer</a></p>
+<p>如果你对 Transformer 的论文不熟，欢迎阅读我之前的文章：<a href="https://zhouyifan.net/2022/11/12/20220925-Transformer/">Attention Is All You Need (Transformer) 论文精读</a>。</p>
+<h2 id="数据集准备"><a href="#数据集准备" class="headerlink" title="数据集准备"></a>数据集准备</h2><p>我在 <a target="_blank" rel="noopener" href="https://github.com/P3n9W31/transformer-pytorch">https://github.com/P3n9W31/transformer-pytorch</a> 项目中找到了一个较小的中英翻译数据集。数据集只有几KB大小，中英词表只有10000左右，比较适合做Demo。如果要实现更加强大实用的模型，则需要换更大的数据集。但相应地，你要多花费更多的时间来训练。</p>
+<p>我在代码仓库中提供了<code>data_load.py</code>文件。执行这个文件后，实验所需要的数据会自动下载到项目目录的<code>data</code>文件夹下。</p>
+<p>该数据集由<code>cn.txt</code>, <code>en.txt</code>, <code>cn.txt.vocab.tsv</code>, <code>en.txt.vocab.tsv</code>这四个文件组成。前两个文件包含相互对应的中英文句子，其中中文已做好分词，英文全为小写且标点已被分割好。后两个文件是预处理好的词表。语料来自2000年左右的中国新闻，其第一条的中文及其翻译如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">目前 粮食 出现 阶段性 过剩 , 恰好 可以 以 粮食 换 森林 、 换 草地 , 再造 西部 秀美 山川 。</span><br><span class="line">the present food surplus can specifically serve the purpose of helping western china restore its woodlands , grasslands , and the beauty of its landscapes .</span><br></pre></td></tr></table></figure>
+<p>词表则统计了各个单词的出现频率。通过使用词表，我们能实现单词和序号的相互转换（比如中文里的5号对应“的”字，英文里的5号对应”the”）。词表的前四个单词是特殊字符，分别为填充字符、频率太少没有被加入词典的词语、句子开始字符、句子结束字符。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;PAD&gt;	1000000000</span><br><span class="line">&lt;UNK&gt;	1000000000</span><br><span class="line">&lt;S&gt;	1000000000</span><br><span class="line">&lt;/S&gt;	1000000000</span><br><span class="line">的	8461</span><br><span class="line">是	2047</span><br><span class="line">和	1836</span><br><span class="line">在	1784</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;PAD&gt;	1000000000</span><br><span class="line">&lt;UNK&gt;	1000000000</span><br><span class="line">&lt;S&gt;	1000000000</span><br><span class="line">&lt;/S&gt;	1000000000</span><br><span class="line">the	13680</span><br><span class="line">and	6845</span><br><span class="line">of	6259</span><br><span class="line">to	4292</span><br></pre></td></tr></table></figure>
+<p>只要运行一遍<code>data_load.py</code>下好数据后，我们待会就能用<code>load_train_data()</code>来获取已经打成batch的训练数据，并用API获取<code>cn2idx, idx2cn, en2idx, idx2en</code>这四个描述中英文序号与单词转换的词典。我们会在之后的训练代码里见到它们的用法。</p>
+<h2 id="Transformer-模型"><a href="#Transformer-模型" class="headerlink" title="Transformer 模型"></a>Transformer 模型</h2><p>准备好数据后，接下来就要进入这个项目最重要的部分——Transformer 模型实现了。我将按照代码的执行顺序，从前往后，自底向上地介绍 Transformer 的各个模块：Positional Encoding, MultiHeadAttention, Encoder &amp; Decoder, 最后介绍如何把各个模块拼到一起。在这个过程中，我还会着重介绍一个论文里没有提及，但是代码实现时非常重要的一个细节——<code>&lt;pad&gt;</code>字符的处理。</p>
+<p>说实话，用 PyTorch 实现 Transformer 没有什么有变数的地方，大家的代码写得都差不多，我也是参考着别人的教程写的。但是，Transformer 的代码实现中有很多坑。大部分人只会云淡风轻地介绍一下最终的代码成品，不会去讲他们 debug 耗费了多少时间，哪些地方容易出错。而我会着重讲一下代码中的一些细节，以及我碰到过的问题。</p>
+<h3 id="Positional-Encoding"><a href="#Positional-Encoding" class="headerlink" title="Positional Encoding"></a>Positional Encoding</h3><p><img src="/2023/06/11/20221106-transformer-pytorch/1.jpg" alt></p>
+<p>模型一开始是一个 Embedding 层加一个 Positional Encoding。Embedding 在 PyTorch 里已经有实现了，且不是文章的创新点，我们就直接来看 Positional Encoding 的写法。</p>
+<p>求 Positional Encoding，其实就是求一个二元函数的许多函数值构成的矩阵。对于二元函数$PE(pos, i)$，我们要求出$pos \in [0, seqlen - 1],  i \in [0, d_{model} - 1]$时所有的函数值，其中，$seqlen$是该序列的长度，$d_{model}$是每一个词向量的长度。</p>
+<p>理论上来说，每个句子的序列长度$seqlen$是不固定的。但是，我们可以提前预处理一个$seqlen$很大的 Positional Encoding 矩阵 。每次有句子输入进来，根据这个句子的序列长度，去预处理好的矩阵里取一小段出来即可。</p>
+<p>这样，整个类的实现应该如下所示：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model: <span class="built_in">int</span>, max_seq_len: <span class="built_in">int</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Assume d_model is an even number for convenience</span></span><br><span class="line">        <span class="keyword">assert</span> d_model % <span class="number">2</span> == <span class="number">0</span></span><br><span class="line"></span><br><span class="line">        i_seq = torch.linspace(<span class="number">0</span>, max_seq_len - <span class="number">1</span>, max_seq_len)</span><br><span class="line">        j_seq = torch.linspace(<span class="number">0</span>, d_model - <span class="number">2</span>, d_model // <span class="number">2</span>)</span><br><span class="line">        pos, two_i = torch.meshgrid(i_seq, j_seq)</span><br><span class="line">        pe_2i = torch.sin(pos / <span class="number">10000</span>**(two_i / d_model))</span><br><span class="line">        pe_2i_1 = torch.cos(pos / <span class="number">10000</span>**(two_i / d_model))</span><br><span class="line">        pe = torch.stack((pe_2i, pe_2i_1), <span class="number">2</span>).reshape(<span class="number">1</span>, max_seq_len, d_model)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.register_buffer(<span class="string">&#x27;pe&#x27;</span>, pe, <span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x: torch.Tensor</span>):</span><br><span class="line">        n, seq_len, d_model = x.shape</span><br><span class="line">        pe: torch.Tensor = <span class="variable language_">self</span>.pe</span><br><span class="line">        <span class="keyword">assert</span> seq_len &lt;= pe.shape[<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">assert</span> d_model == pe.shape[<span class="number">2</span>]</span><br><span class="line">        rescaled_x = x * d_model**<span class="number">0.5</span></span><br><span class="line">        <span class="keyword">return</span> rescaled_x + pe[:, <span class="number">0</span>:seq_len, :]</span><br></pre></td></tr></table></figure></p>
+<p>代码中有不少需要讲解的部分。首先，先看一下预处理好的矩阵<code>pe</code>是怎么在<code>__init__</code>中算出来的。<code>pe</code>可以很直接地用两层循环算出来。由于这段预处理代码只会执行一次，相对于冗长的训练时间，哪怕生成<code>pe</code>的代码性能差一点也没事。然而，作为一个编程高手，我准备秀一下如何用并行的方法求出<code>pe</code>。</p>
+<p>为了并行地求<code>pe</code>，我们要初始化一个二维网格，表示自变量$pos, i$。生成网格可以用下面的代码实现。（由于$i$要分奇偶讨论，$i$的个数是$\frac{d_{model}}{2}$)</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i_seq = torch.linspace(<span class="number">0</span>, max_seq_len - <span class="number">1</span>, max_seq_len)</span><br><span class="line">j_seq = torch.linspace(<span class="number">0</span>, d_model - <span class="number">2</span>, d_model // <span class="number">2</span>)</span><br><span class="line">pos, two_i = torch.meshgrid(i_seq, j_seq)</span><br></pre></td></tr></table></figure>
+<p><code>torch.meshgrid</code>用于生成网格。比如<code>torch.meshgrid([0, 1], [0, 1])</code>就可以生成<code>[[(0, 0), (0, 1)], [(1, 0), (1, 1)]]</code>这四个坐标构成的网格。不过，这个函数会把坐标的两个分量分别返回。比如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i, j = torch.meshgrid([<span class="number">0</span>, <span class="number">1</span>], [<span class="number">0</span>, <span class="number">1</span>])</span><br><span class="line"><span class="comment"># i: [[0, 0], [1, 1]]</span></span><br><span class="line"><span class="comment"># j: [[0, 1], [0, 1]]</span></span><br></pre></td></tr></table></figure>
+<p>利用这个函数的返回结果，我们可以把<code>pos, two_i</code>套入论文的公式，并行地分别算出奇偶位置的 PE 值。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+PE(pos, 2i) &= sin(pos/10000^{2i/d_{model}}) \\
+PE(pos, 2i+1) &= cos(pos/10000^{2i/d_{model}})
+\end{aligned}</script><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pe_2i = torch.sin(pos / <span class="number">10000</span>**(two_i / d_model))</span><br><span class="line">pe_2i_1 = torch.cos(pos / <span class="number">10000</span>**(two_i / d_model))</span><br></pre></td></tr></table></figure>
+<p>有了奇偶处的值，现在的问题是怎么把它们优雅地拼到同一个维度上。我这里先把它们堆成了形状为<code>seq_len, d_model/2, 2</code>的一个张量，再把最后一维展平，就得到了最后的<code>pe</code>矩阵。这一操作等于新建一个<code>seq_len, d_model</code>形状的张量，再把奇偶位置处的值分别填入。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pe = torch.stack((pe_2i, pe_2i_1), <span class="number">2</span>).reshape(<span class="number">1</span>, max_seq_len, d_model)</span><br></pre></td></tr></table></figure>
+<p>最后，要注意一点。只用 <code>self.pe = pe</code> 记录这个量是不够好的。我们最好用 <code>self.register_buffer(&#39;pe&#39;, pe, False)</code> 把这个量登记成 <code>torch.nn.Module</code> 的一个存储区（这一步会自动完成<code>self.pe = pe</code>）。这里涉及到 PyTorch 的一些知识了。</p>
+<p>PyTorch 的 <code>Module</code> 会记录两类参数，一类是 <code>parameter</code> 可学习参数，另一类是 <code>buffer</code> 不可学习的参数。把变量登记成 <code>buffer</code> 的最大好处是，在使用 <code>model.to(device)</code> 把一个模型搬到另一个设备上时，所有 <code>parameter</code> 和 <code>buffer</code> 都会自动被搬过去。另外，<code>buffer</code> 和 <code>parameter</code> 一样，也可以被记录到 <code>state_dict</code> 中，并保存到文件里。<code>register_buffer</code> 的第三个参数决定了是否将变量加入 <code>state_dict</code>。由于 pe 可以直接计算，不需要记录，可以把这个参数设成 <code>False</code>。</p>
+<p>预处理好 pe 后，用起来就很方便了。每次读取输入的序列长度，从中取一段出来即可。</p>
+<p>另外，Transformer 给嵌入层乘了个系数$\sqrt{d_{model}}$。为了方便起见，我把这个系数放到了 <code>PositionalEncoding</code> 类里面。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x: torch.Tensor</span>):</span><br><span class="line">    n, seq_len, d_model = x.shape</span><br><span class="line">    pe: torch.Tensor = <span class="variable language_">self</span>.pe</span><br><span class="line">    <span class="keyword">assert</span> seq_len &lt;= pe.shape[<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">assert</span> d_model == pe.shape[<span class="number">2</span>]</span><br><span class="line">    rescaled_x = x * d_model**<span class="number">0.5</span></span><br><span class="line">    <span class="keyword">return</span> rescaled_x + pe[:, <span class="number">0</span>:seq_len, :]</span><br></pre></td></tr></table></figure>
+<h3 id="Scaled-Dot-Product-Attention"><a href="#Scaled-Dot-Product-Attention" class="headerlink" title="Scaled Dot-Product Attention"></a>Scaled Dot-Product Attention</h3><p><img src="/2023/06/11/20221106-transformer-pytorch/2.jpg" alt></p>
+<p>下一步是多头注意力层。为了实现多头注意力，我们先要实现 Transformer 里经典的注意力计算。而在讲注意力计算之前，我还要补充一下 Transformer 中有关 mask 的一些知识。</p>
+<h4 id="Transformer-里的-mask"><a href="#Transformer-里的-mask" class="headerlink" title="Transformer 里的 mask"></a>Transformer 里的 mask</h4><p>Transformer 最大的特点就是能够并行训练。给定翻译好的第1~n个词语，它默认会并行地预测第2~(n+1)个下一个词语。为了模拟串行输出的情况，第$t$个词语不应该看到第$t+1$个词语之后的信息。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>输入信息</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(y1, —, —, —)</td>
+<td>y2</td>
+</tr>
+<tr>
+<td>(y1, y2, —, —)</td>
+<td>y3</td>
+</tr>
+<tr>
+<td>(y1, y2, y3, —)</td>
+<td>y4</td>
+</tr>
+<tr>
+<td>(y1, y2, y3, y4)</td>
+<td>y5</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>为了实现这一功能，Transformer 在Decoder里使用了掩码。掩码取1表示这个地方的数是有效的，取0表示这个地方的数是无效的。Decoder 里的这种掩码应该是一个上三角全1矩阵。</p>
+<p>掩码是在注意力计算中生效的。对于掩码取0的区域，其softmax前的$QK^T$值取负无穷。这是因为，对于softmax</p>
+<script type="math/tex; mode=display">
+softmax = \frac{e^{x_i}}{e^{x_1} + e^{x_2} + ... e^{x_n}},</script><p>令$x_i=-\infty$可以让它在 softmax 的分母里不产生任何贡献。</p>
+<p>以上是论文里提到的 mask，它用来模拟 Decoder 的串行推理。而在代码实现中，还有其他地方会产生 mask。在生成一个 batch 的数据时，要给句子填充 <code>&lt;pad&gt;</code>。这个特殊字符也没有实际意义，不应该对计算产生任何贡献。因此，有 <code>&lt;pad&gt;</code> 的地方的 mask 也应该为0。之后讲 Transformer 模型类时，我会介绍所有的 mask 该怎么生成，这里我们仅关注注意力计算是怎么用到 mask 的。</p>
+<h4 id="注意力计算"><a href="#注意力计算" class="headerlink" title="注意力计算"></a>注意力计算</h4><p>补充完了背景知识，我们来看注意力计算的实现代码。由于注意力计算没有任何的状态，因此它应该写成一个函数，而不是一个类。我们可以轻松地用 PyTorch 代码翻译注意力计算的公式。（注意，我这里的 mask 表示哪些地方要填负无穷，而不是像之前讲的表示哪些地方有效）</p>
+<script type="math/tex; mode=display">
+Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">MY_INF = <span class="number">1e12</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">attention</span>(<span class="params">q: torch.Tensor,</span></span><br><span class="line"><span class="params">              k: torch.Tensor,</span></span><br><span class="line"><span class="params">              v: torch.Tensor,</span></span><br><span class="line"><span class="params">              mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span></span>):</span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    Note: The dtype of mask must be bool</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="comment"># q shape: [n, heads, q_len, d_k]</span></span><br><span class="line">    <span class="comment"># k shape: [n, heads, k_len, d_k]</span></span><br><span class="line">    <span class="comment"># v shape: [n, heads, k_len, d_v]</span></span><br><span class="line">    <span class="keyword">assert</span> q.shape[-<span class="number">1</span>] == k.shape[-<span class="number">1</span>]</span><br><span class="line">    d_k = k.shape[-<span class="number">1</span>]</span><br><span class="line">    <span class="comment"># tmp shape: [n, heads, q_len, k_len]</span></span><br><span class="line">    tmp = torch.matmul(q, k.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) / d_k**<span class="number">0.5</span></span><br><span class="line">    <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        tmp.masked_fill_(mask, -MY_INF)</span><br><span class="line">    tmp = F.softmax(tmp, -<span class="number">1</span>)</span><br><span class="line">    <span class="comment"># tmp shape: [n, heads, q_len, d_v]</span></span><br><span class="line">    tmp = torch.matmul(tmp, v)</span><br><span class="line">    <span class="keyword">return</span> tmp</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>这里有一个很坑的地方。引入了 <code>&lt;pad&gt;</code> 带来的 mask 后，会产生一个新的问题：可能一整行数据都是失效的，softmax 用到的所有 $x_i$ 可能都是负无穷。</p>
+<script type="math/tex; mode=display">
+softmax = \frac{e^{-\infty}}{e^{-\infty} + e^{-\infty} + ... e^{-\infty}}</script><p>这个数是没有意义的。如果用<code>torch.inf</code>来表示无穷大，就会令<code>exp(torch.inf)=0</code>，最后 softmax 结果会出现 NaN，代码大概率是跑不通的。</p>
+<p>但是，大多数 PyTorch Transformer 教程压根就没提这一点，而他们的代码又还是能够跑通。拿放大镜仔细对比了代码后，我发现，他们的无穷大用的不是 <code>torch.inf</code>，而是自己随手设的一个极大值。这样，<code>exp(-MY_INF)</code>得到的不再是0，而是一个极小值。softmax 的结果就会等于分母的项数，而不是 NaN，不会有数值计算上的错误。</p>
+<h3 id="Multi-Head-Attention"><a href="#Multi-Head-Attention" class="headerlink" title="Multi-Head Attention"></a>Multi-Head Attention</h3><p><img src="/2023/06/11/20221106-transformer-pytorch/3.jpg" alt></p>
+<p>有了注意力计算，就可以实现多头注意力层了。多头注意力层是有学习参数的，它应该写成一个类。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MultiHeadAttention</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, heads: <span class="built_in">int</span>, d_model: <span class="built_in">int</span>, dropout: <span class="built_in">float</span> = <span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">assert</span> d_model % heads == <span class="number">0</span></span><br><span class="line">        <span class="comment"># dk == dv</span></span><br><span class="line">        <span class="variable language_">self</span>.d_k = d_model // heads</span><br><span class="line">        <span class="variable language_">self</span>.heads = heads</span><br><span class="line">        <span class="variable language_">self</span>.d_model = d_model</span><br><span class="line">        <span class="variable language_">self</span>.q = nn.Linear(d_model, d_model)</span><br><span class="line">        <span class="variable language_">self</span>.k = nn.Linear(d_model, d_model)</span><br><span class="line">        <span class="variable language_">self</span>.v = nn.Linear(d_model, d_model)</span><br><span class="line">        <span class="variable language_">self</span>.out = nn.Linear(d_model, d_model)</span><br><span class="line">        <span class="variable language_">self</span>.dropout = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                q: torch.Tensor,</span></span><br><span class="line"><span class="params">                k: torch.Tensor,</span></span><br><span class="line"><span class="params">                v: torch.Tensor,</span></span><br><span class="line"><span class="params">                mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span></span>):</span><br><span class="line">        <span class="comment"># batch should be same</span></span><br><span class="line">        <span class="keyword">assert</span> q.shape[<span class="number">0</span>] == k.shape[<span class="number">0</span>]</span><br><span class="line">        <span class="keyword">assert</span> q.shape[<span class="number">0</span>] == v.shape[<span class="number">0</span>]</span><br><span class="line">        <span class="comment"># the sequence length of k and v should be aligned</span></span><br><span class="line">        <span class="keyword">assert</span> k.shape[<span class="number">1</span>] == v.shape[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">        n, q_len = q.shape[<span class="number">0</span>:<span class="number">2</span>]</span><br><span class="line">        n, k_len = k.shape[<span class="number">0</span>:<span class="number">2</span>]</span><br><span class="line">        q_ = <span class="variable language_">self</span>.q(q).reshape(n, q_len, <span class="variable language_">self</span>.heads, <span class="variable language_">self</span>.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">        k_ = <span class="variable language_">self</span>.k(k).reshape(n, k_len, <span class="variable language_">self</span>.heads, <span class="variable language_">self</span>.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">        v_ = <span class="variable language_">self</span>.v(v).reshape(n, k_len, <span class="variable language_">self</span>.heads, <span class="variable language_">self</span>.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        attention_res = attention(q_, k_, v_, mask)</span><br><span class="line">        concat_res = attention_res.transpose(<span class="number">1</span>, <span class="number">2</span>).reshape(</span><br><span class="line">            n, q_len, <span class="variable language_">self</span>.d_model)</span><br><span class="line">        concat_res = <span class="variable language_">self</span>.dropout(concat_res)</span><br><span class="line"></span><br><span class="line">        output = <span class="variable language_">self</span>.out(concat_res)</span><br><span class="line">        <span class="keyword">return</span> output</span><br></pre></td></tr></table></figure>
+<p>这段代码一处很灵性的地方。在 Transformer 的论文中，多头注意力是先把每个词的表示拆成$h$个头，再对每份做投影、注意力，最后拼接起来，再投影一次。其实，拆开与拼接操作是多余的。我们可以通过一些形状上的操作，等价地实现拆开与拼接，以提高运行效率。</p>
+<p>具体来说，我们可以一开始就让所有头的数据经过同一个线性层。之后在做注意力之前把头和序列数这两维转置一下。这两步操作和拆开来做投影、注意力是等价的。做完了注意力操作之后，再把两个维度转置回来，这和拼接操作是等价的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">            q: torch.Tensor,</span></span><br><span class="line"><span class="params">            k: torch.Tensor,</span></span><br><span class="line"><span class="params">            v: torch.Tensor,</span></span><br><span class="line"><span class="params">            mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span></span>):</span><br><span class="line">    <span class="comment"># batch should be same</span></span><br><span class="line">    <span class="keyword">assert</span> q.shape[<span class="number">0</span>] == k.shape[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">assert</span> q.shape[<span class="number">0</span>] == v.shape[<span class="number">0</span>]</span><br><span class="line">    <span class="comment"># the sequence length of k and v should be aligned</span></span><br><span class="line">    <span class="keyword">assert</span> k.shape[<span class="number">1</span>] == v.shape[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    n, q_len = q.shape[<span class="number">0</span>:<span class="number">2</span>]</span><br><span class="line">    n, k_len = k.shape[<span class="number">0</span>:<span class="number">2</span>]</span><br><span class="line">    q_ = <span class="variable language_">self</span>.q(q).reshape(n, q_len, <span class="variable language_">self</span>.heads, <span class="variable language_">self</span>.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    k_ = <span class="variable language_">self</span>.k(k).reshape(n, k_len, <span class="variable language_">self</span>.heads, <span class="variable language_">self</span>.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    v_ = <span class="variable language_">self</span>.v(v).reshape(n, k_len, <span class="variable language_">self</span>.heads, <span class="variable language_">self</span>.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    attention_res = attention(q_, k_, v_, mask)</span><br><span class="line">    concat_res = attention_res.transpose(<span class="number">1</span>, <span class="number">2</span>).reshape(</span><br><span class="line">        n, q_len, <span class="variable language_">self</span>.d_model)</span><br><span class="line">    concat_res = <span class="variable language_">self</span>.dropout(concat_res)</span><br><span class="line"></span><br><span class="line">    output = <span class="variable language_">self</span>.out(concat_res)</span><br><span class="line">    <span class="keyword">return</span> output</span><br></pre></td></tr></table></figure>
+<h3 id="前馈网络"><a href="#前馈网络" class="headerlink" title="前馈网络"></a>前馈网络</h3><p><img src="/2023/06/11/20221106-transformer-pytorch/4.jpg" alt></p>
+<p>前馈网络太简单了，两个线性层，没什么好说的。注意内部那个隐藏层的维度大小$d_{ff}$会比$d_{model}$更大一点。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">FeedForward</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model: <span class="built_in">int</span>, d_ff: <span class="built_in">int</span>, dropout: <span class="built_in">float</span> = <span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.layer1 = nn.Linear(d_model, d_ff)</span><br><span class="line">        <span class="variable language_">self</span>.dropout = nn.Dropout(dropout)</span><br><span class="line">        <span class="variable language_">self</span>.layer2 = nn.Linear(d_ff, d_model)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.layer1(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.dropout(F.relu(x))</span><br><span class="line">        x = <span class="variable language_">self</span>.layer2(x)</span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+<h3 id="Encoder-amp-Decoder"><a href="#Encoder-amp-Decoder" class="headerlink" title="Encoder &amp; Decoder"></a>Encoder &amp; Decoder</h3><p>准备好一切组件后，就可以把模型一层一层搭起来了。先搭好每个 Encoder 层和 Decoder 层，再拼成 Encoder 和 Decoder。</p>
+<p>Encoder 层和 Decoder 层的结构与论文中的描述一致，且每个子层后面都有一个 dropout，和上一层之间使用了残差连接。归一化的方法是 <code>LayerNorm</code>。顺带一提，不仅是这些层，前面很多子层的计算中都加入了 dropout。</p>
+<p>再提一句 mask。由于 encoder 和 decoder 的输入不同，它们的填充情况不同，产生的 mask 也不同。后文会展示这些 mask 的生成方法。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">EncoderLayer</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_model: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_ff: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 dropout: <span class="built_in">float</span> = <span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.self_attention = MultiHeadAttention(heads, d_model, dropout)</span><br><span class="line">        <span class="variable language_">self</span>.ffn = FeedForward(d_model, d_ff, dropout)</span><br><span class="line">        <span class="variable language_">self</span>.norm1 = nn.LayerNorm(d_model)</span><br><span class="line">        <span class="variable language_">self</span>.norm2 = nn.LayerNorm(d_model)</span><br><span class="line">        <span class="variable language_">self</span>.dropout1 = nn.Dropout(dropout)</span><br><span class="line">        <span class="variable language_">self</span>.dropout2 = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, src_mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span></span>):</span><br><span class="line">        tmp = <span class="variable language_">self</span>.self_attention(x, x, x, src_mask)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.dropout1(tmp)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm1(x + tmp)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.ffn(x)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.dropout2(tmp)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm2(x + tmp)</span><br><span class="line">        <span class="keyword">return</span> x</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DecoderLayer</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_model: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_ff: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 dropout: <span class="built_in">float</span> = <span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.self_attention = MultiHeadAttention(heads, d_model, dropout)</span><br><span class="line">        <span class="variable language_">self</span>.attention = MultiHeadAttention(heads, d_model, dropout)</span><br><span class="line">        <span class="variable language_">self</span>.ffn = FeedForward(d_model, d_ff, dropout)</span><br><span class="line">        <span class="variable language_">self</span>.norm1 = nn.LayerNorm(d_model)</span><br><span class="line">        <span class="variable language_">self</span>.norm2 = nn.LayerNorm(d_model)</span><br><span class="line">        <span class="variable language_">self</span>.norm3 = nn.LayerNorm(d_model)</span><br><span class="line">        <span class="variable language_">self</span>.dropout1 = nn.Dropout(dropout)</span><br><span class="line">        <span class="variable language_">self</span>.dropout2 = nn.Dropout(dropout)</span><br><span class="line">        <span class="variable language_">self</span>.dropout3 = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                x,</span></span><br><span class="line"><span class="params">                encoder_kv: torch.Tensor,</span></span><br><span class="line"><span class="params">                dst_mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">                src_dst_mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span></span>):</span><br><span class="line">        tmp = <span class="variable language_">self</span>.self_attention(x, x, x, dst_mask)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.dropout1(tmp)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm1(x + tmp)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.attention(x, encoder_kv, encoder_kv, src_dst_mask)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.dropout2(tmp)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm2(x + tmp)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.ffn(x)</span><br><span class="line">        tmp = <span class="variable language_">self</span>.dropout3(tmp)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm3(x + tmp)</span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+<p>Encoder 和 Decoder 就是在所有子层前面加了一个嵌入层、一个位置编码，再把多个子层堆起来了而已，其他输入输出照搬即可。注意，我们可以给嵌入层输入<code>pad_idx</code>参数，让<code>&lt;pad&gt;</code>的计算不对梯度产生贡献。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Encoder</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 vocab_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 pad_idx: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_model: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_ff: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 n_layers: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 dropout: <span class="built_in">float</span> = <span class="number">0.1</span>,</span></span><br><span class="line"><span class="params">                 max_seq_len: <span class="built_in">int</span> = <span class="number">120</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.embedding = nn.Embedding(vocab_size, d_model, pad_idx)</span><br><span class="line">        <span class="variable language_">self</span>.pe = PositionalEncoding(d_model, max_seq_len)</span><br><span class="line">        <span class="variable language_">self</span>.layers = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n_layers):</span><br><span class="line">            <span class="variable language_">self</span>.layers.append(EncoderLayer(heads, d_model, d_ff, dropout))</span><br><span class="line">        <span class="variable language_">self</span>.layers = nn.ModuleList(<span class="variable language_">self</span>.layers)</span><br><span class="line">        <span class="variable language_">self</span>.dropout = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, src_mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span></span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.embedding(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.pe(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.dropout(x)</span><br><span class="line">        <span class="keyword">for</span> layer <span class="keyword">in</span> <span class="variable language_">self</span>.layers:</span><br><span class="line">            x = layer(x, src_mask)</span><br><span class="line">        <span class="keyword">return</span> x</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Decoder</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 vocab_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 pad_idx: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_model: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_ff: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 n_layers: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 dropout: <span class="built_in">float</span> = <span class="number">0.1</span>,</span></span><br><span class="line"><span class="params">                 max_seq_len: <span class="built_in">int</span> = <span class="number">120</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.embedding = nn.Embedding(vocab_size, d_model, pad_idx)</span><br><span class="line">        <span class="variable language_">self</span>.pe = PositionalEncoding(d_model, max_seq_len)</span><br><span class="line">        <span class="variable language_">self</span>.layers = []</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n_layers):</span><br><span class="line">            <span class="variable language_">self</span>.layers.append(DecoderLayer(heads, d_model, d_ff, dropout))</span><br><span class="line">        <span class="variable language_">self</span>.layers = nn.Sequential(*<span class="variable language_">self</span>.layers)</span><br><span class="line">        <span class="variable language_">self</span>.dropout = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                x,</span></span><br><span class="line"><span class="params">                encoder_kv,</span></span><br><span class="line"><span class="params">                dst_mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">                src_dst_mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span></span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.embedding(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.pe(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.dropout(x)</span><br><span class="line">        <span class="keyword">for</span> layer <span class="keyword">in</span> <span class="variable language_">self</span>.layers:</span><br><span class="line">            x = layer(x, encoder_kv, dst_mask, src_dst_mask)</span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+<h3 id="Transformer-类"><a href="#Transformer-类" class="headerlink" title="Transformer 类"></a>Transformer 类</h3><p><img src="/2023/06/11/20221106-transformer-pytorch/5.jpg" alt></p>
+<p>终于，激动人心的时候到来了。我们要把各个子模块组成变形金刚（Transformer）了。先过一遍所有的代码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Transformer</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                 src_vocab_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 dst_vocab_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 pad_idx: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_model: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 d_ff: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 n_layers: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">                 dropout: <span class="built_in">float</span> = <span class="number">0.1</span>,</span></span><br><span class="line"><span class="params">                 max_seq_len: <span class="built_in">int</span> = <span class="number">200</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.encoder = Encoder(src_vocab_size, pad_idx, d_model, d_ff,</span><br><span class="line">                               n_layers, heads, dropout, max_seq_len)</span><br><span class="line">        <span class="variable language_">self</span>.decoder = Decoder(dst_vocab_size, pad_idx, d_model, d_ff,</span><br><span class="line">                               n_layers, heads, dropout, max_seq_len)</span><br><span class="line">        <span class="variable language_">self</span>.pad_idx = pad_idx</span><br><span class="line">        <span class="variable language_">self</span>.output_layer = nn.Linear(d_model, dst_vocab_size)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">generate_mask</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                      q_pad: torch.Tensor,</span></span><br><span class="line"><span class="params">                      k_pad: torch.Tensor,</span></span><br><span class="line"><span class="params">                      with_left_mask: <span class="built_in">bool</span> = <span class="literal">False</span></span>):</span><br><span class="line">        <span class="comment"># q_pad shape: [n, q_len]</span></span><br><span class="line">        <span class="comment"># k_pad shape: [n, k_len]</span></span><br><span class="line">        <span class="comment"># q_pad k_pad dtype: bool</span></span><br><span class="line">        <span class="keyword">assert</span> q_pad.device == k_pad.device</span><br><span class="line">        n, q_len = q_pad.shape</span><br><span class="line">        n, k_len = k_pad.shape</span><br><span class="line"></span><br><span class="line">        mask_shape = (n, <span class="number">1</span>, q_len, k_len)</span><br><span class="line">        <span class="keyword">if</span> with_left_mask:</span><br><span class="line">            mask = <span class="number">1</span> - torch.tril(torch.ones(mask_shape))</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            mask = torch.zeros(mask_shape)</span><br><span class="line">        mask = mask.to(q_pad.device)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">            mask[i, :, q_pad[i], :] = <span class="number">1</span></span><br><span class="line">            mask[i, :, :, k_pad[i]] = <span class="number">1</span></span><br><span class="line">        mask = mask.to(torch.<span class="built_in">bool</span>)</span><br><span class="line">        <span class="keyword">return</span> mask</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, y</span>):</span><br><span class="line"></span><br><span class="line">        src_pad_mask = x == <span class="variable language_">self</span>.pad_idx</span><br><span class="line">        dst_pad_mask = y == <span class="variable language_">self</span>.pad_idx</span><br><span class="line">        src_mask = <span class="variable language_">self</span>.generate_mask(src_pad_mask, src_pad_mask, <span class="literal">False</span>)</span><br><span class="line">        dst_mask = <span class="variable language_">self</span>.generate_mask(dst_pad_mask, dst_pad_mask, <span class="literal">True</span>)</span><br><span class="line">        src_dst_mask = <span class="variable language_">self</span>.generate_mask(dst_pad_mask, src_pad_mask, <span class="literal">False</span>)</span><br><span class="line">        encoder_kv = <span class="variable language_">self</span>.encoder(x, src_mask)</span><br><span class="line">        res = <span class="variable language_">self</span>.decoder(y, encoder_kv, dst_mask, src_dst_mask)</span><br><span class="line">        res = <span class="variable language_">self</span>.output_layer(res)</span><br><span class="line">        <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>我们一点一点来看。先看初始化函数。初始化函数的输入其实就是 Transformer 模型的超参数。总结一下，Transformer 应该有这些超参数：</p>
+<ul>
+<li><code>d_model</code> 模型中大多数词向量表示的维度大小</li>
+<li><code>d_ff</code> 前馈网络隐藏层维度大小</li>
+<li><code>n_layers</code> 堆叠的 Encoder &amp; Decoder 层数</li>
+<li><code>head</code> 多头注意力的头数</li>
+<li><code>dropout</code> Dropout 的几率</li>
+</ul>
+<p>另外，为了构建嵌入层，要知道源语言、目标语言的词典大小，并且提供<code>pad_idx</code>。为了预处理位置编码，需要提前知道一个最大序列长度。</p>
+<p>照着子模块的初始化参数表，把参数归纳到<code>__init__</code>的参数表里即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">            src_vocab_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">            dst_vocab_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">            pad_idx: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">            d_model: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">            d_ff: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">            n_layers: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">            heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">            dropout: <span class="built_in">float</span> = <span class="number">0.1</span>,</span></span><br><span class="line"><span class="params">            max_seq_len: <span class="built_in">int</span> = <span class="number">200</span></span>):</span><br><span class="line">    <span class="built_in">super</span>().__init__()</span><br><span class="line">    <span class="variable language_">self</span>.encoder = Encoder(src_vocab_size, pad_idx, d_model, d_ff,</span><br><span class="line">                            n_layers, heads, dropout, max_seq_len)</span><br><span class="line">    <span class="variable language_">self</span>.decoder = Decoder(dst_vocab_size, pad_idx, d_model, d_ff,</span><br><span class="line">                            n_layers, heads, dropout, max_seq_len)</span><br><span class="line">    <span class="variable language_">self</span>.pad_idx = pad_idx</span><br><span class="line">    <span class="variable language_">self</span>.output_layer = nn.Linear(d_model, dst_vocab_size)</span><br></pre></td></tr></table></figure>
+<p>再看一下 <code>forward</code> 函数。<code>forward</code>先预处理好了所有的 mask，再逐步执行 Transformer 的计算：先是通过 Encoder 获得源语言的中间表示<code>encoder_kv</code>，再把它和目标语言<code>y</code>的输入一起传入 Decoder，最后经过线性层输出结果<code>res</code>。由于 PyTorch 的交叉熵损失函数自带了 softmax 操作，这里不需要多此一举。</p>
+<blockquote>
+<p>Transformer 论文提到，softmax 前的那个线性层可以和嵌入层共享权重。也就是说，嵌入和输出前的线性层分别完成了词序号到词嵌入的正反映射，两个操作应该是互逆的。但是，词嵌入矩阵不是一个方阵，它根本不能求逆矩阵。我想破头也没想清楚是怎么让线性层可以和嵌入层共享权重的。网上的所有实现都没有对这个细节多加介绍，只是新建了一个线性层。我也照做了。</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, y</span>):</span><br><span class="line"></span><br><span class="line">    src_pad_mask = x == <span class="variable language_">self</span>.pad_idx</span><br><span class="line">    dst_pad_mask = y == <span class="variable language_">self</span>.pad_idx</span><br><span class="line">    src_mask = <span class="variable language_">self</span>.generate_mask(src_pad_mask, src_pad_mask, <span class="literal">False</span>)</span><br><span class="line">    dst_mask = <span class="variable language_">self</span>.generate_mask(dst_pad_mask, dst_pad_mask, <span class="literal">True</span>)</span><br><span class="line">    src_dst_mask = <span class="variable language_">self</span>.generate_mask(dst_pad_mask, src_pad_mask, <span class="literal">False</span>)</span><br><span class="line">    encoder_kv = <span class="variable language_">self</span>.encoder(x, src_mask)</span><br><span class="line">    res = <span class="variable language_">self</span>.decoder(y, encoder_kv, dst_mask, src_dst_mask)</span><br><span class="line">    res = <span class="variable language_">self</span>.output_layer(res)</span><br><span class="line">    <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>等了很久，现在可以来仔细看一看 mask 的生成方法了。回忆一下，表示该字符是否有效的 mask 有两个来源。第一个是论文里提到的，用于模拟串行推理的 mask；另一个是填充操作的空白字符引入的 mask。<code>generate_mask</code> 用于生成这些 mask。</p>
+<p><code>generate_mask</code> 的输入有 query 句子和 key 句子的 pad mask <code>q_pad, k_pad</code>，它们的形状为<code>[n, seq_len]</code>。若某处为 True，则表示这个地方的字符是<code>&lt;pad&gt;</code>。对于自注意力，query 和 key 都是一样的；而在 Decoder 的第二个多头注意力层中，query 来自目标语言，key 来自源语言。<code>with_left_mask</code> 表示是不是要加入 Decoder 里面的模拟串行推理的 mask，它会在掩码自注意力里用到。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">generate_mask</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                q_pad: torch.Tensor,</span></span><br><span class="line"><span class="params">                k_pad: torch.Tensor,</span></span><br><span class="line"><span class="params">                with_left_mask: <span class="built_in">bool</span> = <span class="literal">False</span></span>):</span><br></pre></td></tr></table></figure>
+<p>一开始，先取好维度信息，定好张量的形状。在注意力操作中，softmax 前的那个量的形状是 <code>[n, heads, q_len, k_len]</code>，表示每一批每一个头的每一个query对每个key之间的相似度。每一个头的mask是一样的。因此，除<code>heads</code>维可以广播外，mask 的形状应和它一样。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mask_shape = (n, <span class="number">1</span>, q_len, k_len)</span><br></pre></td></tr></table></figure>
+<p>再新建一个表示最终 mask 的张量。如果不用 Decoder 的那种 mask，就生成一个全零的张量；否则，生成一个上三角为0，其余地方为1的张量。注意，在我的代码中，mask 为 True 或1就表示这个地方需要填负无穷。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> with_left_mask:</span><br><span class="line">    mask = <span class="number">1</span> - torch.tril(torch.ones(mask_shape))</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    mask = torch.zeros(mask_shape)</span><br></pre></td></tr></table></figure>
+<p>最后，把有 <code>&lt;pad&gt;</code> 的地方也标记一下。从<code>mask</code>的形状<code>[n, 1, q_len, k_len]</code>可以知道，<code>q_pad</code> 表示哪些行是无效的，<code>k_pad</code> 表示哪些列是无效的。如果query句子的第<code>i</code>个字符是<code>&lt;pad&gt;</code>，则应该令<code>mask[:, :, i, :] = 1</code>; 如果key句子的第<code>j</code>个字符是<code>&lt;pad&gt;</code>，则应该令<code>mask[:, :, :, j] = 1</code>。</p>
+<p>下面的代码利用了PyTorch的取下标机制，直接并行地完成了mask赋值。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">    mask[i, :, q_pad[i], :] = <span class="number">1</span></span><br><span class="line">    mask[i, :, :, k_pad[i]] = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>完整代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">generate_mask</span>(<span class="params">self,</span></span><br><span class="line"><span class="params">                    q_pad: torch.Tensor,</span></span><br><span class="line"><span class="params">                    k_pad: torch.Tensor,</span></span><br><span class="line"><span class="params">                    with_left_mask: <span class="built_in">bool</span> = <span class="literal">False</span></span>):</span><br><span class="line">    <span class="comment"># q_pad shape: [n, q_len]</span></span><br><span class="line">    <span class="comment"># k_pad shape: [n, k_len]</span></span><br><span class="line">    <span class="comment"># q_pad k_pad dtype: bool</span></span><br><span class="line">    <span class="keyword">assert</span> q_pad.device == k_pad.device</span><br><span class="line">    n, q_len = q_pad.shape</span><br><span class="line">    n, k_len = k_pad.shape</span><br><span class="line"></span><br><span class="line">    mask_shape = (n, <span class="number">1</span>, q_len, k_len)</span><br><span class="line">    <span class="keyword">if</span> with_left_mask:</span><br><span class="line">        mask = <span class="number">1</span> - torch.tril(torch.ones(mask_shape))</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        mask = torch.zeros(mask_shape)</span><br><span class="line">    mask = mask.to(q_pad.device)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">        mask[i, :, q_pad[i], :] = <span class="number">1</span></span><br><span class="line">        mask[i, :, :, k_pad[i]] = <span class="number">1</span></span><br><span class="line">    mask = mask.to(torch.<span class="built_in">bool</span>)</span><br><span class="line">    <span class="keyword">return</span> mask</span><br></pre></td></tr></table></figure>
+<p>看完了mask的生成方法后，我们回到前一步，看看mask会在哪些地方被调用。</p>
+<p>在 Transformer 中，有三类多头注意力层，它们的 mask 也不同。Encoder 的多头注意力层的 query 和 key 都来自源语言；Decoder 的第一个多头注意力层的 query 和 key 都来自目标语言；Decoder 的第二个多头注意力层的 query 来自目标语言， key 来自源语言。另外，Decoder 的第一个多头注意力层要加串行推理的那个 mask。按照上述描述生成mask即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, y</span>):</span><br><span class="line">    src_pad_mask = x == <span class="variable language_">self</span>.pad_idx</span><br><span class="line">    dst_pad_mask = y == <span class="variable language_">self</span>.pad_idx</span><br><span class="line">    src_mask = <span class="variable language_">self</span>.generate_mask(src_pad_mask, src_pad_mask, <span class="literal">False</span>)</span><br><span class="line">    dst_mask = <span class="variable language_">self</span>.generate_mask(dst_pad_mask, dst_pad_mask, <span class="literal">True</span>)</span><br><span class="line">    src_dst_mask = <span class="variable language_">self</span>.generate_mask(dst_pad_mask, src_pad_mask, <span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    encoder_kv = <span class="variable language_">self</span>.encoder(x, src_mask)</span><br><span class="line">    res = <span class="variable language_">self</span>.decoder(y, encoder_kv, dst_mask, src_dst_mask)</span><br><span class="line">    res = <span class="variable language_">self</span>.output_layer(res)</span><br><span class="line">    <span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>到此，Transfomer 模型总算编写完成了。</p>
+<p>这里再帮大家排一个坑。PyTorch的官方Transformer中使用了下面的参数初始化方式。但是，实际测试后，不知道为什么，我发现使用这种初始化会让模型训不起来。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">init_weights</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="keyword">for</span> p <span class="keyword">in</span> <span class="variable language_">self</span>.parameters():</span><br><span class="line">        <span class="keyword">if</span> p.dim() &gt; <span class="number">1</span>:</span><br><span class="line">            nn.init.xavier_uniform_(p)</span><br></pre></td></tr></table></figure>
+<p>我去翻了翻PyTorch的Transformer示例，发现官方的示例根本没用到<code>Transformer</code>，而是用子模块<code>nn.TransformerDecoder</code>, <code>nn.TransformerEncoder</code>自己搭了一个新的Transformer。这些子模块其实都有自己的<code>init_weights</code>方法。看来官方都信不过自己的<code>Transformer</code>，这个<code>Transformer</code>类的初始化方法就有问题。</p>
+<p>在我们的代码中，我们不必手动对参数初始化。PyTorch对每个线性层默认的参数初始化方式就够好了。</p>
+<h2 id="训练"><a href="#训练" class="headerlink" title="训练"></a>训练</h2><p>准备好了模型、数据集后，剩下的工作非常惬意，只要随便调用一下就行了。训练的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dldemos.Transformer.data_load <span class="keyword">import</span> (get_batch_indices, load_cn_vocab,</span><br><span class="line">                                           load_en_vocab, load_train_data,</span><br><span class="line">                                           maxlen)</span><br><span class="line"><span class="keyword">from</span> dldemos.Transformer.model <span class="keyword">import</span> Transformer</span><br><span class="line"></span><br><span class="line"><span class="comment"># Config</span></span><br><span class="line">batch_size = <span class="number">64</span></span><br><span class="line">lr = <span class="number">0.0001</span></span><br><span class="line">d_model = <span class="number">512</span></span><br><span class="line">d_ff = <span class="number">2048</span></span><br><span class="line">n_layers = <span class="number">6</span></span><br><span class="line">heads = <span class="number">8</span></span><br><span class="line">dropout_rate = <span class="number">0.2</span></span><br><span class="line">n_epochs = <span class="number">60</span></span><br><span class="line">PAD_ID = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    device = <span class="string">&#x27;cuda&#x27;</span></span><br><span class="line">    cn2idx, idx2cn = load_cn_vocab()</span><br><span class="line">    en2idx, idx2en = load_en_vocab()</span><br><span class="line">    <span class="comment"># X: en</span></span><br><span class="line">    <span class="comment"># Y: cn</span></span><br><span class="line">    Y, X = load_train_data()</span><br><span class="line"></span><br><span class="line">    print_interval = <span class="number">100</span></span><br><span class="line"></span><br><span class="line">    model = Transformer(<span class="built_in">len</span>(en2idx), <span class="built_in">len</span>(cn2idx), PAD_ID, d_model, d_ff,</span><br><span class="line">                        n_layers, heads, dropout_rate, maxlen)</span><br><span class="line">    model.to(device)</span><br><span class="line"></span><br><span class="line">    optimizer = torch.optim.Adam(model.parameters(), lr)</span><br><span class="line"></span><br><span class="line">    citerion = nn.CrossEntropyLoss(ignore_index=PAD_ID)</span><br><span class="line">    tic = time.time()</span><br><span class="line">    cnter = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(n_epochs):</span><br><span class="line">        <span class="keyword">for</span> index, _ <span class="keyword">in</span> get_batch_indices(<span class="built_in">len</span>(X), batch_size):</span><br><span class="line">            x_batch = torch.LongTensor(X[index]).to(device)</span><br><span class="line">            y_batch = torch.LongTensor(Y[index]).to(device)</span><br><span class="line">            y_input = y_batch[:, :-<span class="number">1</span>]</span><br><span class="line">            y_label = y_batch[:, <span class="number">1</span>:]</span><br><span class="line">            y_hat = model(x_batch, y_input)</span><br><span class="line"></span><br><span class="line">            y_label_mask = y_label != PAD_ID</span><br><span class="line">            preds = torch.argmax(y_hat, -<span class="number">1</span>)</span><br><span class="line">            correct = preds == y_label</span><br><span class="line">            acc = torch.<span class="built_in">sum</span>(y_label_mask * correct) / torch.<span class="built_in">sum</span>(y_label_mask)</span><br><span class="line"></span><br><span class="line">            n, seq_len = y_label.shape</span><br><span class="line">            y_hat = torch.reshape(y_hat, (n * seq_len, -<span class="number">1</span>))</span><br><span class="line">            y_label = torch.reshape(y_label, (n * seq_len, ))</span><br><span class="line">            loss = citerion(y_hat, y_label)</span><br><span class="line"></span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            loss.backward()</span><br><span class="line">            torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="number">1</span>)</span><br><span class="line">            optimizer.step()</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> cnter % print_interval == <span class="number">0</span>:</span><br><span class="line">                toc = time.time()</span><br><span class="line">                interval = toc - tic</span><br><span class="line">                minutes = <span class="built_in">int</span>(interval // <span class="number">60</span>)</span><br><span class="line">                seconds = <span class="built_in">int</span>(interval % <span class="number">60</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&#x27;<span class="subst">&#123;cnter:08d&#125;</span> <span class="subst">&#123;minutes:02d&#125;</span>:<span class="subst">&#123;seconds:02d&#125;</span>&#x27;</span></span><br><span class="line">                      <span class="string">f&#x27; loss: <span class="subst">&#123;loss.item()&#125;</span> acc: <span class="subst">&#123;acc.item()&#125;</span>&#x27;</span>)</span><br><span class="line">            cnter += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    model_path = <span class="string">&#x27;dldemos/Transformer/model.pth&#x27;</span></span><br><span class="line">    torch.save(model.state_dict(), model_path)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;Model saved to <span class="subst">&#123;model_path&#125;</span>&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+<p>所有的超参数都写在代码开头。在模型结构上，我使用了和原论文一样的超参数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Config</span></span><br><span class="line">batch_size = <span class="number">64</span></span><br><span class="line">lr = <span class="number">0.0001</span></span><br><span class="line">d_model = <span class="number">512</span></span><br><span class="line">d_ff = <span class="number">2048</span></span><br><span class="line">n_layers = <span class="number">6</span></span><br><span class="line">heads = <span class="number">8</span></span><br><span class="line">dropout_rate = <span class="number">0.2</span></span><br><span class="line">n_epochs = <span class="number">60</span></span><br><span class="line">PAD_ID = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>之后，进入主函数。一开始，我们调用<code>load_data.py</code>提供的API，获取中英文序号到单词的转换词典，并获取已经打包好的训练数据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    device = <span class="string">&#x27;cuda&#x27;</span></span><br><span class="line">    cn2idx, idx2cn = load_cn_vocab()</span><br><span class="line">    en2idx, idx2en = load_en_vocab()</span><br><span class="line">    <span class="comment"># X: en</span></span><br><span class="line">    <span class="comment"># Y: cn</span></span><br><span class="line">    Y, X = load_train_data()</span><br></pre></td></tr></table></figure>
+<p>接着，我们用参数初始化好要用到的对象，比如模型、优化器、损失函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">print_interval = <span class="number">100</span></span><br><span class="line"></span><br><span class="line">model = Transformer(<span class="built_in">len</span>(en2idx), <span class="built_in">len</span>(cn2idx), PAD_ID, d_model, d_ff,</span><br><span class="line">                    n_layers, heads, dropout_rate, maxlen)</span><br><span class="line">model.to(device)</span><br><span class="line"></span><br><span class="line">optimizer = torch.optim.Adam(model.parameters(), lr)</span><br><span class="line"></span><br><span class="line">citerion = nn.CrossEntropyLoss(ignore_index=PAD_ID)</span><br><span class="line">tic = time.time()</span><br><span class="line">cnter = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>再然后，进入训练循环。我们从<code>X, Y</code>里取出源语言和目标语言的序号数组，输入进模型里。别忘了，Transformer可以并行训练。我们给模型输入目标语言前<code>n-1</code>个单词，用第<code>2</code>到第<code>n</code>个单词作为监督标签。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(n_epochs):</span><br><span class="line">    <span class="keyword">for</span> index, _ <span class="keyword">in</span> get_batch_indices(<span class="built_in">len</span>(X), batch_size):</span><br><span class="line">        x_batch = torch.LongTensor(X[index]).to(device)</span><br><span class="line">        y_batch = torch.LongTensor(Y[index]).to(device)</span><br><span class="line">        y_input = y_batch[:, :-<span class="number">1</span>]</span><br><span class="line">        y_label = y_batch[:, <span class="number">1</span>:]</span><br><span class="line">        y_hat = model(x_batch, y_input)</span><br></pre></td></tr></table></figure><br>得到模型的预测<code>y_hat</code>后，我们可以把输出概率分布中概率最大的那个单词作为模型给出的预测单词，算一个单词预测准确率。当然，我们要排除掉<code>&lt;pad&gt;</code>的影响。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">y_label_mask = y_label != PAD_ID</span><br><span class="line">preds = torch.argmax(y_hat, -<span class="number">1</span>)</span><br><span class="line">correct = preds == y_label</span><br><span class="line">acc = torch.<span class="built_in">sum</span>(y_label_mask * correct) / torch.<span class="built_in">sum</span>(y_label_mask)</span><br></pre></td></tr></table></figure>
+<p>我们最后算一下<code>loss</code>，并执行梯度下降，训练代码就写完了。为了让训练更稳定，不出现梯度过大的情况，我们可以用<code>torch.nn.utils.clip_grad_norm_(model.parameters(), 1)</code>裁剪梯度。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">n, seq_len = y_label.shape</span><br><span class="line">y_hat = torch.reshape(y_hat, (n * seq_len, -<span class="number">1</span>))</span><br><span class="line">y_label = torch.reshape(y_label, (n * seq_len, ))</span><br><span class="line">loss = citerion(y_hat, y_label)</span><br><span class="line"></span><br><span class="line">optimizer.zero_grad()</span><br><span class="line">loss.backward()</span><br><span class="line">torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="number">1</span>)</span><br><span class="line">optimizer.step()</span><br></pre></td></tr></table></figure>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>在本项目的实验中，使用单卡3090，约10分钟就能完成训练。最终的训练准确率可以到达90%以上。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">00006300 <span class="number">12</span>:<span class="number">12</span> loss: <span class="number">0.43494755029678345</span> acc: <span class="number">0.9049844145774841</span></span><br></pre></td></tr></table></figure>
+<p>该数据集没有提供测试集（原仓库里的测试集来自训练集，这显然不合理）。且由于词表太小，不太好构建测试集。因此，我没有编写从测试集里生成句子并算BLEU score的代码，而是写了一份翻译给定句子的代码。要编写测试BLUE score的代码，只需要把翻译任意句子的代码改个输入，加一个求BLEU score的函数即可。这份翻译任意句子的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dldemos.Transformer.data_load <span class="keyword">import</span> (load_cn_vocab, load_en_vocab,</span><br><span class="line">                                           idx_to_sentence, maxlen)</span><br><span class="line"><span class="keyword">from</span> dldemos.Transformer.model <span class="keyword">import</span> Transformer</span><br><span class="line"></span><br><span class="line"><span class="comment"># Config</span></span><br><span class="line">batch_size = <span class="number">1</span></span><br><span class="line">lr = <span class="number">0.0001</span></span><br><span class="line">d_model = <span class="number">512</span></span><br><span class="line">d_ff = <span class="number">2048</span></span><br><span class="line">n_layers = <span class="number">6</span></span><br><span class="line">heads = <span class="number">8</span></span><br><span class="line">dropout_rate = <span class="number">0.2</span></span><br><span class="line">n_epochs = <span class="number">60</span></span><br><span class="line"></span><br><span class="line">PAD_ID = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    device = <span class="string">&#x27;cuda&#x27;</span></span><br><span class="line">    cn2idx, idx2cn = load_cn_vocab()</span><br><span class="line">    en2idx, idx2en = load_en_vocab()</span><br><span class="line"></span><br><span class="line">    model = Transformer(<span class="built_in">len</span>(en2idx), <span class="built_in">len</span>(cn2idx), <span class="number">0</span>, d_model, d_ff, n_layers,</span><br><span class="line">                        heads, dropout_rate, maxlen)</span><br><span class="line">    model.to(device)</span><br><span class="line">    model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">    model_path = <span class="string">&#x27;dldemos/Transformer/model.pth&#x27;</span></span><br><span class="line">    model.load_state_dict(torch.load(model_path))</span><br><span class="line"></span><br><span class="line">    my_input = [<span class="string">&#x27;we&#x27;</span>, <span class="string">&quot;should&quot;</span>, <span class="string">&quot;protect&quot;</span>, <span class="string">&quot;environment&quot;</span>]</span><br><span class="line">    x_batch = torch.LongTensor([[en2idx[x] <span class="keyword">for</span> x <span class="keyword">in</span> my_input]]).to(device)</span><br><span class="line"></span><br><span class="line">    cn_sentence = idx_to_sentence(x_batch[<span class="number">0</span>], idx2en, <span class="literal">True</span>)</span><br><span class="line">    <span class="built_in">print</span>(cn_sentence)</span><br><span class="line"></span><br><span class="line">    y_input = torch.ones(batch_size, maxlen,</span><br><span class="line">                         dtype=torch.long).to(device) * PAD_ID</span><br><span class="line">    y_input[<span class="number">0</span>] = en2idx[<span class="string">&#x27;&lt;S&gt;&#x27;</span>]</span><br><span class="line">    <span class="comment"># y_input = y_batch</span></span><br><span class="line">    <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, y_input.shape[<span class="number">1</span>]):</span><br><span class="line">            y_hat = model(x_batch, y_input)</span><br><span class="line">            <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(batch_size):</span><br><span class="line">                y_input[j, i] = torch.argmax(y_hat[j, i - <span class="number">1</span>])</span><br><span class="line">    output_sentence = idx_to_sentence(y_input[<span class="number">0</span>], idx2cn, <span class="literal">True</span>)</span><br><span class="line">    <span class="built_in">print</span>(output_sentence)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>一开始，还是先获取词表，并初始化模型。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    device = <span class="string">&#x27;cuda&#x27;</span></span><br><span class="line">    cn2idx, idx2cn = load_cn_vocab()</span><br><span class="line">    en2idx, idx2en = load_en_vocab()</span><br><span class="line"></span><br><span class="line">    model = Transformer(<span class="built_in">len</span>(en2idx), <span class="built_in">len</span>(cn2idx), <span class="number">0</span>, d_model, d_ff, n_layers,</span><br><span class="line">                        heads, dropout_rate, maxlen)</span><br><span class="line">    model.to(device)</span><br><span class="line">    model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">    model_path = <span class="string">&#x27;dldemos/Transformer/model.pth&#x27;</span></span><br><span class="line">    model.load_state_dict(torch.load(model_path))</span><br></pre></td></tr></table></figure>
+<p>之后，我们用自己定义的句子（要做好分词）代替原来的输入<code>x_batch</code>。如果要测试某个数据集，只要把这里<code>x_batch</code>换成测试集里的数据即可。<br>我们可以顺便把序号数组用<code>idx_to_sentence</code>转回英文，看看序号转换有没有出错。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">my_input = [<span class="string">&#x27;we&#x27;</span>, <span class="string">&quot;should&quot;</span>, <span class="string">&quot;protect&quot;</span>, <span class="string">&quot;environment&quot;</span>]</span><br><span class="line">x_batch = torch.LongTensor([[en2idx[x] <span class="keyword">for</span> x <span class="keyword">in</span> my_input]]).to(device)</span><br><span class="line"></span><br><span class="line">cn_sentence = idx_to_sentence(x_batch[<span class="number">0</span>], idx2en, <span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(cn_sentence)</span><br></pre></td></tr></table></figure>
+<p>这段代码会输出<code>we should protect environment</code>。这说明<code>x_batch</code>是我们想要的序号数组。</p>
+<p>最后，我们利用Transformer自回归地生成句子，并输出句子。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">y_input = torch.ones(batch_size, maxlen,</span><br><span class="line">                         dtype=torch.long).to(device) * PAD_ID</span><br><span class="line">y_input[<span class="number">0</span>] = en2idx[<span class="string">&#x27;&lt;S&gt;&#x27;</span>]</span><br><span class="line"><span class="comment"># y_input = y_batch</span></span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, y_input.shape[<span class="number">1</span>]):</span><br><span class="line">        y_hat = model(x_batch, y_input)</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(batch_size):</span><br><span class="line">            y_input[j, i] = torch.argmax(y_hat[j, i - <span class="number">1</span>])</span><br><span class="line">output_sentence = idx_to_sentence(y_input[<span class="number">0</span>], idx2cn, <span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(output_sentence)</span><br></pre></td></tr></table></figure>
+<p>要自回归地生成句子，我们先给句子填入无效字符<code>&lt;pad&gt;</code>，再把第一个字符换成句子开始字符<code>&lt;S&gt;</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">y_input = torch.ones(batch_size, maxlen,</span><br><span class="line">                         dtype=torch.long).to(device) * PAD_ID</span><br><span class="line">y_input[<span class="number">0</span>] = en2idx[<span class="string">&#x27;&lt;S&gt;&#x27;</span>]</span><br></pre></td></tr></table></figure>
+<p>之后，我们循环调用<code>Transformer</code>，获取下一个单词的概率分布。我们可以认为，概率最大的那个单词就是模型预测的下一个单词。因此，我们可以用<code>argmax</code>获取预测的下一个单词的序号，填回<code>y_input</code>。这里的<code>y_input</code>和训练时那个<code>y_batch</code>是同一个东西。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># y_input = y_batch</span></span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, y_input.shape[<span class="number">1</span>]):</span><br><span class="line">        y_hat = model(x_batch, y_input)</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(batch_size):</span><br><span class="line">            y_input[j, i] = torch.argmax(y_hat[j, i - <span class="number">1</span>])</span><br></pre></td></tr></table></figure>
+<p>最后只要输出生成的句子即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">output_sentence = idx_to_sentence(y_input[<span class="number">0</span>], idx2cn, <span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(output_sentence)</span><br></pre></td></tr></table></figure>
+<p>由于训练数据非常少，而且数据都来自新闻，我只好选择了一个比较常见的句子”we should protect environment”作为输入。模型翻译出了一个比较奇怪的结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;S&gt; 要 保护 环境 保护 环境 保护 环境 保护 环境 保护 环境 保护 环境 保护 环境 的 生态 环境 落实 好 环境 &lt;/S&gt; 环境 &lt;/S&gt; 有效 保护 环境 &lt;/S&gt;...</span><br></pre></td></tr></table></figure>
+<p>可以看出，模型确实学到了东西，能翻译出“要保护环境”。但是，这翻译的结果也太长太奇怪了。感觉是对训练数据过拟合了。当然，还是那句话，训练集里的数据太少。要提升模型性能并缓解过拟合，加数据集是最好的方法。这个结果起码说明我们Tranformer的编写没有问题。</p>
+<p>在生成新句子的时候，我直接拿概率最高的单词当做预测的下一个单词。其实，还有一些更加高级的生成算法，比如Beam Search。如果模型训练得比较好，可以用这些高级一点的算法提高生成句子的质量。</p>
+<p>我读了网上几份Transformer实现。这些实现在生成句子算BLEU score时，竟然直接输入测试句子的前<code>n-1</code>个单词，把输出的<code>n-1</code>个单词拼起来，作为模型的翻译结果。这个过程等价于告诉你前<code>i</code>个翻译答案，你去输出第<code>i+1</code>个单词，再把每个结果拼起来。这样写肯定是不合理的。正常来说应该是照着我这样自回归地生成翻译句子。大家参考网上的Transformer代码时要多加留心。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>只要读懂了 Transfomer 的论文，用 PyTorch 实现一遍 Transformer 是很轻松的。但是，代码实现中有非常多论文不会提及的细节，你自己实现时很容易踩坑。在这篇文章里，我完整地介绍了一个英中翻译 Transformer 的 PyTorch 实现，相信读者能够跟随这篇文章实现自己的 Transformer，并在代码实现的过程中加深对论文的理解。</p>
+<p>再稍微总结一下代码实现中的一些值得注意的地方。代码中最大的难点是 mask 的实现。mask 的处理稍有闪失，就可能会让计算结果中遍布 NaN。一定要想清楚各个模块的 mask 是从哪来的，它们在注意力计算里是怎么被用上的。</p>
+<p>另外，有两处地方的实现比较灵活。一处是位置编码的实现，一处是多头注意力中怎么描述“多头”。其他模块的实现都大差不差，千篇一律。</p>
+<p>最后再提醒一句，要从头训练一个模型，一定要从小数据集上开始做。不然你训练个半天，结果差了，你不知道是数据有问题，还是代码有问题。我之前一直在使用很大的训练集，每次调试都非常麻烦，浪费了很多时间。希望大家引以为戒。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>感谢 <a target="_blank" rel="noopener" href="https://github.com/P3n9W31/transformer-pytorch">https://github.com/P3n9W31/transformer-pytorch</a> 提供的数据集。</p>
+<p>一份简明的Transformer实现代码 <a target="_blank" rel="noopener" href="https://github.com/hyunwoongko/transformer">https://github.com/hyunwoongko/transformer</a></p>
+<p>一篇不错的Transformer实现教程 <a target="_blank" rel="noopener" href="https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec">https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec</a></p>
+<h2 id="过期内容"><a href="#过期内容" class="headerlink" title="过期内容"></a>过期内容</h2><p>我第一次写这篇文章时过于仓促，文章中有不少错误，实验部分也没写完。我后来把本文又重新修改了一遍，补充了实验部分。</p>
+<p>我之前使用了一个较大的数据集，但发现做实验做得很慢，于是换了一个较小的数据集。以前的数据集预处理介绍就挪到这里了。</p>
+<h3 id="数据集与评测方法"><a href="#数据集与评测方法" class="headerlink" title="数据集与评测方法"></a>数据集与评测方法</h3><p>在开启一个深度学习项目之初，要把任务定义好。准确来说，我们要明白这个任务是在完成一个怎样的映射，并准备一个用于评测的数据集，定义好评价指标。</p>
+<p>英中翻译，这个任务非常明确，就是把英文的句子翻译成中文。英中翻译的数据集应该包含若干个句子对，每个句子对由一句英文和它对应的中文翻译组成。</p>
+<p>中英翻译的数据集不是很好找。有几个比较出名的数据集的链接已经失效了，还有些数据集需要注册与申请后才能获取。我在中文NLP语料库仓库(<a target="_blank" rel="noopener" href="https://github.com/brightmart/nlp_chinese_corpus)找到了中英文平行语料">https://github.com/brightmart/nlp_chinese_corpus)找到了中英文平行语料</a> translation2019zh。该语料库由520万对中英文语料构成，训练集516万对，验证集3.9万对。用作训练和验证中英翻译模型是足够了。</p>
+<p>机器翻译的评测指标叫做BLEU Score。如果模型输出的翻译和参考译文有越多相同的单词、连续2个相同单词、连续3个相同单词……，则得分越高。</p>
+<p>PyTorch 提供了便捷的API，我们可以用一行代码算完BLEU Score。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">from</span> torchtext.data.metrics <span class="keyword">import</span> bleu_score</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>candidate_corpus = [[<span class="string">&#x27;My&#x27;</span>, <span class="string">&#x27;full&#x27;</span>, <span class="string">&#x27;pytorch&#x27;</span>, <span class="string">&#x27;test&#x27;</span>], [<span class="string">&#x27;Another&#x27;</span>, <span class="string">&#x27;Sentence&#x27;</span>]]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>references_corpus = [[[<span class="string">&#x27;My&#x27;</span>, <span class="string">&#x27;full&#x27;</span>, <span class="string">&#x27;pytorch&#x27;</span>, <span class="string">&#x27;test&#x27;</span>], [<span class="string">&#x27;Completely&#x27;</span>, <span class="string">&#x27;Different&#x27;</span>]], [[<span class="string">&#x27;No&#x27;</span>, <span class="string">&#x27;Match&#x27;</span>]]]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>bleu_score(candidate_corpus, references_corpus)</span><br><span class="line">    <span class="number">0.8408964276313782</span></span><br></pre></td></tr></table></figure>
+<h3 id="数据清洗"><a href="#数据清洗" class="headerlink" title="数据清洗"></a>数据清洗</h3><p>得到数据集后，下一步要做的是对数据集做处理，把原始数据转化成能够输入神经网络的张量。对于图片，预处理可能是裁剪、缩放，使所有图片都有一样的大小；对于文本，预处理可能是分词、填充。</p>
+<p>在<a target="_blank" rel="noopener" href="https://drive.google.com/open?id=1EX8eE5YWBxCaohBO8Fh4e2j3b9C2bTVQ">网盘</a>上下载好 translation2019zh 数据集后，我们来一步一步清洗这个数据集。这个数据集只有两个文件<code>translation2019zh_train.json</code>, <code>translation2019zh_valid.json</code>，它们的结构如下：</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;english&quot;: &lt;english&gt;, &quot;chinese&quot;: &lt;chinese&gt;&#125;</span><br><span class="line">&#123;&quot;english&quot;: &lt;english&gt;, &quot;chinese&quot;: &lt;chinese&gt;&#125;</span><br><span class="line">&#123;&quot;english&quot;: &lt;english&gt;, &quot;chinese&quot;: &lt;chinese&gt;&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>这些json文件有点不合标准，每对句子由一行json格式的记录组成。<code>english</code>属性是英文句子，<code>chinese</code>属性是中文句子。比如：</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;english&quot;: &quot;In Italy ...&quot;, &quot;chinese&quot;: &quot;在意大利 ...&quot;&#125;</span><br></pre></td></tr></table></figure>
+<p>因此，在读取数据时，我们可以用下面的代码提取每对句子。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(json_path, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> fp:</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> fp:</span><br><span class="line">        line = json.loads(line)</span><br><span class="line">        english, chinese = line[<span class="string">&#x27;english&#x27;</span>], line[<span class="string">&#x27;chinese&#x27;</span>]</span><br></pre></td></tr></table></figure>
+<p>这个数据集有一点不干净，有一些句子对的中英文句子颠倒过来了。为此，我们要稍微处理一下，把这些句子对翻转过来。如果一个英文句子不全由 ASCII 组成，则它可能是一个被标错的中文句子。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Correct mislabeled data</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> english.isascii():</span><br><span class="line">        english, chinese = chinese, english</span><br></pre></td></tr></table></figure>
+<p>经过这一步，我们只得到了中英文的字符文本。而在NLP中，大部分处理的最小单位都是符号（token）——对于英文来说，符号是单词、标点；对于中文来说，符号是词语、标点。我们还需要一个符号化的过程。</p>
+<p>英文符号化非常方便，torchtext 提供了非常便捷的英文分词 API。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torchtext.data <span class="keyword">import</span> get_tokenizer</span><br><span class="line"></span><br><span class="line">tokenizer = get_tokenizer(<span class="string">&#x27;basic_english&#x27;</span>)</span><br><span class="line">english = tokenizer(english)</span><br></pre></td></tr></table></figure>
+<p>而中文分词方面，我使用了<code>jieba</code>库。该库可以直接 pip 安装。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install jieba</span><br></pre></td></tr></table></figure>
+<p>分词的 API 是 <code>jieba.cut</code>。由于分词的结果中，相邻的词之间有空格，我一股脑地把所有空白符给过滤掉了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> jieba</span><br><span class="line">chinese = <span class="built_in">list</span>(jieba.cut(chinese))</span><br><span class="line">chinese = [x <span class="keyword">for</span> x <span class="keyword">in</span> chinese <span class="keyword">if</span> x <span class="keyword">not</span> <span class="keyword">in</span> &#123;<span class="string">&#x27; &#x27;</span>, <span class="string">&#x27;\t&#x27;</span>&#125;]</span><br></pre></td></tr></table></figure>
+<p>经过这些处理后，每句话被转换成了中文词语或英文单词的数组。整个处理代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_file</span>(<span class="params">json_path</span>):</span><br><span class="line">    english_sentences = []</span><br><span class="line">    chinese_sentences = []</span><br><span class="line">    tokenizer = get_tokenizer(<span class="string">&#x27;basic_english&#x27;</span>)</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(json_path, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> fp:</span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> fp:</span><br><span class="line">            line = json.loads(line)</span><br><span class="line">            english, chinese = line[<span class="string">&#x27;english&#x27;</span>], line[<span class="string">&#x27;chinese&#x27;</span>]</span><br><span class="line">            <span class="comment"># Correct mislabeled data</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> english.isascii():</span><br><span class="line">                english, chinese = chinese, english</span><br><span class="line">            <span class="comment"># Tokenize</span></span><br><span class="line">            english = tokenizer(english)</span><br><span class="line">            chinese = <span class="built_in">list</span>(jieba.cut(chinese))</span><br><span class="line">            chinese = [x <span class="keyword">for</span> x <span class="keyword">in</span> chinese <span class="keyword">if</span> x <span class="keyword">not</span> <span class="keyword">in</span> &#123;<span class="string">&#x27; &#x27;</span>, <span class="string">&#x27;\t&#x27;</span>&#125;]</span><br><span class="line">            english_sentences.append(english)</span><br><span class="line">            chinese_sentences.append(chinese)</span><br><span class="line">    <span class="keyword">return</span> english_sentences, chinese_sentences</span><br></pre></td></tr></table></figure>
+<h3 id="词语转序号"><a href="#词语转序号" class="headerlink" title="词语转序号"></a>词语转序号</h3><p>为了让计算机更方便地处理单词，我们还要把单词转换成序号。比如令<code>apple</code>为0号，<code>banana</code>为1号，则句子<code>apple banana apple</code>就转换成了<code>0 1 0</code>。</p>
+<p>给每一个单词选一个标号，其实就是要建立一个词典。一般来说，我们可以利用他人的统计结果，挑选最常用的一些英文单词和中文词语构成词典。不过，现在我们已经有了一个庞大的中英语料库了，我们可以直接从这个语料库中挑选出最常见的词构成词典。</p>
+<p>根据上一步处理得到的句子数组<code>sentences</code>，我们可以用下面的 Python 代码统计出最常见的一些词语，把它们和4个特殊字符<code>&lt;sos&gt;, &lt;eos&gt;, &lt;unk&gt;, &lt;pad&gt;</code>（句子开始字符、句子结束字符、频率太少没有被加入词典的词语、填充字符）一起构成词典。统计字符出现次数是通过 Python 的 <code>Counter</code> 类实现的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> Counter</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">create_vocab</span>(<span class="params">sentences, max_element=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Note that max_element includes special characters&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    default_list = [<span class="string">&#x27;&lt;sos&gt;&#x27;</span>, <span class="string">&#x27;&lt;eos&gt;&#x27;</span>, <span class="string">&#x27;&lt;unk&gt;&#x27;</span>, <span class="string">&#x27;&lt;pad&gt;&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    char_set = Counter()</span><br><span class="line">    <span class="keyword">for</span> sentence <span class="keyword">in</span> sentences:</span><br><span class="line">        c_set = Counter(sentence)</span><br><span class="line">        char_set.update(c_set)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> max_element <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">return</span> default_list + <span class="built_in">list</span>(char_set.keys())</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        max_element -= <span class="number">4</span></span><br><span class="line">        words_freq = char_set.most_common(max_element)</span><br><span class="line">        <span class="comment"># pair array to double array</span></span><br><span class="line">        words, freq = <span class="built_in">zip</span>(*words_freq)</span><br><span class="line">        <span class="keyword">return</span> default_list + <span class="built_in">list</span>(words)</span><br></pre></td></tr></table></figure>
+<p>准备好了词典后，我还编写了两个工具函数<code>sentence_to_tensor</code>，<code>tensor_to_sentence</code>，它们可以用于字符串数组与序号数组的互相转换。测试这些代码的脚本及其输出如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Dataset.py</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    en_sens, zh_sens = read_file(</span><br><span class="line">        <span class="string">&#x27;data/translation2019zh/translation2019zh_valid.json&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(*en_sens[<span class="number">0</span>:<span class="number">3</span>])</span><br><span class="line">    <span class="built_in">print</span>(*zh_sens[<span class="number">0</span>:<span class="number">3</span>])</span><br><span class="line">    en_vocab = create_vocab(en_sens, <span class="number">10000</span>)</span><br><span class="line">    zh_vocab = create_vocab(zh_sens, <span class="number">30000</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">list</span>(en_vocab)[<span class="number">0</span>:<span class="number">10</span>])</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">list</span>(zh_vocab)[<span class="number">0</span>:<span class="number">10</span>])</span><br><span class="line"></span><br><span class="line">    en_tensors = sentence_to_tensor(en_sens, en_vocab)</span><br><span class="line">    zh_tensors = sentence_to_tensor(zh_sens, zh_vocab)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(tensor_to_sentence(en_tensors[<span class="number">0</span>], en_vocab, <span class="literal">True</span>))</span><br><span class="line">    <span class="built_in">print</span>(tensor_to_sentence(zh_tensors[<span class="number">0</span>], zh_vocab))</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[&#x27;slowly&#x27;, &#x27;and&#x27;, &#x27;not&#x27;, &#x27;without&#x27;, &#x27;struggle&#x27;, &#x27;,&#x27;, &#x27;america&#x27;, &#x27;began&#x27;, &#x27;to&#x27;, &#x27;listen&#x27;, &#x27;.&#x27;] ...]</span><br><span class="line">[&#x27;美国&#x27;, &#x27;缓慢&#x27;, &#x27;地&#x27;, &#x27;开始&#x27;, &#x27;倾听&#x27;, &#x27;，&#x27;, &#x27;但&#x27;, &#x27;并非&#x27;, &#x27;没有&#x27;, &#x27;艰难曲折&#x27;, &#x27;。&#x27;] ...]</span><br><span class="line">[&#x27;&lt;sos&gt;&#x27;, &#x27;&lt;eos&gt;&#x27;, &#x27;&lt;unk&gt;&#x27;, &#x27;&lt;pad&gt;&#x27;, &#x27;the&#x27;, &#x27;.&#x27;, &#x27;,&#x27;, &#x27;of&#x27;, &#x27;and&#x27;, &#x27;to&#x27;]</span><br><span class="line">[&#x27;&lt;sos&gt;&#x27;, &#x27;&lt;eos&gt;&#x27;, &#x27;&lt;unk&gt;&#x27;, &#x27;&lt;pad&gt;&#x27;, &#x27;的&#x27;, &#x27;，&#x27;, &#x27;。&#x27;, &#x27;在&#x27;, &#x27;了&#x27;, &#x27;和&#x27;]</span><br><span class="line">slowly and not without struggle , america began to listen .</span><br><span class="line">美国缓慢地开始倾听，但并非没有&lt;unk&gt;。</span><br></pre></td></tr></table></figure>
+<p>在这一步中，有一个重要的参数：词典的大小。显然，词典越大，能处理的词语越多，但训练速度也会越慢。由于这个项目只是一个用于学习的demo，我设置了比较小的词典大小。想提升整个模型的性能的话，调大词典大小是一个最快的方法。</p>
+<h3 id="生成-Dataloader"><a href="#生成-Dataloader" class="headerlink" title="生成 Dataloader"></a>生成 Dataloader</h3><p>都说程序员是新时代的农民工，这非常有道理。因为，作为程序员，你免不了要写一些繁重、无聊的数据处理脚本。还好，写完这些无聊的预处理代码后，总算可以使用 PyTorch 的 API 写一些有趣的代码了。</p>
+<p>把词语数组转换成序号句子数组后，我们要考虑怎么把序号句子数组输入给模型了。文本数据通常长短不一，为了一次性处理一个 batch 的数据，要把短的句子填充，使得一批句子长度相等。写 Dataloader 时最主要的工作就是填充并对齐句子。</p>
+<p>先看一下<code>Dataset</code>的写法。上一步得到的序号句子数组可以塞进<code>Dataset</code>里。注意，每个句子的前后要加上表示句子开始和结束的特殊符号。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">SOS_ID = <span class="number">0</span></span><br><span class="line">EOS_ID = <span class="number">1</span></span><br><span class="line">UNK_ID = <span class="number">2</span></span><br><span class="line">PAD_ID = <span class="number">3</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TranslationDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, en_tensor: np.ndarray, zh_tensor: np.ndarray</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="keyword">assert</span> <span class="built_in">len</span>(en_tensor) == <span class="built_in">len</span>(zh_tensor)</span><br><span class="line">        <span class="variable language_">self</span>.length = <span class="built_in">len</span>(en_tensor)</span><br><span class="line">        <span class="variable language_">self</span>.en_tensor = en_tensor</span><br><span class="line">        <span class="variable language_">self</span>.zh_tensor = zh_tensor</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.length</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, index</span>):</span><br><span class="line">        x = np.concatenate(([SOS_ID], <span class="variable language_">self</span>.en_tensor[index], [EOS_ID]))</span><br><span class="line">        x = torch.from_numpy(x)</span><br><span class="line">        y = np.concatenate(([SOS_ID], <span class="variable language_">self</span>.zh_tensor[index], [EOS_ID]))</span><br><span class="line">        y = torch.from_numpy(y)</span><br><span class="line">        <span class="keyword">return</span> x, y</span><br></pre></td></tr></table></figure>
+<p>接下来看一下 DataLoader 的写法。在创建 Dataloader 时，最重要的是 <code>collate_fn</code> 的编写，这个函数决定了怎么把多条数据合成一个等长的 batch。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_dataloader</span>(<span class="params">en_tensor: np.ndarray,</span></span><br><span class="line"><span class="params">                   zh_tensor: np.ndarray,</span></span><br><span class="line"><span class="params">                   batch_size=<span class="number">16</span></span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">collate_fn</span>(<span class="params">batch</span>):</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">    dataset = TranslationDataset(en_tensor, zh_tensor)</span><br><span class="line">    dataloader = DataLoader(dataset,</span><br><span class="line">                            batch_size=batch_size,</span><br><span class="line">                            shuffle=<span class="literal">True</span>,</span><br><span class="line">                            collate_fn=collate_fn)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> dataloader</span><br></pre></td></tr></table></figure>
+<p><code>collate_fn</code> 的输入是多个 <code>dataset</code> <code>__getitem__</code> 的返回结果构成的数组。对于我们的 <code>dataset</code> 来说，<code>collate_fn</code> 的输入是 <code>[(x1, y1), (x2, y2), ...]</code> 。我们可以用 <code>zip(*batch)</code> 把二元组数组拆成两个数组 <code>x, y</code> 。</p>
+<p><code>collate_fn</code> 的输出就是将来 <code>dataloader</code> 的输出。PyTorch 提供了 <code>pad_sequence</code> 函数用来把一批数据填充至等长。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch.nn.utils.rnn <span class="keyword">import</span> pad_sequence</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">collate_fn</span>(<span class="params">batch</span>):</span><br><span class="line">    x, y = <span class="built_in">zip</span>(*batch)</span><br><span class="line">    x_pad = pad_sequence(x, batch_first=<span class="literal">True</span>, padding_value=PAD_ID)</span><br><span class="line">    y_pad = pad_sequence(y, batch_first=<span class="literal">True</span>, padding_value=PAD_ID)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> x_pad, y_pad</span><br></pre></td></tr></table></figure>
+<p>实现完<code>collate_fn</code>后，我们就可以得到了DataLoader。这样，数据集预处理部分大功告成。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/06/06/20230527-VQVAE/" rel="prev" title="轻松理解 VQ-VAE：首个提出 codebook 机制的生成模型">
+      <i class="fa fa-chevron-left"></i> 轻松理解 VQ-VAE：首个提出 codebook 机制的生成模型
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/06/19/20230605-VQGAN/" rel="next" title="VQGAN 论文与源码解读：前Diffusion时代的高清图像生成模型">
+      VQGAN 论文与源码解读：前Diffusion时代的高清图像生成模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%87%86%E5%A4%87"><span class="nav-number">1.</span> <span class="nav-text">数据集准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Transformer-%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">Transformer 模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Positional-Encoding"><span class="nav-number">2.1.</span> <span class="nav-text">Positional Encoding</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scaled-Dot-Product-Attention"><span class="nav-number">2.2.</span> <span class="nav-text">Scaled Dot-Product Attention</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Transformer-%E9%87%8C%E7%9A%84-mask"><span class="nav-number">2.2.1.</span> <span class="nav-text">Transformer 里的 mask</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E8%AE%A1%E7%AE%97"><span class="nav-number">2.2.2.</span> <span class="nav-text">注意力计算</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Multi-Head-Attention"><span class="nav-number">2.3.</span> <span class="nav-text">Multi-Head Attention</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E9%A6%88%E7%BD%91%E7%BB%9C"><span class="nav-number">2.4.</span> <span class="nav-text">前馈网络</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Encoder-amp-Decoder"><span class="nav-number">2.5.</span> <span class="nav-text">Encoder &amp; Decoder</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transformer-%E7%B1%BB"><span class="nav-number">2.6.</span> <span class="nav-text">Transformer 类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83"><span class="nav-number">3.</span> <span class="nav-text">训练</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">实验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%87%E6%9C%9F%E5%86%85%E5%AE%B9"><span class="nav-number">7.</span> <span class="nav-text">过期内容</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86%E4%B8%8E%E8%AF%84%E6%B5%8B%E6%96%B9%E6%B3%95"><span class="nav-number">7.1.</span> <span class="nav-text">数据集与评测方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%B8%85%E6%B4%97"><span class="nav-number">7.2.</span> <span class="nav-text">数据清洗</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%8D%E8%AF%AD%E8%BD%AC%E5%BA%8F%E5%8F%B7"><span class="nav-number">7.3.</span> <span class="nav-text">词语转序号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90-Dataloader"><span class="nav-number">7.4.</span> <span class="nav-text">生成 Dataloader</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

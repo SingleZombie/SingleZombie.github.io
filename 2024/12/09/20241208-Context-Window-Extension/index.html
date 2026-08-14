@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="随着视觉主干模型不断向 Transformer 靠拢，和 Transformer 配套的一些技术也从 NLP 社区涌入了 CV 社区。比如 Stable Diffusion 3 还在用标准 Transformer 那一套正弦位置编码，而其升级版 FLUX.1 就用上了旋转位置编码 (RoPE) , Lumina-T2X 模型甚至把 RoPE 的长度外推技术也从 NLP 社区搬了过来。在这篇博文中，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="让预训练 Transformer 生成更长的文本&#x2F;图像：位置编码长度外推技术">
+<meta property="og:url" content="https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="随着视觉主干模型不断向 Transformer 靠拢，和 Transformer 配套的一些技术也从 NLP 社区涌入了 CV 社区。比如 Stable Diffusion 3 还在用标准 Transformer 那一套正弦位置编码，而其升级版 FLUX.1 就用上了旋转位置编码 (RoPE) , Lumina-T2X 模型甚至把 RoPE 的长度外推技术也从 NLP 社区搬了过来。在这篇博文中，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://files.mdnice.com/user/32105/57c1010e-f74d-440c-9eb7-2fdf0f851bff.png">
+<meta property="og:image" content="https://files.mdnice.com/user/32105/522a0160-e00f-4988-9dc2-54d1fd28d96d.png">
+<meta property="og:image" content="https://files.mdnice.com/user/32105/adf72101-248f-4967-b46a-efbada316b30.png">
+<meta property="article:published_time" content="2024-12-08T18:15:32.000Z">
+<meta property="article:modified_time" content="2024-12-12T08:07:57.909Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="位置编码">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://files.mdnice.com/user/32105/57c1010e-f74d-440c-9eb7-2fdf0f851bff.png">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>让预训练 Transformer 生成更长的文本/图像：位置编码长度外推技术 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/12/09/20241208-Context-Window-Extension/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          让预训练 Transformer 生成更长的文本/图像：位置编码长度外推技术
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-09 02:15:32" itemprop="dateCreated datePublished" datetime="2024-12-09T02:15:32+08:00">2024-12-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>随着视觉主干模型不断向 Transformer 靠拢，和 Transformer 配套的一些技术也从 NLP 社区涌入了 CV 社区。比如 Stable Diffusion 3 还在用标准 Transformer 那一套正弦位置编码，而其升级版 FLUX.1 就用上了旋转位置编码 (RoPE) , Lumina-T2X 模型甚至把 RoPE 的长度外推技术也从 NLP 社区搬了过来。在这篇博文中，我将站在一个对 NLP 技术了解不深的 CV 研究者的视角，较为详细地介绍一下 NLP 中 RoPE 相关的位置编码知识、RoPE 长度外推技术以及它们在 CV 里的应用。</p>
+<p>长度外推，指的是使用在短序列上预训练的 Transformer 模型直接生成超出训练长度的长序列。类比到图像生成中，长度外推可以看成对模型所建模的图像分布做了一次超分辨率：比如模型训练时只见过 $256 \times 256$ 的图像，我们想直接用它生成 $512 \times 512$ 且同样清晰的图像。</p>
+<p>推荐大家在阅读本文前先熟悉位置编码的基本原理，强烈推荐阅读 RoPE 提出者苏剑林的系列文章。</p>
+<p>位置编码设计原则与 RoPE 的首次提出：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/8130">https://kexue.fm/archives/8130</a></p>
+<p>详细介绍 RoPE：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/8265">https://kexue.fm/archives/8265</a></p>
+<p>介绍长度外推的一项关键改进 (NTK-aware)：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/9675">https://kexue.fm/archives/9675</a> <a target="_blank" rel="noopener" href="https://kexue.fm/archives/9706">https://kexue.fm/archives/9706</a> <a target="_blank" rel="noopener" href="https://kexue.fm/archives/9948">https://kexue.fm/archives/9948</a></p>
+<p>和这篇博文相关的两篇学术论文是：</p>
+<p>YaRN，一种公认效果较好的长度外推技术：<em>YaRN: Efficient Context Window Extension of Large Language Models</em> (<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.00071">https://arxiv.org/abs/2309.00071</a>)</p>
+<p>Lumina-Next，前沿扩散 Transformer (Diffusion Transformer, DIT) 模型，采用了长度外推技术：<em>Lumina-Next : Making Lumina-T2X Stronger and Faster with Next-DiT</em> (<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2406.18583">https://arxiv.org/abs/2406.18583</a>)</p>
+<h2 id="位置编码知识回顾"><a href="#位置编码知识回顾" class="headerlink" title="位置编码知识回顾"></a>位置编码知识回顾</h2><h3 id="Transformer-中的位置编码"><a href="#Transformer-中的位置编码" class="headerlink" title="Transformer 中的位置编码"></a>Transformer 中的位置编码</h3><p>相比于此前流行的 CNN、RNN 模型，Transformer 的一大特点是其输出与输入次序无关。比如我们用 Transformer 建模文本的概率，那么模型会把「上海」和「海上」当成概率一样的词语。这也就是说 Transformer 无法从输入词元 (token) 的位置关系中获取信息。</p>
+<blockquote>
+<p>如果让 Transformer 不输出信息聚合后的概率，还是保留输入词元的结构的话，那么打乱输入词元顺序就会同样地打乱输出词元顺序。模型依然无法获取输入词元间的位置关系。</p>
+</blockquote>
+<p>为了把 <code>1, 2, 3, 4</code> 这样的位置信息输入进模型，标准 Tranformer 的做法是给不同位置的输入加上不同的位置编码。假设模型的中间变量都是二维向量，那么在句子中位置为 $k$ 的词元的位置编码是：</p>
+<script type="math/tex; mode=display">
+[\sin(k), \cos(k)]</script><p>如果模型的中间变量都是 $d$ 维向量 （为了方便不妨认为 $d$ 是偶数），我们只需要把 $d$ 拆成 $d/2$ 组，每组用不同频率的三角函数即可。这样，长度为 $d$ 的词元在位置 $k$ 的位置编码是：</p>
+<script type="math/tex; mode=display">
+[\sin(k/10000^{2\cdot 0/d}), \cos(k/10000^{2\cdot 0/d}), ..., \sin(k/10000^{2\cdot i/d}), \cos(k/10000^{2\cdot i/d}) , ...]</script><p>直观上来看，随着中间变量的维度越来越长，位置编码中对应的三角函数的频率不断变低，从一开始的 $1$ 逐渐靠向 $1/10000$。</p>
+<blockquote>
+<p>上述公式来自论文，代码实现时要注意更多细节。比如有些代码中 $i$ 是从 $0$ 开始计数的。由于指数的分子的范围是从$0$到$d-2$，代码会把指数的分母也改成 $d-2$，保证最后一组三角函数的频率是 $1/10000$。</p>
+</blockquote>
+<p>算出一个和输入词元向量等长的位置编码后，该编码会直接加到输入向量上。由于这种编码用了正弦函数，所以它被后续工作称为正弦位置编码。</p>
+<h3 id="相对位置编码与-RoPE"><a href="#相对位置编码与-RoPE" class="headerlink" title="相对位置编码与 RoPE"></a>相对位置编码与 RoPE</h3><p>在设计位置编码时，最好能让编码传达词元的<strong>绝对位置</strong>和<strong>相对位置</strong>信息。比如句号会出现在文本结尾而不是文本开头，这一规律来自绝对位置信息；而每几个词元会组成固定的词组，与它们在整段文本中的位置无关，这反映了相对位置信息的意义。</p>
+<p>正弦位置编码同时满足了这两个性质。首先，正弦位置编码的输入只有绝对位置，它本质上就是一种绝对编码。另外，根据三角函数和角公式，假设偏移 $\Delta k$ 是常数，那么$sin(\alpha-\Delta k)$可以由含 $\alpha$ 的三角函数的线性组合表示。这说明模型能够从正弦编码中部分了解到一些相对位置的信息。</p>
+<p>作为绝对位置编码，正弦编码虽然能够表达一些相对信息，但是这些信息太隐晦了。并且，该编码只在输入时加入，可能在网络运算中途这些信息就消失了。我们能不能更加显式地用某种绝对位置编码建模相对位置关系呢？</p>
+<p>在 Transformer 中，不同位置的词元仅会在注意力操作时做信息交互。观察下面的注意力计算公式，更具体一点来说，信息交互发生在注意力的 QK 内积时。我们可以在每次注意力操作前都给 $Q$, $K$ 里各个向量加上位置编码，保证相对位置信息能反映在注意力计算里。</p>
+<script type="math/tex; mode=display">
+Attn(Q, K, V) = softmax(\frac{QK^T}{\sqrt{d}})V</script><p>苏剑林设计了一种新的位置编码：考虑 $Q$ 里位置为 $m$ 的向量 $\mathbf{q}_m$ 和 $K$ 里位置为 $n$ 的向量 $\mathbf{k}_n$，给位置为 $j$ 的向量右乘上复数 $e^{ij\theta}$，其中 $i$ 是虚数单位， $\theta$ 是一个角度。这样，复数下的 QK 内积结果为：</p>
+<script type="math/tex; mode=display">
+\langle \mathbf{q}_me^{im\theta}, \mathbf{k}_ne^{in\theta} \rangle=Re[\mathbf{q}_m\mathbf{k}_n^*e^{i(m-n)\theta}]</script><p>其中，$Re[]$是取实部，$*$ 为共轭复数。可以发现，内积结果也出现了位置编码 $e^{i(m-n)\theta}$，且编码的值仅取决于相对位置 $(m-n)$。因此，这种编码能够更加显式地在注意力运算里建模相对位置。</p>
+<p>由于最终结果取了实部，所以上述所有运算都可以转换成实数域的操作。假设 $\mathbf{q}_m = (q_0, q_1)$ 只是一个二维向量，那么上述右乘位置编码的操作可以写成：</p>
+<script type="math/tex; mode=display">
+\begin{bmatrix}
+& \cos m \theta & -\sin m \theta & \\
+& \sin m \theta &  \cos m \theta & \\
+\end{bmatrix}
+\begin{bmatrix}
+\begin{aligned}
+q_0 \\
+q_1 \\
+\end{aligned}
+\end{bmatrix}</script><p>从几何意义上讲，这个操作其实是二维向量旋转。因此，这种位置编码被称为<strong>旋转位置编码</strong>(RoPE)。</p>
+<p>和正弦编码类似，要把二维中间变量拓展成 $d$ 维时，只要分组讨论，改变每组的频率（这里的频率是角度 $\theta$）就行了。</p>
+<script type="math/tex; mode=display">
+\begin{bmatrix}
+& \cos m\theta_0 & -\sin m\theta_0 & 0 & 0 & \cdots & 0 & 0  \\
+& \sin m\theta_0 & \cos m\theta_0 & 0 & 0 & \cdots & 0 & 0\\
+& 0 & 0 & \cos m\theta_1 & -\sin m\theta_1 & \cdots & 0 & 0\\
+& 0 & 0 & \sin m\theta_1 & \cos m\theta_1 & \cdots & 0 & 0 \\
+&\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+& 0 & 0 & 0 & 0 & \cdots & \cos m\theta_{d/2-1} & -\sin m\theta_{d/2-1} \\
+& 0 & 0 & 0 & 0 & \cdots & \sin m\theta_{d/2-1} & \cos m\theta_{d/2-1}
+\end{bmatrix}
+\begin{bmatrix}
+q_0 \\
+q_1 \\
+q_2 \\
+q_3 \\
+\vdots \\
+q_{d-2} \\
+q_{d-1}
+\end{bmatrix}</script><p>角度 $\theta$ 的设计可以参考 Transformer 的正弦编码：对于第 $i$ 组，我们令 $\theta_i=1/10000^{2i/d}$</p>
+<p>RoPE 和正弦编码有同有异。相同之处在于：</p>
+<ul>
+<li>二者都是绝对位置编码，并通过编码公式的某些设计间接传递了相对位置信息。</li>
+<li>二者用了同样的正弦编码方式：随着变量通道数的增大，对应位置编码的正弦函数的频率不断指数衰减。</li>
+</ul>
+<p>不同之处在于：</p>
+<ul>
+<li>正弦编码仅在模型输入时施加一次，RoPE 在所有自注意力计算时都施加。</li>
+<li>正弦编码会生成一组编码向量，加到输入上。而 RoPE 是一种操作，它的几何意义是把注意力输入向量旋转一个角度。</li>
+</ul>
+<h2 id="用-RoPE-实现长度外推"><a href="#用-RoPE-实现长度外推" class="headerlink" title="用 RoPE 实现长度外推"></a>用 RoPE 实现长度外推</h2><p>现在，我们正式进入本文的正题：长度外推。长度外推严格来说是一类任务，并不一定要用外推的做法。它似乎最早出自论文 ALiBi (<em>Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation</em>)。正如论文标题所示，该任务的目的就是「短训练，长推理」：在短序列上训练后，不经额外训练或只需少量微调，让模型生成长文本。后来这种任务也被称为「上下文窗口拓展」(Context Window Extension)，目的依旧是用已经训好的模型来生成更大的文本，只是不强调方法是外推。为了称呼方便，我们在这篇博文里将该任务统称为「长度外推」。</p>
+<p>我们想一想，假设模型训练时最大文本长度是 $L$，现在要生成长度为 $L’$ 的句子 ($L’&gt;L$)，我们需要做什么呢？其实我们只要把代码写好，除了生成长度以外啥也不改就行了。</p>
+<p>这样的话，模型在运行时究竟哪里发生了变化呢？根据我们之前的分析，Transformer 是不知道位置信息的，只有位置编码传递了位置信息。因此，增加了生成句子长度后，原本只见过位置在 $L$ 之内的位置编码，现在要尝试解读位置为 $L, L+1, …, L’ - 1$ 的位置编码。因此，如果除了修改生成长度外什么也不做，其实就是让模型把学到的位置编码知识外推。但很可惜，由于没学过这些训练集之外的位置关系，这种外推法效果很差。</p>
+<p>我们在接下来的几节里会讨论一些更加强大的长度外推策略。这里先补充介绍一点东西。看了对长度外推任务的基本介绍，读者或许会疑惑：长度外推似乎只要考虑位置编号就行了，不是非得和 RoPE 绑定起来？其实，长度外推真正要考虑的是位置编码的形式而不是只考虑编号。我们稍后的分析其实对所有类正弦编码都有效。但现在大家都是基于 RoPE 讨论，用基于 RoPE 的模型做实验，可能是因为 RoPE 更加直接、全面地建模了词元间的交互关系，只要调整了 RoPE 的公式，其效果立刻就能反映出来。相比之下，正弦位置编码只是在输入时提供了位置信息，修改位置编码的细节不能全面地影响模型的输出。</p>
+<h2 id="位置内插"><a href="#位置内插" class="headerlink" title="位置内插"></a>位置内插</h2><p>既然超出 $L$ 的位置没有被训练过，那么在 $L$ 之内多选一些位置为分数的点不就行了？位置内插（Positional Interpolation, PI）就是这样的一种长度外推方法，它把长度为 $0$~$L’$ 的位置线性压缩到 $0$~$L$ 内。也就是说，对于位置$m$，将其的位置编号修改为：</p>
+<script type="math/tex; mode=display">
+m := \frac{L}{L'}m</script><p>由于位置编号会被送进正弦函数里，所以编号哪怕是分数也没关系。通过这种简单的线性内插方法，我们就能在已经学好的编号范围内多选一些位置，实现长度外推。</p>
+<p>内插确实比外推的效果要好得多。后续所有长度外推方法实际上都是在研究如何更好的求插值位置编码。很快，有人就从频率分析的角度提出了线性内插的一个改进。</p>
+<h2 id="改变正弦函数基础频率：NTK-aware-Scaled-RoPE"><a href="#改变正弦函数基础频率：NTK-aware-Scaled-RoPE" class="headerlink" title="改变正弦函数基础频率：NTK-aware Scaled RoPE"></a>改变正弦函数基础频率：NTK-aware Scaled RoPE</h2><h3 id="直观认识"><a href="#直观认识" class="headerlink" title="直观认识"></a>直观认识</h3><p>就在位置内插提出不久，就有研究者在社区 (<a target="_blank" rel="noopener" href="https://www.reddit.com/r/LocalLLaMA/comments/14lz7j5/ntkaware_scaled_rope_allows_llama_models_to_have/">https://www.reddit.com/r/LocalLLaMA/comments/14lz7j5/ntkaware_scaled_rope_allows_llama_models_to_have/</a>) 提出了一种效果更好，完全不需要微调的长度外推技术：NTK-aware Scaled RoPE （后文简称为”NTK-aware RoPE”）。该研究者后续将此方法进一步整理优化，发表了论文 <em>YaRN: Efficient Context Window Extension of Large Language Models</em>。我们先看一下 NTK-aware RoPE。</p>
+<p>NTK-aware RoPE 的改动非常简洁，但它改动的地方却很出人意料：原来，总长度为 $d$ 的向量的第 $i$ 组位置编码的频率为：</p>
+<script type="math/tex; mode=display">
+\theta_i=1/10000^{2i/d}</script><p>现在，我们把 $10000$ 改掉，公式变为：</p>
+<script type="math/tex; mode=display">
+\theta_i^{NTK-aware}=(10000 \cdot (\frac{L'}{L})^{d/(d-2)} )^{-2i/d}</script><p>使用这种新长度外推方法，在上下文窗口大小为 2048 的 LLaMA 模型上，模型生成长文本的误差远低于之前的方法。</p>
+<p><img src="https://files.mdnice.com/user/32105/57c1010e-f74d-440c-9eb7-2fdf0f851bff.png" alt></p>
+<p>为什么这么简洁而奇怪的修改这么有效呢？在深入理解其原理之前，我们先直观地看一看这个方法具体修改了公式里的哪些参数。</p>
+<p>先看新位置编码向量 $\sin m\theta_i^{NTK-aware}$ 的第二组（假设 $i$ 从 $0$ 开始计数），也就是含参频率最大的这一组。它现在是：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\sin m\theta_i^{NTK-aware} &= \sin(m \cdot (10000 \cdot (\frac{L'}{L})^{d/(d-2)} )^{-2/d}) \\
+&=\sin(m \cdot 10000^{-2/d} \cdot (\frac{L'}{L})^{-2/(d-2)} )
+\end{aligned}</script><p>$\frac{L’}{L}$ 表示新长度是训练长度的几倍，它是一个大于 $1$ 的数。$d$ 在 LLaMA 里是 $128$，所以我们可以认为 $(d-2)$ 远大于 $2$。所以，$(\frac{L’}{L})^{(-2)/(d-2)}$ 这一项略小于 $1$。整体上看，这一改动差不多就是给三角函数的频率乘上了一个略小于 $1$ 的常数，几乎没变。</p>
+<p>再看频率最小的 $i=d/2-1$ 项。它现在是：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\sin m\theta_i^{NTK-aware} &= \sin(m \cdot (10000 \cdot (\frac{L'}{L})^{d/(d-2)} )^{-(d-2)/d}) \\
+&=\sin(m \cdot 10000^{-2 (d/2-1)/d} \cdot \frac{L}{L'} )
+\end{aligned}</script><p>而在线性内插中，我们直接把所有 $m$ 替换成了 $\frac{L}{L’}m$。所以，频率最小的项的公式和线性内插时的公式完全相同。</p>
+<blockquote>
+<p>这里要澄清一下「外推」和「内插」的概念，这两个词的意义在很多博客和论文里并没有讲清楚。「内插」指的是通过像前面的线性位置内插一样，修改位置编号，使其<strong>恰好</strong>落在训练长度内。然而，一旦这个内插不够彻底，那么新位置编号就可能会超出训练长度，形成位置「外推」。我们本文讨论的所有方案，都是让不同频率的项在完全内插（恰好长度适合）和完全外推直接找一个平衡。一旦内插不彻底，就可以称为外推。所以很多文章里的「外推」，有的时候指的是不完全的内插。根据这样的术语定义，NTK-aware RoPE 的行为可以称为：最低频内插，其他频率外推。</p>
+</blockquote>
+<p>从上面的分析可以看出，NTK-aware RoPE 还是沿用位置线性内插的思路，但是它对 RoPE 的影响更加平滑：对于位置编码高频项，公式几乎不变；对于最低频项，公式完全等于线性内插时的公式。</p>
+<p>那么，NTK-aware RoPE 为什么有效呢？它又是怎么被想出来的呢？说起来，这个一直出现的 “NTK” 又是什么意思？NTK 其实是和神经网络相关的一种理论。NTK-aware RoPE 的提出者在构思这些公式时受到了 NTK 的启发，但他后续在论文里解释此方法时完全没有从严谨的理论入手，而只是讲了一些直觉的观察。在之后的两小节中，我将先从 NTK 理论的角度试图还原提出者的心路历程，再从一个广为人知、更易理解的角度来介绍 NTK-aware RoPE。</p>
+<h3 id="从-NTK-角度的解释"><a href="#从-NTK-角度的解释" class="headerlink" title="从 NTK 角度的解释"></a>从 NTK 角度的解释</h3><p>近几年和 NTK 理论比较相关的论文叫做 <em>Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains</em>。这篇论文用 NTK 理论分析了 NeRF 这种以位置坐标为输入的 MLP 需要位置编码的原因，并将这类位置编码归纳为「傅里叶特征」。</p>
+<p><img src="https://files.mdnice.com/user/32105/522a0160-e00f-4988-9dc2-54d1fd28d96d.png" alt></p>
+<p>这篇论文最大的一个发现是：在形式为 $[\sin \theta_i x, \cos \theta_i x]$ 这样的傅里叶特征中，最重要的是决定最大频率。最大频率越大，MLP 拟合高频信息的能力越强。</p>
+<p>由于 RoPE 的公式来自于正弦位置编码，而正弦编码又可以看成一种特殊的傅里叶特征，所以 NTK-aware RoPE 的提出者也试图将傅里叶特征中的规律套用在 RoPE 上。他可能观察到了应用线性内插后 RoPE 公式（正弦编码公式）的频率变化。原来编码第 $i$ 项为：</p>
+<script type="math/tex; mode=display">
+\sin(m\theta_i)</script><p>应用线性内插后，公式为：</p>
+<script type="math/tex; mode=display">
+\sin(\frac{L}{L'} \cdot m\theta_i)</script><p>这里 $\frac{L}{L’}$ 是一个小于 $1$ 的数。所以，加上线性内插后，所有项的频率都变小了。自然，公式能表达的最大频率也变小了，拟合高频信息的能力下降了。</p>
+<p>我们可以把线性内插类比到 NeRF 这类任务中。如果我们增加输入坐标的密度，确实可以让图片/3D 模型的输出分辨率变大。但是，根据信号处理的知识，这种分辨率变大并不能超出原有的频率，所以变大后的图片/3D 模型会看起来很模糊。「模糊」在文本任务中的体现可能就是误差指标上升。</p>
+<p>出于这些原因，NTK-aware RoPE 的策略是尽可能不动高频项的频率，仅动低频项的频率。当然，按照这种设计思路，我们其实可以提出各种各样的方案。NTK-aware RoPE 选了实现起来最方便的一种：修改频率基底，让它在最低频时和线性内插对齐（读者感兴趣可以设方程自行推导频率基底的修改值，把我们刚刚有关最低频项的分析倒过来）。这样，自然就有高频项几乎不变，低频项向线性内插靠拢，也就是我们在上一小节中的观察。</p>
+<p>根据我的理解，傅里叶特征本身就只是稍微用到 NTK 相关的理论（参见我有关<a href="https://zhouyifan.net/2024/12/05/20241202-fourier-feature/">傅里叶特征的博文</a>）。而 NTK-aware RoPE 的作者貌似仅是受到了傅里叶特征的某些启发，完全没有严谨地用 NTK 理论来推导 NTK-aware RoPE 的形式。所以，我认为，要学习 NTK-aware RoPE，完全不用学习 NTK 理论。</p>
+<p>NTK-aware RoPE 的提出者在互联网上和 YaRN 论文中用了一些更好理解的方式解释 NTK-aware RoPE。类似地，从进制转换的角度，苏剑林也发表了两篇一针见血的解读博文：<a target="_blank" rel="noopener" href="https://kexue.fm/archives/9675">https://kexue.fm/archives/9675</a> <a target="_blank" rel="noopener" href="https://kexue.fm/archives/9706">https://kexue.fm/archives/9706</a> 。我建议从这些角度来学习 NTK-aware RoPE，然后忘掉 NTK 这个词。我们在下一节里就从这个角度重新认识一遍位置编码。</p>
+<h3 id="从进制的角度解释"><a href="#从进制的角度解释" class="headerlink" title="从进制的角度解释"></a>从进制的角度解释</h3><p>其实几乎每个人都理解位置编码。</p>
+<p>不信？我来问个问题：看到 $1234$ 后，你看到了几个数？</p>
+<p>确实，这只是一个数。但是，我们人在看到这个数的时候，其实是看到了 $4$ 个十进制数字。通过把不同位置的数字组合，我们才理解了这个数究竟是多少。真正的数是一个概念，我们可以把两个东西这一概念，表示成汉字「二」，阿拉伯数字「2」，或者是二进制下的 $10$。我们常见的十进制只是表达数的一种方式。</p>
+<p>而进制表示其实就是一种表达数的位置编码。想象一个十进制计时器，它的数字从 $0, 1, …$ 开始不断增长。每隔 1 次，个位变一次；每隔 10 次，十位变一次；每隔 100 次，百位变一次……。也就是说，个位是频率最高的，位数越高频率越低。是不是这和正弦位置编码很像？正弦位置编码和进制表示的区别在于，进制用求余体现周期性，正弦位置编码用正弦函数体现周期性。</p>
+<p>长度外推，就好像一个只见过 0-999 的模型，突然要处理 1000 以上的数一样。为了只用三位数来表达更大的数，一种简单的做法是进制转换。比如我们直接把十进制变成十六进制，那么可以表达的数就从 $10^3$ 变成了 $16^3$。</p>
+<p>回到正弦编码的公式里，进制这个概念体现在哪呢？进制的底数又是什么呢？</p>
+<script type="math/tex; mode=display">
+\theta_i=1/10000^{2i/d}</script><p>在十进制里，不同位表示十、百、千……每算一个更高的位的值，就要多除以一次 $10$。所以，在正弦编码里，我们需要关注哪个被除以的量在做指数运算。通过观察发现，正弦编码的底数是 $10000^{2/d}$。</p>
+<p>知道了我们想把句子长度拓展几倍，我们就可以精确地算出新底数。通过这种方式，我们就能推导出 NTK-aware RoPE。也就是说，NTK-aware RoPE 修改频率基底其实就是对正弦函数做进制转换。这部分推荐大家去阅读前面提到的苏剑林的博文。</p>
+<p>基于数字进制，我们可以把位置编码类比成表示时间的时钟，便于后续概念的理解。这是因为：</p>
+<ul>
+<li>正弦函数本身就可以用周期旋转来解释。</li>
+<li>相比数字的进制，时间的进制的底数是不同的：1 天有 24 个小时，而一小时有 60 分钟。这提示我们：我们不一定要对每种频率做同样的处理。</li>
+</ul>
+<p>利用这个时钟的比喻，NTK-aware RoPE 的提出者在社区解释了不应该像线性内插一样修改最高频率的原因：就像我们用秒针来区分最精确的时间一样，神经网络用最高频的正弦编码区分相对位置关系，且只能看清 1 秒以上的偏差。使用线性内插后，最小的时间偏差是 0.5 秒，神经网络就不能很好地处理最高频的那块信息了。而 NTK-aware RoPE 不会修改一秒的定义，只会在分钟、小时等更低频的分量上多插值一点，神经网络依然能区分最精细的时间。</p>
+<h2 id="改进-NTK-aware-RoPE：分部-NTK"><a href="#改进-NTK-aware-RoPE：分部-NTK" class="headerlink" title="改进 NTK-aware RoPE：分部 NTK"></a>改进 NTK-aware RoPE：分部 NTK</h2><p>我们在上一节中学到，NTK-aware RoPE 的设计思想是高频不动（或理解成高频外推），只对低频内插。只改频率基底虽然做法简洁，但不见得是最优的做法。高频不动这部分应该没什么问题，我们把目光放在 RoPE 的低频分量上。</p>
+<p>还是从十进制的角度看待位置编码。假设训练集的位置只有 $0$~$2800$，那么在千位上，模型只见过 $0, 1, 2$ 三个数字。由于在千位上模型没有完整见过 $0$~$9$ 的循环，模型不能推测出其他几个数字的意义。因此，在千位上做长度外推时，一定要用内插把位置编号正确缩放到已学习的范围内。</p>
+<p>这套分析怎么迁移到正弦编码上呢？对于十进制数字，我们能很快判断出某一位是否走完了一个周期。比如要把千位上的 $0$~$9$ 都走一遍，就至少得要一万个数。怎么找出正弦编码每个频率走一个周期需要的距离呢？</p>
+<p>在正弦函数中，我们可以用 $2 \pi$ 除以频率，得到波长。正弦位置编码某一项的波长表示当训练上下文长度至少为多少时，这一项会「转」完一个周期。比如时钟上，秒针 60 秒转一圈，分针 3600 秒转一圈。 </p>
+<blockquote>
+<p>$2 \pi$ 除以频率明明算出的是周期，周期乘上速度才是波长。但 YaRN 的作者就是在论文里把这个量定义成了周长。可能他们认为波长的单位是长度，上下文窗口大小也是长度，两个单位是匹配的。我认为这个名字取得很糟糕，就应该叫做周期的，只不过周期的单位也是长度而已。</p>
+</blockquote>
+<p>根据这个定义出来的波长，我们可以对正弦位置编码的不同位置分类讨论：</p>
+<ul>
+<li>如果波长过大，大于了训练时的文本长度，那么就用普通的线性内插，保证不在这些维度上外推。设它们的内插程度为 $1$。相比之下， NTK-aware RoPE 只对最低频项做了完整内插，而没有考虑其他波长过大的项也应该完整内插。</li>
+<li>如果波长过小，说明频率很高，不应该做任何修改。设它们的内插程度为 $0$。</li>
+<li>对于其他位置，根据它们的波长，线性选择内插程度。</li>
+</ul>
+<p>这里波长过大、过小的阈值用超参数来决定，每个模型都需要手动调整。</p>
+<p>总之，NTK-aware RoPE 只是模糊地定义了高频分量应该尽可能不变，低频分量应该尽可能像线性内插。而分部 NTK 则允许我们显式对各个频率分量做分类讨论。最终的位置编码方案 YaRN 在分部 NTK 的基础上还做了少许修改，对此感兴趣的读者可以去阅读论文。</p>
+<h2 id="图像生成中的-RoPE-与长度外推"><a href="#图像生成中的-RoPE-与长度外推" class="headerlink" title="图像生成中的 RoPE 与长度外推"></a>图像生成中的 RoPE 与长度外推</h2><p>了解了近年来 NLP 社区的位置编码技术，我们来以 Lumina-T2X 为例，再看一下这些技术是怎么用到视觉生成任务上的。</p>
+<h3 id="多维-RoPE"><a href="#多维-RoPE" class="headerlink" title="多维 RoPE"></a>多维 RoPE</h3><p>RoPE 本来是设计给 1D 的文本数据的。而在视觉任务中，图像是二维的，视频是三维的，我们需要设计更高维的位置编码。</p>
+<p>回顾 RoPE 的形式：</p>
+<script type="math/tex; mode=display">
+\begin{bmatrix}
+& \cos m\theta_0 & -\sin m\theta_0 & 0 & 0 & \cdots & 0 & 0  \\
+& \sin m\theta_0 & \cos m\theta_0 & 0 & 0 & \cdots & 0 & 0\\
+& 0 & 0 & \cos m\theta_1 & -\sin m\theta_1 & \cdots & 0 & 0\\
+& 0 & 0 & \sin m\theta_1 & \cos m\theta_1 & \cdots & 0 & 0 \\
+&\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+& 0 & 0 & 0 & 0 & \cdots & \cos m\theta_{d/2-1} & -\sin m\theta_{d/2-1} \\
+& 0 & 0 & 0 & 0 & \cdots & \sin m\theta_{d/2-1} & \cos m\theta_{d/2-1}
+\end{bmatrix}
+\begin{bmatrix}
+q_0 \\
+q_1 \\
+q_2 \\
+q_3 \\
+\vdots \\
+q_{d-2} \\
+q_{d-1}
+\end{bmatrix}</script><p>要把它拓展成高维很简单。比如要拓展成 3D RoPE，只要把上面的公式复制两份，放到原公式的下面就行。也就是说，我们把向量拆成三份分别处理，每一部分和 1D RoPE 一样。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\begin{bmatrix}
+& \cos m\theta_0 & -\sin m\theta_0 \\
+& \sin m\theta_0 & \cos m\theta_0
+\end{bmatrix}
+\begin{bmatrix}
+q_0 \\
+q_1 \\
+\end{bmatrix} \\
+\begin{bmatrix}
+& \cos m\theta_0 & -\sin m\theta_0 \\
+& \sin m\theta_0 & \cos m\theta_0
+\end{bmatrix}
+\begin{bmatrix}
+q_2 \\
+q_3 \\
+\end{bmatrix} \\
+\begin{bmatrix}
+& \cos m\theta_0 & -\sin m\theta_0 \\
+& \sin m\theta_0 & \cos m\theta_0
+\end{bmatrix}
+\begin{bmatrix}
+q_4 \\
+q_5 \\
+\end{bmatrix}
+\end{aligned}</script><p>在这种设计下，模型所有中间向量的不同维度有了不同的意义，它们可能负责了视频宽度、高度或长度上的信息处理。我们也可以根据实际需要，让负责不同视频维度的向量长度不同。</p>
+<h3 id="视觉扩散模型中-RoPE-的长度外推设计"><a href="#视觉扩散模型中-RoPE-的长度外推设计" class="headerlink" title="视觉扩散模型中 RoPE 的长度外推设计"></a>视觉扩散模型中 RoPE 的长度外推设计</h3><p>为了生成比训练分辨率更大的图像，Lumina-T2X 也参考了 NTK-aware RoPE，提出了一些和图像相关的 RoPE 改进策略。</p>
+<p>首先，和分布 NTK 策略一样，Lumina-T2X 提出了频率感知 RoPE。在这种策略下，波长大于等于训练长度的位置编码项完全使用线性内推，剩下的项使用 NTK-aware RoPE。</p>
+<p>另外，Lumina-T2X 还提出了时刻感知 RoPE。这个「时刻」指的是扩散模型里的加噪/去噪时刻。根据实验结果，Lumina-T2X 的作者发现线性内插会保持图像整体结构，但是图像局部质量下降；NTK-aware 策略提升了局部质量，却会出现内容重复现象，也就是全局关系不合理。能不能在某一方面结合二者呢？根据之前使用扩散模型的经验，扩散模型在去噪初期只生成低频信息，也就是全局信息，后期才会生成高频细节。受此启发，Lumina-T2X 提出了时刻感知 RoPE，该策略会在去噪早期仅使用线性内插，后续慢慢过渡到频率感知 RoPE。</p>
+<p>以下是论文展示的在各种长度外推策略下生成 2K 图片的效果图。最左侧的 1K 图片供参考。</p>
+<p><img src="https://files.mdnice.com/user/32105/adf72101-248f-4967-b46a-efbada316b30.png" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>长度外推是生成任务中的一项重要技术，它让我们在不大规模重新训练模型的前提下提升输出内容的长度/大小。而 Transformer 本身是一种无法获取输入元素位置信息的生成模型，需要靠额外的位置编码来感知位置。那么正好，只要我们能够适当地修改位置编码的推理行为，就能想办法让模型生成更长的内容。目前长度外推的方案都和修改 RoPE——一种给 Transformer 显式提供相对位置信息的位置编码——有关。我们主要学习了 NTK-aware RoPE 的设计原理，并通过深入的分析学习了其改进版分部 NTK RoPE。基于这些知识，我们简单认识了 RoPE 长度外推在视觉生成中的应用，其中比较有趣的一项设计是做长度外推时考虑扩散模型的去噪时刻。</p>
+<p>说白了，本文所有长度外推设计都是在从两个维度上排列组合：RoPE 可以看成是由多个频率项组成的正弦编码；外推方案可以从位置编号线性内插过渡到位置编号不变（即位置外推）。一般的设计策略是：对于没有学满一个完整周期的频率项，采用完全线性内插；对于其余频率项，按一定比例执行线性内插。加上了扩散模型的去噪时刻这一设计维度后，我们可以按同样的设计思路，早期更关注低频，晚期更关注高频。</p>
+<p>我觉得长度外推技术的能力是有上限的。我们完全可以从信号处理或者信息论的角度来思考这一问题，因为它的本质和从频域对图像做超分辨率很像。在较短的序列中，模型只能学到这种长度的序列所能表示的最大频率的信息。强行用它来生成更长的序列，只会出现两种情况：要么序列局部不够清晰，要么每个局部很清晰但是没有很好的全局依赖关系。根据信息论，模型就是不能从短序列中学到长序列蕴含的一些规律。从 Lumina-T2X 展示的结果里，我感觉 NTK-aware RoPE 的做法某种程度上就像是把全图做超分辨率变成拆成几个小图，每个小图在原来的训练长度上分别做超分辨率。这样最后图像每一块都很清晰，但合起来看就有问题。可能对于一些文本任务来说，只要局部质量高就行了，长距离依赖没那么重要。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/" rel="tag"># 位置编码</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/12/05/20241202-fourier-feature/" rel="prev" title="位置编码背后的理论解释——傅里叶特征 (Fourier Feature）与核回归">
+      <i class="fa fa-chevron-left"></i> 位置编码背后的理论解释——傅里叶特征 (Fourier Feature）与核回归
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/12/15/20241209-Laplacian-DM/" rel="next" title="论文速览 | Laplacian Diffusion Models：将图像拆成不同频率分量并分别生成">
+      论文速览 | Laplacian Diffusion Models：将图像拆成不同频率分量并分别生成 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%E7%9F%A5%E8%AF%86%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">位置编码知识回顾</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Transformer-%E4%B8%AD%E7%9A%84%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-number">1.1.</span> <span class="nav-text">Transformer 中的位置编码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%E4%B8%8E-RoPE"><span class="nav-number">1.2.</span> <span class="nav-text">相对位置编码与 RoPE</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8-RoPE-%E5%AE%9E%E7%8E%B0%E9%95%BF%E5%BA%A6%E5%A4%96%E6%8E%A8"><span class="nav-number">2.</span> <span class="nav-text">用 RoPE 实现长度外推</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E5%86%85%E6%8F%92"><span class="nav-number">3.</span> <span class="nav-text">位置内插</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E5%8F%98%E6%AD%A3%E5%BC%A6%E5%87%BD%E6%95%B0%E5%9F%BA%E7%A1%80%E9%A2%91%E7%8E%87%EF%BC%9ANTK-aware-Scaled-RoPE"><span class="nav-number">4.</span> <span class="nav-text">改变正弦函数基础频率：NTK-aware Scaled RoPE</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B4%E8%A7%82%E8%AE%A4%E8%AF%86"><span class="nav-number">4.1.</span> <span class="nav-text">直观认识</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E-NTK-%E8%A7%92%E5%BA%A6%E7%9A%84%E8%A7%A3%E9%87%8A"><span class="nav-number">4.2.</span> <span class="nav-text">从 NTK 角度的解释</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E8%BF%9B%E5%88%B6%E7%9A%84%E8%A7%92%E5%BA%A6%E8%A7%A3%E9%87%8A"><span class="nav-number">4.3.</span> <span class="nav-text">从进制的角度解释</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E8%BF%9B-NTK-aware-RoPE%EF%BC%9A%E5%88%86%E9%83%A8-NTK"><span class="nav-number">5.</span> <span class="nav-text">改进 NTK-aware RoPE：分部 NTK</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90%E4%B8%AD%E7%9A%84-RoPE-%E4%B8%8E%E9%95%BF%E5%BA%A6%E5%A4%96%E6%8E%A8"><span class="nav-number">6.</span> <span class="nav-text">图像生成中的 RoPE 与长度外推</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E7%BB%B4-RoPE"><span class="nav-number">6.1.</span> <span class="nav-text">多维 RoPE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%86%E8%A7%89%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E4%B8%AD-RoPE-%E7%9A%84%E9%95%BF%E5%BA%A6%E5%A4%96%E6%8E%A8%E8%AE%BE%E8%AE%A1"><span class="nav-number">6.2.</span> <span class="nav-text">视觉扩散模型中 RoPE 的长度外推设计</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

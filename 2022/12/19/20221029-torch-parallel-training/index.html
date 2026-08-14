@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="刚刚学完了PyTorch的并行训练写法，我来分享一份非常简单的PyTorch并行训练代码。希望没有学过的读者能够在接触尽可能少的新知识的前提下学会写并行训练。 完整代码 main.py：12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PyTorch 并行训练极简 Demo">
+<meta property="og:url" content="https://zhouyifan.net/2022/12/19/20221029-torch-parallel-training/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="刚刚学完了PyTorch的并行训练写法，我来分享一份非常简单的PyTorch并行训练代码。希望没有学过的读者能够在接触尽可能少的新知识的前提下学会写并行训练。 完整代码 main.py：12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-12-19T11:27:28.000Z">
+<meta property="article:modified_time" content="2023-06-23T13:13:17.474Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/12/19/20221029-torch-parallel-training/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PyTorch 并行训练极简 Demo | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221029-torch-parallel-training/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PyTorch 并行训练极简 Demo
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-19 19:27:28" itemprop="dateCreated datePublished" datetime="2022-12-19T19:27:28+08:00">2022-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>刚刚学完了PyTorch的并行训练写法，我来分享一份非常简单的PyTorch并行训练代码。希望没有学过的读者能够在接触尽可能少的新知识的前提下学会写并行训练。</p>
+<p>完整代码 <code>main.py</code>：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.distributed <span class="keyword">as</span> dist</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.optim <span class="keyword">as</span> optim</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> Dataset, DataLoader</span><br><span class="line"><span class="keyword">from</span> torch.utils.data.distributed <span class="keyword">import</span> DistributedSampler</span><br><span class="line"><span class="keyword">from</span> torch.nn.parallel <span class="keyword">import</span> DistributedDataParallel</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">setup</span>():</span><br><span class="line">    dist.init_process_group(<span class="string">&#x27;nccl&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cleanup</span>():</span><br><span class="line">    dist.destroy_process_group()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ToyModel</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.layer = nn.Linear(<span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.layer(x)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.data = torch.tensor([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>], dtype=torch.float32)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(<span class="variable language_">self</span>.data)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, index</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.data[index:index + <span class="number">1</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">ckpt_path = <span class="string">&#x27;tmp.pth&#x27;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    setup()</span><br><span class="line">    rank = dist.get_rank()</span><br><span class="line">    pid = os.getpid()</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;current pid: <span class="subst">&#123;pid&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;Current rank <span class="subst">&#123;rank&#125;</span>&#x27;</span>)</span><br><span class="line">    device_id = rank % torch.cuda.device_count()</span><br><span class="line"></span><br><span class="line">    dataset = MyDataset()</span><br><span class="line">    sampler = DistributedSampler(dataset)</span><br><span class="line">    dataloader = DataLoader(dataset, batch_size=<span class="number">2</span>, sampler=sampler)</span><br><span class="line"></span><br><span class="line">    model = ToyModel().to(device_id)</span><br><span class="line">    ddp_model = DistributedDataParallel(model, device_ids=[device_id])</span><br><span class="line">    loss_fn = nn.MSELoss()</span><br><span class="line">    optimizer = optim.SGD(ddp_model.parameters(), lr=<span class="number">0.001</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> rank == <span class="number">0</span>:</span><br><span class="line">        torch.save(ddp_model.state_dict(), ckpt_path)</span><br><span class="line"></span><br><span class="line">    dist.barrier()</span><br><span class="line"></span><br><span class="line">    map_location = &#123;<span class="string">&#x27;cuda:0&#x27;</span>: <span class="string">f&#x27;cuda:<span class="subst">&#123;device_id&#125;</span>&#x27;</span>&#125;</span><br><span class="line">    state_dict = torch.load(ckpt_path, map_location=map_location)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;rank <span class="subst">&#123;rank&#125;</span>: <span class="subst">&#123;state_dict&#125;</span>&#x27;</span>)</span><br><span class="line">    ddp_model.load_state_dict(state_dict)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>):</span><br><span class="line">        sampler.set_epoch(epoch)</span><br><span class="line">        <span class="keyword">for</span> x <span class="keyword">in</span> dataloader:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&#x27;epoch <span class="subst">&#123;epoch&#125;</span>, rank <span class="subst">&#123;rank&#125;</span> data: <span class="subst">&#123;x&#125;</span>&#x27;</span>)</span><br><span class="line">            x = x.to(device_id)</span><br><span class="line">            y = ddp_model(x)</span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            loss = loss_fn(x, y)</span><br><span class="line">            loss.backward()</span><br><span class="line">            optimizer.step()</span><br><span class="line"></span><br><span class="line">    cleanup()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure></p>
+<p>假设有4张卡，使用第三和第四张卡的并行运行命令（torch v1.10 以上）：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export CUDA_VISIBLE_VERSION=<span class="number">2</span>,<span class="number">3</span></span><br><span class="line">torchrun --nproc_per_node=<span class="number">2</span> dldemos/PyTorchDistributed/main.py</span><br></pre></td></tr></table></figure></p>
+<p>较老版本的PyTorch应使用下面这条命令（这种方法在新版本中也能用，但是会报Warning）：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export CUDA_VISIBLE_VERSION=<span class="number">2</span>,<span class="number">3</span></span><br><span class="line">python -m torch.distributed.launch --nproc_per_node=<span class="number">2</span> dldemos/PyTorchDistributed/main.py</span><br></pre></td></tr></table></figure></p>
+<p>程序输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">current pid: <span class="number">3592707</span></span><br><span class="line">Current rank <span class="number">1</span></span><br><span class="line">current pid: <span class="number">3592706</span></span><br><span class="line">Current rank <span class="number">0</span></span><br><span class="line">rank <span class="number">0</span>: OrderedDict([(<span class="string">&#x27;module.layer.weight&#x27;</span>, tensor([[<span class="number">0.3840</span>]], device=<span class="string">&#x27;cuda:0&#x27;</span>)), (<span class="string">&#x27;module.layer.bias&#x27;</span>, tensor([<span class="number">0.6403</span>], device=<span class="string">&#x27;cuda:0&#x27;</span>))])</span><br><span class="line">rank <span class="number">1</span>: OrderedDict([(<span class="string">&#x27;module.layer.weight&#x27;</span>, tensor([[<span class="number">0.3840</span>]], device=<span class="string">&#x27;cuda:1&#x27;</span>)), (<span class="string">&#x27;module.layer.bias&#x27;</span>, tensor([<span class="number">0.6403</span>], device=<span class="string">&#x27;cuda:1&#x27;</span>))])</span><br><span class="line">epoch <span class="number">0</span>, rank <span class="number">0</span> data: tensor([[<span class="number">1.</span>],</span><br><span class="line">        [<span class="number">4.</span>]])</span><br><span class="line">epoch <span class="number">0</span>, rank <span class="number">1</span> data: tensor([[<span class="number">2.</span>],</span><br><span class="line">        [<span class="number">3.</span>]])</span><br><span class="line">epoch <span class="number">1</span>, rank <span class="number">0</span> data: tensor([[<span class="number">2.</span>],</span><br><span class="line">        [<span class="number">3.</span>]])</span><br><span class="line">epoch <span class="number">1</span>, rank <span class="number">1</span> data: tensor([[<span class="number">4.</span>],</span><br><span class="line">        [<span class="number">1.</span>]])</span><br></pre></td></tr></table></figure>
+<p>下面来稍微讲解一下代码。这份代码演示了一种较为常见的PyTorch并行训练方式：一台机器，多GPU。一个进程管理一个GPU。每个进程共享模型参数，但是使用不同的数据，即batch size扩大了<code>GPU个数</code>倍。</p>
+<p>为了实现这种并行训练：需要解决以下几个问题：</p>
+<ul>
+<li>怎么开启多进程？</li>
+<li>模型怎么同步参数与梯度？</li>
+<li>数据怎么划分到多个进程中？</li>
+</ul>
+<p>带着这三个问题，我们来从头看一遍这份代码。</p>
+<p>这份代码要拟合一个恒等映射<code>y=x</code>。使用的数据集非常简单，只有<code>[1, 2, 3, 4]</code>四个数字。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MyDataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.data = torch.tensor([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>], dtype=torch.float32)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(<span class="variable language_">self</span>.data)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, index</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.data[index:index + <span class="number">1</span>]</span><br></pre></td></tr></table></figure>
+<p>模型也只有一个线性函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ToyModel</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.layer = nn.Linear(<span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.layer(x)</span><br></pre></td></tr></table></figure>
+<p>为了并行训练这个模型，我们要开启多进程。PyTorch提供的<code>torchrun</code>命令以及一些API封装了多进程的实现。我们只要在普通单进程程序前后加入以下的代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">setup</span>():</span><br><span class="line">    dist.init_process_group(<span class="string">&#x27;nccl&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    setup()</span><br><span class="line">    </span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    cleanup()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cleanup</span>():</span><br><span class="line">    dist.destroy_process_group()</span><br></pre></td></tr></table></figure>
+<p>再用<code>torchrun --nproc_per_node=GPU_COUNT main.py</code>去跑这个脚本，就能用<code>GPU_COUNT</code>个进程来运行这个程序，每个进程分配一个GPU。我们可以用<code>dist.get_rank()</code>来查看当前进程的GPU号。同时，我们也可以验证，不同的GPU号对应了不同的进程id。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    setup()</span><br><span class="line">    rank = dist.get_rank()</span><br><span class="line">    pid = os.getpid()</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;current pid: <span class="subst">&#123;pid&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&#x27;Current rank <span class="subst">&#123;rank&#125;</span>&#x27;</span>)</span><br><span class="line">    device_id = rank % torch.cuda.device_count()</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Output:</span><br><span class="line">current pid: 3592707</span><br><span class="line">Current rank 1</span><br><span class="line">current pid: 3592706</span><br><span class="line">Current rank 0</span><br></pre></td></tr></table></figure>
+<p>接下来，我们来解决数据并行的问题。我们要确保一个epoch的数据被分配到了不同的进程上，以实现batch size的扩大。在PyTorch中，只要在生成<code>Dataloader</code>时把<code>DistributedSampler</code>的实例传入<code>sampler</code>参数就行了。<code>DistributedSampler</code>会自动对数据采样，并放到不同的进程中。我们稍后可以看到数据的采样结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dataset = MyDataset()</span><br><span class="line">sampler = DistributedSampler(dataset)</span><br><span class="line">dataloader = DataLoader(dataset, batch_size=<span class="number">2</span>, sampler=sampler)</span><br></pre></td></tr></table></figure>
+<p>接下来来看模型并行是怎么实现的。在这种并行训练方式下，每个模型使用同一份参数。在训练时，各个进程并行；在梯度下降时，各个进程会同步一次，保证每个进程的模型都更新相同的梯度。PyTorch又帮我们封装好了这些细节。我们只需要在现有模型上套一层<code>DistributedDataParallel</code>，就可以让模型在后续<code>backward</code>的时候自动同步梯度了。其他的操作都照旧，把新模型<code>ddp_model</code>当成旧模型<code>model</code>调用就行。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">model = ToyModel().to(device_id)</span><br><span class="line">ddp_model = DistributedDataParallel(model, device_ids=[device_id])</span><br><span class="line">loss_fn = nn.MSELoss()</span><br><span class="line">optimizer = optim.SGD(ddp_model.parameters(), lr=<span class="number">0.001</span>)</span><br></pre></td></tr></table></figure>
+<p>准备好了一切后，就可以开始训练了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>):</span><br><span class="line">    sampler.set_epoch(epoch)</span><br><span class="line">    <span class="keyword">for</span> x <span class="keyword">in</span> dataloader:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;epoch <span class="subst">&#123;epoch&#125;</span>, rank <span class="subst">&#123;rank&#125;</span> data: <span class="subst">&#123;x&#125;</span>&#x27;</span>)</span><br><span class="line">        x = x.to(device_id)</span><br><span class="line">        y = ddp_model(x)</span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        loss = loss_fn(x, y)</span><br><span class="line">        loss.backward()</span><br><span class="line">        optimizer.step()</span><br></pre></td></tr></table></figure>
+<p><code>sampler</code>自动完成了打乱数据集的作用。因此，在定义<code>DataLoader</code>时，不用开启<code>shuffle</code>选项。而在每个新epoch中，要用<code>sampler.set_epoch(epoch)</code>更新<code>sampler</code>，重新打乱数据集。通过输出也可以看出，数据集确实被打乱了。</p>
+<figure class="highlight plaintext"><figcaption><span>text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Output:</span><br><span class="line">epoch 0, rank 0 data: tensor([[1.],</span><br><span class="line">        [4.]])</span><br><span class="line">epoch 0, rank 1 data: tensor([[2.],</span><br><span class="line">        [3.]])</span><br><span class="line">epoch 1, rank 0 data: tensor([[2.],</span><br><span class="line">        [3.]])</span><br><span class="line">epoch 1, rank 1 data: tensor([[4.],</span><br><span class="line">        [1.]])</span><br></pre></td></tr></table></figure>
+<p>大家可以去掉这行代码，跑一遍脚本，看看这行代码的作用。如果没有这行代码，每轮的数据分配情况都是一样的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">epoch <span class="number">0</span>, rank <span class="number">1</span> data: tensor([[<span class="number">2.</span>],</span><br><span class="line">        [<span class="number">3.</span>]])</span><br><span class="line">epoch <span class="number">0</span>, rank <span class="number">0</span> data: tensor([[<span class="number">1.</span>],</span><br><span class="line">        [<span class="number">4.</span>]])</span><br><span class="line">epoch <span class="number">1</span>, rank <span class="number">1</span> data: tensor([[<span class="number">2.</span>],</span><br><span class="line">        [<span class="number">3.</span>]])</span><br><span class="line">epoch <span class="number">1</span>, rank <span class="number">0</span> data: tensor([[<span class="number">1.</span>],</span><br><span class="line">        [<span class="number">4.</span>]])</span><br></pre></td></tr></table></figure>
+<p>其他的训练代码和单进程代码一模一样，我们不需要做任何修改。</p>
+<p>训练完模型后，应该保存模型。由于每个进程的模型都是一样的，我们只需要让一个进程来保存模型即可。注意，在保存模型时，其他进程不要去修改模型参数。这里最好加上一行<code>dist.barrier()</code>，它可以用来同步进程的运行状态。只有0号GPU的进程存完了模型，所有模型再进行下一步操作。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> rank == <span class="number">0</span>:</span><br><span class="line">    torch.save(ddp_model.state_dict(), ckpt_path)</span><br><span class="line"></span><br><span class="line">dist.barrier()</span><br></pre></td></tr></table></figure>
+<p>读取时需要注意一下。模型存储参数时会保存参数所在设备。由于我们只用了0号GPU的进程存模型，所有参数的<code>device</code>都是<code>cuda:0</code>。而读取模型时，每个设备上的模型都要去读一次模型，参数的位置要做一个调整。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">map_location = &#123;<span class="string">&#x27;cuda:0&#x27;</span>: <span class="string">f&#x27;cuda:<span class="subst">&#123;device_id&#125;</span>&#x27;</span>&#125;</span><br><span class="line">state_dict = torch.load(ckpt_path, map_location=map_location)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&#x27;rank <span class="subst">&#123;rank&#125;</span>: <span class="subst">&#123;state_dict&#125;</span>&#x27;</span>)</span><br><span class="line">ddp_model.load_state_dict(state_dict)</span><br></pre></td></tr></table></figure>
+<p>从输出中可以看出，在不同的进程中，参数字典是不一样的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rank <span class="number">0</span>: OrderedDict([(<span class="string">&#x27;module.layer.weight&#x27;</span>, tensor([[<span class="number">0.3840</span>]], device=<span class="string">&#x27;cuda:0&#x27;</span>)), (<span class="string">&#x27;module.layer.bias&#x27;</span>, tensor([<span class="number">0.6403</span>], device=<span class="string">&#x27;cuda:0&#x27;</span>))])</span><br><span class="line">rank <span class="number">1</span>: OrderedDict([(<span class="string">&#x27;module.layer.weight&#x27;</span>, tensor([[<span class="number">0.3840</span>]], device=<span class="string">&#x27;cuda:1&#x27;</span>)), (<span class="string">&#x27;module.layer.bias&#x27;</span>, tensor([<span class="number">0.6403</span>], device=<span class="string">&#x27;cuda:1&#x27;</span>))])</span><br></pre></td></tr></table></figure>
+<p>这里还有一个重要的细节。使用<code>DistributedDataParallel</code>把<code>model</code>封装成<code>ddp_model</code>后，模型的参数名里多了一个<code>module</code>。这是因为原来的模型<code>model</code>被保存到了<code>ddp_model.module</code>这个成员变量中（<code>model == ddp_model.module</code>）。在混用单GPU和多GPU的训练代码时，要注意这个参数名不兼容的问题。最好的写法是每次存取<code>ddp_model.module</code>，这样单GPU和多GPU的checkpoint可以轻松兼容。</p>
+<p>到此，我们完成了一个极简的PyTorch并行训练Demo。从代码中能看出，PyTorch的封装非常到位，我们只需要在单进程代码上稍作修改，就能开启并行训练。最后，我再来总结一下单卡训练转换成并行训练的修改处：</p>
+<ol>
+<li>程序开始时执行<code>dist.init_process_group(&#39;nccl&#39;)</code>，结束时执行<code>dist.destroy_process_group()</code>。</li>
+<li>用<code>torchrun --nproc_per_node=GPU_COUNT main.py</code>运行脚本。</li>
+<li>进程初始化后用<code>rank = dist.get_rank()</code>获取当前的GPU ID，把模型和数据都放到这个GPU上。</li>
+<li>封装一下模型<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ddp_model = DistributedDataParallel(model, device_ids=[device_id])</span><br></pre></td></tr></table></figure></li>
+<li>封装一下<code>DataLoader</code><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dataset = MyDataset()</span><br><span class="line">sampler = DistributedSampler(dataset)</span><br><span class="line">dataloader = DataLoader(dataset, batch_size=<span class="number">2</span>, sampler=sampler)</span><br></pre></td></tr></table></figure></li>
+<li>训练时打乱数据。<code>sampler.set_epoch(epoch)</code></li>
+<li>保存只在单卡上进行。<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> rank == <span class="number">0</span>:</span><br><span class="line">    torch.save(ddp_model.state_dict(), ckpt_path)</span><br><span class="line">dist.barrier()</span><br></pre></td></tr></table></figure></li>
+<li>读取数据时注意<code>map_location</code>，也要注意参数名里的<code>module</code>。<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">map_location = &#123;<span class="string">&#x27;cuda:0&#x27;</span>: <span class="string">f&#x27;cuda:<span class="subst">&#123;device_id&#125;</span>&#x27;</span>&#125;</span><br><span class="line">state_dict = torch.load(ckpt_path, map_location=map_location)</span><br><span class="line">ddp_model.load_state_dict(state_dict)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/PyTorchDistributed">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/PyTorchDistributed</a></p>
+<p>参考资料：</p>
+<ol>
+<li>官方教程：<a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/intermediate/ddp_tutorial.html">https://pytorch.org/tutorials/intermediate/ddp_tutorial.html</a></li>
+<li>另一个展示简单Demo的文章：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/350301395">https://zhuanlan.zhihu.com/p/350301395</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/12/19/20221016-VAE/" rel="prev" title="抛开数学，轻松学懂 VAE（附 PyTorch 实现）">
+      <i class="fa fa-chevron-left"></i> 抛开数学，轻松学懂 VAE（附 PyTorch 实现）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/12/19/20221126-ArcFace/" rel="next" title="快速上手 PyTorch 人脸相似度计算方法 ArcFace">
+      快速上手 PyTorch 人脸相似度计算方法 ArcFace <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

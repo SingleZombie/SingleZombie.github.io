@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在最后一课中，我们要学习Transformer模型。Transformer是深度学习发展史上的一次重大突破，它在多个领域中取得了傲人的成绩。Transformer最早用于解决NLP任务，它在CV任务上的潜力也在近几年里被挖掘出来。 RNN有一个致命的缺陷：计算必须按照时序执行，无法并行。为了改进这一点，Transformer借用了CNN的想法，并行地用注意力机制处理所有输入，抛弃了经典RNN的组件">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》笔记（十七）：Transformer">
+<meta property="og:url" content="https://zhouyifan.net/2022/09/21/DLS-note-17/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="在最后一课中，我们要学习Transformer模型。Transformer是深度学习发展史上的一次重大突破，它在多个领域中取得了傲人的成绩。Transformer最早用于解决NLP任务，它在CV任务上的潜力也在近几年里被挖掘出来。 RNN有一个致命的缺陷：计算必须按照时序执行，无法并行。为了改进这一点，Transformer借用了CNN的想法，并行地用注意力机制处理所有输入，抛弃了经典RNN的组件">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/7.jpg">
+<meta property="article:published_time" content="2022-09-21T09:47:58.000Z">
+<meta property="article:modified_time" content="2022-09-21T09:47:58.490Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/09/21/DLS-note-17/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/09/21/DLS-note-17/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》笔记（十七）：Transformer | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/09/21/DLS-note-17/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》笔记（十七）：Transformer
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-21 17:47:58" itemprop="dateCreated datePublished" datetime="2022-09-21T17:47:58+08:00">2022-09-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在最后一课中，我们要学习Transformer模型。Transformer是深度学习发展史上的一次重大突破，它在多个领域中取得了傲人的成绩。Transformer最早用于解决NLP任务，它在CV任务上的潜力也在近几年里被挖掘出来。</p>
+<p>RNN有一个致命的缺陷：计算必须按照时序执行，无法并行。为了改进这一点，Transformer借用了CNN的想法，并行地用注意力机制处理所有输入，抛弃了经典RNN的组件。</p>
+<p>为了理解Transformer，我们将主要学习两个概念：自注意力和多头注意力。</p>
+<ul>
+<li>自注意力：Transformer会为序列里的每一个元素用注意力生成一个新的表示，就和CNN里卷积层能为每个像素生成高维特征向量一样。这个表示和词嵌入不同，词嵌入只能表示一个单词本身的意义，而「自注意力」生成的表示是和句子里其他单词相关的。</li>
+<li>多头注意力：「多头注意力」表示多次利用自注意力机制，生成多个表示，就和CNN里N个卷积核能生成N个特征一样。</li>
+</ul>
+<blockquote>
+<p>这节课是《深度学习专项》新增的课程，内容比较简短。估计是因为Transformer太火了，不得不在教材里加上这些新内容。这节课讲得并不是很清楚，我会用更易懂的逻辑把这节课讲一遍。</p>
+</blockquote>
+<h2 id="Transformer"><a href="#Transformer" class="headerlink" title="Transformer"></a>Transformer</h2><h3 id="自注意力"><a href="#自注意力" class="headerlink" title="自注意力"></a>自注意力</h3><p>词嵌入只能反映一个词本身的意思，而不能反映一个词在句子中的意思。比如我们要把”简访问非洲“翻译成英文，其中第三个字“问”有很多意思，比如询问、慰问等。自注意力的目的就是为每个词生成一个新的表示$A$，反映它在句子中的意思，比如我们为“问”字生成的表示$A^{&lt; 3 &gt;}$是“访问”这个具体的意思。</p>
+<p>自注意力，顾名思义，就是对句子自己使用注意力机制。我们先回忆一下最初的注意力机制。</p>
+<p><img src="/2022/09/21/DLS-note-17/1.jpg" alt></p>
+<p>在翻译句子时，我们要算每个输出单词对每个输入单词的注意力$\alpha$，以这个注意力为权重，我们可以算所有输入状态$a$的加权平均数$c$（公式1）。这个$c$用于输出每一个单词。</p>
+<p>注意力$\alpha$是权重$e$的归一化结果（如公式2所示，因为是求平均数，得保证权重$\alpha$的和为1），这里的$e^{&lt; t, t’ &gt;}$表示第$t’$个输入和第$t$个输出的相关量。由于$e^{&lt; t, t’ &gt;}$是用于计算$s^{&lt; t &gt;}$的，$s^{&lt; t &gt;}$还获取不了，我们只能用$s^{&lt; t - 1 &gt;}$来表示第$t$个输出。另外，我们用$a^{&lt; t’ &gt;}$表示第$t’$个输入。这样，$e^{&lt; t, t’ &gt;}$就应该由$s^{&lt; t - 1 &gt;}$和$a^{&lt; t’ &gt;}$决定。</p>
+<p>Transformer用一种通用的公式表示了这种注意力的计算。</p>
+<script type="math/tex; mode=display">
+A(q, K, V) = \sum_i\frac{exp(qk^{< i >})}{\Sigma_jexp(qk^{< j >})}v^{< i >}</script><p>我们先不管这里的$q, K, V$是什么意思，暂且把它们当成标记。用它来表示最初的注意力机制的话，$q$就相当于输出状态$s$，$k$就相当于输入状态$a$，二者的相关关系$e$就是两个向量的内积$qk$。$v$也是输入状态$a$。</p>
+<p>现在，我们来看看如何用这个公式计算自注意力。我们将以第三个输入$x ^ {&lt; 3 &gt;}$的注意力表示$A^{&lt; 3 &gt;}$为例。</p>
+<p>假设我们为每个输入单词都已经维护好了3个变量$q^{&lt; t &gt;}, k^{&lt; t &gt;}, v^{&lt; t &gt;}$。q, k, v是英文query, key, value的缩写，这一概念来自于数据库。假如数据库里存了学生的年龄，第一条记录的key-value是<code>(&quot;张三&quot;, 18)</code>，第二条记录的key-value是<code>(&quot;李四&quot;, 19)</code>。现在，有一条query，询问<code>&quot;张三&quot;</code>的年龄。我们把这一条query和所有key比对，发现第一条记录是我们需要的。因此，我们取出第一个value，即<code>18</code>。</p>
+<p>每个单词的$q, k, v$也可以有类似的解释。比如第三个字“问”的query $q^{&lt; 3 &gt;}$是：哪个字和“问”字组词了？当然，在这个句子里，我们人类可以很轻松地知道答案，“问”和“访”组成了“访问”这个词。每个字的key可以认为是字的固有属性，比如是名词还是动词。每个字的value就可以认为是这个字的词嵌入。</p>
+<p><img src="/2022/09/21/DLS-note-17/2.jpg" alt></p>
+<p>让计算机去查询$q^{&lt; 3 &gt;}$的话，我们要用这个query去句子的其他字里查出我们要的答案。和数据库的查询一样，我们也要把这个query和所有字的key进行比对。根据注意力的公式，我们用$q^{&lt; 3 &gt;}$和所有$k$相乘再做softmax，得到注意力权重。再用这个权重乘上每个$v$，加起来，得到所有$v$的加权平均数。既然是查询“问”字和谁组词了，那么这个要找的字肯定是一个动词。因此，计算机会发现$q^{&lt; 3 &gt;}, k^{&lt; 2 &gt;}$比较相关，即这两个向量的内积比较大。一切顺利的话，这个$A^{&lt; 3 &gt;}$应该和$v^{&lt; 2 &gt;}$很接近，即问题“哪个字和‘问’字组词了？”的答案是第二个字“访”。</p>
+<p><img src="/2022/09/21/DLS-note-17/3.jpg" alt></p>
+<p>这是$A^{&lt; 3 &gt;}$的计算过程。准确来说，$A^{&lt; 3 &gt;}=A(q^{&lt; 3 &gt;}, K, V)$。类似地，$A^{&lt; 1 &gt;}-A^{&lt; 5 &gt;}$都是用这个公式来计算。把所有$A$的计算合起来，把$q$合起来，得到的就是下面这个公式。</p>
+<script type="math/tex; mode=display">
+Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><p>其中，$d_k$是一个常量，$\sqrt{d_k}$这一项是用来防止点乘结果的数值过大的。它属于实现细节，对整个式子的意义不影响。抛去这一项的话，上式不过是之前那个公式的矩阵版本。这个公式在原论文里叫做Scaled Dot-Product Attention。</p>
+<p>现在，我们已经理解了注意力的公式。自注意力，其实就是令$Q=K=V=E$，对$E$这个向量自己做注意力。但是，我们还有一个重要的问题没有解决：$Q, K, V$在Transformer里是怎么获得的？别急，后几节我们会把所有的概念串起来，学习Transformer的结构。现在，让我们再看一看Transformer里的另一个概念——多头注意力。</p>
+<h3 id="多头注意力"><a href="#多头注意力" class="headerlink" title="多头注意力"></a>多头注意力</h3><p>在CNN中，我们会在一个卷积层里使用多个卷积核，以提取出不同的特征。比如第一个卷积核提取出图像水平方向的边缘，第二个卷积核提取出图像垂直方向的边缘。类似地，一次自注意力也只能得到部分的信息，我们可以多次使用自注意力得到多个信息。</p>
+<p>上一节的$A^{&lt; 3 &gt;}$是问题“哪个字和‘问’字组词了？”的答案。我们可以多问几个问题，得到有关“问”字的更多信息，比如“‘问’的主语是谁？”、“‘问’的宾语是谁？”。为了描述这些不同的问题，我们要准备一些可学习的矩阵$W^Q_i, W^K_i, W^V_i$。$Attention(W^Q_1Q, W^K_1K, W^V_1V)$就是第一组注意力结果，$Attention(W^Q_2Q, W^K_2K, W^V_2V)$就是第二组注意力结果，以此类推。这种机制叫做多头注意力。</p>
+<p><img src="/2022/09/21/DLS-note-17/4.jpg" alt></p>
+<p>每次Attention的结果是一个向量，所有Attention的结果concat起来就是多头注意力的结果。</p>
+<h3 id="Transformer-网络结构"><a href="#Transformer-网络结构" class="headerlink" title="Transformer 网络结构"></a>Transformer 网络结构</h3><p>搞懂了自注意力、多头注意力这两个核心机制后，我们就能够看懂Transformer的整体结构了。</p>
+<p>让我们看看Transformer是怎么翻译一句话的。给定一个单词序列（为了方便，我们认为输入句子已经被token化，且输入的是每个token的嵌入），我们要先用encoder提取特征，再用decoder逐个输出翻译出来的token。</p>
+<p>在encoder中，输入会经过一个多头注意力层。这一层的Q, K, V都是输入的词嵌入。多头注意力层会接到一个前馈神经网络上，这个网络就是一个简单的全连接网络。</p>
+<blockquote>
+<p>别忘了，多头注意力层的可学习参数是$W^Q_i, W^K_i, W^V_i$，Q, K, V可以是预训练好的词嵌入。</p>
+</blockquote>
+<p>再看decoder。先看一下decoder的输出流程。第一轮，decoder的输入是<code>&lt;SOS&gt;</code>，输出<code>Jane</code>；第二轮，decoder的输入是<code>&lt;SOS&gt; Jane</code>，输出是<code>visits</code>。也就是说，decoder的输入是现有的翻译序列，输出是下一个翻译出来的单词。</p>
+<p>在decoder中，输入同样要经过一个多头注意力层。这一层的Q, K, V全是输入的词嵌入。之后，数据会经过另一个多头注意力层，它的Q是上一层的输出，K, V来自于Encoder。为什么这一层有这样的设计呢？大家不妨翻回到前几节，回顾一下经典注意力模型中注意力是怎么计算的。其实，经典注意力模型就是以decoder的隐状态为Q，以encoder的隐状态为K, V的注意力。Transformer不过是用一套全新的公式把之前的机制搬过来了而已。做完这次多头注意力后，数据也是会经过一个全连接网络，输出结果。</p>
+<p>encoder和decoder的大模块一共重复了N次，原论文中N=6。</p>
+<p><img src="/2022/09/21/DLS-note-17/5.jpg" alt></p>
+<p>总结一下注意力在Transformer里的使用。多头注意力其实有两个版本：第一个版本是自注意力，用于进一步提取输入的特征；第二个版本和经典注意力模型一样，把输出序列和输入序列关联了起来。</p>
+<p>刚才我们学习的是Transformer的主要结构。实际上，Transformer的结构里还有很多细节。</p>
+<ol>
+<li>Positional Encoding （位置编码）: 和RNN不同，Transformer的多头注意力无法区分每一个输入的顺序。为了告诉模型每一个token的先后顺序，词嵌入在输入模型之前还要加上一个Positional Encoding。这个编码会给每一个词嵌入的每一维加上一个三角函数值。三角函数之间的差具有周期性，模型能够从这个值里认识到输入序列的顺序信息。</li>
+</ol>
+<blockquote>
+<p>我会在之后的文章详细介绍位置编码，这里只需要明白位置编码的意义即可。</p>
+</blockquote>
+<ol>
+<li><p>Add &amp; Norm 层：参考深度CNN的结构，Transformer给每个模块的输出都做了一次归一化，并且使用了残差连接。</p>
+</li>
+<li><p>输出前的线性层和Softmax：为了输出一个单词，我们肯定要做一个softmax。这些层是输出单词的常规操作，和RNN结构里的相同。</p>
+</li>
+</ol>
+<p><img src="/2022/09/21/DLS-note-17/6.jpg" alt></p>
+<p>最后，在训练Tranformer时，还有一个重要的模块：Masked Multi-head Attention。刚刚我们学到，在输出翻译的句子时，我们要输出一个单词，更新一次decoder的输入；输出一个单词，更新一次decoder的输入。然而，在训练时，我们实际上已经有了正确的输出。因此，我们可以同时给decoder看前1个单词，看前2个单词……，并行地训练所有的这些情况。为了只让decoder看到前几个单词，我们可以给输入加一个mask，把后面那些不应该看到的单词“蒙上”。</p>
+<p>Masked Multi-head Attention 其实只是一个实现上的小技巧，不能算作一个新模块。具体的实现方式其实有很多，我们只要重点理解这一设计的原因即可。总之，这种设计让Transformer能够并行地训练翻译进度不同的句子。因此，Transfomer的训练效率会比RNN快很多。</p>
+<p><img src="/2022/09/21/DLS-note-17/7.jpg" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课我们主要学习了Transformer模型。在学习时，我们主要应该关注两个核心机制：自注意力、多头注意力。搞懂Transformer的注意力机制后，我们基本就理解了Transformer的原理了。剩下的一些细节知识可以去看原论文，这些细节不干扰论文主体思想的理解。</p>
+<p>《深度学习专项》的课就到此结束了。不过，之后我还会围绕这门课发两篇文章。第一篇文章会详细地解读“Attention Is All You Need”这篇论文，第二篇文章会详细介绍Transformer的复现过程，作为这节课的大作业。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/09/21/DLS-note-16/" rel="prev" title="吴恩达《深度学习专项》笔记（十六）：序列模型与注意力机制">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》笔记（十六）：序列模型与注意力机制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/10/03/20220925-stock-100-ror/" rel="next" title="入门美股投机三个月收益率100&#37;经验分享">
+      入门美股投机三个月收益率100&#37;经验分享 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Transformer"><span class="nav-number">1.</span> <span class="nav-text">Transformer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">1.1.</span> <span class="nav-text">自注意力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">1.2.</span> <span class="nav-text">多头注意力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transformer-%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84"><span class="nav-number">1.3.</span> <span class="nav-text">Transformer 网络结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

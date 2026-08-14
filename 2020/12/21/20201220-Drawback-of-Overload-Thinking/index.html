@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="最近有好多东西想写，今天先写一篇比较短的文章。 想得越多，干得越少，做得越差我发现，我在做事的时候，经常会考虑太多东西。考虑得太多，反而在事情开始干活的时候畏手畏脚，不知道该怎么下手。最后，什么事情都没有做成，还不如少想一点。今天，我想讨论一下这种现象的具体表现及其负面影响，以及这种现象的解决方法。 写这篇文章的时候我头脑不是很清楚，很多地方不是很严谨。在描述一个事情&#x2F;例子的时候，如果用的人称是”">
+<meta property="og:type" content="article">
+<meta property="og:title" content="想得越多，干得越少，做得越差">
+<meta property="og:url" content="https://zhouyifan.net/2020/12/21/20201220-Drawback-of-Overload-Thinking/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="最近有好多东西想写，今天先写一篇比较短的文章。 想得越多，干得越少，做得越差我发现，我在做事的时候，经常会考虑太多东西。考虑得太多，反而在事情开始干活的时候畏手畏脚，不知道该怎么下手。最后，什么事情都没有做成，还不如少想一点。今天，我想讨论一下这种现象的具体表现及其负面影响，以及这种现象的解决方法。 写这篇文章的时候我头脑不是很清楚，很多地方不是很严谨。在描述一个事情&#x2F;例子的时候，如果用的人称是”">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-12-20T16:24:50.000Z">
+<meta property="article:modified_time" content="2021-08-21T03:39:38.149Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="个人管理">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2020/12/21/20201220-Drawback-of-Overload-Thinking/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>想得越多，干得越少，做得越差 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2020/12/21/20201220-Drawback-of-Overload-Thinking/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          想得越多，干得越少，做得越差
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-12-21 00:24:50" itemprop="dateCreated datePublished" datetime="2020-12-21T00:24:50+08:00">2020-12-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/" itemprop="url" rel="index"><span itemprop="name">杂谈</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9D%82%E8%B0%88/%E9%9A%8F%E7%AC%94/" itemprop="url" rel="index"><span itemprop="name">随笔</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>最近有好多东西想写，今天先写一篇比较短的文章。</p>
+<h1 id="想得越多，干得越少，做得越差"><a href="#想得越多，干得越少，做得越差" class="headerlink" title="想得越多，干得越少，做得越差"></a>想得越多，干得越少，做得越差</h1><p>我发现，我在做事的时候，经常会考虑太多东西。考虑得太多，反而在事情开始干活的时候畏手畏脚，不知道该怎么下手。最后，什么事情都没有做成，还不如少想一点。今天，我想讨论一下这种现象的具体表现及其负面影响，以及这种现象的解决方法。</p>
+<p>写这篇文章的时候我头脑不是很清楚，很多地方不是很严谨。在描述一个事情/例子的时候，如果用的人称是”你“，这表示我认为这种现象比较普遍，大家可能都会碰到；如果用的人称是”我“，表示这种现象可能比较特别一点，且确确实实发生在了我自己身上。</p>
+<h2 id="我的“过载思考”"><a href="#我的“过载思考”" class="headerlink" title="我的“过载思考”"></a>我的“过载思考”</h2><p>我在认真对待一项任务的时候，会全方位深入思考这件任务的完成方法，我把我的这种思考方法叫做”过载思考“。过载思考本身是一个非常复杂的话题，我以后可能会专门花一篇文章来总结，现在就简要介绍一下这种思考方法。</p>
+<p>在做事情之前，我要求自己明确知道自己的目标是什么。比如在大学里上一门课，正常来说大家的目标是获取更高的分数。我会去问自己：获取高分真的就是我的目标吗？是不是获取这门课的知识才是我的真正目标？还是通过完成这门课的一个项目，来提升项目经验，而不是掌握这门课的知识？只有搞清楚了自己真正的目标，才能针对目标选择最优的每部操作。搞清楚了真正目标后，你会发现一些看似正确的做法，其实并不正确。比如我们学校的操作系统课，拿着一本烂书，讲着没有用的知识，考试考背诵，老师上课在大谈自己的人生经历。在这样一门课上，认真听课，认真准备考试获取高分，在我看来都是浪费时间。我在这门课上学不到任何知识，所以我的目标是获得一个看得过去的分数，我要花最少的时间，让自己在背最少的东西的情况下达成目标，而不是所谓的“认真学习”。</p>
+<p>确定了目标之后，要思考达成目标的过程中，哪些是重要的东西，哪些是看似重要的东西。很多时候，你不自己实际经历一遍这件事，踩一遍坑，你可能就不知道哪些事是重要的。但一旦你能提前把可能遇到的坑想好，提前发现完成一件事的最重要的因素，你就能节约大量时间，以及减少陷入负面情绪的时间和可能。比如你为了获得一个好成绩，天天去占前排的座位，去做漂亮的笔记，以”认真的态度“去面对学习，结果学习还是很吃力。其实，学好一门课的重点根本不是一些形式上的东西，不是一个主观上努力认真的态度。要取得更好的成绩，首先要改变思考方法，要去主动地学习；其次，一些技巧还尤为关键，比如获取前几年的题目。凭着主观的意识，去在意那些自己以为重要的东西，取得了不好的结果，最终只能怪自己没有早点看清完成目标的过程中，最重要的某些因素。</p>
+<p>有了目标（一个目标函数），有了重要因素（目标函数中权重较大的变量），现在就要考虑计划了。事实上，有了重要因素，计划是一件很显然的事，不如说重要因素的提炼就是为了计划。还是拿刚刚的例子，你知道取得好成绩，要去获取前几年的卷子，你去努力向学长学姐要题目就行了。</p>
+<p>准备工作结束，在开始做事情之后，我会不自觉地，以批判的角度看待自己的每一个行为。我会去考虑诸如这样问题：我的每一步行动是否能让我更靠近目标？我是否有的时候在凭借着主观看法一厢情愿地做事？我的哪些做法是不够好的，可以改进的？我是不是做错了一些事？</p>
+<p>以上是我的”过载思考“的一个大致介绍。之所以取这个名字，是因为在完全开启这个能力的之后，我会消耗大量脑力在推进任务进度之外的思考上，大脑有一种过载的感觉。过载思考帮助我成功完成了很多事，避开了许多弯路。但是，有的时候我过度使用这种思考方式，导致了很多负面的结果。</p>
+<h2 id="过载思考的弊端"><a href="#过载思考的弊端" class="headerlink" title="过载思考的弊端"></a>过载思考的弊端</h2><h3 id="犹豫"><a href="#犹豫" class="headerlink" title="犹豫"></a>犹豫</h3><p>使用过载思考时，要花很多时间在准备上，这意味着不能及时地开展行动。而有的时候，时间又是任务中重要的限制因素。比如在棋类比赛中，先有一个总的保留用时，再会对每步棋进行读秒。如果思考时不注意时间，因为时间的限制而导致思考中断，只会导致产生极差的做事成果。</p>
+<p>另外，有些任务随着时间的变化，其性质也会发生变化。这种事情一般发生在抢占资源的任务上。比如你看上了一个人，思考太久，结果别人都结婚了。由于思考得太久，任务本质发生了变化，使得你不得不又去重新思考，陷入了一种无法开始做事的死循环中。这样往往会导致机会的错失。</p>
+<h3 id="自责"><a href="#自责" class="headerlink" title="自责"></a>自责</h3><p>我在使用过载思考时，会批判地看待自己。结果我经常会产生某些不必要的，对于过去已经无法改变的事情的批判。比如一手牌打错了，我会对自己说：”这也太菜了吧。“一些事情做得慢了，拖到ddl前才完成，我会想：”我为什么这么拖拉啊。“这些想法是完全没有意义、没有建设性的，不能对未来产生任何利处，只会凭空损害自己的内心，让自己产生负面情绪。</p>
+<p>其实，我完全知道这种现象产生的原因：在一件事做的不够好的时候，人会下意识地感到难受。为了掩盖这种难受，人会产生一些习惯性的应对方法。对我来说，所谓的自责，只是掩盖这种难受的下意识反应。这可能和我童年生活有关：我小时候有事情做好时会挨骂，以至于长大后事情没做好后，会自己责怪自己。我潜意识里虚伪地认为，自责就能让自己看上去意识到了自己的错误，能让自己更好一点。但从理性的角度来看，自责没有任何意义。</p>
+<h3 id="大脑崩溃"><a href="#大脑崩溃" class="headerlink" title="大脑崩溃"></a>大脑崩溃</h3><p>人的大脑是是有极限的。我从短暂的人生中学到这样一件事……越是工于心计，越会发现人的大脑是有极限的……除非超越人类。</p>
+<p>当我也想不做人时，却发现自己大脑崩溃了。</p>
+<p>过载思考，意味着需要对任务建模，深刻了解任务的一些细节、原理。当这个任务过于复杂，超过了某个阈值后，大脑就无法处理了。这和电脑内存不够大概是一个道理。这样的例子不太好找，我举一个可能不容易理解的，在我身上发生的例子。我在高考前，发现自己经常考试时间不够。于是，我开始尝试对考试用时安排进行建模。我去思考了一个叫思考效率的东西：人在刚开始思考的时候，思考不是很集中，思考效率不是很高。当思考一段时间后，思维逐渐集中，思考效率较高。真正的思考成果，是思考效率在思考时间上的积分。不同学科的不同类型的题目，有着不同的思考效率-时间曲线。但是，这里面的工作量实在是太大了，而且很多东西是不能量化的，只能是定性地看待，我的大脑完全处理不了这么多东西。结果，我想了一些很没用的东西，对我的高考一点帮助也没有。</p>
+<p>大脑崩溃可能会产生严重的后果。如果在一件无关紧要的事情上崩溃，可能只会让我放弃这件事。但最近，我在一些重要的事情上产生了崩溃。结果我突然完全丧失了思考和行动的能力，陷入了不知所措中。好在我吃了个饭，扩充了大脑内存，立马kill了之前的进程，想出了暂时解决问题的方法。</p>
+<h3 id="自我怀疑"><a href="#自我怀疑" class="headerlink" title="自我怀疑"></a>自我怀疑</h3><p>我一直依靠我的过载思考完成重要任务，以至于我忽略了这种思考方式不是万能的。一旦我没能成功地完成任务，我就会下意识对自己进行全面的否定。一旦陷入了自我怀疑，就会害怕思考，从而失去了正常工作的能力。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>其实，从弊端的分析中，基本就能得到解决方法了。针对每种弊端，给出对应的方案即可。</p>
+<p>为了避免犹豫，应该把时间纳入考虑范围内，不能不加约束地过分细致地计划事情。</p>
+<p>为了解决自责，要从理性上认识到自责的原因，克服长期以来的潜在的思考方式，不去做没有意义的事情。如果自己想被责怪，就痛痛快快地骂自己一顿，再向前方看去就好。</p>
+<p>为了解决大脑崩溃，首先要意识到世界的复杂性，不要考虑把什么事情都建模清楚。再考虑事情之前，要先考虑事情的规模，考虑可行性。之后，在具体执行任务的时候，可以不看那么远，先尝试把任务拆成能力范围内的子任务，先把子任务完成，再考虑进一步的事情。</p>
+<p>为了解决自我怀疑，只需要告诉自己过载思考不是万能的即可。一两次的失败，不能代表这种思考方式的错误，反而代表自己有更多的提升空间。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%B8%AA%E4%BA%BA%E7%AE%A1%E7%90%86/" rel="tag"># 个人管理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/12/05/The-Last-Algorithm-Contest/" rel="prev" title="最后的算法竞赛经历">
+      <i class="fa fa-chevron-left"></i> 最后的算法竞赛经历
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/01/28/phd-email/" rel="next" title="如果套磁信可以用中文写">
+      如果套磁信可以用中文写 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%83%B3%E5%BE%97%E8%B6%8A%E5%A4%9A%EF%BC%8C%E5%B9%B2%E5%BE%97%E8%B6%8A%E5%B0%91%EF%BC%8C%E5%81%9A%E5%BE%97%E8%B6%8A%E5%B7%AE"><span class="nav-number">1.</span> <span class="nav-text">想得越多，干得越少，做得越差</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E7%9A%84%E2%80%9C%E8%BF%87%E8%BD%BD%E6%80%9D%E8%80%83%E2%80%9D"><span class="nav-number">1.1.</span> <span class="nav-text">我的“过载思考”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%87%E8%BD%BD%E6%80%9D%E8%80%83%E7%9A%84%E5%BC%8A%E7%AB%AF"><span class="nav-number">1.2.</span> <span class="nav-text">过载思考的弊端</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B9%E8%B1%AB"><span class="nav-number">1.2.1.</span> <span class="nav-text">犹豫</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E8%B4%A3"><span class="nav-number">1.2.2.</span> <span class="nav-text">自责</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%A7%E8%84%91%E5%B4%A9%E6%BA%83"><span class="nav-number">1.2.3.</span> <span class="nav-text">大脑崩溃</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E6%88%91%E6%80%80%E7%96%91"><span class="nav-number">1.2.4.</span> <span class="nav-text">自我怀疑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">1.3.</span> <span class="nav-text">解决方法</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

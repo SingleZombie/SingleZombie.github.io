@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="总算，我们把《深度学习专项》的最后一门课《序列模型》学完了。这门课主要讨论了和序列数据相关的深度学习方法，介绍了以RNN为代表的经典序列模型和Transformer自注意力模型这两大类模型。同时，这门课还介绍了一些常见自然语言处理问题的基础知识和建模方法。让我们回顾一下RNN、Transformer、NLP这三个方面的知识。 所有知识按技能树的形式组织，学完了上一层的才能学下一层的。部分知识是派生">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》第五阶段总结">
+<meta property="og:url" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="总算，我们把《深度学习专项》的最后一门课《序列模型》学完了。这门课主要讨论了和序列数据相关的深度学习方法，介绍了以RNN为代表的经典序列模型和Transformer自注意力模型这两大类模型。同时，这门课还介绍了一些常见自然语言处理问题的基础知识和建模方法。让我们回顾一下RNN、Transformer、NLP这三个方面的知识。 所有知识按技能树的形式组织，学完了上一层的才能学下一层的。部分知识是派生">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/1.gif">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-16/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/20220925-Transformer/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-15/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-15/2.jpg">
+<meta property="article:published_time" content="2022-11-12T11:37:13.000Z">
+<meta property="article:modified_time" content="2022-11-14T12:01:07.417Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/DLS-note-14/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》第五阶段总结 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/11/12/DLS-note-summary-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》第五阶段总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-12 19:37:13" itemprop="dateCreated datePublished" datetime="2022-11-12T19:37:13+08:00">2022-11-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>总算，我们把《深度学习专项》的最后一门课《序列模型》学完了。这门课主要讨论了和<strong>序列数据</strong>相关的深度学习方法，介绍了以<strong>RNN</strong>为代表的经典序列模型和<strong>Transformer</strong>自注意力模型这两大类模型。同时，这门课还介绍了一些常见<strong>自然语言处理</strong>问题的基础知识和建模方法。让我们回顾一下RNN、Transformer、NLP这三个方面的知识。</p>
+<p>所有知识按技能树的形式组织，学完了上一层的才能学下一层的。部分知识是派生出来的，学会与否不影响后续知识的学习，这些知识的前置条件会特别标出。</p>
+<h2 id="RNN"><a href="#RNN" class="headerlink" title="RNN"></a>RNN</h2><h3 id="0-RNN-处理的数据种类：序列数据"><a href="#0-RNN-处理的数据种类：序列数据" class="headerlink" title="0. RNN 处理的数据种类：序列数据"></a>0. RNN 处理的数据种类：序列数据</h3><p>常见的序列数据有：语音、文字、DNA、视频。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/1.jpg" alt></p>
+<h3 id="1-1-RNN-的结构"><a href="#1-1-RNN-的结构" class="headerlink" title="1.1 RNN 的结构"></a>1.1 RNN 的结构</h3><p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/1.gif" alt></p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{< t >} &= g_1(W_{ax} x^{< t >} + W_{aa} a^{< t - 1 >} + b_a) \\
+\hat{y}^{< t >} &=g_2(W_{ya} a^{< t >} + b_y)
+\end{aligned}</script><p>使用这种结构的原因：如果用全连接网络，既无法处理任意长度的句子，又不能共享每一处数据的知识。而 RNN 既能用同样的方法处理每一处数据，又能用一个隐变量表示上下文信息以描述序列关系。</p>
+<h3 id="1-2-RNN-的梯度问题"><a href="#1-2-RNN-的梯度问题" class="headerlink" title="1.2 RNN 的梯度问题"></a>1.2 RNN 的梯度问题</h3><p>RNN 的梯度可能爆炸也可能消失。梯度爆炸可以通过设置一个梯度最大值来解决。而梯度消失要靠结构改进解决。</p>
+<p>下面是 PyTorch 的梯度裁剪函数的使用方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">optimizer.zero_grad()</span><br><span class="line">loss.backward()</span><br><span class="line">torch.nn.utils.clip_grad_norm_(model.parameters(), <span class="number">0.5</span>)</span><br><span class="line">optimizer.step()</span><br></pre></td></tr></table></figure>
+<h3 id="1-3-多层-RNN"><a href="#1-3-多层-RNN" class="headerlink" title="1.3 多层 RNN"></a>1.3 多层 RNN</h3><p>竖着堆叠 RNN。由于 RNN 计算较慢，一般叠 3 层就算很多了。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/10.jpg" alt></p>
+<p>想要进一步提高网络的拟合能力，可以在输出模块里多加一些非时序的神经网络。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/11.jpg" alt></p>
+<h3 id="GRU-（需学习-RNN）"><a href="#GRU-（需学习-RNN）" class="headerlink" title="GRU （需学习 RNN）"></a>GRU （需学习 RNN）</h3><p>序列一长，靠前的数据的梯度就容易消失。GRU 解决了这一问题。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/7.jpg" alt></p>
+<p>GRU 改进了普通的 RNN，每次更新隐变量时会使用一个0~1之间的更新比例，防止之前的信息被过快地忘记。</p>
+<h3 id="LSTM-（需学习-RNN-GRU）"><a href="#LSTM-（需学习-RNN-GRU）" class="headerlink" title="LSTM （需学习 RNN, GRU）"></a>LSTM （需学习 RNN, GRU）</h3><p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/8.jpg" alt></p>
+<p>LSTM 的作用和 GRU 类似，效果更好，但更费时。</p>
+<h3 id="双向-RNN-（需学习-RNN）"><a href="#双向-RNN-（需学习-RNN）" class="headerlink" title="双向 RNN （需学习 RNN）"></a>双向 RNN （需学习 RNN）</h3><p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/9.jpg" alt></p>
+<p>等价于正着跑一遍 RNN，倒着跑一遍 RNN，输出结果由前向和后向的两个隐变量决定。</p>
+<p>碰到一个新的序列任务时，双向 LSTM 依然是首选。</p>
+<h3 id="2-序列问题的-RNN-建模方法"><a href="#2-序列问题的-RNN-建模方法" class="headerlink" title="2. 序列问题的 RNN 建模方法"></a>2. 序列问题的 RNN 建模方法</h3><p>RNN 只提供了N对N的序列问题的解决方法。对于其他输入输出格式的问题，需要进行巧妙的建模，才能使用 RNN 来解决问题。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-14/4.jpg" alt></p>
+<p>其中，最重要的是不等长多对多数据的建模方法。前半段只输入不输出的部分叫做编码器，后半段只输出不输入的部分叫做解码器。这种“编码器-解码器”架构是一种经典的 RNN 架构。</p>
+<p>RNN 可以轻松地完成序列生成任务：输出下一个单词的 softmax 的预测结果，挑选概率较高的一个作为下一次的输入，循环执行。找到总体较好的一个输出的算法叫做 Beam Search。</p>
+<h3 id="3-注意力模型"><a href="#3-注意力模型" class="headerlink" title="3. 注意力模型"></a>3. 注意力模型</h3><p>一种加强版 RNN 架构。它依然是一种“编码器-解码器”架构。编码器是双向 RNN，解码器是单向 RNN。每个输出的 RNN 对每个输入都有一个权重，该权重叫做注意力。每个输出从每个输入接收的数据是一个加权和。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-16/5.jpg" alt></p>
+<h2 id="Transformer"><a href="#Transformer" class="headerlink" title="Transformer"></a>Transformer</h2><p>Transformer 是一类重要的模型。学习此模型之前最好学完 RNN。</p>
+<p>Transformer 从多个角度改进了原序列模型。学习 Transformer 时，主要关注以下几方面的知识：</p>
+<ol>
+<li>注意力和多头注意力</li>
+<li>输出是怎样并行计算的</li>
+<li>位置编码</li>
+</ol>
+<h3 id="1-注意力"><a href="#1-注意力" class="headerlink" title="1. 注意力"></a>1. 注意力</h3><script type="math/tex; mode=display">
+Attention(Q, K, V)=softmax(\frac{QK^T}{\sqrt{d_k}})V</script><p>注意力的本质是全局信息查询。给出问题 Q，去现有的数据库 (K, V) 里查出一个 V 的加权和，权重由 Q, K 的相似度决定。</p>
+<h3 id="2-1-自注意力"><a href="#2-1-自注意力" class="headerlink" title="2.1 自注意力"></a>2.1 自注意力</h3><p>自注意力是注意力的一个应用。当 Q, K, V 都是同一个张量时，注意力计算起到是特征提取的作用。相对于 CNN，自注意力更能提取全局信息。</p>
+<h3 id="2-2-输出对输入的注意力"><a href="#2-2-输出对输入的注意力" class="headerlink" title="2.2 输出对输入的注意力"></a>2.2 输出对输入的注意力</h3><p>注意力机制在早期的注意力模型中是用来计算每个输出对每个输入的权重的。Q 来自输出，K, V 来自输入。</p>
+<h3 id="2-3-多头注意力"><a href="#2-3-多头注意力" class="headerlink" title="2.3 多头注意力"></a>2.3 多头注意力</h3><p>多头注意力是普通注意力计算的一个加强版。首先，它引入了可学习参数，能够让注意力模块学习要提取哪些特征；其次，它可以像卷积层一样提取多个特征。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&head_i = Attention(EW^Q_i, EW^K_i, EW^V_i) \\
+&MultiHeadSelfAttention(E) = Concat(head_1, ...head_h)W^O
+\end{aligned}</script><h3 id="3-并行解码"><a href="#3-并行解码" class="headerlink" title="3. 并行解码"></a>3. 并行解码</h3><p>对于输入序列$(x_1, …, x_s)$，它会被编码器编码成中间表示 $\mathbf{z} = (z_1, …, z_s)$。给定$\mathbf{z}$的前提下，解码器输入$(y_1, …, y_t)$，输出$(y_2, …, y_{t+1})$的预测。</p>
+<p>为了模拟解码器的串行执行，其第一个多头注意力有掩码机制，盖住了此时刻之后的数据。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/20220925-Transformer/7.jpg" alt></p>
+<h3 id="4-位置编码"><a href="#4-位置编码" class="headerlink" title="4. 位置编码"></a>4. 位置编码</h3><p>由于 Transformer 没有利用到数据的先后顺序这一信息，包含位置信息的位置编码会作为额外输入加到输入的张量上。</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+PE(pos, 2i) &= sin(pos/10000^{2i/d_{model}}) \\
+PE(pos, 2i+1) &= cos(pos/10000^{2i/d_{model}})
+\end{aligned}</script><h2 id="NLP-知识"><a href="#NLP-知识" class="headerlink" title="NLP 知识"></a>NLP 知识</h2><p>为了更好地介绍 RNN，《深度学习专项》补充了很多 NLP知识。</p>
+<h3 id="词汇表"><a href="#词汇表" class="headerlink" title="词汇表"></a>词汇表</h3><p>为了表示单词，要实现准备一个包含所有要用到的单词的词汇表。每个单词用一个 one-hot 向量表示。若一个单词在词汇表里的序号是 i，则其 one-hot 向量的第 i 个元素为1。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-15/1.jpg" alt></p>
+<h3 id="词嵌入-（需学习-RNN-结构、RNN-建模方法）"><a href="#词嵌入-（需学习-RNN-结构、RNN-建模方法）" class="headerlink" title="词嵌入 （需学习 RNN 结构、RNN 建模方法）"></a>词嵌入 （需学习 RNN 结构、RNN 建模方法）</h3><p>one-hot 编码是没有任何含义的。词嵌入是每个单词的一种有意义的表示，向量间的差能够表示语义上的差距。</p>
+<p><img src="/2022/11/12/DLS-note-summary-5/DLS-note-15/2.jpg" alt></p>
+<p>词嵌入要在某些任务中学习得到。词嵌入的学习方法有：语言模型、Word2Vec、负采样、GloVe。</p>
+<p>学习好了词嵌入后，词嵌入应该放在其他任务的神经网络的第一层，作为输入数据的一种预处理方法。</p>
+<h3 id="BLEU-Score"><a href="#BLEU-Score" class="headerlink" title="BLEU Score"></a>BLEU Score</h3><p>BLEU Score 是为了评价机器翻译而提出的指标。如果模型输出的翻译和参考译文有越多相同的单词、连续2个相同单词、连续3个相同单词……，则得分越高。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>《深度学习专项》的第五门课主要介绍了这三个方面的知识。如果你以后不从事 NLP 的研究，可以略过 NLP 的知识。而 RNN 和 Transformer 的知识是必须要学的。学 RNN 时，主要关注各个问题是怎么用 RNN 建模的；而学 Transformer 时，要更加关注模型的结构和原理。</p>
+<p>深度学习的技术日新月异。上完了课后，最好去深入阅读一下经典论文，再去跟进最新的论文，尤其是 Transformer 这种较新的领域。</p>
+<p>在看这篇总结时，如果你看到了不懂的地方，欢迎回顾我之前的笔记。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/11/12/DLS-note-summary-4/" rel="prev" title="吴恩达《深度学习专项》第四阶段总结与第五阶段预览">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》第四阶段总结与第五阶段预览
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/11/12/20220925-Transformer/" rel="next" title="Attention Is All You Need (Transformer) 论文精读">
+      Attention Is All You Need (Transformer) 论文精读 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#RNN"><span class="nav-number">1.</span> <span class="nav-text">RNN</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#0-RNN-%E5%A4%84%E7%90%86%E7%9A%84%E6%95%B0%E6%8D%AE%E7%A7%8D%E7%B1%BB%EF%BC%9A%E5%BA%8F%E5%88%97%E6%95%B0%E6%8D%AE"><span class="nav-number">1.1.</span> <span class="nav-text">0. RNN 处理的数据种类：序列数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-RNN-%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">1.1 RNN 的结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-RNN-%E7%9A%84%E6%A2%AF%E5%BA%A6%E9%97%AE%E9%A2%98"><span class="nav-number">1.3.</span> <span class="nav-text">1.2 RNN 的梯度问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E5%A4%9A%E5%B1%82-RNN"><span class="nav-number">1.4.</span> <span class="nav-text">1.3 多层 RNN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GRU-%EF%BC%88%E9%9C%80%E5%AD%A6%E4%B9%A0-RNN%EF%BC%89"><span class="nav-number">1.5.</span> <span class="nav-text">GRU （需学习 RNN）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LSTM-%EF%BC%88%E9%9C%80%E5%AD%A6%E4%B9%A0-RNN-GRU%EF%BC%89"><span class="nav-number">1.6.</span> <span class="nav-text">LSTM （需学习 RNN, GRU）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8C%E5%90%91-RNN-%EF%BC%88%E9%9C%80%E5%AD%A6%E4%B9%A0-RNN%EF%BC%89"><span class="nav-number">1.7.</span> <span class="nav-text">双向 RNN （需学习 RNN）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%BA%8F%E5%88%97%E9%97%AE%E9%A2%98%E7%9A%84-RNN-%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95"><span class="nav-number">1.8.</span> <span class="nav-text">2. 序列问题的 RNN 建模方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.9.</span> <span class="nav-text">3. 注意力模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Transformer"><span class="nav-number">2.</span> <span class="nav-text">Transformer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">2.1.</span> <span class="nav-text">1. 注意力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">2.2.</span> <span class="nav-text">2.1 自注意力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E8%BE%93%E5%87%BA%E5%AF%B9%E8%BE%93%E5%85%A5%E7%9A%84%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">2.3.</span> <span class="nav-text">2.2 输出对输入的注意力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B"><span class="nav-number">2.4.</span> <span class="nav-text">2.3 多头注意力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E5%B9%B6%E8%A1%8C%E8%A7%A3%E7%A0%81"><span class="nav-number">2.5.</span> <span class="nav-text">3. 并行解码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-number">2.6.</span> <span class="nav-text">4. 位置编码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NLP-%E7%9F%A5%E8%AF%86"><span class="nav-number">3.</span> <span class="nav-text">NLP 知识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%8D%E6%B1%87%E8%A1%A8"><span class="nav-number">3.1.</span> <span class="nav-text">词汇表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%8D%E5%B5%8C%E5%85%A5-%EF%BC%88%E9%9C%80%E5%AD%A6%E4%B9%A0-RNN-%E7%BB%93%E6%9E%84%E3%80%81RNN-%E5%BB%BA%E6%A8%A1%E6%96%B9%E6%B3%95%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">词嵌入 （需学习 RNN 结构、RNN 建模方法）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BLEU-Score"><span class="nav-number">3.3.</span> <span class="nav-text">BLEU Score</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

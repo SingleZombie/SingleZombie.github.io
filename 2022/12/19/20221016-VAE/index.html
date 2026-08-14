@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="变分自编码器（VAE）是一类常见的生成模型。纯VAE的生成效果不见得是最好的，但VAE还是经常会被用作大模型的子模块。即使是在VAE发明多年的今天，学习VAE还是很有必要的。相比GAN等更符合直觉的模型，彻底理解VAE对数学的要求较高。在这篇文章中，我会从计算机科学的角度出发，简明地讲清楚VAE的核心原理，并附上代码实现的介绍。同时，我会稍微提及VAE是怎么利用数学知识的，以及该怎么去拓展了解这些">
+<meta property="og:type" content="article">
+<meta property="og:title" content="抛开数学，轻松学懂 VAE（附 PyTorch 实现）">
+<meta property="og:url" content="https://zhouyifan.net/2022/12/19/20221016-VAE/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="变分自编码器（VAE）是一类常见的生成模型。纯VAE的生成效果不见得是最好的，但VAE还是经常会被用作大模型的子模块。即使是在VAE发明多年的今天，学习VAE还是很有必要的。相比GAN等更符合直觉的模型，彻底理解VAE对数学的要求较高。在这篇文章中，我会从计算机科学的角度出发，简明地讲清楚VAE的核心原理，并附上代码实现的介绍。同时，我会稍微提及VAE是怎么利用数学知识的，以及该怎么去拓展了解这些">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/10.jpg">
+<meta property="article:published_time" content="2022-12-19T11:27:15.000Z">
+<meta property="article:modified_time" content="2022-12-19T11:27:15.793Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/12/19/20221016-VAE/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/12/19/20221016-VAE/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>抛开数学，轻松学懂 VAE（附 PyTorch 实现） | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/12/19/20221016-VAE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          抛开数学，轻松学懂 VAE（附 PyTorch 实现）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-19 19:27:15" itemprop="dateCreated datePublished" datetime="2022-12-19T19:27:15+08:00">2022-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>变分自编码器（VAE）是一类常见的生成模型。纯VAE的生成效果不见得是最好的，但VAE还是经常会被用作大模型的子模块。即使是在VAE发明多年的今天，学习VAE还是很有必要的。相比GAN等更符合直觉的模型，彻底理解VAE对数学的要求较高。在这篇文章中，我会从计算机科学的角度出发，简明地讲清楚VAE的核心原理，并附上代码实现的介绍。同时，我会稍微提及VAE是怎么利用数学知识的，以及该怎么去拓展了解这些数学知识。</p>
+<p><img src="/2022/12/19/20221016-VAE/1.jpg" alt></p>
+<h2 id="用自编码器生成图像"><a href="#用自编码器生成图像" class="headerlink" title="用自编码器生成图像"></a>用自编码器生成图像</h2><p>在正式开始学习VAE之前，我们先探讨一下内容生成的几种方式，并引入自编码器（Autoencoder, AE）这个概念。为了方面描述，我们仅讨论图像的生成。</p>
+<p>在设计生成图像的程序之前，我们要考虑一个问题——程序的输入是什么？如果程序没有任何输入，那么它就应该有一个确定的输出，也就是只能画出一幅图片。而只能画出一幅图片的程序没有任何意义的。因此，一个图像生成模型一定要有输入，用于区分不同的图片。哪怕这种输入仅仅是0, 1, 2这种序号也可以，只要模型能看懂输入，为每个输入生成不同的图片就行了。</p>
+<p>可是，我们不仅希望不同的输入能区分不同的图片，还要让相近的输入生成相近的图片。比如1.5号图片应该长得和1号和2号相似。为了让模型满足这种性质，我们可以干脆把模型的输入建模成有意义的高维实数向量。这个向量，可以是看成对图像的一种压缩编码。比如<code>(170, 1)</code>就表示一幅身高为170cm的男性的照片。</p>
+<p>绝大多数生成模型都是用这种方式对生成过程建模。所有的输入向量$z$来自于一个标准正态分布$Z$。图像生成，就是把图像的编码向量$z$解码成一幅图像的过程。不同的生成模型，只是对这个过程有着不同的约束方式。</p>
+<p>自编码器的约束方式十分巧妙：既然把$z$翻译回图像是一个解码的过程，为什么不可以把编码的过程也加进来，让整个过程自动学习呢？如下图所示，我们可以让一个模型（编码器）学会怎么把图片压缩成一个编码，再让另一个模型（解码器）学会怎么把编码解压缩成一幅图片，最小化生成图片与原图片之间的误差。</p>
+<p><img src="/2022/12/19/20221016-VAE/2.jpg" alt></p>
+<p>最后，解码器就是我们需要的生成模型。只要在标准多元正态分布里采样出$z$，就可生成图片了。另外，理想情况下，$z$之间的插值向量也能代表在语义上插值的图片。</p>
+<p><img src="/2022/12/19/20221016-VAE/3.jpg" alt></p>
+<p>可是，由于自编码器本身的限制，这种理想不一定能实现。</p>
+<h2 id="自编码器的问题——过拟合"><a href="#自编码器的问题——过拟合" class="headerlink" title="自编码器的问题——过拟合"></a>自编码器的问题——过拟合</h2><p>自编码器的信息压缩能力十分强大。只要编码器和解码器的神经网络足够复杂，所有训练集里的图像都可以被压缩成非常短的编码。这种编码短到什么程度了呢？——只要一个一维向量（实数）就可以描述所有训练集里的图像了。</p>
+<p>想做到这一点并不难。还记得我们开头对生成模型的输入的讨论吗？只要让模型把所有图片以数组的形式存到编码器和解码器里，以0, 1, 2这样的序号来表示每一幅训练集里的图片，就能完成最极致的信息压缩。当然，使用这种方式的话，编码$z$就失去了所有的语义信息，编码之间的插值也不能表示图像语义上的插值了。</p>
+<p><img src="/2022/12/19/20221016-VAE/4.jpg" alt></p>
+<p>这是由模型过拟合导致的。如果仅使用自编码器本身的约束方式，而不加入其他正则化方法的话，一定会出现过拟合。</p>
+<h2 id="VAE——一种正则化的自编码器"><a href="#VAE——一种正则化的自编码器" class="headerlink" title="VAE——一种正则化的自编码器"></a>VAE——一种正则化的自编码器</h2><p>VAE就是一种使用了某种正则化方法的自编码器，它解决了上述的过拟合问题。VAE使用的这种方法来自于概率论的变分推理，不过，我们可以在完全不了解变分推理的前提下看懂VAE。</p>
+<p>VAE的想法是这样的：我们最终希望得到一个分布$Z$，或者说一条连续的直线。可是，编码器每次只能把图片编码成一个向量，也就是一个点。很多点是很难重建出一条连续的直线的。既然如此，我们可以把每张图片也编码成一个分布。多条直线，就可以比较容易地拼成我们想要的直线了。</p>
+<p><img src="/2022/12/19/20221016-VAE/5.jpg" alt></p>
+<p>当然，只让模型去拟合分布是不够的。如果各个分布都乱七八糟，相距甚远，那么它们怎么都拼不成一个标准正态分布。因此，我们还需要加上一个约束，让各个分布和标准正态分布尽可能相似。</p>
+<p><img src="/2022/12/19/20221016-VAE/6.jpg" alt></p>
+<p>这样，我们可以总结一下VAE的训练框架。VAE依然使用了编码器-解码器的架构。只不过，编码器的输出是一个可学习的正态分布。对分布是不可能做求导和梯度下降的，但我们可以去分布里采样，对采样出来的编码$z$解码并求导。</p>
+<p>另外，VAE的损失函数除了要最小化重建图像与原图像之间的均方误差外，还要最大化每个分布和标准正态分布之间的相似度。</p>
+<p><img src="/2022/12/19/20221016-VAE/7.jpg" alt></p>
+<p>常见的描述分布之间相似度的指标叫做KL散度。只要把KL散度的公式套进损失函数里，整个训练框架就算搭好了。</p>
+<blockquote>
+<p>如果你对KL散度的原理感兴趣，欢迎阅读我的上一篇文章：<a href>从零理解熵、交叉熵、KL散度</a></p>
+</blockquote>
+<p>VAE的原理其实就是这么简单。总结一下，VAE本身是一个编码器-解码器结构的自编码器，只不过编码器的输出是一个分布，而解码器的输入是该分布的一个样本。另外，在损失函数中，除了要让重建图像和原图像更接近以外，还要让输出的分布和标准正态分布更加接近。</p>
+<h2 id="VAE-与变分推理"><a href="#VAE-与变分推理" class="headerlink" title="VAE 与变分推理"></a>VAE 与变分推理</h2><p>前几段其实只对VAE做了一个直觉上的描述，VAE的损失函数实际上是经严谨的数学推导得到的。如果你对数学知识不感兴趣，完全可以跳过这一节的讲解。当然，这一节也只会简单地描述VAE和变分推理的关系，更详细的数学推导可以去参考网上的其他文章。</p>
+<p>让我们从概率论的角度看待生成模型。生成模型中的$z$可以看成是隐变量，它决定了能观测到的变量$x$。比如说，袋子里有黑球和白球，你不断地从袋子里取球出来再放回去，就能够统计出抽到黑球和白球的频率。然而，真正决定这个频率的，是袋子里黑球和白球的数量，这些数量就是观测不到的隐变量。简单来说，隐变量$z$是因，变量$x$是果。</p>
+<p>生成模型，其实就是假设$z$来自标准正态分布，想要拟合分布$P(x|z)$（解码器），以得到$x$的分布（图像分布）。为了训练解码器，自编码器架构使用了一个编码器以描述$P(z|x)$。这样，从训练集里采样，等于是采样出了一个$x$。根据$P(z|x)$求出一个$z$，再根据$P(x|z)$试图重建$x$。优化这个过程，就是在优化编码器和解码器，也就是优化$P(z|x)$和$P(x|z)$。</p>
+<p>然而，$P(z|x)$和$P(x|z)$之间有一个约束，它们必须满足贝叶斯公式：</p>
+<script type="math/tex; mode=display">
+P(z|x) = \frac{P(x|z)P(z)}{P(x)}</script><p>假如我们要用一个和$x$有关的关于$z$的分布$Q_x(z)$去拟合$P(z|x)$，就要让$Q_x(z)$和$\frac{P(x|z)P(z)}{P(x)}$这两个分布尽可能相似。如果这个相似度是KL散度，经过一系列的推导，就可以推导出我们在VAE里使用的那个损失函数。</p>
+<p>简单来说，拟合一个未知分布的技术就叫做变分推理。VAE利用变分推理，对模型的编码器和解码器加了一个约束，这个约束在化简后就是VAE的损失函数。</p>
+<p>VAE和变分推理的关系就是这样。如果还想细究，可以去先学习KL散度相关的知识，再去看一下VAE中KL散度的公式推导。当然，不懂这些概念并不影响VAE的学习。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>VAE其实就是一个编码器-解码器架构，和U-Net以及部分NLP模型类似。然而，为了抑制自编码过程中的过拟合，VAE编码器的输出是一个正态分布，而不是一个具体的编码。同时，VAE的损失函数除了约束重建图像外，还约束了生成的分布。在这些改进下，VAE能够顺利地训练出一个解码器，以把来自正态分布的随机变量$z$画成一幅图像。</p>
+<p>如果你想通过代码实践进一步加深对VAE的理解，可以阅读附录。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li>一篇不错的VAE讲解。我是跟着这篇文章学习的。<a target="_blank" rel="noopener" href="https://towardsdatascience.com/understanding-variational-autoencoders-vaes-f70510919f73">https://towardsdatascience.com/understanding-variational-autoencoders-vaes-f70510919f73</a></li>
+<li>我的VAE PyTorch实现参考了这个仓库：<a target="_blank" rel="noopener" href="https://github.com/AntixK/PyTorch-VAE">https://github.com/AntixK/PyTorch-VAE</a> 。开头的人脸生成效果图是从这个项目里摘抄过来的。</li>
+</ol>
+<h2 id="VAE-PyTorch-实现"><a href="#VAE-PyTorch-实现" class="headerlink" title="VAE PyTorch 实现"></a>VAE PyTorch 实现</h2><p>项目网址：<a target="_blank" rel="noopener" href="https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/VAE">https://github.com/SingleZombie/DL-Demos/tree/master/dldemos/VAE</a></p>
+<h3 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h3><p>在这个项目中，我使用了CelebA数据集。这个数据集有200k张人脸，裁剪和对齐后的图片只有1个多G，对实验非常友好。</p>
+<p>CelebA的下载链接可以在官方网站上找到：<a target="_blank" rel="noopener" href="https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html。">https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html。</a></p>
+<p>下载好了图片后，可以用下面的代码创建Dataloader。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">from</span> torch.utils.data <span class="keyword">import</span> DataLoader, Dataset</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CelebADataset</span>(<span class="title class_ inherited__">Dataset</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, root, img_shape=(<span class="params"><span class="number">64</span>, <span class="number">64</span></span>)</span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.root = root</span><br><span class="line">        <span class="variable language_">self</span>.img_shape = img_shape</span><br><span class="line">        <span class="variable language_">self</span>.filenames = <span class="built_in">sorted</span>(os.listdir(root))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__len__</span>(<span class="params">self</span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(<span class="variable language_">self</span>.filenames)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__getitem__</span>(<span class="params">self, index: <span class="built_in">int</span></span>):</span><br><span class="line">        path = os.path.join(<span class="variable language_">self</span>.root, <span class="variable language_">self</span>.filenames[index])</span><br><span class="line">        img = Image.<span class="built_in">open</span>(path).convert(<span class="string">&#x27;RGB&#x27;</span>)</span><br><span class="line">        pipeline = transforms.Compose([</span><br><span class="line">            transforms.CenterCrop(<span class="number">168</span>),</span><br><span class="line">            transforms.Resize(<span class="variable language_">self</span>.img_shape),</span><br><span class="line">            transforms.ToTensor()</span><br><span class="line">        ])</span><br><span class="line">        <span class="keyword">return</span> pipeline(img)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_dataloader</span>(<span class="params">root=<span class="string">&#x27;data/celebA/img_align_celeba&#x27;</span>, **kwargs</span>):</span><br><span class="line">    dataset = CelebADataset(root, **kwargs)</span><br><span class="line">    <span class="keyword">return</span> DataLoader(dataset, <span class="number">16</span>, shuffle=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>这段代码是一段非常常规的根据图片路径读取图片的代码。只有少数地方需要说明：</p>
+<ul>
+<li>为了尽快完成demo，所有人脸图片的分辨率都是$64 \times 64$。</li>
+<li>CelebA里裁剪后的人脸图片是长方形的。要先调用<code>CenterCrop</code>裁剪出正方形人脸，再做Resize。</li>
+</ul>
+<p>为了验证Dataloader的正确性，我们可以写一些脚本来查看Dataloader里的一个batch的图片。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    dataloader = get_dataloader()</span><br><span class="line">    img = <span class="built_in">next</span>(<span class="built_in">iter</span>(dataloader))</span><br><span class="line">    <span class="built_in">print</span>(img.shape)</span><br><span class="line">    <span class="comment"># Concat 4x4 images</span></span><br><span class="line">    N, C, H, W = img.shape</span><br><span class="line">    <span class="keyword">assert</span> N == <span class="number">16</span></span><br><span class="line">    img = torch.permute(img, (<span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>))</span><br><span class="line">    img = torch.reshape(img, (C, <span class="number">4</span>, <span class="number">4</span> * H, W))</span><br><span class="line">    img = torch.permute(img, (<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>))</span><br><span class="line">    img = torch.reshape(img, (C, <span class="number">4</span> * H, <span class="number">4</span> * W))</span><br><span class="line">    img = transforms.ToPILImage()(img)</span><br><span class="line">    img.save(<span class="string">&#x27;work_dirs/tmp.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p><img src="/2022/12/19/20221016-VAE/8.jpg" alt></p>
+<blockquote>
+<p>这段代码使用了一些小技巧。首先，<code>next(iter(dataloader))</code>可以访问Dataloader的第一个数据。其次，在把一个batch的图片转换成图片方格的过程中，我使用了比较骚的换维度、换形状操作，看起来很帅。</p>
+</blockquote>
+<h3 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h3><p>我的VAE模型使用了类似U-Net的操作：编码器用卷积把图像的边长减半，通道翻倍，解码器用反卷积把图像的边长翻倍，通道减半。</p>
+<p>模型结构的定义函数如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">VAE</span>(nn.Module):</span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    VAE for 64x64 face generation. The hidden dimensions can be tuned.</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, hiddens=[<span class="number">16</span>, <span class="number">32</span>, <span class="number">64</span>, <span class="number">128</span>, <span class="number">256</span>], latent_dim=<span class="number">128</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="comment"># encoder</span></span><br><span class="line">        prev_channels = <span class="number">3</span></span><br><span class="line">        modules = []</span><br><span class="line">        img_length = <span class="number">64</span></span><br><span class="line">        <span class="keyword">for</span> cur_channels <span class="keyword">in</span> hiddens:</span><br><span class="line">            modules.append(</span><br><span class="line">                nn.Sequential(</span><br><span class="line">                    nn.Conv2d(prev_channels,</span><br><span class="line">                              cur_channels,</span><br><span class="line">                              kernel_size=<span class="number">3</span>,</span><br><span class="line">                              stride=<span class="number">2</span>,</span><br><span class="line">                              padding=<span class="number">1</span>), nn.BatchNorm2d(cur_channels),</span><br><span class="line">                    nn.ReLU()))</span><br><span class="line">            prev_channels = cur_channels</span><br><span class="line">            img_length //= <span class="number">2</span></span><br><span class="line">        <span class="variable language_">self</span>.encoder = nn.Sequential(*modules)</span><br><span class="line">        <span class="variable language_">self</span>.mean_linear = nn.Linear(prev_channels * img_length * img_length,</span><br><span class="line">                                     latent_dim)</span><br><span class="line">        <span class="variable language_">self</span>.var_linear = nn.Linear(prev_channels * img_length * img_length,</span><br><span class="line">                                    latent_dim)</span><br><span class="line">        <span class="variable language_">self</span>.latent_dim = latent_dim</span><br><span class="line">        <span class="comment"># decoder</span></span><br><span class="line">        modules = []</span><br><span class="line">        <span class="variable language_">self</span>.decoder_projection = nn.Linear(</span><br><span class="line">            latent_dim, prev_channels * img_length * img_length)</span><br><span class="line">        <span class="variable language_">self</span>.decoder_input_chw = (prev_channels, img_length, img_length)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(hiddens) - <span class="number">1</span>, <span class="number">0</span>, -<span class="number">1</span>):</span><br><span class="line">            modules.append(</span><br><span class="line">                nn.Sequential(</span><br><span class="line">                    nn.ConvTranspose2d(hiddens[i],</span><br><span class="line">                                       hiddens[i - <span class="number">1</span>],</span><br><span class="line">                                       kernel_size=<span class="number">3</span>,</span><br><span class="line">                                       stride=<span class="number">2</span>,</span><br><span class="line">                                       padding=<span class="number">1</span>,</span><br><span class="line">                                       output_padding=<span class="number">1</span>),</span><br><span class="line">                    nn.BatchNorm2d(hiddens[i - <span class="number">1</span>]), nn.ReLU()))</span><br><span class="line">        modules.append(</span><br><span class="line">            nn.Sequential(</span><br><span class="line">                nn.ConvTranspose2d(hiddens[<span class="number">0</span>],</span><br><span class="line">                                   hiddens[<span class="number">0</span>],</span><br><span class="line">                                   kernel_size=<span class="number">3</span>,</span><br><span class="line">                                   stride=<span class="number">2</span>,</span><br><span class="line">                                   padding=<span class="number">1</span>,</span><br><span class="line">                                   output_padding=<span class="number">1</span>),</span><br><span class="line">                nn.BatchNorm2d(hiddens[<span class="number">0</span>]), nn.ReLU(),</span><br><span class="line">                nn.Conv2d(hiddens[<span class="number">0</span>], <span class="number">3</span>, kernel_size=<span class="number">3</span>, stride=<span class="number">1</span>, padding=<span class="number">1</span>),</span><br><span class="line">                nn.ReLU()))</span><br><span class="line">        <span class="variable language_">self</span>.decoder = nn.Sequential(*modules)</span><br></pre></td></tr></table></figure>
+<p>首先来看编码器的部分。每个卷积模块由卷积、BN、ReLU构成。卷完了再用两个全连接层分别生成正态分布的均值和方差。注意，卷积完成后，图像的形状是<code>[prev_channels, img_length, img_length]</code>，为了把它输入到全连接层，我们到时候会做一个flatten操作。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># encoder</span></span><br><span class="line">        prev_channels = <span class="number">3</span></span><br><span class="line">        modules = []</span><br><span class="line">        img_length = <span class="number">64</span></span><br><span class="line">        <span class="keyword">for</span> cur_channels <span class="keyword">in</span> hiddens:</span><br><span class="line">            modules.append(</span><br><span class="line">                nn.Sequential(</span><br><span class="line">                    nn.Conv2d(prev_channels,</span><br><span class="line">                              cur_channels,</span><br><span class="line">                              kernel_size=<span class="number">3</span>,</span><br><span class="line">                              stride=<span class="number">2</span>,</span><br><span class="line">                              padding=<span class="number">1</span>), nn.BatchNorm2d(cur_channels),</span><br><span class="line">                    nn.ReLU()))</span><br><span class="line">            prev_channels = cur_channels</span><br><span class="line">            img_length //= <span class="number">2</span></span><br><span class="line">        <span class="variable language_">self</span>.encoder = nn.Sequential(*modules)</span><br><span class="line">        <span class="variable language_">self</span>.mean_linear = nn.Linear(prev_channels * img_length * img_length,</span><br><span class="line">                                     latent_dim)</span><br><span class="line">        <span class="variable language_">self</span>.var_linear = nn.Linear(prev_channels * img_length * img_length,</span><br><span class="line">                                    latent_dim)</span><br><span class="line">        <span class="variable language_">self</span>.latent_dim = latent_dim</span><br></pre></td></tr></table></figure>
+<p>解码器和编码器的操作基本完全相反。由于隐变量的维度是<code>latent_dim</code>，需要再用一个全连接层把图像的维度投影回<code>[prev_channels, img_length, img_length]</code>。之后就是反卷积放大图像的过程。写这些代码时一定要算好图像的边长，定好反卷积的次数，并且不要忘记最后把图像的通道数转换回3。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># decoder</span></span><br><span class="line">modules = []</span><br><span class="line"><span class="variable language_">self</span>.decoder_projection = nn.Linear(</span><br><span class="line">    latent_dim, prev_channels * img_length * img_length)</span><br><span class="line"><span class="variable language_">self</span>.decoder_input_chw = (prev_channels, img_length, img_length)</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(hiddens) - <span class="number">1</span>, <span class="number">0</span>, -<span class="number">1</span>):</span><br><span class="line">    modules.append(</span><br><span class="line">        nn.Sequential(</span><br><span class="line">            nn.ConvTranspose2d(hiddens[i],</span><br><span class="line">                                hiddens[i - <span class="number">1</span>],</span><br><span class="line">                                kernel_size=<span class="number">3</span>,</span><br><span class="line">                                stride=<span class="number">2</span>,</span><br><span class="line">                                padding=<span class="number">1</span>,</span><br><span class="line">                                output_padding=<span class="number">1</span>),</span><br><span class="line">            nn.BatchNorm2d(hiddens[i - <span class="number">1</span>]), nn.ReLU()))</span><br><span class="line">modules.append(</span><br><span class="line">    nn.Sequential(</span><br><span class="line">        nn.ConvTranspose2d(hiddens[<span class="number">0</span>],</span><br><span class="line">                            hiddens[<span class="number">0</span>],</span><br><span class="line">                            kernel_size=<span class="number">3</span>,</span><br><span class="line">                            stride=<span class="number">2</span>,</span><br><span class="line">                            padding=<span class="number">1</span>,</span><br><span class="line">                            output_padding=<span class="number">1</span>),</span><br><span class="line">        nn.BatchNorm2d(hiddens[<span class="number">0</span>]), nn.ReLU(),</span><br><span class="line">        nn.Conv2d(hiddens[<span class="number">0</span>], <span class="number">3</span>, kernel_size=<span class="number">3</span>, stride=<span class="number">1</span>, padding=<span class="number">1</span>),</span><br><span class="line">        nn.ReLU()))</span><br><span class="line"><span class="variable language_">self</span>.decoder = nn.Sequential(*modules)</span><br></pre></td></tr></table></figure>
+<p>网络前向传播的过程如正文所述，先是用编码器编码，把图像压平送进全连接层得到均值和方差，再用<code>randn_like</code>随机采样，把采样的<code>z</code>投影、变换成正确的维度，送入解码器，最后输出重建图像以及正态分布的均值和方差。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">    encoded = <span class="variable language_">self</span>.encoder(x)</span><br><span class="line">    encoded = torch.flatten(encoded, <span class="number">1</span>)</span><br><span class="line">    mean = <span class="variable language_">self</span>.mean_linear(encoded)</span><br><span class="line">    logvar = <span class="variable language_">self</span>.var_linear(encoded)</span><br><span class="line">    eps = torch.randn_like(logvar)</span><br><span class="line">    std = torch.exp(logvar / <span class="number">2</span>)</span><br><span class="line">    z = eps * std + mean</span><br><span class="line">    x = <span class="variable language_">self</span>.decoder_projection(z)</span><br><span class="line">    x = torch.reshape(x, (-<span class="number">1</span>, *<span class="variable language_">self</span>.decoder_input_chw))</span><br><span class="line">    decoded = <span class="variable language_">self</span>.decoder(x)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> decoded, mean, logvar</span><br></pre></td></tr></table></figure>
+<p>用该模型随机生成图像的过程和前向传播的过程十分类似，只不过$z$来自于标准正态分布而已，解码过程是一模一样的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">sample</span>(<span class="params">self, device=<span class="string">&#x27;cuda&#x27;</span></span>):</span><br><span class="line">    z = torch.randn(<span class="number">1</span>, <span class="variable language_">self</span>.latent_dim).to(device)</span><br><span class="line">    x = <span class="variable language_">self</span>.decoder_projection(z)</span><br><span class="line">    x = torch.reshape(x, (-<span class="number">1</span>, *<span class="variable language_">self</span>.decoder_input_chw))</span><br><span class="line">    decoded = <span class="variable language_">self</span>.decoder(x)</span><br><span class="line">    <span class="keyword">return</span> decoded</span><br></pre></td></tr></table></figure>
+<h3 id="主函数"><a href="#主函数" class="headerlink" title="主函数"></a>主函数</h3><p>在主函数中，我们要先完成模型训练。在训练前，还有一件重要的事情要做：定义损失函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> time <span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">from</span> torchvision.transforms <span class="keyword">import</span> ToPILImage</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dldemos.VAE.load_celebA <span class="keyword">import</span> get_dataloader</span><br><span class="line"><span class="keyword">from</span> dldemos.VAE.model <span class="keyword">import</span> VAE</span><br><span class="line"></span><br><span class="line"><span class="comment"># Hyperparameters</span></span><br><span class="line">n_epochs = <span class="number">10</span></span><br><span class="line">kl_weight = <span class="number">0.00025</span></span><br><span class="line">lr = <span class="number">0.005</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">loss_fn</span>(<span class="params">y, y_hat, mean, logvar</span>):</span><br><span class="line">    recons_loss = F.mse_loss(y_hat, y)</span><br><span class="line">    kl_loss = torch.mean(</span><br><span class="line">        -<span class="number">0.5</span> * torch.<span class="built_in">sum</span>(<span class="number">1</span> + logvar - mean**<span class="number">2</span> - torch.exp(logvar), <span class="number">1</span>), <span class="number">0</span>)</span><br><span class="line">    loss = recons_loss + kl_loss * kl_weight</span><br><span class="line">    <span class="keyword">return</span> loss</span><br></pre></td></tr></table></figure>
+<p>如正文所述，VAE的loss包括两部分：图像的重建误差和分布之间的KL散度。二者的比例可以通过<code>kl_weight</code>来控制。</p>
+<p>KL散度的公式直接去网上照抄即可。</p>
+<p>这里要解释一下，我们的方差为什么使用其自然对数<code>logvar</code>。经过我的实验，如果让模型输出方差本身的话，就要在损失函数里对齐取一次自然对数。如果方差很小，趋于0的话，方差的对数就趋于无穷。这表现在loss里会出现nan。因此，在神经网络中我们应该避免拟合要取对数的数，而是直接去拟合其对数运算结果。</p>
+<p>准备好了损失函数，剩下就是常规的训练操作了。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train</span>(<span class="params">device, dataloader, model</span>):</span><br><span class="line">    optimizer = torch.optim.Adam(model.parameters(), lr)</span><br><span class="line">    dataset_len = <span class="built_in">len</span>(dataloader.dataset)</span><br><span class="line"></span><br><span class="line">    begin_time = time()</span><br><span class="line">    <span class="comment"># train</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n_epochs):</span><br><span class="line">        loss_sum = <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> x <span class="keyword">in</span> dataloader:</span><br><span class="line">            x = x.to(device)</span><br><span class="line">            y_hat, mean, logvar = model(x)</span><br><span class="line">            loss = loss_fn(x, y_hat, mean, logvar)</span><br><span class="line">            optimizer.zero_grad()</span><br><span class="line">            loss.backward()</span><br><span class="line">            optimizer.step()</span><br><span class="line">            loss_sum += loss</span><br><span class="line">        loss_sum /= dataset_len</span><br><span class="line">        training_time = time() - begin_time</span><br><span class="line">        minute = <span class="built_in">int</span>(training_time // <span class="number">60</span>)</span><br><span class="line">        second = <span class="built_in">int</span>(training_time % <span class="number">60</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;epoch <span class="subst">&#123;i&#125;</span>: loss <span class="subst">&#123;loss_sum&#125;</span> <span class="subst">&#123;minute&#125;</span>:<span class="subst">&#123;second&#125;</span>&#x27;</span>)</span><br><span class="line">        torch.save(model.state_dict(), <span class="string">&#x27;dldemos/VAE/model.pth&#x27;</span>)</span><br></pre></td></tr></table></figure></p>
+<p>训练好模型后，想要查看模型重建数据集图片的效果也很简单，去dataloader里采样、跑模型、后处理结果即可。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">reconstruct</span>(<span class="params">device, dataloader, model</span>):</span><br><span class="line">    model.<span class="built_in">eval</span>()</span><br><span class="line">    batch = <span class="built_in">next</span>(<span class="built_in">iter</span>(dataloader))</span><br><span class="line">    x = batch[<span class="number">0</span>:<span class="number">1</span>, ...].to(device)</span><br><span class="line">    output = model(x)[<span class="number">0</span>]</span><br><span class="line">    output = output[<span class="number">0</span>].detach().cpu()</span><br><span class="line">    <span class="built_in">input</span> = batch[<span class="number">0</span>].detach().cpu()</span><br><span class="line">    combined = torch.cat((output, <span class="built_in">input</span>), <span class="number">1</span>)</span><br><span class="line">    img = ToPILImage()(combined)</span><br><span class="line">    img.save(<span class="string">&#x27;work_dirs/tmp.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>想用模型随机生成图片的话，可以利用之前写好的模型采样函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">generate</span>(<span class="params">device, model</span>):</span><br><span class="line">    model.<span class="built_in">eval</span>()</span><br><span class="line">    output = model.sample(device)</span><br><span class="line">    output = output[<span class="number">0</span>].detach().cpu()</span><br><span class="line">    img = ToPILImage()(output)</span><br><span class="line">    img.save(<span class="string">&#x27;work_dirs/tmp.jpg&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>在3090上跑这个实验，100个epoch需要5个多小时。但是，模型差不多在10多个epoch的时候就收敛了。</p>
+<p>最朴素的VAE的重建效果并不是很好，只能大概看出个脸型。这可能也和我的模型参数较少有关。</p>
+<p><img src="/2022/12/19/20221016-VAE/9.jpg" alt></p>
+<p>随机生成的图片也是形状还可以，但非常模糊。</p>
+<p><img src="/2022/12/19/20221016-VAE/10.jpg" alt></p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/12/19/20221009-style-transfer-via-stylegan/" rel="prev" title="人脸风格迁移 + StyleGAN 的最新玩法">
+      <i class="fa fa-chevron-left"></i> 人脸风格迁移 + StyleGAN 的最新玩法
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/12/19/20221029-torch-parallel-training/" rel="next" title="PyTorch 并行训练极简 Demo">
+      PyTorch 并行训练极简 Demo <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8%E7%94%9F%E6%88%90%E5%9B%BE%E5%83%8F"><span class="nav-number">1.</span> <span class="nav-text">用自编码器生成图像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8%E7%9A%84%E9%97%AE%E9%A2%98%E2%80%94%E2%80%94%E8%BF%87%E6%8B%9F%E5%90%88"><span class="nav-number">2.</span> <span class="nav-text">自编码器的问题——过拟合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#VAE%E2%80%94%E2%80%94%E4%B8%80%E7%A7%8D%E6%AD%A3%E5%88%99%E5%8C%96%E7%9A%84%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">VAE——一种正则化的自编码器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#VAE-%E4%B8%8E%E5%8F%98%E5%88%86%E6%8E%A8%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">VAE 与变分推理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#VAE-PyTorch-%E5%AE%9E%E7%8E%B0"><span class="nav-number">7.</span> <span class="nav-text">VAE PyTorch 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">7.1.</span> <span class="nav-text">数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B"><span class="nav-number">7.2.</span> <span class="nav-text">模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E5%87%BD%E6%95%B0"><span class="nav-number">7.3.</span> <span class="nav-text">主函数</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

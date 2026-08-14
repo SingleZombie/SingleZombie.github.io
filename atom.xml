@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>周弈帆的博客</title>
+  <icon>https://zhouyifan.net/images/favicon-32x32-next.png</icon>
+  
+  <link href="https://zhouyifan.net/atom.xml" rel="self"/>
+  
+  <link href="https://zhouyifan.net/"/>
+  <updated>2026-06-04T00:22:37.596Z</updated>
+  <id>https://zhouyifan.net/</id>
+  
+  <author>
+    <name>Zhou Yifan</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>CVPR 2026 | Sparse Attention Poster / Foundation 研究 / AI + 游戏 / 女装 Cosplay</title>
+    <link href="https://zhouyifan.net/2026/06/03/20260603-CVPR-2026-msg/"/>
+    <id>https://zhouyifan.net/2026/06/03/20260603-CVPR-2026-msg/</id>
+    <published>2026-06-03T10:00:24.000Z</published>
+    <updated>2026-06-04T00:22:37.596Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;我正在美国丹佛参加 CVPR 2026，一直停留到当地时间 6 月 7 日会议结束。我想在此期间结交在 AI 科研、创业方向上有共同语言的，各个层面上的合作者。具体内容如下：&lt;/p&gt;
+&lt;h2</summary>
+        
+      
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>作者亲述 | Log-linear Sparse Attention：首个 $O(N &#92;log N)$ 高性能稀疏注意力</title>
+    <link href="https://zhouyifan.net/2025/12/19/20251211-llsa-1/"/>
+    <id>https://zhouyifan.net/2025/12/19/20251211-llsa-1/</id>
+    <published>2025-12-19T02:39:13.000Z</published>
+    <updated>2025-12-19T02:39:13.387Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;作者亲述-Log-linear-Sparse-Attention：首个-O-N-log-N-高性能稀疏注意力&quot;&gt;&lt;a href=&quot;#作者亲述-Log-linear-Sparse-Attention：首个-O-N-log-N-高性能稀疏注意力&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="创作" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/"/>
+    
+    <category term="科研" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/%E7%A7%91%E7%A0%94/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="注意力" scheme="https://zhouyifan.net/tags/%E6%B3%A8%E6%84%8F%E5%8A%9B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>给 JiT 加上像素级解码器：三篇近期 Pixel DiT 论文对比解读</title>
+    <link href="https://zhouyifan.net/2025/12/06/20251203-pixeldit/"/>
+    <id>https://zhouyifan.net/2025/12/06/20251203-pixeldit/</id>
+    <published>2025-12-06T03:40:33.000Z</published>
+    <updated>2025-12-07T13:41:11.291Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;在上篇博文中，我分享了近期较火的 JiT 论文，它从理论和实验上证明了：像素空间 DiT 难训练的原因是 patch size 太大，要拟合的分布太难。而这几天，有几篇同期工作都用基于像素级特征的解码器取代 unpatchify，取得了比 JiT</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>何恺明团队新作 JiT 解读与复现：解决大 patch DiT 难以训练的问题</title>
+    <link href="https://zhouyifan.net/2025/12/03/20251124-jit/"/>
+    <id>https://zhouyifan.net/2025/12/03/20251124-jit/</id>
+    <published>2025-12-02T16:24:44.000Z</published>
+    <updated>2025-12-05T15:10:49.764Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;近期何恺明团队的论文提出了一种叫做 Just image Transformers (JiT) 新式 DiT (Diffusion</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>前算法竞赛选手深度点评 AI 在 ICPC 2025 中的表现</title>
+    <link href="https://zhouyifan.net/2025/11/24/20250922-ICPC2025-AI/"/>
+    <id>https://zhouyifan.net/2025/11/24/20250922-ICPC2025-AI/</id>
+    <published>2025-11-24T09:35:30.000Z</published>
+    <updated>2025-11-24T09:35:30.895Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;近两年来 LLM 越来越猛，在 IMO，IOI 等竞赛中屡创佳绩。一直以来，我都是抱着围观的态度，看个热闹也就过去了。但是，最近又传出了 LLM 在算法竞赛 ICPC 2025 中超越了人类的新闻。作为前 ICPC</summary>
+        
+      
+    
+    
+    
+    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    <category term="议论文" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E8%AE%AE%E8%AE%BA%E6%96%87/"/>
+    
+    
+    <category term="ACM" scheme="https://zhouyifan.net/tags/ACM/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>不会 CUDA 也能轻松看懂的 FlashAttention 教程（算法原理篇）</title>
+    <link href="https://zhouyifan.net/2025/08/24/20250511-flashattention-1/"/>
+    <id>https://zhouyifan.net/2025/08/24/20250511-flashattention-1/</id>
+    <published>2025-08-24T08:40:10.000Z</published>
+    <updated>2025-08-24T08:40:10.199Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;以 Attention 计算为核心的 Transformer 模型是当今深度学习的基石。虽然 Attention 计算十分有效，但其高昂的计算成本往往成为了模型性能优化的瓶颈。为了在 GPU 上高效执行 Attention 计算，现在开发者们普遍都使用了</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="高性能计算" scheme="https://zhouyifan.net/tags/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>CFG-Zero*：流匹配时代的新版 Classifier-Free Guidance</title>
+    <link href="https://zhouyifan.net/2025/05/11/20250425-cfgzero/"/>
+    <id>https://zhouyifan.net/2025/05/11/20250425-cfgzero/</id>
+    <published>2025-05-10T19:18:12.000Z</published>
+    <updated>2025-12-05T15:08:16.399Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;如果你玩过图像扩散模型，那你一定不会对 “guidance_scale=7.5” 这个参数感到陌生。这个 “guidance” 指的就是 Classifier-Free Guidance (无需分类器指引，CFG)。忽略其背后的数学原理，CFG</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>GPT-4o 图像生成漫谈：功能总结、多模态模型概述、原理猜测、未来畅想</title>
+    <link href="https://zhouyifan.net/2025/04/24/20250412-gpt4o/"/>
+    <id>https://zhouyifan.net/2025/04/24/20250412-gpt4o/</id>
+    <published>2025-04-24T09:22:08.000Z</published>
+    <updated>2025-04-28T08:54:21.583Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;前段时间，多模态模型 GPT-4o 推出了新版图像生成功能，又一次点燃了社区的 AI 创作热情。作为一款多模态模型，GPT-4o 不仅有着不输纯图像生成模型的质量，还能借助其内置的强大文本理解功能，打造各种各样有趣的图像编辑应用。&lt;/p&gt;
+&lt;p&gt;&lt;img</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="多模态" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E6%A8%A1%E6%80%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>CVPR 2025 Oral | Alias-Free LDM: 从平移等变性的角度提升潜扩散模型生成稳定性</title>
+    <link href="https://zhouyifan.net/2025/04/05/20250314-afldm/"/>
+    <id>https://zhouyifan.net/2025/04/05/20250314-afldm/</id>
+    <published>2025-04-05T05:44:43.000Z</published>
+    <updated>2025-12-09T11:29:06.889Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;潜扩散模型 (Latent Diffusion Models, LDM) 常因生成过程&lt;strong&gt;不稳定&lt;/strong&gt;而备受诟病：哪怕模型的输入只是受到了一点微小的扰动，模型的最终输出也会截然不同。以视频逐帧风格化任务为例，哪怕对每帧使用同样的 Stable</summary>
+        
+      
+    
+    
+    
+    <category term="创作" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/"/>
+    
+    <category term="科研" scheme="https://zhouyifan.net/categories/%E5%88%9B%E4%BD%9C/%E7%A7%91%E7%A0%94/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="同变性" scheme="https://zhouyifan.net/tags/%E5%90%8C%E5%8F%98%E6%80%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>解读何恺明团队工作：分形生成其实是一种多叉树视觉 Transformer</title>
+    <link href="https://zhouyifan.net/2025/03/06/20250305-fractal-generation/"/>
+    <id>https://zhouyifan.net/2025/03/06/20250305-fractal-generation/</id>
+    <published>2025-03-06T05:23:37.000Z</published>
+    <updated>2025-12-07T13:45:31.829Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;最近，备受瞩目的何恺明团队公布了一篇论文——分形生成模型（Fractal Generative Models）。该论文提出了一种叫做分形生成的全新生成范式。以图像分形生成为例，算法会由粗到精地生成每个像素。&lt;/p&gt;
+&lt;p&gt;&lt;img</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识整理" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="算法" scheme="https://zhouyifan.net/tags/%E7%AE%97%E6%B3%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>扩散模型的推理时优化：分享近期几篇噪声搜索类论文</title>
+    <link href="https://zhouyifan.net/2025/03/04/20250215-inference-time/"/>
+    <id>https://zhouyifan.net/2025/03/04/20250215-inference-time/</id>
+    <published>2025-03-04T08:13:20.000Z</published>
+    <updated>2025-12-05T15:10:36.403Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;大语言模型（LLM）社区近期的一大热点研究课题是推理时扩展 (Inference-time</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+    <category term="推理时" scheme="https://zhouyifan.net/tags/%E6%8E%A8%E7%90%86%E6%97%B6/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>一个有趣却撤稿 ICLR 2025 的工作：并非所有扩散模型噪声本质相同</title>
+    <link href="https://zhouyifan.net/2025/02/13/20250212-not-all-noise/"/>
+    <id>https://zhouyifan.net/2025/02/13/20250212-not-all-noise/</id>
+    <published>2025-02-13T10:38:08.000Z</published>
+    <updated>2025-02-15T15:52:16.248Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;自从 ChatGPT o1 在 2024 年 9 月发布后，人们逐渐把研究重点放在了推理时扩展 (Inference-time scaling) 上。对于扩散模型而言，除了在推理时增加步数外，谷歌今年 1 月的研究 &lt;em&gt;Inference-Time Scaling</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+    <category term="推理时" scheme="https://zhouyifan.net/tags/%E6%8E%A8%E7%90%86%E6%97%B6/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>哭着看完了 Ave Mujica 第五集</title>
+    <link href="https://zhouyifan.net/2025/02/06/20250202-mujica-05/"/>
+    <id>https://zhouyifan.net/2025/02/06/20250202-mujica-05/</id>
+    <published>2025-02-06T13:40:30.000Z</published>
+    <updated>2025-02-06T13:40:30.326Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;Ave Mujica</summary>
+        
+      
+    
+    
+    
+    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    <category term="作品赏析" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E4%BD%9C%E5%93%81%E8%B5%8F%E6%9E%90/"/>
+    
+    
+    <category term="艺术" scheme="https://zhouyifan.net/tags/%E8%89%BA%E6%9C%AF/"/>
+    
+    <category term="BanG Dream" scheme="https://zhouyifan.net/tags/BanG-Dream/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>论文速览 | Sana：用线性 Transformer 高效率生成 4K 图片</title>
+    <link href="https://zhouyifan.net/2025/02/05/20250203-sana/"/>
+    <id>https://zhouyifan.net/2025/02/05/20250203-sana/</id>
+    <published>2025-02-04T17:13:42.000Z</published>
+    <updated>2025-04-10T01:05:26.520Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;Transformer 中平方复杂度的注意力运算一直是其性能瓶颈，该问题在序列长度极大的视觉生成任务中尤为明显。为了缓解此问题，并生成分辨率高至 4K (4096x4096) 的图像，英伟达近期推出了文生图模型 Sana。Sana 不仅使用了线性注意力的</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>高呼「GAN 万岁！」的 R3GAN 做了哪些科研改进？</title>
+    <link href="https://zhouyifan.net/2025/01/22/20250115-R3GAN/"/>
+    <id>https://zhouyifan.net/2025/01/22/20250115-R3GAN/</id>
+    <published>2025-01-22T15:30:36.000Z</published>
+    <updated>2025-01-22T15:30:36.159Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;最近一篇论文因其吸引眼球的标题而刷屏科技自媒体：”The GAN is dead; long live the GAN!&lt;br&gt;A Modern Baseline GAN (GAN 已死？GAN 万岁！一个现代 GAN</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="GAN" scheme="https://zhouyifan.net/tags/GAN/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>用 Pycco 为 Python 代码快速创建双列注释网页</title>
+    <link href="https://zhouyifan.net/2025/01/04/20250104-pycco/"/>
+    <id>https://zhouyifan.net/2025/01/04/20250104-pycco/</id>
+    <published>2025-01-04T15:02:57.000Z</published>
+    <updated>2025-08-02T19:33:39.173Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;最近，我在网上看到了一个专门介绍深度学习源代码的网站（&lt;a href=&quot;https://nn.labml.ai/index.html&quot;&gt;https://nn.labml.ai/index.html&lt;/a&gt;</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="工具用法指南" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E5%B7%A5%E5%85%B7%E7%94%A8%E6%B3%95%E6%8C%87%E5%8D%97/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="编程" scheme="https://zhouyifan.net/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+    <category term="Python" scheme="https://zhouyifan.net/tags/Python/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>令人惊喜的 2024</title>
+    <link href="https://zhouyifan.net/2024/12/28/20241228-2024/"/>
+    <id>https://zhouyifan.net/2024/12/28/20241228-2024/</id>
+    <published>2024-12-27T19:17:34.000Z</published>
+    <updated>2024-12-27T19:17:34.894Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;年底难得有闲暇，我打算首次写一下年终回顾。写这样的文章总是很害羞，我现在不好意思去看我以前写的「随笔」类文章了。但是，今天，我就是有一股冲劲，想要实现心中那小小的想法，不想被生活的洪荒冲走我那鲜活的热情。不去思考为谁而写，不去思考是否有人会看，不去纠结于遣词造句。只求能够纯</summary>
+        
+      
+    
+    
+    
+    <category term="杂谈" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    <category term="随笔" scheme="https://zhouyifan.net/categories/%E6%9D%82%E8%B0%88/%E9%9A%8F%E7%AC%94/"/>
+    
+    
+    <category term="传记" scheme="https://zhouyifan.net/tags/%E4%BC%A0%E8%AE%B0/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>论文速览 | 混合自回归 HART：用扩散模型缓解 VQ 编码误差</title>
+    <link href="https://zhouyifan.net/2024/12/26/20241224-HART/"/>
+    <id>https://zhouyifan.net/2024/12/26/20241224-HART/</id>
+    <published>2024-12-26T08:15:06.000Z</published>
+    <updated>2024-12-30T08:14:41.102Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;今年年初，多尺度自回归模型 VAR 为图像生成开辟了新的发展方向：通过将图像生成建模成下一尺度预测，且每轮一次性生成同一尺度的所有像素，VAR 以极快的速度实现了高质量图像生成。随后，有许多工作都尝试对其改进。为弥补 VAR 中 VQ (Vector</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+    <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>NIPS 2024 最佳论文 VAR 深度解读：下一尺度预测为何能超越扩散模型？</title>
+    <link href="https://zhouyifan.net/2024/12/21/20241218-VAR/"/>
+    <id>https://zhouyifan.net/2024/12/21/20241218-VAR/</id>
+    <published>2024-12-21T03:32:50.000Z</published>
+    <updated>2024-12-23T11:54:31.689Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;今年四月，北大和字节跳动在 Arxiv 上发表了论文 &lt;em&gt;Visual Autoregressive Modeling: Scalable Image Generation via Next-Scale Prediction&lt;/em&gt;，介绍了一种叫做 Visual</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="自回归" scheme="https://zhouyifan.net/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/"/>
+    
+    <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>论文速览 | Pyramid Flow：以低分辨率的前几帧为约束高效生成视频</title>
+    <link href="https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/"/>
+    <id>https://zhouyifan.net/2024/12/15/20241212-Pyramid-Flow/</id>
+    <published>2024-12-15T13:55:08.000Z</published>
+    <updated>2024-12-30T08:14:21.782Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;按分辨率从低到高的顺序生成图像是一种常见思路。此外，Diffusion Forcing 等论文带来了一种新的扩散模型视频生成思路：将视频生成转换为约束于前几帧图像的单张图像自回归生成。Pyramid Flow</summary>
+        
+      
+    
+    
+    
+    <category term="学习" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="知识记录" scheme="https://zhouyifan.net/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/"/>
+    
+    
+    <category term="深度学习" scheme="https://zhouyifan.net/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="扩散模型" scheme="https://zhouyifan.net/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/"/>
+    
+    <category term="论文速览" scheme="https://zhouyifan.net/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/"/>
+    
+    <category term="多尺度生成" scheme="https://zhouyifan.net/tags/%E5%A4%9A%E5%B0%BA%E5%BA%A6%E7%94%9F%E6%88%90/"/>
+    
+    <category term="视频生成" scheme="https://zhouyifan.net/tags/%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90/"/>
+    
+  </entry>
+  
+</feed>

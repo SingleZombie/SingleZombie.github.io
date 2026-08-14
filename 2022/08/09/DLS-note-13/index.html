@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在这堂课里，我们要学习两个具体的应用：人脸识别、风格迁移。 相信大家已经在很多地方见识过人脸识别应用了：在火车站，要通过身份证和人脸核实身份；办理业务时，可以用手机完成人脸识别以核实身份；进办公楼时，员工只要刷脸通过就可以打开门禁。通过这节课的学习，我们能够学会如何用CNN完成人脸识别。 神经网络风格迁移是一项有趣的应用。它利用了CNN捕捉图像抽象信息的特点，能够把一幅图像的风格转移到另一幅图像上">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》笔记（十三）：CNN应用：人脸识别与风格迁移">
+<meta property="og:url" content="https://zhouyifan.net/2022/08/09/DLS-note-13/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="在这堂课里，我们要学习两个具体的应用：人脸识别、风格迁移。 相信大家已经在很多地方见识过人脸识别应用了：在火车站，要通过身份证和人脸核实身份；办理业务时，可以用手机完成人脸识别以核实身份；进办公楼时，员工只要刷脸通过就可以打开门禁。通过这节课的学习，我们能够学会如何用CNN完成人脸识别。 神经网络风格迁移是一项有趣的应用。它利用了CNN捕捉图像抽象信息的特点，能够把一幅图像的风格转移到另一幅图像上">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/9.jpg">
+<meta property="article:published_time" content="2022-08-09T06:13:53.000Z">
+<meta property="article:modified_time" content="2022-08-09T09:17:38.142Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/08/09/DLS-note-13/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/08/09/DLS-note-13/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》笔记（十三）：CNN应用：人脸识别与风格迁移 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/08/09/DLS-note-13/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》笔记（十三）：CNN应用：人脸识别与风格迁移
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-09 14:13:53" itemprop="dateCreated datePublished" datetime="2022-08-09T14:13:53+08:00">2022-08-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在这堂课里，我们要学习两个具体的应用：人脸识别、风格迁移。</p>
+<p>相信大家已经在很多地方见识过人脸识别应用了：在火车站，要通过身份证和人脸核实身份；办理业务时，可以用手机完成人脸识别以核实身份；进办公楼时，员工只要刷脸通过就可以打开门禁。通过这节课的学习，我们能够学会如何用CNN完成人脸识别。</p>
+<p>神经网络风格迁移是一项有趣的应用。它利用了CNN捕捉图像抽象信息的特点，能够把一幅图像的风格转移到另一幅图像上，从而生成一幅新的图像。这项技术不需要从头训练网络，学完这门课后，我们能快速地用代码实现神经网络风格迁移。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="人脸识别"><a href="#人脸识别" class="headerlink" title="人脸识别"></a>人脸识别</h2><p>准确来说，在人脸识别(Face Recognition)任务中，会给定一个有$K$个人的数据库。之后，每一次识别都会输入一张图片，输出这张图片是$K$个人中的哪一个，或者没有检测到相关人士。</p>
+<p>有一个与这个相关的任务叫做人脸验证(Face Verification)。这个任务稍微简单一些，输入是一张图片和一个标记身份的数据（比如身份证号），要求输出图片中的人是否符合该身份。</p>
+<h3 id="单样本学习"><a href="#单样本学习" class="headerlink" title="单样本学习"></a>单样本学习</h3><p>按我们之前学的方法，假如我们在$K$个人的数据库上做识别（分类）任务，应该套用一个CNN模型，并在模型最后接一个$K+1$类的softmax，表示输入图片是K个人中的哪一个，或者都不是。</p>
+<p>但是，这样的架构不适合人脸识别任务。以公司的门禁识别为例，这种方法有如下的缺点：</p>
+<ol>
+<li>每来一个新同事，模型就要重新训练一次。</li>
+<li>每个人都得上传大量的个人照片供网络训练。</li>
+</ol>
+<p>理想情况下，我们希望模型能从一张人脸照片中学会分辨这张人脸，这样每个新同事只需要上传一张照片即可。这叫做单样本学习(One-shot Learning)。</p>
+<p>为了完成单样本学习，我们可以从另一个角度来建模人脸识别问题：如果输入的人脸和数据库里某张人脸极为相似，我们就说识别出了这张人脸；否则，就说没有识别到有效的人脸。</p>
+<p>这样，人脸识别问题就被转换为了一个求两张图片相似度的问题。我们可以让网络学习一个输入是两张图片，输出是二者相似度的一个映射。</p>
+<h3 id="孪生网络"><a href="#孪生网络" class="headerlink" title="孪生网络"></a>孪生网络</h3><p>在完成和相似度有关的问题时，一种常见的做法是使用孪生网络（Siamese Network)。</p>
+<p>假设网络的倒数第二层有128个神经元。在普通分类网络中，这128个神经元输出的长度为128的向量会被输入进最后的softmax层。而在孪生网络中，我们要去掉softmax层，并用这个没有sofrmax的网络$f$分别输出两张图片$x^{(1)}, x^{(2)}$对应的128维向量$f(x^{(1)}), f(x^{(2)})$。这样，每张图片有了唯一对应的一个128维向量，这个向量可以看成是该图片的编码(encoding)。而我们又知道，对向量求相似度是很方便的。我们可以利用两张图片的编码求出相似度。</p>
+<p><img src="/2022/08/09/DLS-note-13/1.jpg" alt></p>
+<p>说起向量的相似度，最容易想到是向量间的距离$||v - u||^2$。因此，我们可以i设法让网络学会这样一种关系：</p>
+<ul>
+<li>若$x^{(i)}, x^{(j)}$是同一人，则$||f(x^{(i)}) - f(x^{(j)})||^2$很小。</li>
+<li>若$x^{(i)}, x^{(j)}$不是同一人，则$||f(x^{(i)}) - f(x^{(j)})||^2$很大。、</li>
+</ul>
+<p>为了达成这个目标，我们来看看应该用怎样的误差来指导网络的优化方向。</p>
+<h3 id="三元组误差"><a href="#三元组误差" class="headerlink" title="三元组误差"></a>三元组误差</h3><p>在让网络学习基于距离的相似度时，一种常用的误差是三元组误差(Triplet Loss)。</p>
+<p>在一轮训练中，我们要用到3张图片：一张基准图(anchor)$A$和与其相对的正负样本$P, N$各一张。设$d(A, B)$为图片$A, B$的编码的距离，则我们希望$d(A, P) \leq d(A, N)$。</p>
+<blockquote>
+<p>左边的人是吴恩达的妻子，这几张图片已经出现了好几次。</p>
+</blockquote>
+<p><img src="/2022/08/09/DLS-note-13/2.jpg" alt></p>
+<p>移个项，即我们希望：</p>
+<script type="math/tex; mode=display">
+d(A, P) - d(A, N) \leq 0.</script><p>但这个条件太容易满足了，令$f(x)=0$恒成立的话无论怎样的输入都可以使上式左侧为0了。因此，我们要加一点小小的约束：</p>
+<script type="math/tex; mode=display">
+d(A, P) - d(A, N) + \alpha \leq 0,</script><p>这个$\alpha$是一个较小的数，比如可以令$\alpha=0.2$。为了达成这个目标，我们可以设置以下的误差函数</p>
+<script type="math/tex; mode=display">
+L(A, P, N)=max(d(A, P) - d(A, N) + \alpha, 0).</script><p>这里取max的直观解释是：只要满足开始那个不等式，让正样本和负样本能够分清楚就行了。至于两类样本要不要分辨得那么分明，我们并不关心。</p>
+<p>为了利用这个误差训练网络，我们要在训练集里为同一个人准备多张照片。比如1000个人，每人100张照片，共100000张照片构成训练集。</p>
+<p>在提出此设计的FaceNet中，还有一些小细节：为了加大训练难度，让模型效果更好，每次训练时应该选择较难的三元组$A, P, N$。详情请阅读原论文。</p>
+<h3 id="人脸验证与二分类问题"><a href="#人脸验证与二分类问题" class="headerlink" title="人脸验证与二分类问题"></a>人脸验证与二分类问题</h3><p>其实，判断两张图片的编码是否相似的问题可以简单地转化成一个二分类问题：把两张图片的编码“拼起来”，输入进一个逻辑回归的单元，让网络输入两张图片是否相似。</p>
+<p>这里把两张图片“拼起来”有很多的实现方式。一种简单的方式是求两个编码的绝对值（L1距离）。</p>
+<p>另外，在部署时，由于比较的图像的编码是可以预处理的，只需要用神经网络跑一遍输入图片即可。</p>
+<h2 id="神经网络风格迁移"><a href="#神经网络风格迁移" class="headerlink" title="神经网络风格迁移"></a>神经网络风格迁移</h2><blockquote>
+<p>我之前写了一篇<a href="https://zhouyifan.net/2022/06/01/20220531-styletransfer/">详细介绍神经网络风格迁移的文章</a>，我认为那篇文章比这堂课更好理解，非常推荐大家阅读。因此，这部分笔记我会写得潦草一些。</p>
+</blockquote>
+<h3 id="什么是神经网络风格迁移？"><a href="#什么是神经网络风格迁移？" class="headerlink" title="什么是神经网络风格迁移？"></a>什么是神经网络风格迁移？</h3><p><img src="/2022/08/09/DLS-note-13/3.jpg" alt></p>
+<p>如上图所示，在神经网络风格迁移中，输入一张表示内容的图(C)和一张表示画家风格的图(S)，我们可以借助神经网络生成一幅融合内容与风格的图片(G)。</p>
+<p>接下来实现神经网络风格迁移时，我们会关注CNN浅层和深层提取出来的特征。因此，在具体介绍风格迁移的实现之前，我们先来看看CNN各层网络究竟学到了什么。</p>
+<h3 id="深度卷积网络学到了什么？"><a href="#深度卷积网络学到了什么？" class="headerlink" title="深度卷积网络学到了什么？"></a>深度卷积网络学到了什么？</h3><p>为了设法可视化神经网络每一层的输出，我们可以考虑把整个训练集喂入网络，找出使某一层某一神经元激活输出最大的几个像素块。</p>
+<p>以AlexNet为例，令第一层某几个神经元激活输出最大的像素块是：</p>
+<p><img src="/2022/08/09/DLS-note-13/4.jpg" alt></p>
+<p>可以看出，浅层的神经网络更关注不同方向轮廓信息。</p>
+<p>用同样的方式可视化更深的层，可以看出网络关注的信息越来越抽象。</p>
+<p><img src="/2022/08/09/DLS-note-13/5.jpg" alt></p>
+<h3 id="损失函数"><a href="#损失函数" class="headerlink" title="损失函数"></a>损失函数</h3><p>和优化一个网络的参数不同，在神经网络风格迁移中，我们要把一幅图像当成可以优化的参数，通过修改图像的像素值来最小化一个损失函数。让我们看看这个损失函数是怎么定义的。</p>
+<p>损失函数由两部分构成：生成图像(G)和内容图像(C)的<strong>内容损失</strong>与和风格图像(S)的<strong>风格损失</strong>。二者之间的比例靠比例系数$\alpha, \beta$控制。</p>
+<script type="math/tex; mode=display">
+J(G) = \alpha J_{content}(C, G) + \beta J_{style}(S, G).</script><p>我们来看一个优化这个损失函数的步骤示例：</p>
+<ol>
+<li>生成一个随机图像$G: 100 \times 100 \times 3$</li>
+<li>使用梯度下降更新$G$，最小化$J(G)$</li>
+</ol>
+<p><img src="/2022/08/09/DLS-note-13/6.jpg" alt></p>
+<h3 id="内容损失"><a href="#内容损失" class="headerlink" title="内容损失"></a>内容损失</h3><p>内容损失的计算方式如下：</p>
+<ol>
+<li>使用一个预训练的网络（最常用的是VGG）。</li>
+<li>选择神经网络中的某一层$l$，这一层相关的数据会用来计算内容损失。$l$越浅，表示越具体的图像；$l$越深，表示越抽象的图像。一般选取适中的$l$。</li>
+<li>令$a^{<a href="C">l</a>}, a^{[l][G]}$为图像$C, G$网络第$l$层的激活输出。我们认为，如果这两个值很相似，则两幅图像的内容就很相似。</li>
+<li>令$J_{content}(C, G) = ||a^{<a href="C">l</a>} - a^{[l][G]}||^2$</li>
+</ol>
+<h3 id="风格损失"><a href="#风格损失" class="headerlink" title="风格损失"></a>风格损失</h3><p>看完了内容损失，现在来看风格损失的计算方式。我们刚刚一直在用名词“风格”。这个词放在美术里，可以指画家的绘画风格。而对于神经网络来说，“风格”又是什么意思呢？</p>
+<p>和刚刚的内容损失类似，计算风格损失时，我们也要选择CNN的某层$l$，计算这一层卷积激活输出的<strong>通道相关量</strong>。</p>
+<p>这里“通道相关量”反映的是图像各个通道间两两的相关关系。这句话可能有点拗口，让我们看一个详细的通道相关量示例。</p>
+<p><img src="/2022/08/09/DLS-note-13/7.jpg" alt></p>
+<p>假设一个激活输出有5个通道，我们用颜色“红-黄-紫-绿-蓝”称呼它们。每个通道表示的是一类特征，比如红色的通道表示图像有没有竖着的条纹，黄色通道表示图像有没有橙色的色块。我们想计算红黄通道之间的相关量，其实就是计算图像每个像素处红色通道的值和绿色通道的值之间的相关关系，看看它们是会同时出现，还是一个出现了另一个就不出现。（两个数值的相关量就是它们的乘积，具体的数学表示会在后文中给出）</p>
+<p>为什么这样的相关关系能够捕捉到风格信息呢？红色通道和黄色通道的相关关系，就是是不是有竖条纹的地方就有橙色色块。这样一种线条和颜色的关联，就可以代表图片的风格。（下图中红色的框和黄色的框分别圈出了两种特征）</p>
+<p><img src="/2022/08/09/DLS-note-13/8.jpg" alt></p>
+<p>从直觉上认识了风格，现在我们来看一看风格的具体计算方法。在计算两个向量的相关量时，可以直接求两个向量的积。因此，我们要用到一种叫做”风格矩阵“的中间量，它计算了所有通道向量的乘积：</p>
+<script type="math/tex; mode=display">
+G^{[l]}_{kk'}=\Sigma_i^{H} \Sigma_i^{W} a^{[l]}_{i, j, k} a^{[l]}_{i, j, k'}</script><p>其中，$a^{[l]}_{i, j, k}$是第$i$行$j$列第$k$个通道的激活输出，风格矩阵$G$的形状是$n_c^{[l]} \times n_c^{[l]}$，$G^{[l]}_{kk’}$描述的是第$l$层激活输出中，第$k, k’$个通道间的相关量。</p>
+<blockquote>
+<p>在数学中这个矩阵叫做gram矩阵。</p>
+</blockquote>
+<p>有了风格矩阵，就可以算风格损失了。为了简化表示，我们用$G^{[l]}(S), G^{[l]}(G)$分别表示风格图像S和生成图像G的风格矩阵。和刚刚一样，我们选择一层$l$，并计算风格误差：</p>
+<script type="math/tex; mode=display">
+J^{[l]}_{style}(S, G) = ||G^{[l]}(S)- G^{[l]}(G)||_F^2</script><p>这是一层上的风格误差。其实，我们还可以指定多个层上的风格误差，以使生成图像能够拟合风格图像在多个卷积层上（抽象程度不同）的风格。多个层的风格误差就是各层风格误差之和。</p>
+<h2 id="1D和3D上的卷积"><a href="#1D和3D上的卷积" class="headerlink" title="1D和3D上的卷积"></a>1D和3D上的卷积</h2><p>在结束这门课之前，我们来学习最后一项内容——1D和3D数据上的卷积。之前，我们只关注2D的图像数据，当维度不是2时，卷积有怎样的变化呢？</p>
+<p>1D数据可以是心电图。和可以用2D卷积捕捉2D图像的边缘一样，我们可以用下图中那个尖尖的1D卷积来捕获高频的数据。1D卷积前后的形状变化规律和2D一样，比如用16个长度为5的卷积卷一个$14 \times 1$的1D图像，可以得到$10 \times 16$的1D图像（第一维是图像长度，第二维是通道数）。 </p>
+<p><img src="/2022/08/09/DLS-note-13/9.jpg" alt></p>
+<p>3D数据也是类似的道理。用16个$5 \times 5 \times 5$的卷积核卷一个单通道$14 \times 14 \times 14$的单通道图像，可以得到一个$5 \times 5 \times 5 \times 16$的图像。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>这节课主要介绍了人脸识别和神经网络风格迁移两项任务，最后顺便介绍了1D和3D上的卷积。</p>
+<ul>
+<li>人脸识别<ul>
+<li>人脸验证与人脸识别任务的定义</li>
+<li>如何对单样本学习建模</li>
+<li>孪生网络</li>
+<li>基于三元组误差和二分类误差的人脸识别网络</li>
+</ul>
+</li>
+<li>神经网络风格迁移<ul>
+<li>神经网络风格迁移的输入输出</li>
+<li>利用小技巧可视化 CNN 学到的图像信息</li>
+<li>生成风格迁移图像时的内容误差与风格误差</li>
+</ul>
+</li>
+</ul>
+<p>人脸识别任务依赖于数据集，项目搭建起来比较麻烦。对于这一周的内容，我就不展示其他的代码实战笔记了，欢迎阅读我之前写的<a href="https://zhouyifan.net/2022/06/01/20220531-styletransfer/">神经网络风格迁移的实现</a>。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/08/09/DLS-note-12-2/" rel="prev" title="吴恩达《深度学习专项》代码实战（十二）：目标检测 NMS 的 Python 实现（附算法动图）">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》代码实战（十二）：目标检测 NMS 的 Python 实现（附算法动图）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/08/09/20220807-ResNet/" rel="next" title="ResNet 论文概览与精读">
+      ResNet 论文概览与精读 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BE%E5%A0%82%E7%AC%94%E8%AE%B0"><span class="nav-number">1.</span> <span class="nav-text">课堂笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%BA%E8%84%B8%E8%AF%86%E5%88%AB"><span class="nav-number">1.1.</span> <span class="nav-text">人脸识别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E6%A0%B7%E6%9C%AC%E5%AD%A6%E4%B9%A0"><span class="nav-number">1.1.1.</span> <span class="nav-text">单样本学习</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%AA%E7%94%9F%E7%BD%91%E7%BB%9C"><span class="nav-number">1.1.2.</span> <span class="nav-text">孪生网络</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E5%85%83%E7%BB%84%E8%AF%AF%E5%B7%AE"><span class="nav-number">1.1.3.</span> <span class="nav-text">三元组误差</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%BA%E8%84%B8%E9%AA%8C%E8%AF%81%E4%B8%8E%E4%BA%8C%E5%88%86%E7%B1%BB%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.4.</span> <span class="nav-text">人脸验证与二分类问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E9%A3%8E%E6%A0%BC%E8%BF%81%E7%A7%BB"><span class="nav-number">1.2.</span> <span class="nav-text">神经网络风格迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E9%A3%8E%E6%A0%BC%E8%BF%81%E7%A7%BB%EF%BC%9F"><span class="nav-number">1.2.1.</span> <span class="nav-text">什么是神经网络风格迁移？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B1%E5%BA%A6%E5%8D%B7%E7%A7%AF%E7%BD%91%E7%BB%9C%E5%AD%A6%E5%88%B0%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.2.2.</span> <span class="nav-text">深度卷积网络学到了什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.3.</span> <span class="nav-text">损失函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AE%B9%E6%8D%9F%E5%A4%B1"><span class="nav-number">1.2.4.</span> <span class="nav-text">内容损失</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A3%8E%E6%A0%BC%E6%8D%9F%E5%A4%B1"><span class="nav-number">1.2.5.</span> <span class="nav-text">风格损失</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1D%E5%92%8C3D%E4%B8%8A%E7%9A%84%E5%8D%B7%E7%A7%AF"><span class="nav-number">1.3.</span> <span class="nav-text">1D和3D上的卷积</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

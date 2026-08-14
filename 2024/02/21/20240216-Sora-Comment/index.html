@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="今天，一则重磅消息席卷了 AI 圈：OpenAI 发布了视频模型 Sora，能根据文本生成长达一分钟的高质量 1920x1080 视频，生成能力远超此前只能生成 25 帧 576x1024 图像的顶尖视频生成模型 Stable Video Diffusion。 同时，OpenAI 也公布了一篇非常简短的技术报告。报告仅大致介绍了 Sora 的架构及应用场景，并未对模型的原理详加介绍。让我们来快速浏">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OpenAI 视频模型 Sora 科研贡献速览">
+<meta property="og:url" content="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="今天，一则重磅消息席卷了 AI 圈：OpenAI 发布了视频模型 Sora，能根据文本生成长达一分钟的高质量 1920x1080 视频，生成能力远超此前只能生成 25 帧 576x1024 图像的顶尖视频生成模型 Stable Video Diffusion。 同时，OpenAI 也公布了一篇非常简短的技术报告。报告仅大致介绍了 Sora 的架构及应用场景，并未对模型的原理详加介绍。让我们来快速浏">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/1.png">
+<meta property="og:image" content="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/2.png">
+<meta property="og:image" content="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/3.png">
+<meta property="article:published_time" content="2024-02-21T08:46:58.000Z">
+<meta property="article:modified_time" content="2024-02-28T07:21:56.672Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/1.png">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>OpenAI 视频模型 Sora 科研贡献速览 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/02/21/20240216-Sora-Comment/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          OpenAI 视频模型 Sora 科研贡献速览
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-02-21 16:46:58" itemprop="dateCreated datePublished" datetime="2024-02-21T16:46:58+08:00">2024-02-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>今天，一则重磅消息席卷了 AI 圈：OpenAI 发布了视频模型 Sora，能根据文本生成长达一分钟的高质量 1920x1080 视频，生成能力远超此前只能生成 25 帧 576x1024 图像的顶尖视频生成模型 Stable Video Diffusion。</p>
+<p>同时，OpenAI 也公布了一篇非常简短的技术报告。报告仅大致介绍了 Sora 的架构及应用场景，并未对模型的原理详加介绍。让我们来快速浏览一下这份报告，看看科研人员从这份报告中能学到什么。</p>
+<p>官网链接：<a target="_blank" rel="noopener" href="https://openai.com/sora">https://openai.com/sora</a></p>
+<p>技术报告链接：<a target="_blank" rel="noopener" href="https://openai.com/research/video-generation-models-as-world-simulators">https://openai.com/research/video-generation-models-as-world-simulators</a></p>
+<p>这篇文章没怎么贴视频，感兴趣的话可以对照着原报告中的视频阅读。</p>
+<h2 id="LDM-与-DiT-的结合"><a href="#LDM-与-DiT-的结合" class="headerlink" title="LDM 与 DiT 的结合"></a>LDM 与 DiT 的结合</h2><p>简单来说，Sora 就是 Latent Diffusion Model (LDM) [1] 加上 Diffusion Transformer (DiT) [2]。我们先简要回顾一下这两种模型架构。</p>
+<p>LDM 就是 Stable Diffusion 使用的模型架构。扩散模型的一大问题是计算需求大，难以拟合高分辨率图像。为了解决这一问题，实现 LDM时，会先训练一个几乎能无损压缩图像的自编码器，能把 512x512 的真实图像压缩成 64x64 的压缩图像并还原。接着，再训练一个扩散模型去拟合分辨率更低的压缩图像。这样，仅需少量计算资源就能训练出高分辨率的图像生成模型。</p>
+<p>LDM 的扩散模型使用的模型是 U-Net。而根据其他深度学习任务中的经验，相比 U-Net，Transformer 架构的参数可拓展性强，即随着参数量的增加，Transformer 架构的性能提升会更加明显。这也是为什么大模型普遍都采用了 Transformer 架构。从这一动机出发，DiT 应运而生。DiT 在 LDM 的基础上，把 U-Net 换成了 Transformer。</p>
+<p>顺带一提，Transformer 本来是用于文本任务的，它只能处理一维的序列数据。为了让 Transformer 处理二维图像，通常会把输入图像先切成边长为 $p$ 的图块，再把每个图块处理成一项数据。也就是说，原来边长为 $I$ 的正方形图片，经图块化后，变成了长度为 $(I/p)^2$ 的一维序列数据。</p>
+<p><img src="/2024/02/21/20240216-Sora-Comment/1.png" alt></p>
+<p>Transformer 是一种和顺序无关的计算。比如对于输入”abc”和”bca”，Transformer 会输出一模一样的值。为了描述数据的先后顺序，使用 Transformer 时，一般会给数据加一个位置编码。</p>
+<p>Sora 是一个视频版的 DiT 模型。让我们看一下 Sora 在 DiT 上做了哪些改进。</p>
+<h2 id="时空自编码器"><a href="#时空自编码器" class="headerlink" title="时空自编码器"></a>时空自编码器</h2><p>在此之前，许多工作都尝试把预训练 Stable Diffusion 拓展成视频生成模型。在拓展时，视频的每一帧都会单独输入进 Stable Diffusion 的自编码器，再重新构成一个压缩过的图像序列。而 VideoLDM[3] 工作发现，直接对视频使用之前的图像自编码器，会令输出视频出现闪烁的现象。为此，该工作对自编码器的解码器进行了微调，加入了一些能够处理时间维度的模块，使之能一次性处理整段压缩视频，并输出连贯的真实视频。</p>
+<p>Sora 则是从头训练了一套能直接压缩视频的自编码器。相比之前的工作，Sora 的自编码器不仅能在空间上压缩图像，还能在时间上压缩视频长度。这估计是为什么 Sora 能生成长达一分钟的视频。</p>
+<blockquote>
+<p>报告中提到，Sora 也能处理图像，即长度为1的视频。那么，自编码器怎么在时间上压缩长度为1的视频呢？报告中并没有给出细节。我猜测该自编码器在时间维度做了填充（比如时间被压缩成原来的 1/2，那么就对输入视频填充空数据直至视频长度为偶数），也可能是输入了视频长度这一额外约束信息。</p>
+</blockquote>
+<h2 id="时空压缩图块"><a href="#时空压缩图块" class="headerlink" title="时空压缩图块"></a>时空压缩图块</h2><p>输入视频经过自编码器后，会被转换成一段空间和时间维度上都变小的压缩视频。这段压缩视频就是 Sora 的 DiT 的拟合对象。在处理视频数据时，DiT 较 U-Net 又有一些优势。</p>
+<p>之前基于 U-Net 的去噪模型在处理视频数据时（如 [3])，都需要额外加入一些和时间维度有关的操作，比如时间维度上的卷积、自注意力。而 Sora 的 DiT 是一种完全基于图块的 Transformer 架构。要用 DiT 处理视频数据，不需要这种设计，只要把视频看成一个 3D 物体，再把 3D 物体分割成「图块」，并重组成一维数据输入进 DiT 即可。和原本图像 DiT 一样，假设视频边长为 $I$，时长也为 $I$，要切成边长为 $p$ 的图块，最后会得到 $(I/p)^3$ 个数据。</p>
+<blockquote>
+<p>报告没有给出视频图块化的细节。</p>
+</blockquote>
+<h2 id="处理任意分辨率、时长的视频"><a href="#处理任意分辨率、时长的视频" class="headerlink" title="处理任意分辨率、时长的视频"></a>处理任意分辨率、时长的视频</h2><p>报告中反复提及，Sora 在训练和生成时使用的视频可以是任何分辨率（在 1920x1080 以内）、任何长宽比、任何时长的。这意味着视频训练数据不需要做缩放、裁剪等预处理。这些特性是绝大多数其他视频生成模型做不到的，让我们来着重分析一下这一特性的原理。</p>
+<p>Sora 的这种性质还是得益于 Transformer 架构。前文提到，Transformer 的计算与输入顺序无关，必须用位置编码来指明每个数据的位置。尽管报告没有提及，我觉得 Sora 的 DiT 使用了类似于 $(x, y, t)$ 的位置编码来表示一个图块的时空位置。这样，不管输入的视频的大小如何，长度如何，只要给每个图块都分配一个位置编码，DiT 就能分清图块间的相对关系了。</p>
+<p>相比以前的工作，Sora 的这种设计是十分新颖的。之前基于 U-Net 的 Stable Diffusion 为了保证所有训练数据可以统一被处理，输入图像都会被缩放与裁剪至同一大小。由于训练数据中有被裁剪的图像，模型偶尔也会生成被裁剪的图像。生成训练分辨率以外的图像时，模型的表现有时也会不太好。SDXL [4] 的解决方式是把裁剪的长宽做为额外信息输入进 U-Net。为了生成没有裁剪的图像，只要令输入的裁剪长宽为 0 即可。类似地，SDXL 也把图像分辨率做为额外输入，使得 U-Net 学习不同分辨率、长宽比的图像。相比 SDXL，Sora 的做法就简洁多了。</p>
+<p>之前基于 DiT 的模型 （比如华为的 PixArt [5]）似乎都没有利用到 Transformer 可以随意设置位置编码这一性质。DiT 在处理输入图块时，会先把图块变形成一维数据，再从左到右编号，即从从左到右，从上到下地给二维图块组编号。这种位置编码并没有保留图像的二维空间信息，因此，在这种编码下，模型的输入分辨率必须固定。比如对于下面这个$4\times4$的图块组，如果是从左到右、从上到下编码，模型等于是强行学习到了「1号在0号右边、4号在0号下面」这样的位置信息。如果输入的图块形状为 $4 \times 5$，那么图块间的相对关系就完全对不上了。而如果像 Sora 这样以视频图块的 $(x, y, t)$ 来生成位置编码的话，就没有这种问题了，输入视频可以是任何分辨率、任何长度。</p>
+<p><img src="/2024/02/21/20240216-Sora-Comment/2.png" alt></p>
+<h2 id="Transformer-在视频生成的可拓展性"><a href="#Transformer-在视频生成的可拓展性" class="headerlink" title="Transformer 在视频生成的可拓展性"></a>Transformer 在视频生成的可拓展性</h2><p>前文提过，Transformer 的特点就是可拓展性强，即模型越大，训练越久，效果越好。报告中展示了1倍、4倍、16倍某单位训练时间下的生成结果，可以看出模型确实一直有进步。</p>
+<p><img src="/2024/02/21/20240216-Sora-Comment/3.png" alt></p>
+<h2 id="语言理解能力"><a href="#语言理解能力" class="headerlink" title="语言理解能力"></a>语言理解能力</h2><p>之前大部分文生图扩散模型都是在人工标注的图片-文字数据集上训练的。后来大家发现，人工标注的图片描述质量较低，纷纷提出了各种提升标注质量的方法。Sora 复用了自家 DALL·E 3 的重标注技术，用一个训练的能生成详细描述的标注器来重新为训练视频生成标注。这种做法不仅解决了视频缺乏标注的问题，且相比人工标注质量更高。Sora 的部分结果展示了其强大了抽象理解能力（如理解人和猫之间的交互），这多半是因为视频标注模型足够强大，视频生成模型学到了视频标注模型的知识。但同样，视频标注模型的相关细节完全没有公开。</p>
+<h2 id="其他生成功能"><a href="#其他生成功能" class="headerlink" title="其他生成功能"></a>其他生成功能</h2><ul>
+<li>基于已有图像和视频进行生成：除了约束文本外，Sora 还支持在一个视频前后补充内容（如果是在一张图片后面补充内容，就是图生视频）。报告没有给出实现细节，我猜测是直接做了反演（inversion）再把反演得到的隐变量替换到随机初始隐变量中。</li>
+<li>视频编辑：报告明确写出，只用简单的 SDEdit （即目前 Stable Diffusion 中的图生图）即可实现视频编辑。</li>
+<li>视频内容融合：可能是对两个视频的初始隐变量做了插值。</li>
+<li>图像生成：当然，Sora 也可以生成图像。报告表明，Sora 可以生成最大 2048x2048 的图像。</li>
+</ul>
+<h2 id="涌现出的能力"><a href="#涌现出的能力" class="headerlink" title="涌现出的能力"></a>涌现出的能力</h2><p>通过学习大量数据，Sora 还涌现出一些意想不到的能力。</p>
+<ul>
+<li>3D 一致性：视频中包含自然的相机视角变换。之前的 Stable Video Diffusion 也有类似发现。</li>
+<li>长距离连贯性：AI 生成出来的视频往往有物体在中途突然消失的情况。而 Sora 有时候能克服这一问题。</li>
+<li>与世界的交互：比如在描述画画的视频中，画纸上的内容随画笔生成。</li>
+<li>模拟数字世界：报告展示了在输入文本有”Minecraft”时，模型能生成非常真实的 Minecraft 游戏视频。这大概只能说明模型的拟合能力太强了，以至于学会了生成 Minecraft 这一种特定风格的视频。 </li>
+</ul>
+<h2 id="局限性"><a href="#局限性" class="headerlink" title="局限性"></a>局限性</h2><p>报告结尾还是给出了一些失败的生成示例，比如玻璃杯在桌子上没有摔碎。这表明模型还不能完全学会某些物理性质。然而，我觉得现阶段 Sora 已经展示了足够强大的学习能力。想模拟现有视频中已经包含的物理现象，只需要增加数据就行了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Sora 是一个惊艳的视频生成模型，它以卓越的生成能力（高分辨率、长时间）与生成质量令一众同期的视频生成模型黯然失色。Sora 的技术报告非常简短，不过我们从中还是可以学到一些东西。从技术贡献上来看，Sora 的创新主要有两点：</p>
+<ol>
+<li>让 LDM 的自编码器也在视频时间维度上压缩。</li>
+<li>使用了一种不限制输入形状的 DiT</li>
+</ol>
+<p>其中，第二点贡献是非常有启发性的。DiT 能支持不同形状的输入，大概率是因为它以视频的3D位置生成位置编码，打破了一维编码的分辨率限制。后续大家或许会逐渐从 U-Net 转向 DiT 来建模扩散模型的去噪模型。</p>
+<p>我认为 Sora 的成功有三个原因。前两个原因对应两项创新。第一，由于在时间维度上也进行了压缩，Sora 最终能生成长达一分钟的视频；第二，使用 DiT 不仅去除了视频空间、时间长度上的限制，还充分利用了 Transformer 本身的可拓展性，使训练一个视频生成大模型变得可能。第三个原因来自于视频标注模型。之前 Stable Diffusion 能够成功，很大程度上是因为有一个能够关联图像与文本的 CLIP 模型，且有足够多的带标注图片。相比图像，视频训练本来就少，带标注的视频就更难获得了。一个能够理解视频内容，生成详细视频标注的标注器，一定是让视频生成模型理解复杂文本描述的关键。除了这几点原因外，剩下的就是砸钱、扩大模型、加数据了。</p>
+<p>Sora 显然会对 AIGC 社区产生一定影响。对于 AIGC 爱好者而言，他们或许会多了一些生成创意视频的方法，比如给部分帧让 Sora 来根据文本补全剩余帧。当然，目前 Sora 依然不能取代视频创作者，长视频的质量依然有待观察。对于正在开发相似应用的公司，我觉得他们应该要连夜撤销之前的方案，转换为这套没有分辨率限制的 DiT 的方案。他们的压力应该会很大。对于相关科研人员而言，除了学习这种较为新颖的 DiT 用法外，也没有太多收获了。这份技术报告透露出一股「我绝对不会开源」的意思。没有开源模型，普通的研究者也就什么都做不了。新技术的诞生绝对不可能靠一家公司，一个模型就搞定。像之前的 Stable Diffusion，也是先开源了一个基础模型，科研者和爱好者再补充了各种丰富的应用。我呼吁各大公司尽快训练并开源一个这种不限分辨率的 DiT，这样科研界或许会抛开 U-Net，基于 DiT 开发出新的扩散模型应用。</p>
+<h2 id="参考论文"><a href="#参考论文" class="headerlink" title="参考论文"></a>参考论文</h2><ol>
+<li>Latent Diffusion Model, Stable Difusion: High-Resolution Image Synthesis with Latent Diffusion Models</li>
+<li>DiT: Scalable Diffusion Models with Transformers</li>
+<li>VideoLDM: Align your Latents: High-Resolution Video Synthesis with Latent Diffusion Models</li>
+<li>SDXL: Improving Latent Diffusion Models for High-Resolution Image Synthesis</li>
+<li>PixArt-α: Fast Training of Diffusion Transformer for Photorealistic Text-to-Image Synthesis</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/01/27/20240123-SD-Attn/" rel="prev" title="Stable Diffusion 中的自注意力替换技术与 Diffusers 实现">
+      <i class="fa fa-chevron-left"></i> Stable Diffusion 中的自注意力替换技术与 Diffusers 实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/03/09/20240228-DiffMorpher/" rel="next" title="CVPR 2024 | DiffMorpher：实现两张图像间的平滑变形">
+      CVPR 2024 | DiffMorpher：实现两张图像间的平滑变形 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#LDM-%E4%B8%8E-DiT-%E7%9A%84%E7%BB%93%E5%90%88"><span class="nav-number">1.</span> <span class="nav-text">LDM 与 DiT 的结合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E7%A9%BA%E8%87%AA%E7%BC%96%E7%A0%81%E5%99%A8"><span class="nav-number">2.</span> <span class="nav-text">时空自编码器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E7%A9%BA%E5%8E%8B%E7%BC%A9%E5%9B%BE%E5%9D%97"><span class="nav-number">3.</span> <span class="nav-text">时空压缩图块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E4%BB%BB%E6%84%8F%E5%88%86%E8%BE%A8%E7%8E%87%E3%80%81%E6%97%B6%E9%95%BF%E7%9A%84%E8%A7%86%E9%A2%91"><span class="nav-number">4.</span> <span class="nav-text">处理任意分辨率、时长的视频</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Transformer-%E5%9C%A8%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E7%9A%84%E5%8F%AF%E6%8B%93%E5%B1%95%E6%80%A7"><span class="nav-number">5.</span> <span class="nav-text">Transformer 在视频生成的可拓展性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AD%E8%A8%80%E7%90%86%E8%A7%A3%E8%83%BD%E5%8A%9B"><span class="nav-number">6.</span> <span class="nav-text">语言理解能力</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E7%94%9F%E6%88%90%E5%8A%9F%E8%83%BD"><span class="nav-number">7.</span> <span class="nav-text">其他生成功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B6%8C%E7%8E%B0%E5%87%BA%E7%9A%84%E8%83%BD%E5%8A%9B"><span class="nav-number">8.</span> <span class="nav-text">涌现出的能力</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B1%80%E9%99%90%E6%80%A7"><span class="nav-number">9.</span> <span class="nav-text">局限性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">10.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%AE%BA%E6%96%87"><span class="nav-number">11.</span> <span class="nav-text">参考论文</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

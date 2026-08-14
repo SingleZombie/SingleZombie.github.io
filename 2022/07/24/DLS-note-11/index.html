@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="学习提示上周，我们学完了CNN的基础组成模块。而从这周开始，我们要换一种学习方式：我们会认识一些经典的CNN架构，从示例中学习。一方面来说，通过了解他人的网络，阅读他人的代码，我们能够更快地掌握如何整合CNN的基础模块；另一方面，CNN架构往往泛化能力较强，学会了其他任务中成熟的架构，可以把这些架构直接用到我们自己的任务中。 接下来，我们会按照CNN的发展历史，认识许多CNN架构。首先是经典网络：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》笔记（十一）：深度卷积模型——从示例中学习">
+<meta property="og:url" content="https://zhouyifan.net/2022/07/24/DLS-note-11/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="学习提示上周，我们学完了CNN的基础组成模块。而从这周开始，我们要换一种学习方式：我们会认识一些经典的CNN架构，从示例中学习。一方面来说，通过了解他人的网络，阅读他人的代码，我们能够更快地掌握如何整合CNN的基础模块；另一方面，CNN架构往往泛化能力较强，学会了其他任务中成熟的架构，可以把这些架构直接用到我们自己的任务中。 接下来，我们会按照CNN的发展历史，认识许多CNN架构。首先是经典网络：">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/7_11.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/8.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/9.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/10.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/11.jpg">
+<meta property="article:published_time" content="2022-07-23T16:31:30.000Z">
+<meta property="article:modified_time" content="2022-07-23T16:31:30.850Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/07/24/DLS-note-11/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/07/24/DLS-note-11/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》笔记（十一）：深度卷积模型——从示例中学习 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/24/DLS-note-11/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》笔记（十一）：深度卷积模型——从示例中学习
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-24 00:31:30" itemprop="dateCreated datePublished" datetime="2022-07-24T00:31:30+08:00">2022-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>上周，我们学完了CNN的基础组成模块。而从这周开始，我们要换一种学习方式：我们会认识一些经典的CNN架构，从示例中学习。一方面来说，通过了解他人的网络，阅读他人的代码，我们能够更快地掌握如何整合CNN的基础模块；另一方面，CNN架构往往泛化能力较强，学会了其他任务中成熟的架构，可以把这些架构直接用到我们自己的任务中。</p>
+<p>接下来，我们会按照CNN的发展历史，认识许多CNN架构。首先是经典网络：</p>
+<ul>
+<li>LeNet-5</li>
+<li>AlexNet</li>
+<li>VGG</li>
+</ul>
+<p>之后是近年来的一些网络：</p>
+<ul>
+<li>ResNet</li>
+<li>Inception</li>
+<li>MobileNet</li>
+</ul>
+<p>我们不会把这些研究的论文详细过一遍，而只会学习各研究中最精华的部分。学有余力的话，最好能在课后把论文自己过一遍。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="经典网络"><a href="#经典网络" class="headerlink" title="经典网络"></a>经典网络</h2><h3 id="LeNet-5"><a href="#LeNet-5" class="headerlink" title="LeNet-5"></a>LeNet-5</h3><p>LeNet-5是用于手写数字识别（识别0~9的阿拉伯数字）的网络。它的结构如下：</p>
+<p><img src="/2022/07/24/DLS-note-11/1.jpg" alt></p>
+<p>网络是输入是一张[32, 32, 1]的灰度图像，输入经过4个卷积+池化层，再经过两个全连接层，输出一个0~9的数字。这个网络和我们上周见过的网络十分相似，数据体的宽和高在不断变小，而通道数在不断变多。</p>
+<p>这篇工作是1998年发表的，当时的神经网络架构和现在我们学的有不少区别：</p>
+<ul>
+<li>当时padding还没有得到广泛使用，数据体的分辨率会越降越小。</li>
+<li>当时主要使用平均池化，而现在最大池化更常见。</li>
+<li>网络只输出一个值，表示识别出来的数字。而现在的多分类任务一般会输出10个值并使用softmax激活函数。</li>
+<li>当时激活函数只用sigmoid和tanh，没有人用ReLU。</li>
+<li>当时的算力没有现在这么强，原工作在计算每个通道卷积时使用了很多复杂的小技巧。而现在我们直接算就行了。</li>
+</ul>
+<p>LeNet-5只有6万个参数。随着算力的增长，后来的网络越来越大了。</p>
+<h3 id="AlexNet"><a href="#AlexNet" class="headerlink" title="AlexNet"></a>AlexNet</h3><p>AlexNet是2012年发表的有关图像分类的CNN结构。它的输入是[227, 227, 3]的图像，输出是一个1000类的分类结果。</p>
+<blockquote>
+<p>原论文里写的是输入形状是[224, 224, 3]，但实际上这个分辨率是有问题的，按照这个分辨率是算不出后续结果的分辨率的。但现在一些框架对AlexNet的复现中，还是会令输入的分辨率是224。这是因为框架在第一层卷积中加了一个padding的操作，强行让后续数据的分辨率和原论文对上了。 </p>
+</blockquote>
+<p><img src="/2022/07/24/DLS-note-11/2.jpg" alt></p>
+<p>AlexNet和LeNet-5在架构上十分接近。但是，AlexNet做出了以下改进：</p>
+<ul>
+<li>AlexNet用了更多的参数，一共有约6000万个参数。</li>
+<li>使用ReLU作为激活函数。</li>
+</ul>
+<p>AlexNet还提出了其他一些创新，但与我们要学的知识没有那么多关系：</p>
+<ul>
+<li>当时算力还是比较紧张，AlexNet用了双GPU训练。论文里写了很多相关的工程细节。</li>
+<li>使用了Local Response Normalization这种归一化层。现在几乎没人用这种归一化。</li>
+</ul>
+<p>AlexNet中的一些技术在今天看来，已经是常识般的存在。而在那个年代，尽管深度学习在语音识别等任务上已经初露锋芒，人们还没有开始重视深度学习这项技术。正是由于AlexNet这一篇工作的出现，计算机视觉的研究者开始关注起了深度学习。甚至在后来，这篇工作的影响力已经远超出了计算机视觉社区。</p>
+<h3 id="VGG-16"><a href="#VGG-16" class="headerlink" title="VGG-16"></a>VGG-16</h3><p>VGG-16也是一个图像分类网络。VGG的出发点是：为了简化网络结构，只用3x3等长(same)卷积和2x2最大池化。</p>
+<p><img src="/2022/07/24/DLS-note-11/3.jpg" alt></p>
+<p>可以看出，VGG也是经过了一系列的卷积和池化层，最后使用全连接层和softmax输出结果。顺带一提，VGG-16里的16表示有16个带参数的层。</p>
+<p>VGG非常庞大，有138M(1.38亿)个参数。但是它简洁的结构吸引了很多人的关注。</p>
+<p>吴恩达老师鼓励大家去读一读这三篇论文。可以先看AlexNet，再看VGG。LeNet有点难读，可以放到最后去读。</p>
+<h2 id="ResNets（基于残差的网络）"><a href="#ResNets（基于残差的网络）" class="headerlink" title="ResNets（基于残差的网络）"></a>ResNets（基于残差的网络）</h2><p>非常非常深的神经网络是很难训练的，这主要是由梯度爆炸/弥散问题导致的。在这一节中，我们要学一种叫做“跳连(skip connection)”的网络模块连接方式。使用跳连，我们能让浅层模块的输出直接对接到深层模块的输入上，进而搭建基于残差的网络，解决梯度爆炸/弥散问题，训练深达100层的网络。</p>
+<h3 id="残差块"><a href="#残差块" class="headerlink" title="残差块"></a>残差块</h3><p>回忆一下，在全连接网络中，假如我们有中间层的输出$a^{[l]}, a^{[l+2]}$，$a^{[l+2]}$是怎么由$a^{[l]}$算出来的呢？我们之前用的公式如下：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+z^{[l+1]}&=W^{[l+1]}a^{[l]}+b^{[l+1]} \\
+a^{[l+1]}&=g(z^{[l+1]}) \\
+z^{[l+2]}&=W^{[l+2]}a^{[l+1]}+b^{[l+2]} \\
+a^{[l+2]}&=g(z^{[l+2]}) \\
+\end{aligned}</script><p>也就是说，$a^{[l]}$要经过一个线性层、一个激活函数、一个线性层、一个激活函数，才能传递到$a^{[l+2]}$，这条路径非常长：</p>
+<p><img src="/2022/07/24/DLS-note-11/4.jpg" alt></p>
+<p>而在残差块(Residual block)中，我们使用了一种新的连接方法：</p>
+<p><img src="/2022/07/24/DLS-note-11/5.jpg" alt></p>
+<p>$a^{[l]}$的值被直接加到了第二个ReLU层之前的线性输出上，这是一种类似电路中短路的连接方法（又称跳连）。这样，浅层的信息能更好地传到深层了。</p>
+<p>使用这种方法后，计算公式变更为：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+z^{[l+1]}&=W^{[l+1]}a^{[l]}+b^{[l+1]} \\
+a^{[l+1]}&=g(z^{[l+1]}) \\
+z^{[l+2]}&=W^{[l+2]}a^{[l+1]}+b^{[l+2]} \\
+a^{[l+2]}&=g(z^{[l+2]}+a^{[l]}) \\
+\end{aligned}</script><p>残差块中还有一个要注意的细节。$a^{[l+2]}=g(z^{[l+2]}+a^{[l]})$这个式子能够成立，实际上是默认了$a^{[l+2]}, a^{[l]}$的维度相同。而一旦$a^{[l+2]}$的维度发生了变化，就需要用下面这种方式来调整了。</p>
+<p>$a^{[l+2]}=g(z^{[l+2]}+W’a^{[l]})$</p>
+<p>我们可以用一个$W’$来完成维度的转换。为了方便理解，我们先让所有$a$都是一维向量，$W’$是矩阵。这样，假设$a^{[l+2]}$的长度是256，$a^{[l]}$的长度是128，则$W’$的形状就是$256 \times 128$。</p>
+<p>但实际上，$a$是一个三维的图像张量，三个维度的长度都可能发生变化。因此，对于图像，上式中的$W’$应该表示的是一个卷积操作。通过卷积操作，我们能够减小图像的宽高，调整图像的通道数，使得$a^{[l]}$和$a^{[l+2]}$的维度完全相同。</p>
+<h3 id="残差网络"><a href="#残差网络" class="headerlink" title="残差网络"></a>残差网络</h3><p>在构建残差网络ResNet时，只要把这种残差块一个一个拼接起来即可。或者从另一个角度来看，对于一个“平坦网络”（”plain network”, ResNet论文中用的词，用于表示非残差网络），我们只要把线性层两两打包，添加跳连即可。</p>
+<p><img src="/2022/07/24/DLS-note-11/6.jpg" alt></p>
+<p>残差块起到了什么作用呢？让我们看看在网络层数变多时，平坦网络和残差网络训练误差的变化趋势：</p>
+<p><img src="/2022/07/24/DLS-note-11/7.jpg" alt></p>
+<p>理论上来说，层数越深，训练误差应该越低。但在实际中，对平坦网络增加深度，反而会让误差变高。而使用ResNet后，随着深度增加，训练误差起码不会降低了。</p>
+<p>正是有这样的特性，我们可以用ResNet架构去训练非常深的网络。</p>
+<p>为什么ResNet是有这样的特性呢？我们还是从刚刚那个ResNet的公式里找答案。</p>
+<p>假设我们设计好了一个网络，又给它新加了一个残差块，即多加了两个卷积层，那么最后的输出可以写成：</p>
+<script type="math/tex; mode=display">
+a^{[l+2]}=g(z^{[l+2]}+a^{[l]}),</script><p>即</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{[l+2]}&=g(z^{[l+2]}+a^{[l]}) \\
+a^{[l+2]}&=g(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}) \\
+\end{aligned}</script><p>由于正则化的存在，所有$W$和$b$都倾向于变得更小。极端情况下，$W, b$都变为0了。那么，</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{[l+2]}&=g(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}), \\
+a^{[l+2]}&=g(a^{[l]}). \\
+\end{aligned}</script><p>再不妨设$g=ReLU$。则因为$a^{[l]}$也是ReLU的输出，有</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+a^{[l+2]}&=g(a^{[l]}), \\
+a^{[l+2]}&=a^{[l]}. \\
+\end{aligned}</script><p>这其实是一个恒等映射，也就是说，新加的残差块对之前的输出没有任何影响。网络非常容易学习到恒等映射。这样，最起码能够保证较深的网络不比浅的网络差。</p>
+<p>准备好了所有基础知识，我们来看看完整的ResNet长什么样。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_2.jpg" alt></p>
+<p>ResNet有几个参数量不同的版本。这里展示的叫做ResNet-34。完整的网络很长，我们只用关注其中一小部分就行了。</p>
+<p>一开始，网络还是用一个大卷积核大步幅的卷积以及一个池化操作快速降低图像的宽度，再把数据传入残差块中。和我们刚刚学的一样，残差块有两种，一种是维度相同可以直接相加的（实线），一种是要调整维度的（虚线）。整个网络就是由这若干个这样的残差块组构成。经过所有残差块后，还是和经典的网络一样，用全连接层输出结果。</p>
+<p>这里，我们只学习了残差连接的基本原理。ResNet的论文里还有更多有关网络结构、实验的细节。最好能读一读论文。当然，这周的编程实战里我们也会复现ResNet，以加深对其的理解。</p>
+<h2 id="Inception-网络"><a href="#Inception-网络" class="headerlink" title="Inception 网络"></a>Inception 网络</h2><p>我们已经见过不少CNN的示例了。当我们仿照它们设计自己的网络时，或许会感到迷茫：有3x3, 5x5卷积，有池化，该怎么选择每一个模块呢？Inception网络给了一个解决此问题的答案：我全都要。</p>
+<p>Inception网络用到了一种特殊的1x1卷积。我们会先学习1x1卷积，再学习Inception网络的知识。</p>
+<h3 id="1x1卷积"><a href="#1x1卷积" class="headerlink" title="1x1卷积"></a>1x1卷积</h3><p>用1x1的卷积核去卷一幅图像，似乎是一件很滑稽的事情。假设一幅图像的数字是[1, 2, 3]，卷积核是[2]，那么卷出来的图像就是[2, 4, 6]。这不就是把每个数都做了一次乘法吗？</p>
+<p>对于通道数为1的图像，1x1卷积确实没什么大用。而当通道数多起来后，1x1卷积的意义就逐渐显现出来了。思考一下，对多通道的图像做1x1卷积，就是把某像素所有通道的数字各乘一个数，求和，加一个bias，再通过激活函数。这是计算一个输出结果的过程，而如果有多个卷积核，就可以计算出多个结果。（下图中，蓝色的数据体是输入图像，黄色的数据体是1x1的卷积核。两个数据体重合部分的数据会先做乘法，再求和，加bias，经过激活函数。）</p>
+<p><img src="/2022/07/24/DLS-note-11/7_3.jpg" alt></p>
+<p>这个过程让你想起了什么？没错，正是最早学习的全连接网络。1x1卷积，实际上就是在各通道上做了一次全连接的计算。1x1卷积的输入通道数，就是全连接层上一层神经元的数量；1x1卷积核的数量，就是这一层神经元的数量。</p>
+<p>1x1卷积主要用于变换图像的通道数。比如要把一个192通道数的图像变成32通道的，就应该用32个1x1卷积去卷原图像。</p>
+<h3 id="Inception块的原理"><a href="#Inception块的原理" class="headerlink" title="Inception块的原理"></a>Inception块的原理</h3><p>在Inception网络中，我们会使用这样一种混合模块：对原数据做1x1, 3x3, 5x5卷积以及最大池化，得到通道数不同的数据体。这些数据体会被拼接起来，作为整个模块的输出。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_4.jpg" alt></p>
+<p>值得注意的是，这里的池化操作和我们之前见过的不太一样。为了保持输出张量的宽高，这个池化的步幅为1，且使用了等长填充。另外，为了调整池化操作输出的通道数，这条数据处理路线上还有一个用1x1卷积变换通道数的操作。这份图省略了很多这样的细节，下一节我们会见到这幅图的完整版。</p>
+<p>在实现这样一种模块时，会碰到计算量过大的问题。比如把上面$28 \times 28 \times 192$的数据体用$5 \times 5$卷积卷成$28 \times 28 \times 32$的数据体，需要多少次乘法计算呢？对每个像素单独考虑，一个通道上的卷积要做$5 \times 5$此乘法，192个通道的卷积要做$192 \times 5 \times 5$次乘法。32个这样的卷积在$28 \times 28$的图片上要做$28 \times 28 \times 32 \times 192 \times 5 \times 5 \approx 120M$次乘法。这个计算量太大了。</p>
+<p>为此，我们可以巧妙地先利用1x1卷积减少通道数，再做5x5卷积。这样，计算量就少得多了。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_5.jpg" alt></p>
+<p>这样一种两头大，中间小的结构被形象地称为瓶颈(bottlenect)。这种结构被广泛用在许多典型网络中。</p>
+<h3 id="Inception网络"><a href="#Inception网络" class="headerlink" title="Inception网络"></a>Inception网络</h3><p>有了之前的知识，我们可以看Inception模块的完整结构了。1x1卷积没有什么特别的。为了减少3x3卷积和5x5卷积的计算量，做这两种卷积之前都会用1x1卷积减少通道数。而为了改变池化结果的通道数，池化后接了一个1x1卷积操作。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_6.jpg" alt></p>
+<p>实际上，理解了Inception块，也就能看懂Inception网络了。如下图所示，红框内的模块都是Inception块。而这个网络还有一些小细节：除了和普通网络一样在网络的最后使用softmax输出结果外，这个网络还根据中间结果也输出了几个结果。当然，这些都是早期网络的设计技巧了。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_7.jpg" alt></p>
+<h2 id="MobileNet"><a href="#MobileNet" class="headerlink" title="MobileNet"></a>MobileNet</h2><p>MobileNet，顾名思义，这是一种适用于移动(mobile)设备的神经网络。移动设备的计算资源通常十分紧缺，因此，MobileNet对网络的计算量进行了极致的压缩。</p>
+<h3 id="减少卷积运算量"><a href="#减少卷积运算量" class="headerlink" title="减少卷积运算量"></a>减少卷积运算量</h3><p>再回顾一遍，一次卷积操作中主要的计算量如下：</p>
+<p><img src="/2022/07/24/DLS-note-11/7_8.jpg" alt></p>
+<p>计算量这么大，主要问题出在每一个输出通道都要与每一个输入通道“全连接”上。为此，我们可以考虑让输出通道只由部分的输入通道决定。这样一种卷积的策略叫逐深度可分卷积(Depthwise Separable Convolution)。</p>
+<blockquote>
+<p>这里的depthwise是“逐深度”的意思，但我觉得“逐通道”这个称呼会更容易理解一点。</p>
+</blockquote>
+<p>逐深度可分卷积分为两步：逐深度卷积(depthwise convolution)，逐点卷积(pointwise convolution)。逐深度卷积生成新的通道，逐点卷积把各通道的信息关联起来。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_9.jpg" alt></p>
+<p>之前，要对下图中的三通道图片做卷积，需要3个卷积核分别处理3个通道。而在逐深度卷积中，我们只要1个卷积核。这个卷积核会把输入图像当成三个单通道图像来看待，分别对原图像的各个通道进行卷积，并生成3个单通道图像，最后把3个单通道图像拼回一个三通道图像。也就是说，逐深度卷积只能生成一幅通道数相同的新图像。</p>
+<blockquote>
+<p>逐深度卷积可以通过设置卷积在编程框架中的<code>groups</code>参数来实现。参见我<a href>讲解卷积的文章</a>。</p>
+</blockquote>
+<p><img src="/2022/07/24/DLS-note-11/7_10.jpg" alt></p>
+<p>下一步，是逐点卷积，也就是1x1卷积。它用来改变图片的通道数。</p>
+<p><img src="/2022/07/24/DLS-note-11/7_11.jpg" alt></p>
+<p>之前的卷积有2160次乘法，现在只有432+240=672次，计算量确实减少了不少。实际上，优化后计算量占原计算量的比例是：</p>
+<script type="math/tex; mode=display">
+\frac{1}{n_c'} + \frac{1}{f^2}</script><p>其中$n_c’$是输出通道数，$f$是卷积核边长。一般来说计算量都会少10倍。</p>
+<h3 id="网络结构"><a href="#网络结构" class="headerlink" title="网络结构"></a>网络结构</h3><p>知道了MobileNet的基本思想，我们来看几个不同版本的MobileNet。</p>
+<h4 id="MobileNet-v1"><a href="#MobileNet-v1" class="headerlink" title="MobileNet v1"></a>MobileNet v1</h4><p>13个逐深度可分卷积模块，之后接通常的池化、全连接、softmax。</p>
+<p><img src="/2022/07/24/DLS-note-11/8.jpg" alt></p>
+<h4 id="MobileNet-v2"><a href="#MobileNet-v2" class="headerlink" title="MobileNet v2"></a>MobileNet v2</h4><p>两个改进：</p>
+<ol>
+<li>残差连接</li>
+<li>扩张(expansion)操作</li>
+</ol>
+<p><img src="/2022/07/24/DLS-note-11/9.jpg" alt></p>
+<p>残差连接和ResNet一样。这里我们关注一下第二个改进。</p>
+<p>在MobileNet v2中，先做一个扩张维度的1x1卷积，再做逐深度卷积，最后做之前的逐点1x1卷积。由于最后的逐点卷积起到的是减小维度的作用，所以最后一步操作也叫做投影。</p>
+<p><img src="/2022/07/24/DLS-note-11/10.jpg" alt></p>
+<p>这种架构很好地解决了性能和效果之间的矛盾：在模块之间，数据的通道数只有3，占用内存少；在模块之内，更高通道的数据能拟合更复杂的函数。</p>
+<h2 id="EfficientNet"><a href="#EfficientNet" class="headerlink" title="EfficientNet"></a>EfficientNet</h2><p>EfficientNet能根据设备的计算能力，自动调整网络占用的资源。</p>
+<p>让我们想想，哪些因素决定了一个网络占用的运算资源？我们很快能想到下面这些因素：</p>
+<ul>
+<li>图像分辨率</li>
+<li>网络深度</li>
+<li>特征的长度（即卷积核数量或神经元数量）</li>
+</ul>
+<p>在EfficientNet中，我们可以在这三个维度上缩放网络，动态改变网络的计算量。EfficientNet的开源实现中，一般会提供各设备下的最优参数。</p>
+<h2 id="卷积网络实现细节"><a href="#卷积网络实现细节" class="headerlink" title="卷积网络实现细节"></a>卷积网络实现细节</h2><h3 id="使用开源实现"><a href="#使用开源实现" class="headerlink" title="使用开源实现"></a>使用开源实现</h3><p>由于深度学习项目涉及很多训练上的细节，想复现一个前人的工作是很耗时的。最好的学习方法是找到别人的开源代码，在现有代码的基础上学习。</p>
+<p>深度学习的开源代码一般在GitHub上都能找到。如果是想看PyTorch实现，可以直接去GitHub上搜索OpenMMLab。</p>
+<h3 id="使用迁移学习"><a href="#使用迁移学习" class="headerlink" title="使用迁移学习"></a>使用迁移学习</h3><p>如第三门课第二周所学，我们可以用迁移学习，导入别人训练好的模型里的权重为初始权重，加速我们自己模型的训练。</p>
+<p>还是以多分类任务的迁移学习为例（比如把一个1000分类的分类器迁移到一个猫、狗、其他的三分类模型上）。迁移后，新的网络至少要删除输出层，并按照新的多分类个数，重新初始化一个输出层。之后，根据新任务的数据集大小，冻结网络的部分参数，从导入的权重开始重新训练网络的其他部分：</p>
+<p><img src="/2022/07/24/DLS-note-11/11.jpg" alt></p>
+<p>当然，可以多删除几个较深的层，也可以多加入几个除了输出层以外的隐藏层。</p>
+<h3 id="数据增强"><a href="#数据增强" class="headerlink" title="数据增强"></a>数据增强</h3><p>由于CV任务总是缺少数据，数据增强是一种常见的提升网络性能的手段。</p>
+<p>常见的改变形状的数据增强手段有：</p>
+<ul>
+<li>镜像</li>
+<li>裁剪</li>
+<li>旋转</li>
+<li>扭曲</li>
+</ul>
+<p>此外，还可以改变图像的颜色。比如对三个颜色通道都随机加一个偏移量。</p>
+<p>数据增强有一些实现上的细节：数据的读取及增强是放在CPU上运行的，训练是放在CPU或GPU上运行的。这两步其实是独立的，可以并行完成。最常见的做法是，在CPU上用多进程（发挥多核的优势）读取数据并进行数据增强，之后把数据搬到GPU上训练。</p>
+<h3 id="计算机视觉的现状与相关建议"><a href="#计算机视觉的现状与相关建议" class="headerlink" title="计算机视觉的现状与相关建议"></a>计算机视觉的现状与相关建议</h3><p>一般来说，算法从两个来源获取知识：标注的数据，人工设计的特征。这二者是互补的关系。对于人工智能任务来说，如果有足够的数据，设计一个很简单的网络就行了；而如果数据量不足，则需要去精心设计网络结构。</p>
+<p>像语音识别这种任务就数据充足，用简单的网络就行了。而大部分计算机视觉任务都处于数据不足的状态。哪怕计算机视觉中比较基础的图像分类任务，都需要设计结构复杂的网络，更不用说目标检测这些更难的任务了。</p>
+<p>如果你想用深度学习模型参加刷精度的比赛，可以使用以下几个小技巧：</p>
+<ul>
+<li>同时开始训练多个网络，算结果时取它们的平均值。</li>
+<li>对图像分类任务，可以把图像随机裁剪一部分并输入网络，多次执行这一步骤并取平均分类结果。</li>
+</ul>
+<p>也就是说，只是为了提高精度的话，可以想办法对同一份输入执行多次条件不同的推理，并对结果求平均。当然，实际应用中是不可能用性能这么低的方法。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课是CNN中最重要的一节课。通过学习一些经典的CNN架构，我们掌握了很多有关搭建CNN的知识。总结一下：</p>
+<ul>
+<li>早期CNN<ul>
+<li>卷积、池化、全连接</li>
+<li>边长减小，通道数增加</li>
+</ul>
+</li>
+<li>ResNet<ul>
+<li>为什么使用ResNet？</li>
+<li>梯度问题是怎么被解决的？</li>
+<li>残差块的一般结构</li>
+<li>输入输出通道数不同的残差块</li>
+<li>了解ResNet的结构(ResNet-18, ResNet-50)</li>
+</ul>
+</li>
+<li>Incpetion 网络<ul>
+<li>1x1卷积</li>
+<li>用1x1卷积减少计算量</li>
+<li>Inception网络的基本模块</li>
+</ul>
+</li>
+<li>MobileNet<ul>
+<li>逐深度可分卷积</li>
+<li>MobileNet v2中的瓶颈结构</li>
+</ul>
+</li>
+</ul>
+<p>这节课介绍的都是比较前沿的CNN架构。在深度学习技术日新月异的今天，最好的学习方式是读论文，尽快一步一步跟上最新的技术。这堂课中提及的比较新的几篇论文，都有很高的阅读价值。</p>
+<p>我打算在学完CNN的四周课后，暂时不去学第五门课，而是去阅读这些经典CNN论文并分享一下笔记。</p>
+<p>在这周的代码实战里，我会分享一下如何用TensorFlow和PyTorch编写ResNet，同时介绍两种框架的进阶用法。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/24/DLS-note-10-5/" rel="prev" title="吴恩达《深度学习专项》代码实战（十）：4. 算子反向传播的实现思路（以NumPy版卷积为例）">
+      <i class="fa fa-chevron-left"></i> 吴恩达《深度学习专项》代码实战（十）：4. 算子反向传播的实现思路（以NumPy版卷积为例）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/24/DLS-note-11-2/" rel="next" title="吴恩达《深度学习专项》代码实战（十一）：用 TensorFlow 实现 ResNet 并验证残差连接的有效性">
+      吴恩达《深度学习专项》代码实战（十一）：用 TensorFlow 实现 ResNet 并验证残差连接的有效性 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E6%8F%90%E7%A4%BA"><span class="nav-number">1.</span> <span class="nav-text">学习提示</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BE%E5%A0%82%E7%AC%94%E8%AE%B0"><span class="nav-number">2.</span> <span class="nav-text">课堂笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E5%85%B8%E7%BD%91%E7%BB%9C"><span class="nav-number">2.1.</span> <span class="nav-text">经典网络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#LeNet-5"><span class="nav-number">2.1.1.</span> <span class="nav-text">LeNet-5</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AlexNet"><span class="nav-number">2.1.2.</span> <span class="nav-text">AlexNet</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VGG-16"><span class="nav-number">2.1.3.</span> <span class="nav-text">VGG-16</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ResNets%EF%BC%88%E5%9F%BA%E4%BA%8E%E6%AE%8B%E5%B7%AE%E7%9A%84%E7%BD%91%E7%BB%9C%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">ResNets（基于残差的网络）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E5%9D%97"><span class="nav-number">2.2.1.</span> <span class="nav-text">残差块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%8B%E5%B7%AE%E7%BD%91%E7%BB%9C"><span class="nav-number">2.2.2.</span> <span class="nav-text">残差网络</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Inception-%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.</span> <span class="nav-text">Inception 网络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1x1%E5%8D%B7%E7%A7%AF"><span class="nav-number">2.3.1.</span> <span class="nav-text">1x1卷积</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Inception%E5%9D%97%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">2.3.2.</span> <span class="nav-text">Inception块的原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Inception%E7%BD%91%E7%BB%9C"><span class="nav-number">2.3.3.</span> <span class="nav-text">Inception网络</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MobileNet"><span class="nav-number">2.4.</span> <span class="nav-text">MobileNet</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%8F%E5%B0%91%E5%8D%B7%E7%A7%AF%E8%BF%90%E7%AE%97%E9%87%8F"><span class="nav-number">2.4.1.</span> <span class="nav-text">减少卷积运算量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%84"><span class="nav-number">2.4.2.</span> <span class="nav-text">网络结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MobileNet-v1"><span class="nav-number">2.4.2.1.</span> <span class="nav-text">MobileNet v1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MobileNet-v2"><span class="nav-number">2.4.2.2.</span> <span class="nav-text">MobileNet v2</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#EfficientNet"><span class="nav-number">2.5.</span> <span class="nav-text">EfficientNet</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%B7%E7%A7%AF%E7%BD%91%E7%BB%9C%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-number">2.6.</span> <span class="nav-text">卷积网络实现细节</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%BC%80%E6%BA%90%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.6.1.</span> <span class="nav-text">使用开源实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0"><span class="nav-number">2.6.2.</span> <span class="nav-text">使用迁移学习</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA"><span class="nav-number">2.6.3.</span> <span class="nav-text">数据增强</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89%E7%9A%84%E7%8E%B0%E7%8A%B6%E4%B8%8E%E7%9B%B8%E5%85%B3%E5%BB%BA%E8%AE%AE"><span class="nav-number">2.6.4.</span> <span class="nav-text">计算机视觉的现状与相关建议</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.7.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

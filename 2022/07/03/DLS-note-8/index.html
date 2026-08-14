@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="经过了之前的学习，我们学会了许多改进深度学习模型的方法，比如：  收集更多数据 收集更多样化的数据 延长训练时间 用高级梯度下降算法 缩小&#x2F;扩大网络 使用正则化 ……  这么多方法，如果只是一个一个试过去，开发效率就太低了。在未来的两周，我们会学习一些改进机器学习的策略。这些策略会给我们一些启发性的指导，让我们在改进模型时更明确下一步该做什么。 学习提示这周课没有太多的新内容，主要是拓展了第二门课">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》笔记（八）：如何降低误差以达成优化目标">
+<meta property="og:url" content="https://zhouyifan.net/2022/07/03/DLS-note-8/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="经过了之前的学习，我们学会了许多改进深度学习模型的方法，比如：  收集更多数据 收集更多样化的数据 延长训练时间 用高级梯度下降算法 缩小&#x2F;扩大网络 使用正则化 ……  这么多方法，如果只是一个一个试过去，开发效率就太低了。在未来的两周，我们会学习一些改进机器学习的策略。这些策略会给我们一些启发性的指导，让我们在改进模型时更明确下一步该做什么。 学习提示这周课没有太多的新内容，主要是拓展了第二门课">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/03/DLS-note-8/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/03/DLS-note-8/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/03/DLS-note-8/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/03/DLS-note-8/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/07/03/DLS-note-8/5.jpg">
+<meta property="article:published_time" content="2022-07-03T09:14:58.000Z">
+<meta property="article:modified_time" content="2022-07-04T09:15:16.912Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/07/03/DLS-note-8/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/07/03/DLS-note-8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》笔记（八）：如何降低误差以达成优化目标 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/07/03/DLS-note-8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》笔记（八）：如何降低误差以达成优化目标
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-03 17:14:58" itemprop="dateCreated datePublished" datetime="2022-07-03T17:14:58+08:00">2022-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>经过了之前的学习，我们学会了许多改进深度学习模型的方法，比如：</p>
+<ul>
+<li>收集更多数据</li>
+<li>收集更多样化的数据</li>
+<li>延长训练时间</li>
+<li>用高级梯度下降算法</li>
+<li>缩小/扩大网络</li>
+<li>使用正则化</li>
+<li>……</li>
+</ul>
+<p>这么多方法，如果只是一个一个试过去，开发效率就太低了。在未来的两周，我们会学习一些改进机器学习的策略。这些策略会给我们一些启发性的指导，让我们在改进模型时更明确下一步该做什么。</p>
+<h1 id="学习提示"><a href="#学习提示" class="headerlink" title="学习提示"></a>学习提示</h1><p>这周课没有太多的新内容，主要是拓展了第二门课第一周有关偏差与方差分析的内容。学完了这周的课后，大家会进一步了解如何在一个全新的机器学习任务上设置目标，并通过误差分析等技术逐步靠近目标。</p>
+<h1 id="课堂笔记"><a href="#课堂笔记" class="headerlink" title="课堂笔记"></a>课堂笔记</h1><h2 id="正交化"><a href="#正交化" class="headerlink" title="正交化"></a>正交化</h2><p>如何从众多的改进方案中选择出优先级较高的呢？让我们先看看生活中一些其他事情的例子：</p>
+<p><img src="/2022/07/03/DLS-note-8/1.jpg" alt></p>
+<p>首先，是调整老式电视机的例子。老式电视机的画面不一定恰好能端端正正地填满屏幕，需要人为地调整画面的位置。一般这些电视机都有很多按钮，每个按钮各负责一项调整功能，比如调整上下位置、左右位置、缩放、旋转等。每个按钮之间的功能互不干扰。</p>
+<p>另外，还有一个开汽车的例子。汽车最少有三种操作：转方向盘、加速、减速。只需要组合这三种操作，我们就能让汽车沿着某一路线跑起来。而如果汽车只有两个可以左右调整的按钮，一个按钮控制0.3倍的角度和-0.8倍的速度，另一个按钮控制2倍的角度和0.9倍的速度，那司机控制汽车时肯定会倍感吃力。</p>
+<p>以上两个例子显示了<strong>正交化</strong>的好处。正交可以指数学里两条直线垂直，这里指的是两个调整方向互不干扰。通过调整正交的参数，我们可以把事物的“坐标分量”逐个调整到我们期待的“位置”。</p>
+<p>类似地，在改进机器学习项目时，也可以使用正交化。</p>
+<p><img src="/2022/07/03/DLS-note-8/2.jpg" alt></p>
+<p>在机器学习项目中，大概有4个“坐标分量”需要调整：拟合训练集、拟合开发集、拟合测试集、提升实际应用中的表现。对于这每一项目标，我们都应该使用相互正交的策略去调整，比如：</p>
+<ul>
+<li>拟合训练集 - 用更大的网络</li>
+<li>拟合开发集 - 正则化</li>
+<li>拟合测试集 - 用更大的开发集</li>
+<li>提升实际应用中的表现 - 更换损失函数</li>
+</ul>
+<p>值得一提的是，提前停止是一个即会影响训练误差，又会影响开发误差的方法。这个方法不满足正交化的要求，使用此方法时需要多多注意。</p>
+<h2 id="设置目标"><a href="#设置目标" class="headerlink" title="设置目标"></a>设置目标</h2><h3 id="单一指标"><a href="#单一指标" class="headerlink" title="单一指标"></a>单一指标</h3><p>在分类任务中，一般有下面这两种评价指标：</p>
+<ul>
+<li>精确率（precision, 又称查准率）：所有识别为猫的图片中，究竟有多少确实是猫？</li>
+<li>召回率（recall, 又称查全率）：所有猫的图片中，有多少猫被正确识别了？</li>
+</ul>
+<blockquote>
+<p>注意，我们之前代码实战中用的准确率(accuracy)和精确率(precision)不是一个指标。</p>
+</blockquote>
+<p>现在，假设有两个模型，它们在开发集上的评估结果如下：</p>
+<ul>
+<li>模型1：精确率95%，召回率90%。</li>
+<li>模型2：精确率98%，召回率85%。</li>
+</ul>
+<p>二者在精确率和召回率上各有优劣，该怎么从中选一个更好的模型出来呢？</p>
+<p>设置目标的一个原则是：只使用单一实数作为评价标准。因此，我们要想办法用一个指标把这两个指标都考虑进来。比如使用F1-score，它的公式如下：</p>
+<script type="math/tex; mode=display">
+F_1score = \frac{2}{\frac{1}{P}+\frac{1}{R}}</script><p>再看一个例子。假如我们开发好了几个算法，我们要用来自不同国家的数据去测试它们。不同算法在不同国家的数据上表现较好。为了快速选取一个最好的算法，我们可以去计算每个算法的表现平均值。</p>
+<p><img src="/2022/07/03/DLS-note-8/3.jpg" alt></p>
+<p>有了单一评价标准，我们就可以快速比较各个模型在开发集上的表现，并选择一个更好的模型。这样，我们开发的迭代速度也变快了。</p>
+<h3 id="满足指标与优化指标"><a href="#满足指标与优化指标" class="headerlink" title="满足指标与优化指标"></a>满足指标与优化指标</h3><p>在有多个评价指标时，不是总能挑选出一个最恰当的综合指标的。比如评价某算法时既要考虑到准确率，又要考虑到运行时间。用一个综合指标来组合它们显然不太现实。这时，我们可以把指标分成<strong>满足指标</strong>和<strong>优化指标</strong>。</p>
+<p>比如说，我们有这样几个算法：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>分类器</th>
+<th>准确率</th>
+<th>运行时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>90%</td>
+<td>80ms</td>
+</tr>
+<tr>
+<td>B</td>
+<td>92%</td>
+<td>95ms</td>
+</tr>
+<tr>
+<td>C</td>
+<td>95%</td>
+<td>1500ms</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>算法C是挺好的，但是它相较A,B实在跑的太慢了。因此，我们可以设置以下的评价标准：</p>
+<p><strong>满足</strong>运行时间≤100ms的前提下，<strong>最大化</strong>准确率。</p>
+<p>这个标准既保证了运行时间不会太长，又能选出准确率较高的算法。按照这个标准，B应该是最优的分类器。</p>
+<p>在这个例子中，准确率就是优化指标，运行时间就是满足指标。</p>
+<p>这种新的选取指标的方法应该和之前提到的单一指标原则结合起来。准确来说，应该只有一个优化指标，外加若干个满足指标。</p>
+<h3 id="训练-开发-测试的分布"><a href="#训练-开发-测试的分布" class="headerlink" title="训练/开发/测试的分布"></a>训练/开发/测试的分布</h3><p>开发集和评价指标，共同决定了我们的优化目标。因此，我们应该谨慎地选择各数据集的数据分布，防止优化目标跑偏。</p>
+<p>举个例子，假如我们收集了来自不同地区的数据，有亚洲、欧洲……。假如我们令亚洲的数据为开发集，欧洲的数据为测试集，我们就可能会训练出一个在开发集上表现优秀，却在测试集上表现糟糕的模型。正确的做法是，我们把来自不同地区的数据打乱，把数据随机分成开发集和测试集。</p>
+<p>还有一个改编自真实故事的例子。一个团队想开发根据某人的邮政编码预测他同意贷款的概率的算法。他们以中等收入地区的邮政编码为开发集，却以低收入地区的邮政编码为测试集。显然，在这两个地区的人同意贷款的概率会差很多。最后，这个团队花了3个月优化了算法在开发集上的表现，却发现模型在测试集上表现奇差，不得以推倒重来。</p>
+<p>也就是说，我们应该让训练集和测试集能够反映我们将来实际应用时的数据，并且训练集和测试集都得来自同一个分布。设置开发集和评估指标，就像立了一个靶子一样。训练，就是让射出的箭更靠靶心。而测试集，应该反映我们期望箭射到的位置。我们既要知道箭应该射在哪里，还要把靶子摆对。</p>
+<h3 id="开发集和测试集的大小"><a href="#开发集和测试集的大小" class="headerlink" title="开发集和测试集的大小"></a>开发集和测试集的大小</h3><blockquote>
+<p>这些知识在第二周已经学过了，这里再强调一次。</p>
+</blockquote>
+<p>数据量小的时候（比如说数量级在万以下），我们可以按6:2:2的比例划分训练/开发/测试集。但数据量大的时候，就不用考虑比例了，按固定大小选择差不多大小的开发集和测试集即可。</p>
+<p>那么，测试集要多大才够呢？从统计学的眼光来看，把测试集当成实际应用数据中的一个采样结果的话，我们应该保证测试集有很高的置信度能反映模型在实际应用中的综合表现。当然，对于简单的数据分布，我们可以用统计学知识严谨地算出置信度。而对于人工智能任务中用到的海量数据，数学工具就难以派上用场了。我们只能根据经验选择一个足够大的测试集。比如有百万级数据的话，一万个测试样本就够了。</p>
+<h3 id="何时更换开发-测试集与评价指标"><a href="#何时更换开发-测试集与评价指标" class="headerlink" title="何时更换开发/测试集与评价指标"></a>何时更换开发/测试集与评价指标</h3><p>在算法投入应用后，我们可能会发现新的评价角度。比如对于小猫分类模型，我们本来只期望它能正确识别小猫。可是，随着使用应用的人变多，我们发现有的用户会上传色情图片。这时，我们不仅希望模型能只找出小猫，还要能过滤掉色情图片。</p>
+<p>这样，我们就引入了一个新的评价指标。这样，之前辨认小猫能力强的模型，可能会在辨认色情图片上较差。</p>
+<p>为了考虑这个新的评价指标，我们可以修改误差函数，用更高的权重加大色情图片分类错误的惩罚。</p>
+<p>总结来说，当我们发现使用当前指标得出来的最优模型，与考虑到某些新因素后得到的最优模型不同时，我们就应该更换开发/测试集与评价指标了。</p>
+<h2 id="与人类级表现比较"><a href="#与人类级表现比较" class="headerlink" title="与人类级表现比较"></a>与人类级表现比较</h2><h3 id="为什么是人类级表现"><a href="#为什么是人类级表现" class="headerlink" title="为什么是人类级表现"></a>为什么是人类级表现</h3><p>我们经常能看到AI与人类比较的新闻：什么AlphaGo在围棋上战胜人类了，什么在ImageNet上AI的分类准确率超过了人类啊，等等。除了博眼球的新闻外，业内同样也会时常将机器学习模型和人类比较。这是为什么呢？</p>
+<p>在许多任务中，人类的表现都非常出色。当AI超过了人类后，往往也达到了这类问题的最优精度。在机器学习模型超过人类前，与人类比较有以下好处：</p>
+<ol>
+<li>获取人类标注的数据。</li>
+<li>从手动误差分析中获得启发：为什么人就能做对？</li>
+<li>更好地分析偏差与方差。</li>
+</ol>
+<p>其中，第1条是显然的，第2条会在下周介绍。接下来，我们看看第3条是怎么回事。</p>
+<h3 id="可规避偏差"><a href="#可规避偏差" class="headerlink" title="可规避偏差"></a>可规避偏差</h3><blockquote>
+<p>这个知识之前也学过了一点。</p>
+</blockquote>
+<p>如果一个模型的训练误差是8%，开发误差是10%，我们不一定说模型就存在这个偏差问题。有可能模型在训练集上已经几乎达到了最优的表现;</p>
+<p><img src="/2022/07/03/DLS-note-8/4.jpg" alt></p>
+<p>在判断一件事时，有可能因为信息的缺乏，最优的准确率也达不到100%，总会存在一些误差。这样的最小的误差叫做贝叶斯误差。人类的表现，通常可以用作贝叶斯误差的一个估计。</p>
+<p>在刚才那个例子中，如果人类误差是1%，那么模型的训练误差还有7%的提升空间；而如果人类误差是7.5%，那说不定模型的训练误差只有0.5%的提升空间了。对于前者，我们应该关注偏差；关于后者，我们应该关注方差。这里讲到的7%, 0.5%的提升空间，可以称作<strong>可规避偏差</strong>。</p>
+<h3 id="理解人类级表现"><a href="#理解人类级表现" class="headerlink" title="理解人类级表现"></a>理解人类级表现</h3><p>假如让人类来完成医学图片分类任务，人们得到了以下的分类误差：</p>
+<p><img src="/2022/07/03/DLS-note-8/5.jpg" alt></p>
+<p>从一个普通人，到一群有经验的医生，误差逐渐降低。那么，哪个误差算是人类级表现呢？</p>
+<p>回顾上一节的内容，人类误差是贝叶斯误差的一个估计。因此，人类最优的表现，才应该被视作是人类误差。</p>
+<p>当然，获取人类级表现的目的还是为了做偏差和方差分析。如果当前的训练误差是5%，那不管人类误差是1%，0.7%，还是5%，都差不多。而如果训练误差到了1%，甚至更低，那就要仔细地获取人类误差了。</p>
+<h3 id="提升模型表现"><a href="#提升模型表现" class="headerlink" title="提升模型表现"></a>提升模型表现</h3><p>最后，再一次回顾一下如何减少偏差和方差。</p>
+<p>机器学习有两大假设：模型能够很好地拟合训练集、模型能够泛化到开发/测试集上。它们分别对应偏差问题和方差问题。</p>
+<p>训练误差和人类级表现之间的差是可规避偏差，开发集和训练集之间的差是方差。</p>
+<p>训练更大的模型、训练更久/用更好的优化算法能够解决偏差问题。</p>
+<p>使用更多数据、正则化能解决方差问题。</p>
+<p>用更好的架构、超参数能同时解决这两个问题。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这节课涉及的新知识很少，大家就权当是复习了一下之前的知识。这节课大概学了这些东西：</p>
+<ul>
+<li>正交化</li>
+<li>目标<ul>
+<li>单一指标</li>
+<li>满足指标与优化指标</li>
+</ul>
+</li>
+<li>开发集与测试集<ul>
+<li>分布</li>
+<li>大小</li>
+</ul>
+</li>
+<li>人类级表现<ul>
+<li>贝叶斯误差</li>
+<li>可规避偏差</li>
+<li>提升模型表现的思路</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/02/20220702-gap-year/" rel="prev" title="风雨之巅尽是晴 | 985 CS 本科毕业放弃保研 gap 一年有感">
+      <i class="fa fa-chevron-left"></i> 风雨之巅尽是晴 | 985 CS 本科毕业放弃保研 gap 一年有感
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/04/DLS-note-9/" rel="next" title="吴恩达《深度学习专项》笔记（九）：错误分析、数据集匹配、多任务学习、端到端学习">
+      吴恩达《深度学习专项》笔记（九）：错误分析、数据集匹配、多任务学习、端到端学习 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E6%8F%90%E7%A4%BA"><span class="nav-number">1.</span> <span class="nav-text">学习提示</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BE%E5%A0%82%E7%AC%94%E8%AE%B0"><span class="nav-number">2.</span> <span class="nav-text">课堂笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%A3%E4%BA%A4%E5%8C%96"><span class="nav-number">2.1.</span> <span class="nav-text">正交化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E7%9B%AE%E6%A0%87"><span class="nav-number">2.2.</span> <span class="nav-text">设置目标</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E4%B8%80%E6%8C%87%E6%A0%87"><span class="nav-number">2.2.1.</span> <span class="nav-text">单一指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BB%A1%E8%B6%B3%E6%8C%87%E6%A0%87%E4%B8%8E%E4%BC%98%E5%8C%96%E6%8C%87%E6%A0%87"><span class="nav-number">2.2.2.</span> <span class="nav-text">满足指标与优化指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83-%E5%BC%80%E5%8F%91-%E6%B5%8B%E8%AF%95%E7%9A%84%E5%88%86%E5%B8%83"><span class="nav-number">2.2.3.</span> <span class="nav-text">训练&#x2F;开发&#x2F;测试的分布</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%8F%91%E9%9B%86%E5%92%8C%E6%B5%8B%E8%AF%95%E9%9B%86%E7%9A%84%E5%A4%A7%E5%B0%8F"><span class="nav-number">2.2.4.</span> <span class="nav-text">开发集和测试集的大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%95%E6%97%B6%E6%9B%B4%E6%8D%A2%E5%BC%80%E5%8F%91-%E6%B5%8B%E8%AF%95%E9%9B%86%E4%B8%8E%E8%AF%84%E4%BB%B7%E6%8C%87%E6%A0%87"><span class="nav-number">2.2.5.</span> <span class="nav-text">何时更换开发&#x2F;测试集与评价指标</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E4%BA%BA%E7%B1%BB%E7%BA%A7%E8%A1%A8%E7%8E%B0%E6%AF%94%E8%BE%83"><span class="nav-number">2.3.</span> <span class="nav-text">与人类级表现比较</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF%E4%BA%BA%E7%B1%BB%E7%BA%A7%E8%A1%A8%E7%8E%B0"><span class="nav-number">2.3.1.</span> <span class="nav-text">为什么是人类级表现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%A7%84%E9%81%BF%E5%81%8F%E5%B7%AE"><span class="nav-number">2.3.2.</span> <span class="nav-text">可规避偏差</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%90%86%E8%A7%A3%E4%BA%BA%E7%B1%BB%E7%BA%A7%E8%A1%A8%E7%8E%B0"><span class="nav-number">2.3.3.</span> <span class="nav-text">理解人类级表现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E5%8D%87%E6%A8%A1%E5%9E%8B%E8%A1%A8%E7%8E%B0"><span class="nav-number">2.3.4.</span> <span class="nav-text">提升模型表现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.4.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

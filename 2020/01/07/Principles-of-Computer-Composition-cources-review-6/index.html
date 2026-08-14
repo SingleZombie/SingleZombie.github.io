@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="去百度查课后答案的时候，发现这本教材至少11年没有发生改动。虽然这本书涉及都是一些原理性的东西，和时代无关，这门课对我们来说也不过是一门学过就忘的课，但我还是觉得这种“万年不变”的教学态度有问题，需要加以改正。 计算机组成原理复习：第六章 中央处理器本章主要在讲CPU（中央处理器）。本章先整体介绍了CPU的组成结构、性能参数等内容，之后稍微介绍了CPU的硬件实现，再具体介绍了CPU的整个控制工作原">
+<meta property="og:type" content="article">
+<meta property="og:title" content="计算机组成原理复习：第六章 中央处理器">
+<meta property="og:url" content="https://zhouyifan.net/2020/01/07/Principles-of-Computer-Composition-cources-review-6/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="去百度查课后答案的时候，发现这本教材至少11年没有发生改动。虽然这本书涉及都是一些原理性的东西，和时代无关，这门课对我们来说也不过是一门学过就忘的课，但我还是觉得这种“万年不变”的教学态度有问题，需要加以改正。 计算机组成原理复习：第六章 中央处理器本章主要在讲CPU（中央处理器）。本章先整体介绍了CPU的组成结构、性能参数等内容，之后稍微介绍了CPU的硬件实现，再具体介绍了CPU的整个控制工作原">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-01-06T18:56:49.000Z">
+<meta property="article:modified_time" content="2022-04-23T16:33:55.639Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="计算机科学">
+<meta property="article:tag" content="计算机组成">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhouyifan.net/2020/01/07/Principles-of-Computer-Composition-cources-review-6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>计算机组成原理复习：第六章 中央处理器 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2020/01/07/Principles-of-Computer-Composition-cources-review-6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          计算机组成原理复习：第六章 中央处理器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-07 02:56:49" itemprop="dateCreated datePublished" datetime="2020-01-07T02:56:49+08:00">2020-01-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>去百度查课后答案的时候，发现这本教材至少11年没有发生改动。虽然这本书涉及都是一些原理性的东西，和时代无关，这门课对我们来说也不过是一门学过就忘的课，但我还是觉得这种“万年不变”的教学态度有问题，需要加以改正。</p>
+<h1 id="计算机组成原理复习：第六章-中央处理器"><a href="#计算机组成原理复习：第六章-中央处理器" class="headerlink" title="计算机组成原理复习：第六章 中央处理器"></a>计算机组成原理复习：第六章 中央处理器</h1><p>本章主要在讲CPU（中央处理器）。本章先整体介绍了CPU的组成结构、性能参数等内容，之后稍微介绍了CPU的硬件实现，再具体介绍了CPU的整个控制工作原理。由于CPU执行指令的时候涉及一些微操作，本章接着又进一步介绍了微操作的有关内容。介绍完了CPU的基本工作原理后，本章又介绍了一个简单CPU应支持的操作。最后本章介绍了CPU相关的新技术。</p>
+<p>CPU实际上包括运算器和控制器。运算器主要涉及的计算方法在之前章节已经介绍过。这一章实际的重点是控制器的实现。</p>
+<p>考试重点应该是放在对CPU执行指令的过程和微操作的原理上。要理解CPU指令的执行过程，对于一个给定的操作，要能够写出CPU每一步在做什么。</p>
+<p>和上一章一样，我只对比较重点的地方进行复习。</p>
+<h2 id="CPU的基本组成"><a href="#CPU的基本组成" class="headerlink" title="CPU的基本组成"></a>CPU的基本组成</h2><p>其实CPU的组成主要是讲CPU里有哪些寄存器。寄存器可以分成通用和专用。专用的寄存器是只有固定用途的寄存器，而通用寄存器可以根据实际需要使用。可以看成预定义常量和变量，或是操作系统中的系统内存和用户内存。</p>
+<p>专用寄存器有：</p>
+<ul>
+<li>程序计数器PC</li>
+<li>指令寄存器IR</li>
+<li>存储器数据寄存器MDR</li>
+<li>存储器地址寄存器MAR</li>
+<li>程序状态字寄存器PSWR</li>
+</ul>
+<p>这里只是提一下这些寄存器的名字，后面讲CPU的控制原理的时候还会提到这些寄存器，到那个时候才能理解这些寄存器在干什么。这里提一下就当是在声明变量。</p>
+<p>处理寄存器外，CPU中还有一个指令译码器IR，用于识别指令中的操作码。还有一个控制单元CU，大名叫微操作信号发生器。它是CPU控制功能的核心。</p>
+<p>CU的实现方式在复习PPT中被列成了重点，我不得不看了一下。CU的实现大致分两种，组合逻辑控制器和微程序控制器。其实控制的微操作和程序设计一样，也是模块化的。组合逻辑控制器追求速度，却无法拓展，难以调试，难以实现自动化设计。微程序控制器的特点与之相反。（我没搞懂什么是自动化设计）</p>
+<p>除了这些外，CPU中还有ALU，但这不是本章的重点。</p>
+<h2 id="时序系统"><a href="#时序系统" class="headerlink" title="时序系统"></a>时序系统</h2><p>时序系统是CPU的工作基础。和游戏一样，CPU的工作也有基本的时间单位。这种和最小时间单位有关的系统就是时序系统。</p>
+<p>这里自顶向下地介绍整个时序系统。指令周期是指从取指令、取数到完成指令整个过程需要的时间。各种指令所需的指令周期不同。指令周期会拆成机器周期（CPU）周期，每个机器周期干一个特定的活，比如取值周期、取数周期。机器周期又要完成若干微操作，每个微操作占用的时间叫做节拍。每个节拍最终由几个脉冲组成。脉冲是最小的时间单位。</p>
+<h2 id="指令执行过程"><a href="#指令执行过程" class="headerlink" title="指令执行过程"></a>指令执行过程</h2><p>这一部分是CPU控制原理的核心。</p>
+<p>指令执行过程分成三个阶段：取指令阶段、分析取数阶段和执行阶段。</p>
+<h3 id="取指令阶段"><a href="#取指令阶段" class="headerlink" title="取指令阶段"></a>取指令阶段</h3><p>从宏观上来讲，这一阶段把指令从主存中取出来并存到指令寄存器中。具体来说分以下几步：</p>
+<ol>
+<li>(PC)-&gt;MAR</li>
+<li>CU向存储器发读命令 Read</li>
+<li>取出的指令存到MDR中 M(MAR)-&gt;MDR</li>
+<li>把MDR的内容送到IR中 (MDR)-&gt;IR</li>
+<li>PC自增 (PC)+1-&gt;PC</li>
+</ol>
+<h3 id="分析取数阶段"><a href="#分析取数阶段" class="headerlink" title="分析取数阶段"></a>分析取数阶段</h3><p>根据指令，取操作数。由前几章的内容可知，指令中的操作数可能表达得十分“晦涩”，可能要通过多次间接寻址才能得到。</p>
+<p>如果操作数不用寻址，那么就不用进行此阶段。</p>
+<p>比如要取@R0，即以R0的值为地址，到主存中取数。那么操作有以下几步：</p>
+<ol>
+<li>(R0)-&gt;MAR</li>
+<li>Read</li>
+<li>M(MAR)-&gt;MDR</li>
+</ol>
+<h3 id="执行阶段"><a href="#执行阶段" class="headerlink" title="执行阶段"></a>执行阶段</h3><p>现在我们有了函数，有了函数参数，接下来的任务就是执行指令并将结果保存。</p>
+<p>比如把数相加的执行阶段指令有以下几步（MAR已经是目标存储寄存器的地址）：</p>
+<ol>
+<li>(R1)+(Y)-&gt;Z</li>
+<li>(Z)-&gt;MDR</li>
+<li>Write</li>
+</ol>
+<p>比如转移A步指令的执行阶段有以下几步：</p>
+<ol>
+<li>(PC)-&gt;Y</li>
+<li>Ad(IR) + (Y) -&gt; Z</li>
+<li>(Z)-&gt;PC</li>
+</ol>
+<h2 id="微程序原理"><a href="#微程序原理" class="headerlink" title="微程序原理"></a>微程序原理</h2><h3 id="基本概念介绍"><a href="#基本概念介绍" class="headerlink" title="基本概念介绍"></a>基本概念介绍</h3><p>之前CPU执行的每一步操作，都叫做微操作。对于指令来说，这些微操作都是不可再分的操作。但是从微操作的角度来看，微操作还可以分成很多个更细致的操作，比如打开某个逻辑门等。这些更细致的操作叫微命令。不同的微操作之间可能会公用相同的微命令。引入程序设计的思想，微命令的重用和模块化非常关键。微程序控制的思想也因此被提出来了。</p>
+<p>一个机器指令就对应一个微程序。一个微程序里可以分成多个微指令，微指令就是一个一个函数。和CPU的指令类似，微指令也分为操作码和地址码。但微指令的地址码只包括下一条要执行的微指令的地址，而不是存数据的地址。在微指令中，微命令就是原子操作，和程序中的语句相同。</p>
+<h3 id="微指令编码"><a href="#微指令编码" class="headerlink" title="微指令编码"></a>微指令编码</h3><p>微指令编码指对微指令的操作码编码。操作码译码的结果是得到一个01序列，表示执行哪些微命令。</p>
+<p>最显然的两种编码法是直接编码法和最短编码法。前者令操作码每一位都表示一个微命令是否执行，后者进行完全编码，每次只能产生一个微命令的输出。由于微命令可以并行，但又不是每种操作都能并行，因此第一种方法编码长度过长，而第二种方法无法进行并行。</p>
+<p>一种折衷二者的方案是：事先知道哪些操作不能并行，把这些操作分成一组，进行完全编码。整个操作码就被分成了一个一个完全编码的字段。</p>
+<p>课后有一道这方面的题目。考试估计会考。</p>
+<h3 id="组成部件"><a href="#组成部件" class="headerlink" title="组成部件"></a>组成部件</h3><ul>
+<li>控制存储器CM，存了一堆微程序</li>
+<li>μIR，微指令寄存器，和IR类似</li>
+<li>微地址形成部件，用于形成初始微地址和后续微地址</li>
+<li>μMAR，微地址寄存器，和MAR类似，但不是从内存而是从CM中取指令</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" rel="tag"># 计算机科学</a>
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BB%84%E6%88%90/" rel="tag"># 计算机组成</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/01/07/Principles-of-Computer-Composition-cources-review-5/" rel="prev" title="计算机组成原理复习：第五章 存储系统和结构">
+      <i class="fa fa-chevron-left"></i> 计算机组成原理复习：第五章 存储系统和结构
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/01/09/Principles-of-Computer-Composition-exam-result/" rel="next" title="计算机组成原理考试结果">
+      计算机组成原理考试结果 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86%E5%A4%8D%E4%B9%A0%EF%BC%9A%E7%AC%AC%E5%85%AD%E7%AB%A0-%E4%B8%AD%E5%A4%AE%E5%A4%84%E7%90%86%E5%99%A8"><span class="nav-number">1.</span> <span class="nav-text">计算机组成原理复习：第六章 中央处理器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#CPU%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%BB%84%E6%88%90"><span class="nav-number">1.1.</span> <span class="nav-text">CPU的基本组成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E5%BA%8F%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.2.</span> <span class="nav-text">时序系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%87%E4%BB%A4%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">指令执行过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%96%E6%8C%87%E4%BB%A4%E9%98%B6%E6%AE%B5"><span class="nav-number">1.3.1.</span> <span class="nav-text">取指令阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E5%8F%96%E6%95%B0%E9%98%B6%E6%AE%B5"><span class="nav-number">1.3.2.</span> <span class="nav-text">分析取数阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E9%98%B6%E6%AE%B5"><span class="nav-number">1.3.3.</span> <span class="nav-text">执行阶段</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%AE%E7%A8%8B%E5%BA%8F%E5%8E%9F%E7%90%86"><span class="nav-number">1.4.</span> <span class="nav-text">微程序原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.4.1.</span> <span class="nav-text">基本概念介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BE%AE%E6%8C%87%E4%BB%A4%E7%BC%96%E7%A0%81"><span class="nav-number">1.4.2.</span> <span class="nav-text">微指令编码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%84%E6%88%90%E9%83%A8%E4%BB%B6"><span class="nav-number">1.4.3.</span> <span class="nav-text">组成部件</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）我们都知道，PyTorch做卷积等底层运算时，都是用C++实现的。有时，我们再怎么去调用PyTorch定义好的算子，也无法满足我们的需求。这时，我们就要考虑用C++自定义一个PyTorch的算子了。 PyTorch提供了两种添加C++算子的方法：编译动态库并嵌入TorchScript[1]、用Py">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PyTorch Custom OP （自定义算子） 教程">
+<meta property="og:url" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）我们都知道，PyTorch做卷积等底层运算时，都是用C++实现的。有时，我们再怎么去调用PyTorch定义好的算子，也无法满足我们的需求。这时，我们就要考虑用C++自定义一个PyTorch的算子了。 PyTorch提供了两种添加C++算子的方法：编译动态库并嵌入TorchScript[1]、用Py">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/2.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/3.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/4.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/5.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/6.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/7.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/bug1.jpg">
+<meta property="article:published_time" content="2022-03-18T07:28:41.000Z">
+<meta property="article:modified_time" content="2022-12-13T12:10:29.741Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="PyTorch">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="Visual Studio">
+<meta property="article:tag" content="我的博客">
+<meta property="article:tag" content="CMake">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/03/18/20220315-custom-op/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/03/18/20220315-custom-op/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PyTorch Custom OP （自定义算子） 教程 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/03/18/20220315-custom-op/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PyTorch Custom OP （自定义算子） 教程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-18 15:28:41" itemprop="dateCreated datePublished" datetime="2022-03-18T15:28:41+08:00">2022-03-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E6%95%B4%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">知识整理</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="PyTorch-自定义算子教程：两种方法实现加法算子（附LibTorch-Windows环境配置教程）"><a href="#PyTorch-自定义算子教程：两种方法实现加法算子（附LibTorch-Windows环境配置教程）" class="headerlink" title="PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）"></a>PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）</h1><p>我们都知道，PyTorch做卷积等底层运算时，都是用C++实现的。有时，我们再怎么去调用PyTorch定义好的算子，也无法满足我们的需求。这时，我们就要考虑用C++自定义一个PyTorch的算子了。</p>
+<p>PyTorch提供了两种添加C++算子的方法：编译动态库并嵌入<code>TorchScript</code><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html">[1]</a>、用PyTorch的C++拓展接口<a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/cpp_extension.html">[2]</a>。前者适合导入独立的C++项目，后者需要用PyTorch的API设置编译信息，只适合小型C++项目，更适合于把新算子共享给他人的情况。由于我还没有用过torch的C++接口，这里先用第一种方法写一套独立的算子实现示例，跑通整个流程，再基于同一份代码，用第二种方法实现一次，以全方位地介绍PyTorch自定义算子的方法。</p>
+<p><strong>前置准备：</strong></p>
+<ul>
+<li>装好了CMake</li>
+<li>装好了PyTorch</li>
+<li>装好了OpenCV</li>
+<li>看得懂C++、Python</li>
+</ul>
+<p><strong>知识点预览：</strong></p>
+<ul>
+<li>如何配置LibTorch</li>
+<li>第一个Torch C++程序</li>
+<li>如何自己写简单的CMake</li>
+<li>如何用Visual Studio写CMake项目</li>
+<li>如何编译使用简单的动态库</li>
+<li>如何用两种方法实现PyTorch自定义算子</li>
+<li>如何用setuptools自动编译C++源代码</li>
+</ul>
+<p>（以上是我写这篇文章之前还不会的东西。）</p>
+<ul>
+<li>如何用PyTest做单元测试</li>
+</ul>
+<p><strong>参考教程</strong>：</p>
+<p>[1] 添加<code>TorchScript</code>拓展 <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html">https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html</a></p>
+<p>[2] PyTorch的C++拓展 <a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/advanced/cpp_extension.html">https://pytorch.org/tutorials/advanced/cpp_extension.html</a></p>
+<p>[3] 安装LibTorch <a target="_blank" rel="noopener" href="https://pytorch.org/cppdocs/installing.html">https://pytorch.org/cppdocs/installing.html</a></p>
+<p>[4] VS CMake <a target="_blank" rel="noopener" href="https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019">https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019</a></p>
+<h2 id="配置-LibTorch-开发环境"><a href="#配置-LibTorch-开发环境" class="headerlink" title="配置 LibTorch 开发环境"></a>配置 LibTorch 开发环境</h2><p>我们这个项目是使用CMake开发的，理论上任何平台都能使用。我是在Windows上测试的，理论上Windows上碰到的毛病会多一些，Linux上可能直接用就没问题了。</p>
+<p>对于我们这个CMake项目来说，成功添加路径，使得<code>find_package（Torch)</code>（找到Torch的CMake配置）不报错就算配置环境成功。当然，貌似由于Torch依赖于OpenCV，找OpenCV包也得成功才行。</p>
+<p>参考教程是<a target="_blank" rel="noopener" href="https://pytorch.org/cppdocs/installing.html">[3]</a>，但对于像我一样什么都不懂的新手来说，由于CMake有些东西要配置，这篇官方教程还不太够用。</p>
+<h3 id="下载-LibTorch"><a href="#下载-LibTorch" class="headerlink" title="下载 LibTorch"></a>下载 LibTorch</h3><p>想用PyTorch的C++相关内容的话，要先去下载LibTorch库。</p>
+<p>在获取PyTorch的Python版本下载命令处，可以找到LibTorch的安装链接：</p>
+<p><img src="/2022/03/18/20220315-custom-op/1.jpg" alt></p>
+<p>和装PyTorch Python版的时候类似，选好自己的版本，之后点击某个链接下载就行。第一个链接是Release版，第二个是Debug版。由于我是编程高手，不要调试，所以直接选择了Release版。建议大家去下Debug版方便随时调试。</p>
+<h3 id="添加环境变量"><a href="#添加环境变量" class="headerlink" title="添加环境变量"></a>添加环境变量</h3><p>下一步要把LibTorch的动态库所在目录加入环境变量中，以使程序运行时能够找得到依赖的动态库（编译是没问题的）。</p>
+<p>把<code>xxxxxxxx\libtorch\lib</code>这个目录添加进环境变量即可。</p>
+<p>如果是在Windows上，添加环境变量时有一个细节要注意：</p>
+<p><img src="/2022/03/18/20220315-custom-op/2.jpg" alt></p>
+<p>相信90%的人装PyTorch前都是把Cuda装好了的。在添加LibTorch的动态库目录时一定要注意，要把这个路径移到Cuda路径的上面。详细原因见<strong>FAQ</strong>。</p>
+<h3 id="Hello-LibTorch"><a href="#Hello-LibTorch" class="headerlink" title="Hello LibTorch"></a>Hello LibTorch</h3><p>接下来我们要用一个能调试CMake程序的环境来完成第一个C++ LibTorch程序。</p>
+<p>创建一个崭新的文件夹，在里面添加一个<code>CMakeLists.txt</code>:</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.1</span> FATAL_ERROR)</span><br><span class="line"><span class="keyword">project</span>(equi_conv)</span><br><span class="line"></span><br><span class="line"><span class="keyword">find_package</span>(Torch REQUIRED)</span><br><span class="line"><span class="keyword">find_package</span>(OpenCV REQUIRED)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_executable</span>(equi_conv op.cpp)</span><br><span class="line"><span class="keyword">target_compile_features</span>(equi_conv PRIVATE cxx_std_14)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv <span class="string">&quot;$&#123;TORCH_LIBRARIES&#125;&quot;</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv opencv_core opencv_imgproc)</span><br></pre></td></tr></table></figure>
+<p>里面的<code>equi_conv</code>可以换成你喜欢的项目名。我使用的项目名是<code>equi_conv</code>，这个名称会在后面多次出现。理论上我显示<code>equi_conv</code>的地方显示的应该是你自己的项目名。</p>
+<p><strong>注意！</strong> 一般情况下CMake是找不到Torch和OpenCV的，要手动设置CMake Configure附加命令中的<code>Torch_DIR</code>和<code>OpenCV_DIR</code>这两个参数，比如我的附加命令是</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-D Torch_DIR=&quot;D:/Download/libtorch-win-shared-with-deps-1.11.0+cu113/libtorch/share/cmake/Torch&quot; -D OpenCV_DIR=&quot;D:/OpenCV/opencv/build&quot;</span><br></pre></td></tr></table></figure>
+<p>。<code>Torch_DIR</code>是<code>&quot;xxxxxxxx/libtorch/share/cmake/Torch</code>,<code>OpenCV_DIR</code>大约是<code>xxxxxxxx/opencv/build</code>。每个人的具体路径可能不一样，只要记住，这两个路径里都得是包含了<code>.cmake</code>文件的。根据编程环境的不同，设置这两个CMake参数的位置也不同，详见后文。</p>
+<p>官方教程[3]给了一种很骚的提供路径的方法：<code>-DCMAKE_PREFIX_PATH=&quot;$(python -c &#39;import torch.utils; print(torch.utils.cmake_prefix_path)&#39;)&quot;</code>。这个命令是调用Python脚本以添加PyTorch默认的CMake搜索目录。但是这个命令有一些问题：1) 当前命令行环境里不一定能正确调用Python及访问torch库（比如PyTorch是用conda装的，而当前环境不是对应的conda环境）；2) 我们下载的libtorch似乎难以对得上PyTorch包里默认的libtorch路径。这行命令似乎仅适用于处于正确Python环境下，把libtorch装到了<code>/libtorch</code>目录下的Linux系统。为了命令的兼容性，我们不用这么骚的操作，老老实实自己设置LibTorch目录和OpenCV目录。</p>
+<p>再写一个叫<code>op.cpp</code>的C++源文件。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	torch::Tensor tensor = torch::<span class="built_in">rand</span>(&#123; <span class="number">2</span>, <span class="number">3</span> &#125;);</span><br><span class="line">	std::cout &lt;&lt; tensor &lt;&lt; std::endl;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果你是高手，可以不去配环境，直接手敲CMake命令。但为了方便，接下来我们还是准备调试运行这个程序。配置CMake调试环境有很多方法，这里先给一个Windows上Visual Studio的方案<a target="_blank" rel="noopener" href="https://docs.microsoft.com/zh-cn/cpp/build/cmake-projects-in-visual-studio?view=msvc-170&amp;viewFallbackFrom=vs-2019">[4]</a>：</p>
+<p>准备好上面那个<code>CMakeLists.txt</code>后，用VS打开这个CMake文件（相信大家的VS都是2017版本以上的，旧版本是没有CMake的功能的~）：</p>
+<p><img src="/2022/03/18/20220315-custom-op/3.jpg" alt></p>
+<p>如果文件没写错VS会自动配置(Configure)CMake。在工具栏中可以手动中断或开始CMake的配置。</p>
+<p><img src="/2022/03/18/20220315-custom-op/4.jpg" alt></p>
+<p>还可以点击上面的“{PROJECT_NAME}的CMake设置”来设置CMake命令中要用的参数（比如<code>-D</code>参数）</p>
+<p><img src="/2022/03/18/20220315-custom-op/5.jpg" alt></p>
+<p>注意，一开始CMake只有Debug版的配置，可以点左上角的加号手动加一个Release版的配置。</p>
+<p>同时，如图中所示，<code>xxx_DIR</code>应该卸载CMake命令参数里面。</p>
+<p>配置好后去上面的工具栏点击”生成-全部生成”就可以把程序编译好了。接下来按熟悉的F5就可以运行程序了。</p>
+<p>再介绍一个VSCode的CMake编程环境，这个基本上是全平台通用的。不过同样，我还是在Windows上测试的，以Windows上的配置为主。</p>
+<p>通过搜索”Windows CMake VSCode cl 配置”等关键词，我搜索到了一篇<a target="_blank" rel="noopener" href="https://blog.csdn.net/Nichlson/article/details/113763551">很好的教程</a>，我是照着这篇教程配的环境。如果是Linux的话，换一下编译器应该就能拿过来用了。</p>
+<p>为了添加<code>-D</code>等配置参数，可以用<code>ctrl+,</code>打开设置，修改工作区设置里的CMake Configure命令：</p>
+<p><img src="/2022/03/18/20220315-custom-op/6.jpg" alt></p>
+<p>如果一切正常，程序会输出随机张量的内容。</p>
+<p><img src="/2022/03/18/20220315-custom-op/7.jpg" alt></p>
+<h2 id="LibTorch-A-B"><a href="#LibTorch-A-B" class="headerlink" title="LibTorch A+B"></a>LibTorch A+B</h2><h3 id="C-侧"><a href="#C-侧" class="headerlink" title="C++ 侧"></a>C++ 侧</h3><p>修改<code>op.cpp</code>：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">assert</span>(t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">0</span>) == t<span class="number">2.</span><span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line">	<span class="built_in">assert</span>(t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">1</span>) == t<span class="number">2.</span><span class="built_in">size</span>(<span class="number">1</span>));</span><br><span class="line">	<span class="function">cv::Mat <span class="title">m1</span><span class="params">(t<span class="number">1.</span>size(<span class="number">0</span>), t<span class="number">1.</span>size(<span class="number">1</span>), CV_32FC3, t<span class="number">1.</span>data_ptr&lt;<span class="type">float</span>&gt;())</span></span>;</span><br><span class="line">	<span class="function">cv::Mat <span class="title">m2</span><span class="params">(t<span class="number">1.</span>size(<span class="number">0</span>), t<span class="number">1.</span>size(<span class="number">1</span>), CV_32FC3, t<span class="number">2.</span>data_ptr&lt;<span class="type">float</span>&gt;())</span></span>;</span><br><span class="line">	</span><br><span class="line">	cv::Mat res = m1 + m2;</span><br><span class="line"></span><br><span class="line">	torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.<span class="built_in">ptr</span>&lt;<span class="type">float</span>&gt;(), &#123; t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">0</span>), t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br><span class="line">	<span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">TORCH_LIBRARY</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">	m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们要实现一个新PyTorch算子<code>my_add</code>，该实现函数先把两个PyTorch Tensor转换成OpenCV Mat，用Mat做加法，再把Mat转回Tensor。整个代码非常易懂，哪怕对LibTorch和OpenCV的语法不熟，也基本猜得出每行代码的作用。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br></pre></td></tr></table></figure>
+<p>一开始，先包含LibTorch、OpenCV的头文件。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br></pre></td></tr></table></figure>
+<p>我们要实现的是一个PyTorch的加法，因此实现函数中所有的张量类型都是<code>torch::Tensor</code>。加法输入是两个量，输出是一个量，因此最后的函数头要这样写。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">assert</span>(t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">0</span>) == t<span class="number">2.</span><span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line"><span class="built_in">assert</span>(t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">1</span>) == t<span class="number">2.</span><span class="built_in">size</span>(<span class="number">1</span>));</span><br></pre></td></tr></table></figure>
+<p>做为严谨的程序员，我们要对输入的Tensor做一定的检查（实际上这两个检查还不够，由于我们默认输入图像的通道是3，还应该检查一下通道数。但这样检查下去可能会没完没了了，这里仅仅是提醒大家要养成良好的编程习惯）（其实是我写了两行就懒得写下去了）。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">cv::Mat <span class="title">m1</span><span class="params">(t<span class="number">1.</span>size(<span class="number">0</span>), t<span class="number">1.</span>size(<span class="number">1</span>), CV_32FC3, t<span class="number">1.</span>data_ptr&lt;<span class="type">float</span>&gt;())</span></span>;</span><br><span class="line"><span class="function">cv::Mat <span class="title">m2</span><span class="params">(t<span class="number">1.</span>size(<span class="number">0</span>), t<span class="number">1.</span>size(<span class="number">1</span>), CV_32FC3, t<span class="number">2.</span>data_ptr&lt;<span class="type">float</span>&gt;())</span></span>;</span><br></pre></td></tr></table></figure>
+<p>这两行是用Tensor构造Mat。从这两行代码中，可以学到两点：1）可以通过<code>tensor.data_ptr&lt;float&gt;</code>来获取Tensor存储数据的指针;2）不同框架下的数据结构互转时一般是传指针，再传shape。</p>
+<p>OpenCV这里有一点点特殊。OpenCV的Mat是二维的，要维护一个H-W-C（高-宽-通道）的数据，需要传一个基础数据类型<code>CV_32FC3</code>，即3通道浮点数。</p>
+<p>从代码中可以猜出来，<code>tensor.size(i)</code>可以获取Tensor第i维的长度。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cv::Mat res = m1 + m2;</span><br></pre></td></tr></table></figure>
+<p>不用猜都知道这是调用了Mat的加法。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.<span class="built_in">ptr</span>&lt;<span class="type">float</span>&gt;(), &#123; t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">0</span>), t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br></pre></td></tr></table></figure>
+<p>这一行是Mat转Tensor，同样是传了数据指针和张量形状。</p>
+<p>这里第二个参数是个叫<code>at::IntArrayRef</code>的类型的。这个类型会用在Tensor的shape上。该类型的最简单的初始化方式就是用大括号把值框进去，就像Python里用方括号或圆括号传List和Set一样。</p>
+<p>相比生成OpenCV Mat，这里没有传数据类型。原因如前文所述，应该是由于OpenCV的数据类型里包含了维度信息，所以OpenCV的Mat构造时要额外传这个信息。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br></pre></td></tr></table></figure>
+<p>最后返回的是<code>tensor.clone()</code>。官方教程里说，用指针创建Tensor时会复用原来的指针，而不会新申请内存。函数结束后，Mat里的资源会释放，等于说这个用Mat创建出的Tensor也失效了。因此要<code>clone()</code>一下，让数据在函数结束后依然存在。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">TORCH_LIBRARY</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">	m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后调用API把C++函数绑定到Python上，现在可以不用追究这些代码的具体原理，只要知道这样写Python就可以访问到<code>my_add</code>了。</p>
+<p>这里可以改动的内容其实有两处：算子的域<code>my_ops</code>，算子名/函数名<code>my_add</code>。前面那个<code>my_ops</code>在PyTorch的某些地方会用到，这里我们先不管，随便取一个名字即可。</p>
+<p>现在我们要编译的是一个包含一个函数的动态库，而不是一个包含<code>main</code>的应用程序了。因此，我们要修改一下<code>CMakeLists.txt</code>中的编译选项：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.1</span> FATAL_ERROR)</span><br><span class="line"><span class="keyword">project</span>(equi_conv)</span><br><span class="line"></span><br><span class="line"><span class="keyword">find_package</span>(Torch REQUIRED)</span><br><span class="line"><span class="keyword">find_package</span>(OpenCV REQUIRED)</span><br><span class="line"></span><br><span class="line"><span class="keyword">add_library</span>(equi_conv SHARED op.cpp)</span><br><span class="line"><span class="keyword">target_compile_features</span>(equi_conv PRIVATE cxx_std_14)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv <span class="string">&quot;$&#123;TORCH_LIBRARIES&#125;&quot;</span>)</span><br><span class="line"><span class="keyword">target_link_libraries</span>(equi_conv opencv_core opencv_imgproc)</span><br></pre></td></tr></table></figure>
+<p>其实就改了一行:<code>add_library(equi_conv SHARED op.cpp)</code>，这样可以把编译目标变成一个动态库。</p>
+<p>代码没错的话，重新Configure和Generate后动态库就编译好了。</p>
+<h3 id="Python-侧"><a href="#Python-侧" class="headerlink" title="Python 侧"></a>Python 侧</h3><p>我们写一个单元测试Python脚本来测试一下我们的算子能否在PyTorch里成功运行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">lib_path = <span class="string">r&quot;D:\Repo\equi_conv\EquiConv\out\build\x64-Release\equi_conv.dll&quot;</span></span><br><span class="line">torch.ops.load_library(lib_path)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_add</span>():</span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = torch.ops.my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
+<p>再一次，为了体现我们编程时的严谨性，我们使用pytest来测试这个脚本。<code>pip install pytest</code>就可以轻松安装好这个Python单元测试工具。但如果你实在太懒了，不想下pytest，就得在后面补一行<code>test_add()</code>手动调用一下这个函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lib_path = <span class="string">r&quot;D:\Repo\equi_conv\EquiConv\out\build\x64-Release\equi_conv.dll&quot;</span></span><br><span class="line">torch.ops.load_library(lib_path)</span><br></pre></td></tr></table></figure>
+<p><code>import torch</code>就不说了。这两行代码是调用PyTorch的API来读取我们刚刚编译出来的动态库。我们这里只需要把动态库路径改成自己的就好，别的都不用改。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">test_add</span>():</span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = torch.ops.my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
+<p>后面这些代码就是实际单元测试的代码里，代码非常简单：生成两个随机tensor，比较一下我们的加法和PyTorch自己的加法是否结果一致。</p>
+<p>值得注意的是，用<code>torch.ops.my_ops.my_add</code>可以调用我们刚刚那个C++函数。前面的<code>torch.ops</code>都是写死的，后面的<code>my_add</code>是我们自己定义的函数名。而<code>my_ops</code>，则是我们刚刚调API时填的“算子域”了。算子域在注册Python符号表的时候还会用到，这里不用管那么多，把算子域理解成一个命名空间，一个防止算子命名冲突的东西即可。</p>
+<p><code>torch.allclose</code>可以简单地理解为一个要求两个Tensor所有值都<strong>几乎</strong>相等的比较函数。</p>
+<p>在该文件夹下运行命令<code>pytest</code>，屏幕上显示绿色的<code>1 passed xxxxxxxxxx</code>即说明单元测试成功运行。</p>
+<p>至此，我们算是成功在Python里调用了一个C++写的算子。只需要写上torch.ops.my_ops.my_add`，我们就能够在任何地方（比如模型的forward函数）调用我们的算子。聪明的人看到这里，已经学会随心所欲地在PyTorch里嵌入自己的高效率的C++算子了。</p>
+<p>配好环境，搭好框架后，我们自己实现算子倒是非常舒服。问题是，如果我们要把这些算子给别人使用的话，要么是给别人源代码，让别人自己配置LibTorch编译环境；要么是把所有<code>Torch版本数 * Cuda版本数 * 操作系统数</code>这么多个动态库给预编译出来。</p>
+<p>要是能抛掉LibTorch，让有PyTorch和Cuda环境的用户自己编译源代码，似乎一个平衡开发者体验和用户体验的选择。所以，这里再介绍之前讲过的第二种添加算子的方法：直接在PyTorch里添加C++拓展。</p>
+<h2 id="PyTorch-Extension-A-B"><a href="#PyTorch-Extension-A-B" class="headerlink" title="PyTorch Extension A+B"></a>PyTorch Extension A+B</h2><p>用Python的setuptools也可以编译一些C++项目但，由于其头文件目录、依赖的库目录这些编译选项需要手动设置，setuptools仅适用于编译比较简单的C++项目。</p>
+<p>在同文件夹中，编写以下的<code>setup.py</code>文件：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> setuptools <span class="keyword">import</span> setup</span><br><span class="line"><span class="keyword">from</span> torch.utils <span class="keyword">import</span> cpp_extension</span><br><span class="line"></span><br><span class="line">include_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\include&#x27;</span>]</span><br><span class="line">library_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\x64\vc15\lib&#x27;</span>]</span><br><span class="line">libraries = [<span class="string">r&#x27;opencv_world452&#x27;</span>]</span><br><span class="line"></span><br><span class="line">setup(name=<span class="string">&#x27;my_add&#x27;</span>,</span><br><span class="line">      ext_modules=[</span><br><span class="line">          cpp_extension.CppExtension(<span class="string">&#x27;my_ops&#x27;</span>, [<span class="string">&#x27;op2.cpp&#x27;</span>],</span><br><span class="line">                                     include_dirs=include_dirs,</span><br><span class="line">                                     library_dirs=library_dirs,</span><br><span class="line">                                     libraries=libraries)</span><br><span class="line">      ],</span><br><span class="line">      cmdclass=&#123;<span class="string">&#x27;build_ext&#x27;</span>: cpp_extension.BuildExtension&#125;)</span><br></pre></td></tr></table></figure>
+<p>在这个源文件中，要改的就是以下三个路径（代码块中显示的是我的路径）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">include_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\include&#x27;</span>]</span><br><span class="line">library_dirs = [<span class="string">r&#x27;D:\OpenCV\opencv\build\x64\vc15\lib&#x27;</span>]</span><br><span class="line">libraries = [<span class="string">r&#x27;opencv_world452&#x27;</span>]</span><br></pre></td></tr></table></figure>
+<p>这三个路径用于配置OpenCV的编译选项，分别表示OpenCV的包含目录（头文件目录）、静态库目录、静态库名。用Visual Studio导入过第三方库的，肯定对这三个选项不陌生。</p>
+<blockquote>
+<p>如果是在 Linux 上，前两个路径大概是”/usr/local/include/opencv2”, “/usr/local/lib” 。最后的库名填写<code>opencv_core</code>即可。</p>
+</blockquote>
+<p>至于PyTorch相关的编译选项，我们不需要手动设置。这是因为我们用了PyTorch封装的添加C++拓展接口，PyTorch有关的路径已经被填好了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">setup(name=<span class="string">&#x27;my_add&#x27;</span>,</span><br><span class="line">      ext_modules=[</span><br><span class="line">          cpp_extension.CppExtension(<span class="string">&#x27;my_ops&#x27;</span>, [<span class="string">&#x27;op2.cpp&#x27;</span>],</span><br><span class="line">                                     include_dirs=include_dirs,</span><br><span class="line">                                     library_dirs=library_dirs,</span><br><span class="line">                                     libraries=libraries)</span><br><span class="line">      ],</span><br><span class="line">      cmdclass=&#123;<span class="string">&#x27;build_ext&#x27;</span>: cpp_extension.BuildExtension&#125;)</span><br></pre></td></tr></table></figure>
+<p>在调用<code>setup</code>时，<code>name</code>是整个项目的名字，可以随便取。<code>my_ops</code>和刚刚一样，是命名空间的名字，我们还是保持<code>my_ops</code>这个名字。<code>op2.cpp</code>就是要编译的源文件了，这里我们待会再讨论。剩下的参数这些传进去就行了。</p>
+<p>我们再在<code>op.cpp</code>的基础上新建一个新的C++源文件<code>op2.cpp</code>：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;torch/torch.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function">torch::Tensor <span class="title">my_add</span><span class="params">(torch::Tensor t1, torch::Tensor t2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">assert</span>(t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">0</span>) == t<span class="number">2.</span><span class="built_in">size</span>(<span class="number">0</span>));</span><br><span class="line">  <span class="built_in">assert</span>(t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">1</span>) == t<span class="number">2.</span><span class="built_in">size</span>(<span class="number">1</span>));</span><br><span class="line">  <span class="function">cv::Mat <span class="title">m1</span><span class="params">(t<span class="number">1.</span>size(<span class="number">0</span>), t<span class="number">1.</span>size(<span class="number">1</span>), CV_32FC3, t<span class="number">1.</span>data_ptr&lt;<span class="type">float</span>&gt;())</span></span>;</span><br><span class="line">  <span class="function">cv::Mat <span class="title">m2</span><span class="params">(t<span class="number">1.</span>size(<span class="number">0</span>), t<span class="number">1.</span>size(<span class="number">1</span>), CV_32FC3, t<span class="number">2.</span>data_ptr&lt;<span class="type">float</span>&gt;())</span></span>;</span><br><span class="line"></span><br><span class="line">  cv::Mat res = m1 + m2;</span><br><span class="line"></span><br><span class="line">  torch::Tensor output = torch::<span class="built_in">from_blob</span>(res.<span class="built_in">ptr</span>&lt;<span class="type">float</span>&gt;(), &#123;t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">0</span>), t<span class="number">1.</span><span class="built_in">size</span>(<span class="number">1</span>), <span class="number">3</span>&#125;);</span><br><span class="line">  <span class="keyword">return</span> output.<span class="built_in">clone</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">PYBIND11_MODULE</span>(my_ops, m)</span><br><span class="line">&#123;</span><br><span class="line">  m.<span class="built_in">def</span>(<span class="string">&quot;my_add&quot;</span>, my_add);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其实修改的就是这一行<code>TORCH_LIBRARY(my_ops, m)-&gt;PYBIND11_MODULE(my_ops, m)</code>，没有调用TorchScript的绑定接口，而是直接用Pybind绑定了C++函数。</p>
+<p>接下来，在当前文件夹下运行命令<code>python setup.py install</code>即可编译刚刚的C++源文件了。成功的话大概会有<code>Finished processing dependencies for my-add==0.0.0</code>这样的提示。</p>
+<p>编译结束后，我们在原来<code>test_add.py</code>的基础上添加一些单元测试，看看用这种新方法编译完C++拓展后怎么调用C++函数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">test_add2</span>():</span><br><span class="line">    <span class="keyword">import</span> my_ops</span><br><span class="line">    a = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    b = torch.rand([<span class="number">10</span>, <span class="number">10</span>, <span class="number">3</span>])</span><br><span class="line">    c = my_ops.my_add(a, b)</span><br><span class="line">    d = a + b</span><br><span class="line">    <span class="keyword">assert</span> torch.allclose(c, d)</span><br></pre></td></tr></table></figure>
+<p>由于我们刚刚编译了一个命名空间为<code>my_ops</code>的包，我们可以用<code>import my_ops</code>导入这个刚刚编译好的库了。现在调用C++函数的方法变成了<code>my_ops.my_add</code>，其他地方都没有变化。</p>
+<p>运行<code>pytest test_add.py::test_add2</code>可以单独测试这一个函数。当然懒的话直接<code>pytest</code>可以把刚刚那个测试和这个测试一起做一遍。单元测试通过就说明我们成功运行了C++拓展。</p>
+<p>事实上，这种安装方式还是不够友好。由于我们用到了OpenCV，OpenCV的库路径还是要手动设置。这种安装方式只有在除PyTorch本身外不需要任何第三方库时比较友好。不然的话要么让用户自己手动设置路径，要么在代码库里引用别的开源库，再一个一个重写路径。大型项目还是用CMake等编译系统来编译比较友好。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在这篇文章中，我介绍了两种在PyTorch里调用C++新算子的方法。只要看懂了这篇文章，就算是彻底打通了PyTorch与C++的桥梁，以后写代码可以专注于C++算子的实现及PyTorch对算子的封装，剩下的绑定算子的内容直接套这个模板就行。</p>
+<p>两种算子实现方法的区别主要在于编译选项的设置上和用户在编译算子的体验上。应根据项目的实际情况选择一种方案。</p>
+<p>这篇文章强行调用OpenCV实现了Tensor加法，看上去是多此一举，实际上这是为了展示如何在添加自定义算子时使用第三方库。但为了简化他人编译的过程，实际实现算子时最好只用原本的PyTorch API。</p>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><h3 id="运行LibTorch的示例程序，无法定位程序输入点-xxxxx-于动态链接库-xxxxx"><a href="#运行LibTorch的示例程序，无法定位程序输入点-xxxxx-于动态链接库-xxxxx" class="headerlink" title="运行LibTorch的示例程序，无法定位程序输入点 xxxxx 于动态链接库 xxxxx"></a>运行LibTorch的示例程序，无法定位程序输入点 xxxxx 于动态链接库 xxxxx</h3><p>这个问题找了我老半天，就找到2~3个相关的答案，全是治标不治本的方法。</p>
+<p>有人说，是动态库路径的问题。我测试了一下，直接运行编译好的程序会报错，但是<strong>把程序放到LibTorch的动态库目录下就不会报错</strong>。我已经隐隐约约地感觉到，不是动态库找不到，而是<strong>动态库路径的优先顺序</strong>出了问题。</p>
+<p>果不其然，最后我在<a target="_blank" rel="noopener" href="https://www.icode9.com/content-3-1005434.html">这篇文章</a>里找到了问题的真正原因：Cuda的动态库和LibTorch的冲突了（PyTorch和Cuda要背大锅）。那篇文章中暴力删掉了Cuda的动态库，但是温柔的我们绝对不要这样做。按照前面章节的内容，调整LibTorch与Cuda的路径优先级即可。</p>
+<p><img src="/2022/03/18/20220315-custom-op/bug1.jpg" alt></p>
+<p>貌似官方教程提到了类似的错误。这里再提供一种可能的解决问题的思路（反正我没试）。</p>
+<h3 id="WinError-126-找不到指定的模块"><a href="#WinError-126-找不到指定的模块" class="headerlink" title="[WinError 126] 找不到指定的模块"></a>[WinError 126] 找不到指定的模块</h3><p>这个问题说明Python的PyTorch库版本和下载的LibTorch C++版本不一致。用<code>pip show torch</code>查看当前的PyTorch版本，去重新下载对应的LibTorch即可。</p>
+<h3 id="OSError-xxx-Undefined-symbol-Linux"><a href="#OSError-xxx-Undefined-symbol-Linux" class="headerlink" title="OSError: xxx Undefined symbol (Linux)"></a>OSError: xxx Undefined symbol (Linux)</h3><p>要把 LibTorch 的动态库加入 LD_LIBRARY_PATH 里。</p>
+<h1 id="有关博客“学习”分类下子类别的说明"><a href="#有关博客“学习”分类下子类别的说明" class="headerlink" title="有关博客“学习”分类下子类别的说明"></a>有关博客“学习”分类下子类别的说明</h1><p>貌似之前说明过一次，这里再整理一遍。</p>
+<ul>
+<li>工具用法指南：几乎没有技术含量的，把下载安装过程的踩坑过程原封不动地讲一遍。</li>
+<li>知识记录：对现有成体系知识的描述，尤其会写教科书、公开课上的知识，较少我个人的见解。</li>
+<li>知识整理：对某一工具、知识、技术的说明，主要以我个人的见解、整理为主。</li>
+</ul>
+<p>另外，“学习”类别和“记录”类别挺容易混淆的。这里我再做个规定：“记录”以具体的任务为导向，比如先有要写的作业、要看的论文、要做的项目、规划好的旅游计划，再对这些事情进行描述。而“学习”中包含的文章，更多是一种主观的，以学到东西为目的而写的文章。如果我看了一篇论文，只写论文的内容的话，会分到“记录”里；如果我想调研一个主题的文章，会把调研结果放到“学习-笔记”里；如果我看了很多论文，有了原创性非常强的一篇描述知识的文章，会放到“知识分享”（未来的“创作-知识”）里。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/PyTorch/" rel="tag"># PyTorch</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/Visual-Studio/" rel="tag"># Visual Studio</a>
+              <a href="/tags/%E6%88%91%E7%9A%84%E5%8D%9A%E5%AE%A2/" rel="tag"># 我的博客</a>
+              <a href="/tags/CMake/" rel="tag"># CMake</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/08/Code-Optimization-Fun/" rel="prev" title="拆掉循环竟然让代码性能大幅提升？ ~ 有趣的高性能计算大作业">
+      <i class="fa fa-chevron-left"></i> 拆掉循环竟然让代码性能大幅提升？ ~ 有趣的高性能计算大作业
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/23/DLS-note-1/" rel="next" title="吴恩达《深度学习专项》笔记+代码实战（一）：深度学习入门">
+      吴恩达《深度学习专项》笔记+代码实战（一）：深度学习入门 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#PyTorch-%E8%87%AA%E5%AE%9A%E4%B9%89%E7%AE%97%E5%AD%90%E6%95%99%E7%A8%8B%EF%BC%9A%E4%B8%A4%E7%A7%8D%E6%96%B9%E6%B3%95%E5%AE%9E%E7%8E%B0%E5%8A%A0%E6%B3%95%E7%AE%97%E5%AD%90%EF%BC%88%E9%99%84LibTorch-Windows%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E6%95%99%E7%A8%8B%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">PyTorch 自定义算子教程：两种方法实现加法算子（附LibTorch Windows环境配置教程）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-LibTorch-%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83"><span class="nav-number">1.1.</span> <span class="nav-text">配置 LibTorch 开发环境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BD-LibTorch"><span class="nav-number">1.1.1.</span> <span class="nav-text">下载 LibTorch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">1.1.2.</span> <span class="nav-text">添加环境变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hello-LibTorch"><span class="nav-number">1.1.3.</span> <span class="nav-text">Hello LibTorch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LibTorch-A-B"><span class="nav-number">1.2.</span> <span class="nav-text">LibTorch A+B</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#C-%E4%BE%A7"><span class="nav-number">1.2.1.</span> <span class="nav-text">C++ 侧</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python-%E4%BE%A7"><span class="nav-number">1.2.2.</span> <span class="nav-text">Python 侧</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PyTorch-Extension-A-B"><span class="nav-number">1.3.</span> <span class="nav-text">PyTorch Extension A+B</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FAQ"><span class="nav-number">1.5.</span> <span class="nav-text">FAQ</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8CLibTorch%E7%9A%84%E7%A4%BA%E4%BE%8B%E7%A8%8B%E5%BA%8F%EF%BC%8C%E6%97%A0%E6%B3%95%E5%AE%9A%E4%BD%8D%E7%A8%8B%E5%BA%8F%E8%BE%93%E5%85%A5%E7%82%B9-xxxxx-%E4%BA%8E%E5%8A%A8%E6%80%81%E9%93%BE%E6%8E%A5%E5%BA%93-xxxxx"><span class="nav-number">1.5.1.</span> <span class="nav-text">运行LibTorch的示例程序，无法定位程序输入点 xxxxx 于动态链接库 xxxxx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WinError-126-%E6%89%BE%E4%B8%8D%E5%88%B0%E6%8C%87%E5%AE%9A%E7%9A%84%E6%A8%A1%E5%9D%97"><span class="nav-number">1.5.2.</span> <span class="nav-text">[WinError 126] 找不到指定的模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OSError-xxx-Undefined-symbol-Linux"><span class="nav-number">1.5.3.</span> <span class="nav-text">OSError: xxx Undefined symbol (Linux)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%89%E5%85%B3%E5%8D%9A%E5%AE%A2%E2%80%9C%E5%AD%A6%E4%B9%A0%E2%80%9D%E5%88%86%E7%B1%BB%E4%B8%8B%E5%AD%90%E7%B1%BB%E5%88%AB%E7%9A%84%E8%AF%B4%E6%98%8E"><span class="nav-number">2.</span> <span class="nav-text">有关博客“学习”分类下子类别的说明</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

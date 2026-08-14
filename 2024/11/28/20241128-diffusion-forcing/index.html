@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="论文速览平时我自己读新论文时，往往简单看一下摘要和图表就能差不多明白文章的大意。而要用一篇博文来详细介绍新论文的设计动机、实现方法，需要花多得多的时间来写作。为了能分享更多的新论文，并且让我自己能够更好地整理论文间的关系，从这篇文章开始，我会不定期发表「论文速览」类文章，以简明扼要的文字来帮助计算机视觉的同行们快速了解新论文。 和发文频繁的自媒体相比，我的论文速览文章几乎不会展示论文的结果，仅会从">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文速览 | Diffusion Forcing：给视频扩散模型的每一帧添加不同强度的噪声">
+<meta property="og:url" content="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="论文速览平时我自己读新论文时，往往简单看一下摘要和图表就能差不多明白文章的大意。而要用一篇博文来详细介绍新论文的设计动机、实现方法，需要花多得多的时间来写作。为了能分享更多的新论文，并且让我自己能够更好地整理论文间的关系，从这篇文章开始，我会不定期发表「论文速览」类文章，以简明扼要的文字来帮助计算机视觉的同行们快速了解新论文。 和发文频繁的自媒体相比，我的论文速览文章几乎不会展示论文的结果，仅会从">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/1.png">
+<meta property="og:image" content="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/2.png">
+<meta property="og:image" content="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/3.png">
+<meta property="og:image" content="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/4.png">
+<meta property="article:published_time" content="2024-11-28T14:58:06.000Z">
+<meta property="article:modified_time" content="2024-12-30T08:14:33.803Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="扩散模型">
+<meta property="article:tag" content="自回归">
+<meta property="article:tag" content="论文速览">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/1.png">
+
+<link rel="canonical" href="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>论文速览 | Diffusion Forcing：给视频扩散模型的每一帧添加不同强度的噪声 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2024/11/28/20241128-diffusion-forcing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          论文速览 | Diffusion Forcing：给视频扩散模型的每一帧添加不同强度的噪声
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-11-28 22:58:06" itemprop="dateCreated datePublished" datetime="2024-11-28T22:58:06+08:00">2024-11-28</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="论文速览"><a href="#论文速览" class="headerlink" title="论文速览"></a>论文速览</h2><p>平时我自己读新论文时，往往简单看一下摘要和图表就能差不多明白文章的大意。而要用一篇博文来详细介绍新论文的设计动机、实现方法，需要花多得多的时间来写作。为了能分享更多的新论文，并且让我自己能够更好地整理论文间的关系，从这篇文章开始，我会不定期发表「论文速览」类文章，以简明扼要的文字来帮助计算机视觉的同行们快速了解新论文。</p>
+<p>和发文频繁的自媒体相比，我的论文速览文章几乎不会展示论文的结果，仅会从科研角度介绍文章的贡献及方法，并给出我的批判性分析。和我之前的论文详解文章相比，这个新系列的文章会用更少的文字介绍背景，几乎不介绍方法细节，力求用更少的文字来表达关键信息，提升文字沟通效率。不过另一方面，我会花更多心思在介绍新论文与过往论文的关系上，为不熟悉某些背景知识的读者提供学习途径，以填补背景介绍上的空缺。</p>
+<h2 id="Diffusion-Forcing"><a href="#Diffusion-Forcing" class="headerlink" title="Diffusion Forcing"></a>Diffusion Forcing</h2><p>视频扩散模型普遍存在视频质量随着视频长度增加不断下降的问题。为此，论文作者提出了 Diffusion Forcing 这一建模任何<strong>序列生成</strong>问题的新范式：在训练该扩散模型时，序列中的每个元素会<strong>独立地</strong>添加不同强度的噪声。作者在简单视频生成、决策 (decision-making) 任务上验证了这种生成范式的有效性。我将主要从视频生成的角度介绍本工作。</p>
+<h2 id="以往工作"><a href="#以往工作" class="headerlink" title="以往工作"></a>以往工作</h2><p>稍后我们会了解到，Diffusion Forcing 与此前两种主流序列生成范式密切相关：自回归生成与全序列扩散模型。</p>
+<p>在序列的自回归生成中，模型会不断根据序列前 $n-1$ 个元素，预测下一个元素（第 $n$ 个元素）。自回归生成在 NLP 中最为常见，RNN、Transformer 用的都是这种生成方法。</p>
+<p>扩散模型可以直接生成任何形状的数据。如果我们不把视频视为一种由图像组成的序列数据，而是将其视为一种「三维图像」，那么我们可以直接将 2D 图像扩散模型简单地拓展成 3D 视频扩散模型。这种做法在这篇论文中被称为「全序列扩散模型」。使用这一方法的早期工作有 DDPM 的作者提出的 <em>Video Diffusion Models</em>。Stable Diffusion 的作者也基于 LDM 提出类似的 <em>Align your Latents: High-Resolution Video Synthesis with Latent Diffusion Models</em>（Video LDM）工作。</p>
+<p>全序列扩散模型仅能生成固定长度的视频。为了将其拓展到长视频生成，还是得将其和自回归结合起来。但是，自回归视频生成存在着生成质量与训练集质量不匹配的问题。Stable Video Diffusion 等工作参考 Cascaded Diffusion Models 的做法，通过给约束图像/视频帧加噪声缓解此问题。</p>
+<p><em>AR-Diffusion: Auto-Regressive Diffusion Model for Text Generation</em> 进一步探讨了自回归生成与全序列扩散模型的结合方法：在生成文本时，不同时刻的文本噪声不同，越早的文本上的噪声越少。无独有偶，<em>FIFO-Diffusion: Generating Infinite Videos from Text without Training</em> 提到了如何在预训练视频扩散模型上，以不同的噪声强度来生成不同的视频帧。或许是受到这些工作的启发，Diffusion Forcing 系统探讨了如何在训练时独立地给序列元素添加噪声。</p>
+<h2 id="科研动机"><a href="#科研动机" class="headerlink" title="科研动机"></a>科研动机</h2><p>本工作的作者发现了自回归与全序列扩散模型的不足之处，并认为这两种生成范式是互补的：</p>
+<ul>
+<li>自回归不能在推理时加入新的优化目标，且存在着前述的训练采样质量不匹配导致的降质问题。</li>
+<li>全序列扩散模型不能生成变长的序列。</li>
+</ul>
+<p>反过来讲：</p>
+<ul>
+<li>全序列扩散模型可以在推理加入 Classifier-guidance，且在固定序列长度内几乎不存在降质。</li>
+<li>自回归可以生成变长序列。</li>
+</ul>
+<p>那能不能把二者结合起来呢？在推理时，我们希望序列是按时间顺序先后生成的。同时，从噪声强度这一维度上，我们希望每个元素能够从完全带噪到完全清晰逐渐生成。结合二者的方法是：在采样时，较早的元素有较少的噪声，较新的元素有较多的噪声，不同噪声强度的元素在序列中同时生成。比如采样分3步完成，共生成3帧，那么一步去噪会让$[x_1^{1/3\cdot T}, x_2^{2/3\cdot T}, x_3^{T}]$变成$[x_1^0, x_2^{1/3\cdot T}, x_3^{2/3\cdot T}]$。</p>
+<p>为了实现这样的采样，我们在训练时就要让每一元素能够在其他元素和自己的噪声强度不同时也能顺利去噪。和以往的工作不同，本工作的作者发现，训练时我们不必和推理时一样固定每一元素的噪声强度，而是可以<strong>独立地</strong>对每帧随机采样噪声强度。</p>
+<h2 id="简单视频生成模型"><a href="#简单视频生成模型" class="headerlink" title="简单视频生成模型"></a>简单视频生成模型</h2><p>本文的想法十分简洁，只需要在 DDPM 序列生成模型上把训练和推理时的噪声强度换掉即可。为了进一步了解本工作的方法，我们来看一下论文中有关视频模型的方法与实验。</p>
+<p>整体上看，训练时，方法和 $\epsilon$ 预测的普通 DDPM 一样，只是不同帧噪声强度不一样。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/1.png" alt></p>
+<p>在帧间关系上，Diffusion Forcing 用因果（causal）关系建模，即当前帧只能看到之前帧的信息。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/2.png" alt></p>
+<p>具体来说，本工作用 RNN （准确来说是 GRU）的隐变量来建模之前帧传过来的信息。加入了 RNN 后，论文把本来很简单的公式变得无比复杂，不建议读者深究论文中有关 RNN 的内容。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/3.png" alt></p>
+<p>在采样时，由于不同帧的噪声强度不同，现在我们需要定义一个二维的噪声强度表，表示每一帧在不同位置及不同去噪时刻的噪声强度。为了让每一时刻的噪声强度不同，一开始较新帧的去噪时刻会停留在原地。作者在附录中介绍了同时刻去噪的详细设计。</p>
+<p><img src="/2024/11/28/20241128-diffusion-forcing/4.png" alt></p>
+<p>作者发现，Diffusion Forcing 的这种序列生成方式可以自然地推广到无限长度的视频生成上：在生成下一个片段时，<strong>不用滑动窗口</strong>，直接把 RNN 的初始隐变量初始化为上一个片段的隐变量输出。</p>
+<p>作者用同样的 RNN 结构训练了两个基准模型：一个自回归模型，一个全序列<strong>因果</strong>扩散模型。定性结果表明，不管是在预定视频长度内，还是超出原本长度的长视频生成，Diffusion Forcing 的结果均好于基准方法。结果可以在官方项目网站上查看：</p>
+<p><a target="_blank" rel="noopener" href="https://boyuan.space/diffusion-forcing/">https://boyuan.space/diffusion-forcing/</a></p>
+<h2 id="批判性分析"><a href="#批判性分析" class="headerlink" title="批判性分析"></a>批判性分析</h2><p>论文开头说自回归模型在推理时缺少添加约束的方法。但这对视频生成来说并不致命，因为一般可以在训练时加入约束，推理时用 Classifier-free Guidance 就行了。</p>
+<p>作者说出于简洁，他们在论文中用 RNN 实现了 Diffusion Forcing。但很明显 3D U-Net 才应该是直观上最简单实用的实现方法，毕竟最早期的视频扩散模型就是拿 3D U-Net 做的。在官方仓库中，有本科生帮他们实现了一个 3D U-Net 加时间注意力的模型，比原来视频模型效果要好。</p>
+<p>我认为本文的视频生成基准方法设置过低。对于自回归视频生成/图生成视频，现在大家都会参照 Cascaded Diffusion, 对约束图像加噪并把噪声强度做为额外约束传入当前帧的生成模型。这种设计和 Diffusion Forcing 原理相似。为了体现新方法的好处，有必要跟这个更加强大的基准自回归方法做对比。</p>
+<p>作者对于全序列视频扩散模型的设计也很奇怪。全序列视频扩散模型的初衷就是把视频当成 3D 图像来看待，允许帧间两两交换信息，只保证预定长度内的视频是连贯的。作者现在用 RNN 实现了一个因果版全序列视频模型，这个模型的表现肯定是不如非因果版的。虽然作者说 Diffusion Forcing 在因果视频生成上总是比全序列扩散模型更加连贯，我很怀疑去掉了因果这个条件后 Diffusion Forcing 还能否比得过。</p>
+<p>Diffusion Forcing 在视频生成的主要好处应该体现在超出预定长度的长视频生成。因此，哪怕在预定长度内比不过全序列扩散模型，也没有关系。作者应该比较结合自回归和全序列扩散模型的方法，比如用 Stable Video Diffusion 这种图生视频模型，把上一个视频的末帧当作下一个视频的首帧约束，证明 Diffusion Forcing 在长视频生成上的优越性。</p>
+<p>综上，我认为作者在视频生成任务上的实验是不够充分的。也的确，这篇论文有一半篇幅是在决策任务上，没有只讲视频生成任务。我相信 Diffusion Forcing 的设计会在长视频生成上缓解降质问题，这需要后续大公司的工作来跟进。但是，长视频的根本问题是记忆缺失，这一本质问题是 Diffusion Forcing 这种方法难以做好的。</p>
+<p>这篇工作对我最大的启发是，我们一直把视频当成完整的 3D 数据来看待，却忘了视频可以被看成是图像序列。如果把视频当成 3D 数据的话，不同帧只能通过时序注意力看到其他帧在当前去噪时刻的信息；而对于序列数据，我们可以在不同帧的依赖关系上做更多设计，比如这篇工作的不同去噪强度。我很早前就在构思一种依赖更加强的序列生成范式：我们可不可以把序列中其他元素的<strong>所有去噪时刻</strong>的<strong>所有信息</strong>（包括中间去噪结果及去噪网络的中间变量）做为当前元素的约束呢？这种强约束序列模型可能对多视角生成、视频片段生成等任务的一致性有很大帮助。由于生成是约束于另一个去噪过程的，我们对此去噪过程做的任何编辑，都可以自然地传播到当前元素上。比如在视频生成中，如果整个视频约束于首帧的去噪过程，那么我们用任意基于扩散模型的图像编辑方法来编辑首帧，都可以自然地修改后续帧。当然，我只是提供一个大致的想法，暂时没有考虑细节，欢迎大家往这个方向思考。</p>
+<p>有人肯定也会想到能否把 Diffusion Forcing 拓展到图像像素间关系上。我认为要实现训练是完全没有问题的，问题出在推理上：Diffusion Forcing 在推理时需要预定义不同元素间的去噪强度。对于视频这种有先后顺序的数据，我们很自然地可以让越早的帧噪声强度越低。但是，对于图像来说，如何定义不同像素在不同去噪步数时的去噪强度并不是一个易解的问题。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B/" rel="tag"># 扩散模型</a>
+              <a href="/tags/%E8%87%AA%E5%9B%9E%E5%BD%92/" rel="tag"># 自回归</a>
+              <a href="/tags/%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88/" rel="tag"># 论文速览</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/09/13/20240825-trans-diff/" rel="prev" title="速览多模态模型 Transfusion 和 Show-o：用 Transformer + 扩散模型同时处理文本和图像">
+      <i class="fa fa-chevron-left"></i> 速览多模态模型 Transfusion 和 Show-o：用 Transformer + 扩散模型同时处理文本和图像
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/12/05/20241202-fourier-feature/" rel="next" title="位置编码背后的理论解释——傅里叶特征 (Fourier Feature）与核回归">
+      位置编码背后的理论解释——傅里叶特征 (Fourier Feature）与核回归 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BA%E6%96%87%E9%80%9F%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">论文速览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Diffusion-Forcing"><span class="nav-number">2.</span> <span class="nav-text">Diffusion Forcing</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%BE%80%E5%B7%A5%E4%BD%9C"><span class="nav-number">3.</span> <span class="nav-text">以往工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A7%91%E7%A0%94%E5%8A%A8%E6%9C%BA"><span class="nav-number">4.</span> <span class="nav-text">科研动机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">简单视频生成模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%B9%E5%88%A4%E6%80%A7%E5%88%86%E6%9E%90"><span class="nav-number">6.</span> <span class="nav-text">批判性分析</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

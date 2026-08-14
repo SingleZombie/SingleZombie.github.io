@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhouyifan.net","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="经过前四周的学习，我们已经学完了《深度学习专项》的第一门课程《神经网络与深度学习》。让我们总结一下这几周学的知识，查缺补漏。 《神经网络与深度学习》知识回顾概览在有监督统计机器学习中，我们会得到一个训练集。训练集中的每一条训练样本由输入和输出组成。我们希望构建一个数学模型，使得该模型在学习了训练集中的规律后，能够建立起输入到输出的映射。 在深度学习中，使用的数学模型是深度神经网络。 神经网络一般可">
+<meta property="og:type" content="article">
+<meta property="og:title" content="吴恩达《深度学习专项》第一阶段总结与第二阶段预览">
+<meta property="og:url" content="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/index.html">
+<meta property="og:site_name" content="周弈帆的博客">
+<meta property="og:description" content="经过前四周的学习，我们已经学完了《深度学习专项》的第一门课程《神经网络与深度学习》。让我们总结一下这几周学的知识，查缺补漏。 《神经网络与深度学习》知识回顾概览在有监督统计机器学习中，我们会得到一个训练集。训练集中的每一条训练样本由输入和输出组成。我们希望构建一个数学模型，使得该模型在学习了训练集中的规律后，能够建立起输入到输出的映射。 在深度学习中，使用的数学模型是深度神经网络。 神经网络一般可">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/1.jpg">
+<meta property="og:image" content="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/2.jpg">
+<meta property="article:published_time" content="2022-06-03T12:12:07.000Z">
+<meta property="article:modified_time" content="2022-06-05T12:50:17.686Z">
+<meta property="article:author" content="Zhou Yifan">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/1.jpg">
+
+<link rel="canonical" href="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>吴恩达《深度学习专项》第一阶段总结与第二阶段预览 | 周弈帆的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="周弈帆的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">周弈帆的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-switch_lang">
+
+    <a href="https://zhouyifan.net/blog-en" rel="section"><i class="fa fa-language fa-fw"></i>English</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhouyifan.net/2022/06/03/DLS-note-summary-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zhou Yifan">
+      <meta itemprop="description" content="Designer, artist, philosopher, researcher.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="周弈帆的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          吴恩达《深度学习专项》第一阶段总结与第二阶段预览
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-06-03 20:12:07" itemprop="dateCreated datePublished" datetime="2022-06-03T20:12:07+08:00">2022-06-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">学习</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0/%E7%9F%A5%E8%AF%86%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">知识记录</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>经过前四周的学习，我们已经学完了《深度学习专项》的第一门课程《神经网络与深度学习》。让我们总结一下这几周学的知识，查缺补漏。</p>
+<h1 id="《神经网络与深度学习》知识回顾"><a href="#《神经网络与深度学习》知识回顾" class="headerlink" title="《神经网络与深度学习》知识回顾"></a>《神经网络与深度学习》知识回顾</h1><h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>在有监督统计机器学习中，我们会得到一个<strong>训练集</strong>。训练集中的每一条<strong>训练样本</strong>由<strong>输入</strong>和<strong>输出</strong>组成。我们希望构建一个数学模型，使得该模型在学习了训练集中的规律后，能够建立起输入到输出的映射。</p>
+<p>在<strong>深度学习</strong>中，使用的数学模型是深度<strong>神经网络</strong>。</p>
+<p>神经网络一般可以由如下的<strong>计算图</strong>表示：</p>
+<p><img src="/2022/06/03/DLS-note-summary-1/1.jpg" alt></p>
+<p>其中，每一个圆形的计算单元（又称<strong>神经元</strong>）一般表示$g(WX+b)$这一组计算。$W, b$是线性运算的参数，$g$是激活函数。</p>
+<p>为了使神经网络学习到输入和正确输出的映射，我们要定义一个描述网络输出和正确输出之间差距的<strong>损失函数</strong>（即每个样本的网络输出与正确输出的<strong>误差函数</strong>的平均值），并最小化这个损失函数。这样，网络的“学习”就成为了一个优化问题。</p>
+<p>为了对这个优化问题求解，通常的方法是<strong>梯度下降法</strong>，即通过求导，使每一个参数都沿着让损失函数减少最快的方向移动。</p>
+<h2 id="神经网络的结构"><a href="#神经网络的结构" class="headerlink" title="神经网络的结构"></a>神经网络的结构</h2><p>神经网络由<strong>输入层</strong>，<strong>隐藏层</strong>，<strong>输出层</strong>组成。计算神经网络的层数$L$时，我们只考虑隐藏层与输出层。</p>
+<p><img src="/2022/06/03/DLS-note-summary-1/2.jpg" alt></p>
+<p>令$x^{(i)[j]}_k$表示某向量在第$i$个样本第$j$层的第$k$个分量。</p>
+<p>若每层的神经元个数为$n^{[l]}$，特别地，令输入的通道数$n_x=n^{[0]}$，则每层参数的形状满足$W^{[l]}:(n^{[l]}, n^{[l-1]})$，$b^{[l]}:(n^{[l]}, 1)$。</p>
+<p>常见的激活函数有<code>sigmoid, tanh, relu, leaky_relu</code>。一般隐藏层的激活函数$g^{[l]}(l &lt; L)$用<code>relu</code>。对于二分类问题（输出为0或1），输出层的激活函数$g^{[L]}$应用<code>sigmoid</code>。</p>
+<h2 id="神经网络的训练"><a href="#神经网络的训练" class="headerlink" title="神经网络的训练"></a>神经网络的训练</h2><ol>
+<li>初始化参数：随机初始化$W$并使其绝对值较小，用零初始化$b$。</li>
+</ol>
+<p>重复执行以下步骤：</p>
+<ol>
+<li><p><strong>前向传播</strong>：直接运行神经网络，并缓存中间计算结果$A, Z$。</p>
+</li>
+<li><p><strong>反向传播</strong>：倒着“运行”神经网络，根据求导链式法则，由网络输出求得每一个参数的导数。</p>
+</li>
+<li><p><strong>梯度下降</strong>：对于每个参数$p = w^{[l]}  or  b^{[l]}$，用$p := p-\alpha dp$更新参数。其中$\alpha$叫学习率，表示参数更新的速度。</p>
+</li>
+</ol>
+<h2 id="用numpy实现神经网络"><a href="#用numpy实现神经网络" class="headerlink" title="用numpy实现神经网络"></a>用numpy实现神经网络</h2><ol>
+<li>把输入图片进行“压平”操作：</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">images = np.reshape(images, (-<span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<ol>
+<li>初始化参数</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">W = np.random.randn(neuron_cnt[i + <span class="number">1</span>], neuron_cnt[i]) * <span class="number">0.01</span></span><br><span class="line">b = np.zeros((neuron_cnt[i + <span class="number">1</span>], <span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<ol>
+<li>前向传播</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">self</span>.A_cache[<span class="number">0</span>] = A</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>.num_layer):</span><br><span class="line">    Z = np.dot(<span class="variable language_">self</span>.W[i], A) + <span class="variable language_">self</span>.b[i]</span><br><span class="line">    A = get_activation_func(<span class="variable language_">self</span>.activation_func[i])(Z)</span><br><span class="line">    <span class="keyword">if</span> train_mode:</span><br><span class="line">        <span class="variable language_">self</span>.Z_cache[i] = Z</span><br><span class="line">        <span class="variable language_">self</span>.A_cache[i + <span class="number">1</span>] = A</span><br></pre></td></tr></table></figure>
+<ol>
+<li>反向传播</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>.num_layer - <span class="number">1</span>, -<span class="number">1</span>, -<span class="number">1</span>):</span><br><span class="line">    dZ = dA * get_activation_de_func(<span class="variable language_">self</span>.activation_func[i])(</span><br><span class="line">        <span class="variable language_">self</span>.Z_cache[i])</span><br><span class="line">    dW = np.dot(dZ, <span class="variable language_">self</span>.A_cache[i].T) / <span class="variable language_">self</span>.m</span><br><span class="line">    db = np.mean(dZ, axis=<span class="number">1</span>, keepdims=<span class="literal">True</span>)</span><br><span class="line">    dA = np.dot(<span class="variable language_">self</span>.W[i].T, dZ)</span><br><span class="line">    <span class="variable language_">self</span>.dW_cache[i] = dW</span><br><span class="line">    <span class="variable language_">self</span>.db_cache[i] = db</span><br></pre></td></tr></table></figure>
+<ol>
+<li>梯度下降</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>.num_layer):</span><br><span class="line">    <span class="variable language_">self</span>.W[i] -= learning_rate * <span class="variable language_">self</span>.dW_cache[i]</span><br><span class="line">    <span class="variable language_">self</span>.b[i] -= learning_rate * <span class="variable language_">self</span>.db_cache[i]</span><br></pre></td></tr></table></figure>
+<h1 id="第一阶段学习情况自评"><a href="#第一阶段学习情况自评" class="headerlink" title="第一阶段学习情况自评"></a>第一阶段学习情况自评</h1><p>学了几周，大家可能不太清楚自己现在的水平怎么样了。这里，我给大家提供了一个用于自我评价的标准，大家可以看看自己现在身处第几层。</p>
+<h2 id="Level-1-能谈论深度学习的程度"><a href="#Level-1-能谈论深度学习的程度" class="headerlink" title="Level 1 能谈论深度学习的程度"></a>Level 1 能谈论深度学习的程度</h2><ul>
+<li>知道深度学习能解决计算机视觉、自然语言处理等问题。</li>
+<li>能够说出“训练集”、“神经网络”等专有名词</li>
+</ul>
+<h2 id="Level-2-能调用深度学习框架的程度"><a href="#Level-2-能调用深度学习框架的程度" class="headerlink" title="Level 2 能调用深度学习框架的程度"></a>Level 2 能调用深度学习框架的程度</h2><ul>
+<li>知道正向传播、反向传播、梯度下降的意义。</li>
+<li>虽然现在不会用代码实现学习算法，但通过后面的学习，能够用深度学习框架编写学习算法。</li>
+</ul>
+<h2 id="Level-3-掌握所有知识细节的程度"><a href="#Level-3-掌握所有知识细节的程度" class="headerlink" title="Level 3 掌握所有知识细节的程度"></a>Level 3 掌握所有知识细节的程度</h2><ul>
+<li>反向传播的流程。</li>
+<li>为什么必须使用激活函数。</li>
+<li>为什么要随机初始化参数。</li>
+<li>正向传播时为什么要缓存，缓存的变量在反向传播时是怎么使用的。</li>
+</ul>
+<h2 id="Level-4-能从零开始实现一个分类器的程度"><a href="#Level-4-能从零开始实现一个分类器的程度" class="headerlink" title="Level 4 能从零开始实现一个分类器的程度"></a>Level 4 能从零开始实现一个分类器的程度</h2><blockquote>
+<p>升级语音：别说是用numpy，就算是用纯C++，我也能造一个神经网络！</p>
+</blockquote>
+<ul>
+<li>掌握 numpy 的基本操作。</li>
+<li>能用 Python 编写一个神经网络框架。</li>
+<li>能用 numpy 实现神经网络的计算细节。</li>
+<li>能用 Python 实现读取数据集、输出精度等繁杂的操作。</li>
+</ul>
+<h1 id="第二阶段知识预览"><a href="#第二阶段知识预览" class="headerlink" title="第二阶段知识预览"></a>第二阶段知识预览</h1><p>《深度学习专项》第二门课的标题是《改进深度神经网络：调整超参数、正则化和优化》。从标题中也能看出，这门课会介绍广泛的改进深度神经网络性能的技术。具体来说，在三周的时间里，我们会学习：</p>
+<ul>
+<li>第一周：深度学习的实践层面 <ul>
+<li>训练集/开发集/测试集的划分</li>
+<li>偏差与方差</li>
+<li>机器学习的基础改进流程</li>
+<li>正则化</li>
+<li>输入归一化</li>
+<li>梯度问题与加权初始化</li>
+<li>梯度检查</li>
+</ul>
+</li>
+<li>第二周：优化算法<ul>
+<li>分批梯度下降</li>
+<li>更高级的梯度下降算法</li>
+<li>学习率衰减</li>
+</ul>
+</li>
+<li>第三周：调整超参数、批归一化和编程框架<ul>
+<li>调参策略</li>
+<li>批归一化</li>
+<li>多分类问题</li>
+<li>深度学习框架 TensorFlow</li>
+</ul>
+</li>
+</ul>
+<p>目录还是比较凌乱的，让我们具体看一下每项主要知识点的介绍：</p>
+<ul>
+<li>训练集/开发集/测试集的划分<ul>
+<li>之前我们只把数据集划分成训练集和测试集两个部分。但实际上，我们还需要一个用于调试的“开发集”。</li>
+</ul>
+</li>
+<li>偏差与方差<ul>
+<li>机器学习模型的性能不够好，体现在高偏差和高方差两个方面。前者表示模型的描述能力不足，后者表示模型在训练集上过拟合。</li>
+<li>为了解决过拟合问题，我们要使用添加正则项、dropout等正则化方法。</li>
+</ul>
+</li>
+<li>梯度问题<ul>
+<li>在较深的神经网络中，数值运算结果可能会过大或过小，这会导致梯度爆炸或者梯度弥散。</li>
+<li>加权初始化可以解决这一问题。我们即将认识多种初始化参数的方法。</li>
+</ul>
+</li>
+<li>优化梯度下降<ul>
+<li>使用mini-batch：处理完部分训练数据后就执行梯度下降，而不用等处理完整个训练数据集。</li>
+<li>使用更高级的梯度下降算法，比如让梯度更平滑的momentum优化器，以及结合了多种算法的adam优化器。</li>
+<li>在训练一段时间后，减少学习率也能提高网络的收敛速度。</li>
+</ul>
+</li>
+<li>调参策略<ul>
+<li>在调试神经网络的超参数时，有一些超参数的优先级更高。我们应该按照优先级从高到低的顺序调参。</li>
+<li>在调参时，一种技巧是多次随机选取超参数，观察哪些配置下网络的表现最好。</li>
+</ul>
+</li>
+<li>归一化<ul>
+<li>对输入做归一化能够加速梯度下降。</li>
+<li>除了对输入做归一化外，我们还可以对每一层的输出做批归一化，这项技术能够让我们的网络更加健壮。</li>
+</ul>
+</li>
+<li>多分类问题<ul>
+<li>前几周我们一直关注的是二分类问题。我们将学习如何用类似的公式，把二分类问题推广到多分类问题。</li>
+</ul>
+</li>
+<li>编程框架<ul>
+<li>深度学习编程框架往往带有自动求导的功能，能够极大提升我们的开发效率。学完第二门课后，我们将一直使用TensorFlow来编程。</li>
+<li>我会顺便介绍所有编程任务的 PyTorch 等价实现。</li>
+</ul>
+</li>
+</ul>
+<p>可以看出，第二门课包含的内容非常多。甚至很多知识都只会在课堂上提一两句，得通过阅读原论文才能彻底学会这些知识。但是，这门课的知识都非常重要。学完了第二门课后，我们对于深度学习的理解能提升整整一个台阶。让我们做好准备，迎接下周的学习。</p>
+<hr>
+<p>关注我社交媒体的人，肯定质疑我最近的行为：你最近怎么发文章只注意数量不注意质量啊？怎么一篇文章可以拆开来发好几遍啊？</p>
+<p>这你就不懂了。我最近想看看，这些社交平台究竟有多捞：我提供了这么优质的文字内容，我看你们会不会去认真推广，会不会发掘优质内容。结果，我发现这些平台确实都很捞，根本不去好好推送的。没办法，我只好先写一批质量中等的文章，增加发文的次数。我倒要看看这些平台什么时候能给我符合我文章质量的关注量。文章看的人多，我才有继续创作更优质内容的动力。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+  <div class="followme">
+    <p>欢迎关注我的其它发布渠道</p>
+
+    <div class="social-list">
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://x.com/zhouyifan1107">
+            <span class="icon">
+              <i class="fab fa-twitter"></i>
+            </span>
+
+            <span class="label">X</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/SingleZombie">
+            <span class="icon">
+              <i class="fab fa-github"></i>
+            </span>
+
+            <span class="label">GitHub</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/images/Yifan_Wechat.jpg">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">公众号</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="https://www.zhihu.com/people/zhou-yi-fan-24-49">
+            <span class="icon">
+              <i class="fab fa-zhihu"></i>
+            </span>
+
+            <span class="label">知乎</span>
+          </a>
+        </div>
+
+        <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+        </div>
+    </div>
+  </div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/01/20220531-styletransfer/" rel="prev" title="Neural Style Transfer 风格迁移经典论文讲解与 PyTorch 实现">
+      <i class="fa fa-chevron-left"></i> Neural Style Transfer 风格迁移经典论文讲解与 PyTorch 实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/06/11/DLS-note-5/" rel="next" title="吴恩达《深度学习专项》笔记+代码实战（五）：深度学习的实践层面">
+      吴恩达《深度学习专项》笔记+代码实战（五）：深度学习的实践层面 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E3%80%8A%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E4%B8%8E%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E3%80%8B%E7%9F%A5%E8%AF%86%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">《神经网络与深度学习》知识回顾</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%A7%88"><span class="nav-number">1.1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">神经网络的结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E7%9A%84%E8%AE%AD%E7%BB%83"><span class="nav-number">1.3.</span> <span class="nav-text">神经网络的训练</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8numpy%E5%AE%9E%E7%8E%B0%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C"><span class="nav-number">1.4.</span> <span class="nav-text">用numpy实现神经网络</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%AD%A6%E4%B9%A0%E6%83%85%E5%86%B5%E8%87%AA%E8%AF%84"><span class="nav-number">2.</span> <span class="nav-text">第一阶段学习情况自评</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Level-1-%E8%83%BD%E8%B0%88%E8%AE%BA%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E7%9A%84%E7%A8%8B%E5%BA%A6"><span class="nav-number">2.1.</span> <span class="nav-text">Level 1 能谈论深度学习的程度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Level-2-%E8%83%BD%E8%B0%83%E7%94%A8%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%A1%86%E6%9E%B6%E7%9A%84%E7%A8%8B%E5%BA%A6"><span class="nav-number">2.2.</span> <span class="nav-text">Level 2 能调用深度学习框架的程度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Level-3-%E6%8E%8C%E6%8F%A1%E6%89%80%E6%9C%89%E7%9F%A5%E8%AF%86%E7%BB%86%E8%8A%82%E7%9A%84%E7%A8%8B%E5%BA%A6"><span class="nav-number">2.3.</span> <span class="nav-text">Level 3 掌握所有知识细节的程度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Level-4-%E8%83%BD%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E5%88%86%E7%B1%BB%E5%99%A8%E7%9A%84%E7%A8%8B%E5%BA%A6"><span class="nav-number">2.4.</span> <span class="nav-text">Level 4 能从零开始实现一个分类器的程度</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5%E7%9F%A5%E8%AF%86%E9%A2%84%E8%A7%88"><span class="nav-number">3.</span> <span class="nav-text">第二阶段知识预览</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zhou Yifan</p>
+  <div class="site-description" itemprop="description">Designer, artist, philosopher, researcher.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">158</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → /atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zhou Yifan</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
